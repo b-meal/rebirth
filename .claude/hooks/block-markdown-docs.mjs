@@ -8,6 +8,7 @@ import path from 'node:path';
 const ALLOWED = [
   /(^|\/)CLAUDE(\.local)?\.md$/,
   /(^|\/)AGENTS\.md$/,
+  /(^|\/)HANDOFF\.md$/,
   /(^|\/)\.claude\//,
   /(^|\/)\.github\/(ISSUE_TEMPLATE|PULL_REQUEST_TEMPLATE|pull_request_template)/i,
   /(^|\/)\.cursor\//,
