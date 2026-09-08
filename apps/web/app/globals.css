@@ -1,27 +1,4 @@
-@import "tailwindcss";
+@import "@wanteddev/wds/reset.css";
+@import "@wanteddev/wds/global.css";
+/* Montage 서체 스택의 최우선 값을 자체 호스팅으로 공급 */
 @import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont,
-    system-ui, "Segoe UI", Roboto, sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
-}
