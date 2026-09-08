@@ -26,6 +26,9 @@ jobs:
           cache: pnpm
 
       - name: 의존성 설치
+        # @wanteddev/* 는 GitHub Packages 에 있어 인증 필요
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
         run: pnpm install --frozen-lockfile
 
       - name: 린트
