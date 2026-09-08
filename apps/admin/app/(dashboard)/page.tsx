@@ -1,49 +1,84 @@
 "use client";
 
+import Link from "next/link";
 import {
   Card,
   CardCaption,
   CardContent,
   CardTitle,
-  FallbackView,
-  FallbackViewContent,
-  FallbackViewText,
+  Chip,
+  Divider,
   FlexBox,
   Typography,
 } from "@wanteddev/wds";
-
-// 집계 쿼리 연결 전 자리표시자
-const TILES = [
-  { label: "오늘 제보", source: "sightings" },
-  { label: "검수 대기", source: "status open" },
-  { label: "실종 신고", source: "lost_pets" },
-  { label: "확인할 후보", source: "match_scores" },
-] as const;
+import {
+  ANIMAL_LABEL,
+  CUSTODY_LABEL,
+  OVERVIEW,
+  SIGHTINGS,
+  STATUS_LABEL,
+} from "@/lib/mock";
 
 export default function DashboardPage() {
+  const recent = SIGHTINGS.filter((s) => s.status !== "hidden").slice(0, 3);
+
   return (
     <>
       <Typography variant="title3" weight="bold">
         개요
       </Typography>
       <FlexBox flexWrap="wrap" gap="12px">
-        {TILES.map((tile) => (
+        {OVERVIEW.map((tile) => (
           <Card key={tile.label} width="220px">
             <CardContent>
-              <CardTitle variant="headline2">{tile.label}</CardTitle>
-              <CardCaption variant="caption1">{tile.source}</CardCaption>
+              <CardCaption variant="caption1">{tile.label}</CardCaption>
+              <CardTitle variant="title2" weight="bold">
+                {tile.value}
+              </CardTitle>
+              <CardCaption variant="caption2">{tile.source}</CardCaption>
             </CardContent>
           </Card>
         ))}
       </FlexBox>
-      <FallbackView>
-        <FallbackViewContent>
-          <FallbackViewText
-            title="데이터 연결 전"
-            description="운영 대시보드는 P1입니다. P0 기간에는 제보 검수를 Supabase 대시보드로 직접 처리합니다."
-          />
-        </FallbackViewContent>
-      </FallbackView>
+
+      <Divider />
+
+      <Typography variant="headline1" weight="bold">
+        최근 제보
+      </Typography>
+      <FlexBox flexDirection="column" gap="8px">
+        {recent.map((s) => (
+          <Link
+            key={s.id}
+            href={`/sightings/${s.id}`}
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            <Card>
+              <CardContent>
+                <FlexBox alignItems="center" flexWrap="wrap" gap="6px">
+                  <Chip size="xsmall" disableInteraction>
+                    {ANIMAL_LABEL[s.animalType]}
+                  </Chip>
+                  <Chip size="xsmall" variant="outlined" disableInteraction>
+                    {CUSTODY_LABEL[s.custody]}
+                  </Chip>
+                  <Chip size="xsmall" variant="outlined" disableInteraction>
+                    {STATUS_LABEL[s.status]}
+                  </Chip>
+                  <Typography variant="caption1">{s.sightedAt}</Typography>
+                </FlexBox>
+                <CardTitle variant="headline2">{s.appearance}</CardTitle>
+                <CardCaption variant="caption1">
+                  {s.areaName} · 확인할 후보 {s.candidateCount}건
+                </CardCaption>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </FlexBox>
+      <Typography variant="caption1">
+        목데이터입니다. API 연결 시 lib/mock 대신 조회 결과를 넣습니다.
+      </Typography>
     </>
   );
 }
