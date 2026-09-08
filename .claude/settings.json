@@ -11,5 +11,23 @@
         ]
       }
     ]
+  },
+  "enabledPlugins": {
+    "humanize-korean@im-not-ai": true,
+    "ponytail@ponytail": true
+  },
+  "extraKnownMarketplaces": {
+    "im-not-ai": {
+      "source": {
+        "source": "github",
+        "repo": "epoko77-ai/im-not-ai"
+      }
+    },
+    "ponytail": {
+      "source": {
+        "source": "github",
+        "repo": "dietrichgebert/ponytail"
+      }
+    }
   }
 }
