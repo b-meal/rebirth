@@ -2,3 +2,7 @@ packages:
   - apps/*
   - packages/*
   - e2e
+
+# eslint-config-next 의 네이티브 resolver 바이너리 설치 필요
+onlyBuiltDependencies:
+  - unrs-resolver
