@@ -1,44 +1,30 @@
-import Link from "next/link";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Logout01Icon } from "@hugeicons/core-free-icons";
 import { DashboardNav } from "@/components/dashboard-nav";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { Divider, FlexBox, Typography } from "@wanteddev/wds";
 
 export default function DashboardLayout({ children }: LayoutProps<"/">) {
   return (
-    <SidebarProvider>
-      <Sidebar collapsible="icon">
-        <SidebarHeader className="px-3 py-2">
-          <span className="truncate text-sm font-semibold">다시집 운영</span>
-        </SidebarHeader>
-        <SidebarContent>
-          <DashboardNav />
-        </SidebarContent>
-        <SidebarFooter>
-          <Button variant="ghost" size="sm" render={<Link href="/login" />}>
-            <HugeiconsIcon icon={Logout01Icon} strokeWidth={2} />
-            <span>로그아웃</span>
-          </Button>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-11 shrink-0 items-center gap-2 border-b px-3">
-          <SidebarTrigger />
-          <Separator orientation="vertical" className="h-4" />
-          <span className="text-muted-foreground text-xs">관리자</span>
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <FlexBox sx={{ minHeight: "100vh" }}>
+      <FlexBox
+        flexDirection="column"
+        sx={{ width: "200px", flexShrink: 0, borderRight: "1px solid rgba(0, 0, 0, 0.08)" }}
+      >
+        <FlexBox alignItems="center" sx={{ height: "48px", padding: "0 16px" }}>
+          <Typography variant="headline2" weight="bold">
+            다시집 운영
+          </Typography>
+        </FlexBox>
+        <Divider />
+        <DashboardNav />
+      </FlexBox>
+      <FlexBox flexDirection="column" flex="1" sx={{ minWidth: 0 }}>
+        <FlexBox alignItems="center" sx={{ height: "48px", padding: "0 20px" }}>
+          <Typography variant="caption1">관리자</Typography>
+        </FlexBox>
+        <Divider />
+        <FlexBox flexDirection="column" gap="16px" sx={{ padding: "20px" }}>
+          {children}
+        </FlexBox>
+      </FlexBox>
+    </FlexBox>
   );
 }

@@ -1,55 +1,49 @@
-import { HugeiconsIcon } from "@hugeicons/react";
-import { DatabaseIcon } from "@hugeicons/core-free-icons";
+"use client";
+
 import {
   Card,
-  CardDescription,
-  CardHeader,
+  CardCaption,
+  CardContent,
   CardTitle,
-} from "@/components/ui/card";
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
+  FallbackView,
+  FallbackViewContent,
+  FallbackViewText,
+  FlexBox,
+  Typography,
+} from "@wanteddev/wds";
 
 // 집계 쿼리 연결 전 자리표시자
 const TILES = [
-  { label: "오늘 제보", hint: "sightings" },
-  { label: "검수 대기", hint: "status open" },
-  { label: "실종 신고", hint: "lost_pets" },
-  { label: "확인할 후보", hint: "match_scores" },
+  { label: "오늘 제보", source: "sightings" },
+  { label: "검수 대기", source: "status open" },
+  { label: "실종 신고", source: "lost_pets" },
+  { label: "확인할 후보", source: "match_scores" },
 ] as const;
 
 export default function DashboardPage() {
   return (
     <>
-      <h1 className="text-lg font-semibold">개요</h1>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <Typography variant="title3" weight="bold">
+        개요
+      </Typography>
+      <FlexBox flexWrap="wrap" gap="12px">
         {TILES.map((tile) => (
-          <Card key={tile.label}>
-            <CardHeader>
-              <CardTitle className="text-sm">{tile.label}</CardTitle>
-              <CardDescription className="tabular-nums">
-                집계 연결 전
-              </CardDescription>
-            </CardHeader>
+          <Card key={tile.label} width="220px">
+            <CardContent>
+              <CardTitle variant="headline2">{tile.label}</CardTitle>
+              <CardCaption variant="caption1">{tile.source}</CardCaption>
+            </CardContent>
           </Card>
         ))}
-      </div>
-      <Empty className="border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <HugeiconsIcon icon={DatabaseIcon} strokeWidth={2} />
-          </EmptyMedia>
-          <EmptyTitle>데이터 연결 전</EmptyTitle>
-          <EmptyDescription>
-            운영 대시보드는 P1입니다. P0 기간에는 제보 검수를 Supabase
-            대시보드로 직접 처리합니다.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      </FlexBox>
+      <FallbackView>
+        <FallbackViewContent>
+          <FallbackViewText
+            title="데이터 연결 전"
+            description="운영 대시보드는 P1입니다. P0 기간에는 제보 검수를 Supabase 대시보드로 직접 처리합니다."
+          />
+        </FallbackViewContent>
+      </FallbackView>
     </>
   );
 }
