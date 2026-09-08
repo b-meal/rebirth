@@ -15,7 +15,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce-shadcn-ui.mjs\""
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce-montage.mjs\""
           }
         ]
       }

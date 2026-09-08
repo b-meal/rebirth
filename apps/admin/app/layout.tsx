@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: {
@@ -19,9 +19,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className="h-full font-sans antialiased">
-      <body className="flex min-h-full flex-col">
-        <TooltipProvider>{children}</TooltipProvider>
+    <html lang="ko">
+      <body>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
