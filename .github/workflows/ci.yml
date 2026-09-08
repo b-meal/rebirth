@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: 품질 검사
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 스캐폴딩 전에는 검사 대상이 없어 통과 처리
+      - name: 프로젝트 존재 확인
+        id: guard
+        run: |
+          if [ -f package.json ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "package.json 이 없어 검사를 건너뜁니다."
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: steps.guard.outputs.ready == 'true'
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        if: steps.guard.outputs.ready == 'true'
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 의존성 설치
+        if: steps.guard.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: 린트
+        if: steps.guard.outputs.ready == 'true'
+        run: pnpm lint
+
+      - name: 타입 검사
+        if: steps.guard.outputs.ready == 'true'
+        run: pnpm typecheck
+
+      - name: 빌드
+        if: steps.guard.outputs.ready == 'true'
+        run: pnpm build
+
+  secret-scan:
+    name: 시크릿 검사
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # public 저장소라 키가 한 번이라도 커밋되면 유출
+      - name: 키 패턴 검사
+        run: |
+          PATTERN='sk-ant-api[0-9]{2}-|eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9|SUPABASE_SERVICE_ROLE_KEY=[A-Za-z0-9]'
+          if git grep -nEI "$PATTERN" -- ':!.github/workflows/ci.yml' > /tmp/hits 2>/dev/null; then
+            echo "시크릿으로 보이는 문자열을 찾았습니다."
+            cat /tmp/hits
+            exit 1
+          fi
+          echo "시크릿 패턴 없음"
