@@ -35,3 +35,6 @@ Thumbs.db
 # local scratch
 /tmp/
 /scratch/
+
+# 로컬 이미지 작업 산출물
+generated-images/
