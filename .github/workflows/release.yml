@@ -1,0 +1,48 @@
+name: Release
+
+# Vercel 이 배포를 끝내면 GitHub 이 deployment_status 를 보냄
+on:
+  deployment_status:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: 릴리즈 생성
+    if: >
+      github.event.deployment_status.state == 'success' &&
+      github.event.deployment_status.environment == 'Production'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.deployment.sha }}
+
+      - name: 태그 계산
+        id: tag
+        run: |
+          DATE=$(date -u +'%Y.%m.%d')
+          SEQ=$(git tag -l "v${DATE}-*" | wc -l | tr -d ' ')
+          TAG="v${DATE}-$((SEQ + 1))"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "url=${{ github.event.deployment_status.environment_url }}" >> "$GITHUB_OUTPUT"
+
+      - name: 태그 푸시
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.tag.outputs.tag }}"
+          git push origin "${{ steps.tag.outputs.tag }}"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
+          body: |
+            운영 배포가 끝났습니다.
+
+            - 배포 URL: ${{ steps.tag.outputs.url }}
+            - 커밋: ${{ github.event.deployment.sha }}
