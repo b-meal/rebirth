@@ -33,7 +33,7 @@
 
 ## 스택
 
-Next.js 16 App Router · React 19 · TypeScript · Tailwind CSS 4 · shadcn/ui · Supabase Postgres(PostGIS, pgvector) · Supabase Storage · Drizzle ORM · Vercel · Anthropic `claude-sonnet-5`
+Next.js 16 App Router · React 19 · TypeScript · Montage(`@wanteddev/wds`) · Emotion · Supabase Postgres(PostGIS, pgvector) · Supabase Storage · Drizzle ORM · Vercel · Anthropic `claude-sonnet-5`
 
 ## 검증
 
