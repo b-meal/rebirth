@@ -2,7 +2,21 @@
 
 서비스명은 다시집, 코드명은 REBIRTH입니다. Wanted AI Championship 2026 출품작이며 제출 마감은 2026-09-20 23:59:59 KST입니다.
 
-작업 전 `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/SCHEDULE.md`를 읽습니다. 결정을 바꿀 때는 `docs/DECISIONS.md`에 항목을 추가합니다.
+## 문서는 노션에만 작성
+
+이 저장소에 문서를 마크다운 파일로 만들지 않습니다. PRD, ADR, 결정 기록, 작업 로그, 일정, 아키텍처, 회의록, 리서치, 제출 자료를 포함한 모든 문서의 단일 원천은 노션입니다.
+
+노션 루트: https://app.notion.com/p/PRD-3d5ca900ab2080c4a36aeff61dbc47a2
+
+`.claude/hooks/block-markdown-docs.mjs`가 PreToolUse에서 Write, Edit, NotebookEdit의 대상 경로와 Bash의 리다이렉션, tee, touch, sed -i 를 검사해 차단합니다. 저장소에서 허용되는 마크다운은 하네스 문서뿐입니다.
+
+| 허용 | 용도 |
+|---|---|
+| `CLAUDE.md`, `CLAUDE.local.md` | Claude Code가 자동으로 읽는 프로젝트 규칙 |
+| `AGENTS.md` | 에이전트 규칙 |
+| `.claude/**` | skill, agent, command 정의 |
+| `.github` 이슈·PR 템플릿 | GitHub 기능 설정 |
+| `.cursor/**`, `.codex/**` | 다른 도구의 규칙 파일 |
 
 ## 스택
 
@@ -24,6 +38,7 @@ API를 건드렸다면 정상 경로와 오류 경로를 모두 호출해 확인
 
 | 규칙 | 이유 |
 |---|---|
+| 문서를 마크다운으로 만들지 않고 노션에 작성 | 문서 단일 원천 유지 |
 | 정확 좌표를 공개 API 응답, UI, 공유 카드에 넣지 않음 | 발견 동물과 제보자 보호 |
 | API 키를 코드·커밋·로그·문서에 넣지 않음 | 저장소가 public |
 | 기존 마이그레이션을 수정하지 않고 새로 추가 | 배포된 스키마 일관성 |
@@ -47,10 +62,25 @@ API를 건드렸다면 정상 경로와 오류 경로를 모두 호출해 확인
 - API 입력은 zod로 검증하고 실패 시 400과 필드별 메시지를 반환합니다.
 - 주석은 한 줄, 명사형 종결, 마침표 없이 씁니다. 식별자가 이미 말하는 내용은 주석으로 쓰지 않습니다.
 
-## 브랜치
+## 브랜치와 병합
 
-`develop`이 기본 브랜치입니다. 작업 브랜치는 `develop`에서 파생해 squash로 병합합니다. 상세 규칙은 `CONTRIBUTING.md`에 있습니다.
+`develop`이 기본 브랜치입니다. 작업 브랜치는 `develop`에서 파생합니다.
+
+| 브랜치 | 보호 |
+|---|---|
+| `main` | PR 필수, 승인 1명, force push·삭제 금지, 선형 히스토리 |
+| `develop` | PR 필수, 승인 0명, force push·삭제 금지, 선형 히스토리 |
+
+병합은 rebase merge만 허용합니다. squash는 GitHub이 서버에서 커밋을 새로 만들면서 author를 프로필 표시명으로 바꾸기 때문에 비활성화했습니다. 작업 브랜치의 커밋이 그대로 쌓이므로 커밋 단위를 깔끔하게 유지합니다.
+
+커밋 메시지는 Conventional Commits를 따르고 본문은 한국어로 씁니다.
+
+```
+feat: 제보 상세 페이지 추가
+fix: 위치 권한 거부 시 폼이 멈추는 문제 수정
+chore: Drizzle 마이그레이션 생성
+```
 
 ## 범위 관리
 
-새 기능 아이디어는 먼저 `docs/PRD.md`의 P0 완료 여부를 확인한 뒤 P1 목록에 넣습니다. P0가 끝나기 전에 P1을 시작하지 않습니다.
+새 기능 아이디어는 먼저 노션 PRD의 P0 완료 여부를 확인한 뒤 P1 목록에 넣습니다. P0가 끝나기 전에 P1을 시작하지 않습니다.
