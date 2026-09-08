@@ -1,0 +1,29 @@
+name: Smoke
+
+on:
+  deployment_status:
+
+jobs:
+  smoke:
+    name: 배포 확인
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 헬스 체크
+        run: |
+          URL="${{ github.event.deployment_status.environment_url }}"
+          ENV="${{ github.event.deployment_status.environment }}"
+          echo "$ENV 환경 확인: $URL"
+
+          # 스캐폴딩 전에는 헬스 엔드포인트가 없어 루트만 확인
+          for i in 1 2 3 4 5; do
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' -L --max-time 20 "$URL" || echo "000")
+            if [ "$CODE" = "200" ]; then
+              echo "응답 200"
+              exit 0
+            fi
+            echo "시도 $i: $CODE"
+            sleep 6
+          done
+          echo "5회 시도 후에도 200 이 아닙니다."
+          exit 1
