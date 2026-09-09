@@ -68,12 +68,14 @@ export async function adminListReportsHandler(
     return badRequest("조회 조건을 확인해 주십시오", fieldErrors(parsed.error));
   }
 
-  const { kind, status, areaCode, flagged, limit, offset } = parsed.data;
+  const { kind, visibility, lifecycle, areaCode, flagged, limit, offset } =
+    parsed.data;
 
   try {
     const items = await listAdminReports({
       kind,
-      status,
+      visibility,
+      lifecycle,
       areaCode,
       flaggedOnly: flagged,
       limit,

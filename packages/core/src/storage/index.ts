@@ -3,6 +3,7 @@ export {
   SIGNED_URL_TTL_SECONDS,
   StorageError,
   createSignedUrl,
+  downloadPhoto,
   photoObjectPath,
   removePhotos,
   uploadPhoto,

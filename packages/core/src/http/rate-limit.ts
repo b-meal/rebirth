@@ -28,12 +28,19 @@ export type RateLimitRule = { limit: number; windowSeconds: number };
 // 로컬과 CI 에서만 켜고 배포 환경에는 넣지 않음
 const RELAXED = process.env.RATE_LIMIT_RELAXED === "true";
 
-// 제보 생성은 사진 업로드와 AI 호출이 붙어 가장 비쌈
+// POL-28 의 시작값. 생성 3회/분·분석 5회/분 을 기준으로 두고
+// 창을 넓게 잡아 NAT 공유 사용자가 한 번에 잠기지 않게 함
+// 정확한 차단 규칙은 응답에 노출하지 않음
 export const RATE_LIMITS = {
-  createReport: { limit: RELAXED ? 200 : 5, windowSeconds: 600 },
-  createFlag: { limit: RELAXED ? 200 : 10, windowSeconds: 600 },
-  analyze: { limit: RELAXED ? 200 : 10, windowSeconds: 600 },
+  createReport: { limit: RELAXED ? 200 : 9, windowSeconds: 180 },
+  createFlag: { limit: RELAXED ? 200 : 5, windowSeconds: 600 },
+  analyze: { limit: RELAXED ? 200 : 15, windowSeconds: 180 },
   signPhoto: { limit: RELAXED ? 600 : 60, windowSeconds: 60 },
+  upload: { limit: RELAXED ? 400 : 20, windowSeconds: 180 },
+  // 관리 토큰 교환. 토큰 추측 시도를 억제함
+  manageExchange: { limit: RELAXED ? 200 : 10, windowSeconds: 600 },
+  // 문의 접수. 남용을 막되 권리 요청 경로를 잠그지 않을 정도로 둠
+  support: { limit: RELAXED ? 200 : 5, windowSeconds: 600 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitResult =

@@ -112,6 +112,19 @@ export async function uploadPhoto(input: {
   });
 }
 
+/** 저장된 사진을 서버로 다시 읽어옴. 분석 입력을 브라우저에서 다시 받지 않기 위함 */
+export async function downloadPhoto(
+  path: string,
+): Promise<{ body: ArrayBuffer; contentType: string }> {
+  const response = await call(`/object/${PHOTO_BUCKET}/${path}`, {
+    method: "GET",
+  });
+  return {
+    body: await response.arrayBuffer(),
+    contentType: response.headers.get("content-type") ?? "image/jpeg",
+  };
+}
+
 export async function createSignedUrl(
   path: string,
   expiresIn: number = SIGNED_URL_TTL_SECONDS,
