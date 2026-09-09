@@ -32,7 +32,7 @@ import {
   visibility,
 } from './enums'
 
-// POST /api/analyze 응답 원본. 사용자 확정값과 분리해 평가용으로 보관
+// POST /api/draft/analyze 응답 원본. 사용자 확정값과 분리해 평가용으로 보관
 export type AiDraft = AnalyzeResult
 
 export const reports = pgTable(
