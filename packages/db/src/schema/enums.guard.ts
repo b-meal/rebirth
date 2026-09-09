@@ -6,6 +6,7 @@ import type {
   animalSex,
   animalSize,
   animalType,
+  careSituation,
   neuterStatus,
   reportKind,
   reportStatus,
@@ -20,5 +21,6 @@ const _animal: Same<Values<typeof animalType>, t.AnimalType> = true
 const _size: Same<Values<typeof animalSize>, t.AnimalSize> = true
 const _sex: Same<Values<typeof animalSex>, t.AnimalSex> = true
 const _neuter: Same<Values<typeof neuterStatus>, t.NeuterStatus> = true
+const _care: Same<Values<typeof careSituation>, t.CareSituation> = true
 
-void [_kind, _status, _animal, _size, _sex, _neuter]
+void [_kind, _status, _animal, _size, _sex, _neuter, _care]

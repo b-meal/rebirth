@@ -10,6 +10,7 @@ export const publicReportColumns = {
   id: reports.id,
   kind: reports.kind,
   status: reports.status,
+  careSituation: reports.careSituation,
   animalType: reports.animalType,
   appearance: reports.appearance,
   colors: reports.colors,
@@ -43,17 +44,6 @@ const _noLeak: Extract<keyof typeof publicReportColumns, SensitiveKey> extends n
   ? true
   : never = true
 void _noLeak
-
-/** 정확 좌표를 격자에 스냅한 공개용 좌표. 300m 기본, 민감 제보는 1000m */
-export function snapToGrid(lat: number, lng: number, gridM = 300) {
-  // 위도 1도는 약 111,320m. 경도는 위도에 따라 좁아짐
-  const latStep = gridM / 111_320
-  const lngStep = gridM / (111_320 * Math.cos((lat * Math.PI) / 180))
-  return {
-    y: Math.round(lat / latStep) * latStep,
-    x: Math.round(lng / lngStep) * lngStep,
-  }
-}
 
 type NearbyOptions = {
   lat: number

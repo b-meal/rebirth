@@ -22,6 +22,13 @@
       "when": 1788923333451,
       "tag": "0002_lock_down_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788933306708,
+      "tag": "0003_add_care_situation",
+      "breakpoints": true
     }
   ]
 }

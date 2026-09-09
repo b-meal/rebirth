@@ -24,3 +24,12 @@ export const animalSize = pgEnum('animal_size', [
 export const animalSex = pgEnum('animal_sex', ['male', 'female', 'unknown'])
 
 export const neuterStatus = pgEnum('neuter_status', ['done', 'not_done', 'unknown'])
+
+// 제보 1단계에서 받는 분기 기준. 4단계 마무리 문구와 상세 상태 밴드가 여기서 갈림
+// roaming 은 배회 중, in_care 는 제보자가 데리고 있음
+// unknown 은 실종 신고처럼 보호 상황이 성립하지 않는 제보
+export const careSituation = pgEnum('care_situation', [
+  'roaming',
+  'in_care',
+  'unknown',
+])

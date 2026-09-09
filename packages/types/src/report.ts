@@ -1,6 +1,13 @@
 import { z } from 'zod'
 
-import { animalSex, animalSize, animalType, neuterStatus, reportKind } from './enums'
+import {
+  animalSex,
+  animalSize,
+  animalType,
+  careSituation,
+  neuterStatus,
+  reportKind,
+} from './enums'
 
 // 대한민국 영역. 좌표 오입력과 해외 IP 장난을 1차로 거름
 export const coordinates = z.object({
@@ -15,6 +22,8 @@ const conditionTag = z.string().min(1).max(20)
 /** 제보 생성. 사진은 별도 업로드라 여기서는 개수만 받음 */
 export const createReport = z.object({
   kind: reportKind.default('sighting'),
+  // 1단계 필수 입력이라 기본값을 두지 않음
+  careSituation,
   animalType: animalType.default('unknown'),
   appearance: z.string().max(300).optional(),
   colors: z.array(z.string().min(1).max(20)).max(5).default([]),
