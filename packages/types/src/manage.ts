@@ -52,6 +52,16 @@ export const closeReport = z
 
 export type CloseReport = z.infer<typeof closeReport>
 
+/**
+ * 삭제 요청. 되돌릴 수 없어 화면이 본 version 을 함께 받음
+ * 사유는 받지 않음. 삭제를 사유 입력으로 막지 않기 위함
+ */
+export const deleteReport = z.object({
+  version: z.number().int().positive('버전이 올바르지 않습니다'),
+})
+
+export type DeleteReport = z.infer<typeof deleteReport>
+
 /* 후속 상태 기록 */
 
 /**

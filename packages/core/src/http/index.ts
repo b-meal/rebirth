@@ -22,6 +22,12 @@ export {
 } from "./responses";
 
 export {
+  createCatchAll,
+  type CatchAllContext,
+  type RouteTable,
+} from "./router";
+
+export {
   RATE_LIMITS,
   checkRateLimit,
   clientKey,
