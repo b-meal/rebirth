@@ -1,38 +1,23 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { FlexBox, TopNavigation, TopNavigationButton, Typography } from "@wanteddev/wds";
+import { FlexBox, TopNavigation, Typography } from "@wanteddev/wds";
 
-export type ReportShellProps = {
+export type AppShellProps = {
   title: string;
-  onBack?: () => void;
-  onClose?: () => void;
+  // 헤더 좌우 버튼. TopNavigationButton 으로 감싼 요소를 넘김
+  leading?: ReactNode;
+  trailing?: ReactNode;
   // 하단에 고정하는 주 행동. 없으면 영역 자체를 그리지 않음
   action?: ReactNode;
   children: ReactNode;
 };
 
-export function ReportShell({ title, onBack, onClose, action, children }: ReportShellProps) {
+export function AppShell({ title, leading, trailing, action, children }: AppShellProps) {
   return (
     // 헤더와 하단은 자리를 지키고 본문만 스크롤함
     <FlexBox flexDirection="column" sx={{ flex: 1, height: "100%", minHeight: 0 }}>
-      <TopNavigation
-        background
-        leadingContent={
-          onBack && (
-            <TopNavigationButton variant="text" color="assistive" onClick={onBack}>
-              뒤로
-            </TopNavigationButton>
-          )
-        }
-        trailingContent={
-          onClose && (
-            <TopNavigationButton variant="text" color="assistive" onClick={onClose}>
-              닫기
-            </TopNavigationButton>
-          )
-        }
-      >
+      <TopNavigation background leadingContent={leading} trailingContent={trailing}>
         <Typography variant="body1" weight="bold">
           {title}
         </Typography>

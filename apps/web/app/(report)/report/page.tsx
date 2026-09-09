@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@wanteddev/wds";
+import { Button, TopNavigationButton } from "@wanteddev/wds";
 import {
   TOTAL_STEPS,
   allowedStep,
@@ -11,7 +11,7 @@ import {
   type ReportStep,
 } from "../../../lib/report-draft";
 import { ReportDraftProvider, useReportDraft } from "../../../components/report/draft";
-import { ReportShell } from "../../../components/report/report-shell";
+import { AppShell } from "../../../components/layout/app-shell";
 import {
   StepAppearance,
   StepConfirm,
@@ -41,7 +41,7 @@ function ReportFlow() {
   }, [restored, requested, step, router]);
 
   // 복원 전에는 앞 단계가 잠깐 보이지 않도록 본문을 비움
-  if (!restored) return <ReportShell title="발견동물 제보">{null}</ReportShell>;
+  if (!restored) return <AppShell title="발견동물 제보">{null}</AppShell>;
 
   const dirty =
     picker.photos.length > 0 || Boolean(draft.careSituation) || Boolean(draft.area);
@@ -61,10 +61,18 @@ function ReportFlow() {
   };
 
   return (
-    <ReportShell
+    <AppShell
       title={`발견동물 제보 · ${step}/${TOTAL_STEPS}`}
-      onBack={handleBack}
-      onClose={handleClose}
+      leading={
+        <TopNavigationButton variant="text" color="assistive" onClick={handleBack}>
+          뒤로
+        </TopNavigationButton>
+      }
+      trailing={
+        <TopNavigationButton variant="text" color="assistive" onClick={handleClose}>
+          닫기
+        </TopNavigationButton>
+      }
       action={
         <Button
           size="large"
@@ -77,7 +85,7 @@ function ReportFlow() {
       }
     >
       {STEP_VIEW[step].render()}
-    </ReportShell>
+    </AppShell>
   );
 }
 
