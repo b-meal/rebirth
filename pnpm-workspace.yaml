@@ -3,6 +3,7 @@ packages:
   - packages/*
   - e2e
 
-# eslint-config-next 의 네이티브 resolver 바이너리 설치 필요
+# eslint-config-next 의 네이티브 resolver, drizzle-kit 의 esbuild 바이너리 설치 필요
 allowBuilds:
+  esbuild: true
   unrs-resolver: true
