@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@wanteddev/wds";
 import { AppShell } from "../layout/app-shell";
+import { SharePanel } from "./share-panel";
 import {
   ANIMAL_TYPE_LABEL,
   CARE_SITUATION_LABEL,
@@ -42,22 +43,8 @@ function Row({ label, value }: { label: string; value: string }) {
 
 export function ReportDetail({ report }: { report: PublicReportDetail }) {
   const router = useRouter();
-  const [shareNotice, setShareNotice] = useState<string | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const photo = report.photos[0];
-
-  // 공유 주소는 지금 보고 있는 공개 주소 그대로. 관리 토큰이 섞이지 않음
-  const handleShare = async () => {
-    const url = window.location.href;
-    try {
-      if (navigator.share) await navigator.share({ url });
-      else {
-        await navigator.clipboard.writeText(url);
-        setShareNotice("주소를 복사했어요");
-      }
-    } catch {
-      // 사용자가 공유를 닫은 경우도 여기로 오므로 알리지 않음
-    }
-  };
 
   return (
     <AppShell
@@ -68,7 +55,7 @@ export function ReportDetail({ report }: { report: PublicReportDetail }) {
         </TopNavigationButton>
       }
       trailing={
-        <TopNavigationButton variant="text" onClick={handleShare}>
+        <TopNavigationButton variant="text" onClick={() => setShareOpen(true)}>
           공유
         </TopNavigationButton>
       }
@@ -142,18 +129,12 @@ export function ReportDetail({ report }: { report: PublicReportDetail }) {
         </Typography>
       </FlexBox>
 
-      {shareNotice && (
-        <SectionMessage
-          variant="positive"
-          open
-          closeButton
-          onOpenChange={(open) => {
-            if (!open) setShareNotice(null);
-          }}
-        >
-          {shareNotice}
-        </SectionMessage>
-      )}
+      <SharePanel
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        reportId={report.id}
+        path={`/r/${report.id}`}
+      />
     </AppShell>
   );
 }
