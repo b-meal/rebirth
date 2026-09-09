@@ -14,4 +14,4 @@ export {
   type AnalyzeAdvice,
 } from "./guidance";
 
-export { analyzeHandler } from "./handlers";
+export { analyzeHandler, getAnalysisJobHandler } from "./handlers";

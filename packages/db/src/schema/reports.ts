@@ -1,7 +1,8 @@
 import type { AnalyzeResult } from '@rebirth/types'
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
   boolean,
+  check,
   geometry,
   index,
   integer,
@@ -11,6 +12,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
 
@@ -18,12 +20,16 @@ import {
   animalSex,
   animalSize,
   animalType,
+  areaCodeSystem,
   careSituation,
+  closeReason,
   flagReason,
   flagResolution,
+  lifecycle,
+  locationSource,
   neuterStatus,
   reportKind,
-  reportStatus,
+  visibility,
 } from './enums'
 
 // POST /api/analyze 응답 원본. 사용자 확정값과 분리해 평가용으로 보관
@@ -34,12 +40,22 @@ export const reports = pgTable(
   {
     id: uuid().defaultRandom().primaryKey(),
     kind: reportKind().notNull().default('sighting'),
-    status: reportStatus().notNull().default('draft'),
+
+    // 공개 여부와 진행 상태를 분리한 두 축. POL-06
+    // 한쪽 전이가 다른 쪽을 바꾸지 않음. 후보 있음은 계산 배지라 열로 두지 않음
+    visibility: visibility().notNull().default('public'),
+    lifecycle: lifecycle().notNull().default('active'),
+
+    // 낙관적 락. PATCH 가 보낸 값과 다르면 409 로 최신값을 돌려줌
+    version: integer().notNull().default(1),
 
     // 비로그인 제보 허용이라 nullable. Supabase auth.users.id 를 FK 없이 참조
     reporterId: uuid(),
-    // 연락처는 저장하지 않음. 익명 조회·수정용 토큰만 발급
-    contactToken: text().unique(),
+    // 관리 토큰 해시. 원문은 발급 응답에서 한 번만 나가고 저장하지 않음
+    manageTokenHash: text().unique(),
+    manageTokenIssuedAt: timestamp({ withTimezone: true }),
+    // 유출 의심 시 회전. 이전 세션은 이 시각 기준으로 거부됨
+    manageTokenRotatedAt: timestamp({ withTimezone: true }),
 
     // 제보 1단계 필수 입력. condition_tags 에 섞으면 분기할 수 없어 열로 둠
     careSituation: careSituation().notNull().default('unknown'),
@@ -52,8 +68,10 @@ export const reports = pgTable(
     sex: animalSex().notNull().default('unknown'),
     neutered: neuterStatus().notNull().default('unknown'),
     conditionTags: text().array().notNull().default([]),
+    // 있음/없음/모름 3값. null 은 모름이고 false 와 다름
     collar: boolean(),
     injury: boolean(),
+    // 고양이가 아니면 해당 없음. WEB-05. 중성화 여부를 확정하는 값이 아님
     earTip: boolean(),
 
     aiRaw: jsonb().$type<AiDraft>(),
@@ -68,11 +86,29 @@ export const reports = pgTable(
     coarsePoint: geometry({ type: 'point', mode: 'xy', srid: 4326 }),
     // 스냅에 쓴 격자 크기. 품종견·어린 개체·부상 제보는 1000
     coarseGridM: integer().notNull().default(300),
+
+    // 위치 출처와 정밀도. POL-08
+    // manual_area 는 중심점을 실제 목격 좌표로 쓰지 않아 거리 계산에서 빠짐
+    locationSource: locationSource().notNull().default('manual_area'),
+    // GPS 가 보고한 오차 반경. 임계값을 넘으면 거리 점수를 주지 않음
+    locationAccuracyM: integer(),
+
+    // 행정동과 법정동을 섞지 않게 코드 체계를 함께 저장. 지역명 변경에도 표기가 유지됨
+    areaCodeSystem: areaCodeSystem(),
     areaCode: text(),
     areaName: text(),
+    areaCodeVersion: text(),
+
+    // 지형물 메모. 좌표보다 찾아가기 쉽고 정밀도가 낮아 오히려 안전
+    landmarkNote: text(),
 
     occurredAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     shareCount: integer().notNull().default(0),
+
+    // 종료·찾음 기록. 보호자 자기보고이며 앱이 사실을 인증하지 않음
+    closedAt: timestamp({ withTimezone: true }),
+    closeReason: closeReason(),
+    closeNote: text(),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true })
@@ -83,9 +119,31 @@ export const reports = pgTable(
   (t) => [
     index('reports_exact_point_idx').using('gist', t.exactPoint),
     index('reports_coarse_point_idx').using('gist', t.coarsePoint),
-    index('reports_feed_idx').on(t.kind, t.status, t.occurredAt.desc()),
+    // 공개 목록의 기본 질의. 최신순 커서 페이징이 이 인덱스를 탐
+    index('reports_feed_idx').on(
+      t.kind,
+      t.visibility,
+      t.lifecycle,
+      t.occurredAt.desc(),
+    ),
     index('reports_area_idx').on(t.areaCode),
     index('reports_reporter_idx').on(t.reporterId),
+    // 발견에 resolved, 실종에 active 가 들어오는 것을 DB 가 거부함
+    check(
+      'reports_lifecycle_by_kind',
+      sql`(${t.kind} = 'lost' and ${t.lifecycle} in ('searching', 'resolved', 'closed'))
+          or (${t.kind} <> 'lost' and ${t.lifecycle} in ('active', 'closed'))`,
+    ),
+    // 수동 지역 선택은 정확 좌표를 만들어내지 않음. 허위 정밀도 방지
+    check(
+      'reports_manual_area_has_no_exact_point',
+      sql`${t.locationSource} <> 'manual_area' or ${t.exactPoint} is null`,
+    ),
+    // 개 제보에 귀 끝 값이 들어오면 의미가 없음. 고양이만 관찰값을 가짐
+    check(
+      'reports_ear_tip_only_for_cats',
+      sql`${t.animalType} = 'cat' or ${t.earTip} is null`,
+    ),
   ],
 )
 

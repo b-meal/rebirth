@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Button,
   Flex,
@@ -12,8 +12,12 @@ import {
   Textarea,
 } from "@chakra-ui/react";
 
+import { CONSENT_DOCUMENT_VERSION } from "@rebirth/types";
+
 import { useCurrentPosition } from "@/hooks/use-current-position";
+import { useLocationToken } from "@/hooks/use-location-token";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
+import { usePhotoUpload } from "@/hooks/use-photo-upload";
 import { usePlaceSearch } from "@/hooks/use-place-search";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { Chip } from "@/components/ui/chip";
@@ -60,9 +64,10 @@ export function LostForm() {
   const [colors, setColors] = useState<string[]>([]);
   const [appearance, setAppearance] = useState("");
   const [collar, setCollar] = useState(false);
+  // 좌표 대신 서버가 발급한 참조만 들고 있음. POL-08
   const [areaName, setAreaName] = useState<string | null>(null);
-  const [areaCode, setAreaCode] = useState<string | null>(null);
-  const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationToken, setLocationToken] = useState<string | null>(null);
+  const [usableForDistance, setUsableForDistance] = useState(false);
   const [occurredAt, setOccurredAt] = useState("");
   const [manual, setManual] = useState(false);
 
@@ -70,38 +75,65 @@ export function LostForm() {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  const picker = usePhotoPicker({ maxCount: 1 });
+  const picker = usePhotoPicker({
+    maxCount: 1,
+    onChange: (photos) => {
+      const next = photos[0];
+      if (next) void upload.upload(next.file);
+    },
+  });
+  const upload = usePhotoUpload();
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
   const search = usePlaceSearch({ mode: "address" });
+  const location = useLocationToken();
 
   const photo = picker.photos[0] ?? null;
 
-  // 좌표에서 행정동을 받으면 반영. 좌표는 서버 전송에만 씀
-  // 렌더 중 setState 는 React 오류라 effect 로 옮김
+  // 현재 위치로 확인된 지역을 서버 참조로 바꿈. 좌표는 여기서 서버로만 나감
   const region = geocode.result;
   const currentPoint = position.point;
+  const accuracyMeters = position.accuracyMeters;
   useEffect(() => {
-    if (!region || !currentPoint) return;
-    // 커밋 뒤 한 프레임에서 반영해 렌더 연쇄를 만들지 않음
-    const frame = requestAnimationFrame(() => {
-      setAreaName((prev) => prev ?? region.fullName ?? region.areaName);
-      setAreaCode((prev) => prev ?? region.code);
-      setPoint((prev) => prev ?? currentPoint);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [region, currentPoint]);
+    if (!region || !currentPoint || location.status !== "idle") return;
+    void location
+      .resolve({
+        source: "gps",
+        lat: currentPoint.lat,
+        lng: currentPoint.lng,
+        ...(accuracyMeters !== null && { accuracyM: Math.round(accuracyMeters) }),
+        confirmedHere: true,
+        areaName: region.fullName || region.areaName,
+        ...(region.code && {
+          areaCode: region.code,
+          areaCodeSystem: "H" as const,
+        }),
+      })
+      .then((result) => {
+        if (!result) return;
+        setAreaName(result.areaName);
+        setLocationToken(result.locationToken);
+        setUsableForDistance(result.usableForDistance);
+      });
+  }, [region, currentPoint, accuracyMeters, location]);
 
   const positionFailed =
     position.status === "denied" || position.status === "unavailable";
   const showManual = manual || positionFailed || geocode.error !== null;
 
-  const canSubmit = photo !== null && areaName !== null && !submitting;
+  // 업로드와 위치 참조가 모두 준비돼야 저장할 수 있음
+  const canSubmit =
+    upload.uploadId !== null && locationToken !== null && !submitting;
+
+  // 재시도에서도 같은 키를 씀. 이중 탭이 신고를 두 건 만들지 않음
+  const idempotencyKey = useRef<string | null>(null);
 
   const submit = useCallback(async () => {
-    if (!photo || !areaName) return;
+    if (!upload.uploadId || !locationToken) return;
     setSubmitting(true);
     setError(null);
+
+    idempotencyKey.current ??= crypto.randomUUID();
 
     const payload = {
       animalType,
@@ -109,36 +141,62 @@ export function LostForm() {
       colors,
       size,
       collar,
-      ...(point ? { coordinates: point } : {}),
-      ...(areaCode ? { areaCode } : {}),
-      areaName,
+      uploadIds: [upload.uploadId],
+      locationToken,
       occurredAt: occurredAt
         ? new Date(occurredAt).toISOString()
         : new Date().toISOString(),
+      idempotencyKey: idempotencyKey.current,
+      consents: {
+        requiredTerms: true,
+        requiredPrivacy: true,
+        // 실종 신고는 AI 초안 단계가 없음
+        optionalAi: false,
+        optionalLocation: usableForDistance,
+        documentVersion: CONSENT_DOCUMENT_VERSION,
+      },
     };
 
-    const body = new FormData();
-    body.append("photo", photo.file);
-    body.append("payload", JSON.stringify(payload));
-
     try {
-      const response = await fetch("/api/lost", { method: "POST", body });
+      const response = await fetch("/api/lost", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
       const result = (await response.json()) as {
-        token?: string;
+        manageToken?: string;
+        pending?: boolean;
         message?: string;
       };
-      if (!response.ok || !result.token) {
+
+      if (response.status === 202 || result.pending) {
+        setError("저장하고 있습니다. 잠시 후 다시 눌러 주십시오");
+        setSubmitting(false);
+        return;
+      }
+
+      if (!response.ok || !result.manageToken) {
         // 입력값을 유지하고 재시도만 노출
         setError(result.message ?? "신고가 저장되지 않았습니다. 다시 시도해 주십시오");
         setSubmitting(false);
         return;
       }
-      setToken(result.token);
+      setToken(result.manageToken);
     } catch {
       setError("신고가 저장되지 않았습니다. 입력한 내용은 그대로 있습니다");
       setSubmitting(false);
     }
-  }, [photo, areaName, animalType, appearance, colors, size, collar, point, areaCode, occurredAt]);
+  }, [
+    upload.uploadId,
+    locationToken,
+    usableForDistance,
+    animalType,
+    appearance,
+    colors,
+    size,
+    collar,
+    occurredAt,
+  ]);
 
   // 토큰이 발급되면 화면을 덮어 복사를 유도함
   if (token) return <TokenNotice token={token} />;
@@ -167,17 +225,26 @@ export function LostForm() {
               borderRadius="card"
               display="block"
             />
-            <Button variant="outline" size="sm" onClick={() => picker.clear()}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                picker.clear();
+                upload.clear();
+              }}
+            >
               다시 고르기
             </Button>
           </>
-        ) : picker.processing ? (
+        ) : picker.processing || upload.status === "uploading" ? (
           <Skeleton width="100%" height="200px" />
         ) : (
           <LostPhotoPicker onFiles={(files) => void picker.replaceFiles(files)} />
         )}
-        {picker.error ? (
-          <SectionMessage variant="negative">{picker.error}</SectionMessage>
+        {picker.error ?? upload.message ? (
+          <SectionMessage variant="negative">
+            {picker.error ?? upload.message}
+          </SectionMessage>
         ) : null}
       </Flex>
 
@@ -251,8 +318,9 @@ export function LostForm() {
               size="sm"
               onClick={() => {
                 setAreaName(null);
-                setAreaCode(null);
-                setPoint(null);
+                setLocationToken(null);
+                setUsableForDistance(false);
+                location.clear();
                 setManual(true);
               }}
             >
@@ -265,8 +333,20 @@ export function LostForm() {
             placeholder="동, 면, 도로명으로 검색"
             emptyMessage="검색 결과가 없습니다. 동이나 면 이름으로 찾아 주십시오"
             onPick={(candidate) => {
-              setAreaName(candidate.areaName || candidate.name);
-              setPoint(candidate.point);
+              // 검색으로 고른 지점도 서버에서 참조로 바꿈
+              void location
+                .resolve({
+                  source: "place",
+                  lat: candidate.point.lat,
+                  lng: candidate.point.lng,
+                  areaName: candidate.areaName || candidate.name,
+                })
+                .then((result) => {
+                  if (!result) return;
+                  setAreaName(result.areaName);
+                  setLocationToken(result.locationToken);
+                  setUsableForDistance(result.usableForDistance);
+                });
               search.clear();
             }}
           />

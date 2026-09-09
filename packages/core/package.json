@@ -4,13 +4,16 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./drafts": "./src/drafts/index.ts",
     "./http": "./src/http/index.ts",
     "./location": "./src/location/index.ts",
     "./location/*": "./src/location/*.ts",
+    "./manage": "./src/manage/index.ts",
     "./matching": "./src/matching/index.ts",
     "./reports": "./src/reports/index.ts",
     "./reports/*": "./src/reports/*.ts",
     "./storage": "./src/storage/index.ts",
+    "./support": "./src/support/index.ts",
     "./vision": "./src/vision/index.ts"
   },
   "scripts": {

@@ -1,11 +1,13 @@
 "use client";
 
+import { CONSENT_DOCUMENT_VERSION } from "@rebirth/types";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Flex, Progress, Text } from "@chakra-ui/react";
 
 import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
+import { usePhotoUpload } from "@/hooks/use-photo-upload";
 import {
   useReportDraft,
   type ReportDraft,
@@ -45,10 +47,19 @@ export function ReportForm() {
 
   const { draft, photo, setPhoto, applyAiDraft, edit, reset } = useReportDraft();
   const analyze = useAnalyzePhoto();
+  const upload = usePhotoUpload();
+
+  // 저장 요청 하나를 가리키는 키. 이중 탭과 재시도가 제보를 두 건 만들지 않음
+  const idempotencyKey = useRef<string | null>(null);
 
   const picker = usePhotoPicker({
     maxCount: 1,
-    onChange: (photos) => setPhoto(photos[0] ?? null),
+    onChange: (photos) => {
+      const next = photos[0] ?? null;
+      setPhoto(next);
+      // 고른 즉시 올려 둠. 2단계에서 위치를 정하는 동안 업로드가 끝남
+      if (next) void upload.upload(next.file);
+    },
   });
 
   useEffect(() => {
@@ -84,10 +95,12 @@ export function ReportForm() {
 
   const handleFiles = useCallback(
     async (files: File[]) => {
-      await picker.replaceFiles(files);
       analyze.clear();
+      upload.clear();
+      // 업로드는 picker 의 onChange 에서 시작함. 재인코딩된 파일을 올려야 함
+      await picker.replaceFiles(files);
     },
-    [picker, analyze],
+    [picker, analyze, upload],
   );
 
   const onLocationChange = useCallback(
@@ -99,55 +112,77 @@ export function ReportForm() {
     [edit],
   );
 
-  const canLeaveStep1 = photo !== null && draft.careSituation !== null;
-  const canLeaveStep2 = draft.areaName !== null;
+  // 업로드가 끝나야 다음으로 감. 참조 없이는 저장할 수 없음
+  const canLeaveStep1 =
+    photo !== null && draft.careSituation !== null && upload.status === "ready";
+  const canLeaveStep2 = draft.locationToken !== null;
 
   const handleNext = useCallback(() => {
     if (step === 1) {
-      // 사진과 보호 상황이 모두 채워지면 분석을 백그라운드로 시작
-      if (photo && analyze.status === "idle") analyze.start(photo.file);
+      // 올린 사진의 참조로 분석을 백그라운드로 시작
+      if (upload.uploadId && analyze.status === "idle") {
+        analyze.start(upload.uploadId);
+      }
       goTo(2);
       return;
     }
     if (step < TOTAL_STEPS) goTo((step + 1) as ReportStep);
-  }, [step, photo, analyze, goTo]);
+  }, [step, upload.uploadId, analyze, goTo]);
 
   const handleSubmit = useCallback(async () => {
-    if (!photo) return;
+    if (!upload.uploadId || !draft.locationToken) return;
     setSubmitting(true);
     setSubmitError(null);
+
+    // 재시도에서도 같은 키를 씀. 앞선 요청이 저장됐으면 그 결과를 그대로 받음
+    idempotencyKey.current ??= crypto.randomUUID();
 
     const payload = {
       kind: "sighting" as const,
       careSituation: draft.careSituation,
       animalType: draft.animalType,
-      appearance: [draft.appearance, draft.landmark && `단서: ${draft.landmark}`]
-        .filter(Boolean)
-        .join("\n"),
+      appearance: draft.appearance,
       colors: draft.colors,
       size: draft.size,
       conditionTags: draft.conditionTags,
       collar: draft.collar,
       injury: draft.injury,
       earTip: draft.earTip,
-      ...(draft.coordinates ? { coordinates: draft.coordinates } : {}),
-      ...(draft.areaCode ? { areaCode: draft.areaCode } : {}),
-      ...(draft.areaName ? { areaName: draft.areaName } : {}),
+      uploadIds: [upload.uploadId],
+      locationToken: draft.locationToken,
+      ...(draft.landmark && { landmarkNote: draft.landmark }),
       // 4단계에서 채우지만 비어 있으면 제출 시각으로 둠
       occurredAt: draft.occurredAt || new Date().toISOString(),
       aiEditedFields: draft.editedFields,
-      ...(draft.aiRaw ? { aiRaw: draft.aiRaw } : {}),
-      ...(draft.aiModel ? { aiModel: draft.aiModel } : {}),
-      ...(draft.aiAnalyzedAt ? { aiAnalyzedAt: draft.aiAnalyzedAt } : {}),
+      idempotencyKey: idempotencyKey.current,
+      consents: {
+        requiredTerms: true,
+        requiredPrivacy: true,
+        // AI 초안을 받았으면 그 처리에 동의한 것으로 기록함
+        optionalAi: draft.aiRaw !== null,
+        optionalLocation: draft.usableForDistance,
+        documentVersion: CONSENT_DOCUMENT_VERSION,
+      },
     };
 
-    const body = new FormData();
-    body.append("photo", photo.file);
-    body.append("payload", JSON.stringify(payload));
-
     try {
-      const response = await fetch("/api/reports", { method: "POST", body });
-      const result = (await response.json()) as { id?: string; message?: string };
+      const response = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = (await response.json()) as {
+        id?: string;
+        pending?: boolean;
+        message?: string;
+      };
+
+      // 앞선 요청이 아직 처리 중. 키를 유지한 채 다시 누르게 함
+      if (response.status === 202 || result.pending) {
+        setSubmitError("저장하고 있습니다. 잠시 후 다시 눌러 주십시오");
+        setSubmitting(false);
+        return;
+      }
 
       if (!response.ok || !result.id) {
         // 입력값은 그대로 두고 재시도만 노출
@@ -165,7 +200,7 @@ export function ReportForm() {
       setSubmitError("제보가 저장되지 않았습니다. 입력한 내용은 그대로 있습니다");
       setSubmitting(false);
     }
-  }, [photo, draft, reset, router]);
+  }, [upload.uploadId, draft, reset, router]);
 
   return (
     <Flex direction="column" gap="5" padding="5" paddingBottom="24">
@@ -188,8 +223,8 @@ export function ReportForm() {
         <StepPhoto
           photo={photo}
           careSituation={draft.careSituation}
-          processing={picker.processing}
-          error={picker.error}
+          processing={picker.processing || upload.status === "uploading"}
+          error={picker.error ?? upload.message}
           cameraAvailable={cameraAvailable ?? false}
           onFiles={handleFiles}
           onCareSituation={(value) => edit("careSituation", value)}
@@ -201,8 +236,8 @@ export function ReportForm() {
         <StepLocation
           value={{
             areaName: draft.areaName,
-            areaCode: draft.areaCode,
-            coordinates: draft.coordinates,
+            locationToken: draft.locationToken,
+            usableForDistance: draft.usableForDistance,
             landmark: draft.landmark,
           }}
           onChange={onLocationChange}

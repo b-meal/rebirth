@@ -7,6 +7,7 @@ import type { PhotoItem } from "@/lib/image";
 
 // 4단계 폼의 상태. 새로고침과 실수 이탈에서 살리려 sessionStorage 에 보관
 // 사진은 File 이라 직렬화되지 않으므로 저장하지 않음. 사진이 없으면 1단계로 돌아감
+// 좌표는 담지 않음. 서버가 발급한 참조만 들고 다녀 브라우저에 정확 위치가 남지 않음
 
 const STORAGE_KEY = "rebirth:report-draft";
 
@@ -27,10 +28,11 @@ export type DraftField = (typeof DRAFT_FIELDS)[number];
 
 export type ReportDraft = {
   careSituation: CareSituation | null;
-  // 2단계
+  // 2단계. 좌표 대신 서버 발급 참조만 보관함
   areaName: string | null;
-  areaCode: string | null;
-  coordinates: { lat: number; lng: number } | null;
+  locationToken: string | null;
+  /** 거리 근거로 쓸 수 있는 위치인지. false 면 후보 화면이 정보 부족으로 표시 */
+  usableForDistance: boolean;
   landmark: string;
   // 3단계
   animalType: "dog" | "cat" | "other" | "unknown";
@@ -55,8 +57,8 @@ function emptyDraft(): ReportDraft {
   return {
     careSituation: null,
     areaName: null,
-    areaCode: null,
-    coordinates: null,
+    locationToken: null,
+    usableForDistance: false,
     landmark: "",
     animalType: "unknown",
     appearance: "",

@@ -10,6 +10,6 @@ export {
 
 export {
   createLostHandler,
-  getLostHandler,
+  getLostCandidatesHandler,
   getLostMatchesHandler,
 } from "./handlers";

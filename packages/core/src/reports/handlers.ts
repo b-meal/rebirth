@@ -1,20 +1,30 @@
 import "server-only";
 
 import {
+  attachIdempotencyResult,
   bumpShareCount,
+  claimIdempotencyKey,
+  claimUploads,
+  findDraftLocation,
+  findIdempotencyKey,
   findPublicReport,
   findReportPhotoPaths,
+  findUsableUploads,
+  grantManageAccess,
+  insertConsentRecords,
   insertFlag,
   insertReportWithPhotos,
   listPublicReports,
-  findNearbyReports,
+  releaseIdempotencyKey,
+  type PublicListCursor,
 } from "@rebirth/db";
 import {
-  PHOTO_MAX_BYTES,
-  PHOTO_MIME_TYPES,
+  INITIAL_LIFECYCLE,
+  LIST_PAGE_SIZE,
   createFlag,
-  createReportChecked,
-  nearbyQuery,
+  createReport,
+  listQuery,
+  type CreateReport,
 } from "@rebirth/types";
 
 import {
@@ -22,153 +32,271 @@ import {
   badRequest,
   checkRateLimit,
   clientKey,
+  createManageSession,
+  ensureDraftSession,
   fieldErrors,
+  hashToken,
   isUuid,
+  issueToken,
   notFound,
   ok,
+  okPrivate,
   parseJson,
   peekRateLimit,
   serverError,
   tooManyRequests,
   type RouteContext,
 } from "../http";
-import { coarseGridMetersFor, snapToGrid, toWkt } from "../location/geo";
-import {
-  SIGNED_URL_TTL_SECONDS,
-  createSignedUrl,
-  photoObjectPath,
-  removePhotos,
-  uploadPhoto,
-} from "../storage";
+import { coarseGridMetersFor, snapToGrid } from "../location/geo";
+import { SIGNED_URL_TTL_SECONDS, createSignedUrl } from "../storage";
 
 // 제보 API 의 라우트 핸들러. web 과 admin 이 각자 route.ts 에서 재수출해 씀
 // 정확 좌표는 여기서 저장만 하고 어떤 응답에도 넣지 않음
 
-const PHOTO_FIELD = "photo";
-const PAYLOAD_FIELD = "payload";
-
 const REPORT_NOT_FOUND = "찾는 제보가 없습니다. 주소를 다시 확인해 주십시오";
+const DRAFT_EXPIRED =
+  "작성 중이던 정보가 만료됐습니다. 사진과 위치를 다시 확인해 주십시오";
 
-/* POST /api/reports  사진과 폼 데이터를 multipart 로 한 번에 받음 */
+/* POST /api/reports  초안 세션의 사진·위치 참조를 제보로 확정함 */
 
 export async function createReportHandler(request: Request): Promise<Response> {
   // 검증 실패는 창을 소모하지 않음. 오타를 고치는 사용자가 잠기지 않게
-  // 여기서는 보기만 하고 업로드 직전에 실제로 차감함
   const limitKey = clientKey(request, "createReport");
   const peeked = peekRateLimit(limitKey, RATE_LIMITS.createReport);
   if (!peeked.allowed) return tooManyRequests(peeked.retryAfterSeconds);
 
-  let form: FormData;
-  try {
-    form = await request.formData();
-  } catch {
-    return badRequest("사진과 제보 내용을 함께 보내야 합니다");
-  }
-
-  const photo = form.get(PHOTO_FIELD);
-  if (!(photo instanceof File)) {
-    return badRequest("사진을 한 장 올려 주십시오", {
-      photo: "사진이 없습니다",
-    });
-  }
-  if (photo.size > PHOTO_MAX_BYTES) {
-    return badRequest("사진 용량이 너무 큽니다", {
-      photo: "8MB 까지 올릴 수 있습니다. 사진을 다시 골라 주십시오",
-    });
-  }
-  if (!PHOTO_MIME_TYPES.includes(photo.type as (typeof PHOTO_MIME_TYPES)[number])) {
-    return badRequest("사진 형식을 확인해 주십시오", {
-      photo: "JPG, PNG, WEBP 만 됩니다",
-    });
-  }
-
-  const rawPayload = form.get(PAYLOAD_FIELD);
-  if (typeof rawPayload !== "string") {
-    return badRequest("제보 내용이 없습니다", {
-      payload: "제보 내용을 함께 보내야 합니다",
-    });
-  }
-
-  let payload: unknown;
-  try {
-    payload = JSON.parse(rawPayload);
-  } catch {
-    return badRequest("제보 내용을 읽을 수 없습니다", {
-      payload: "제보 내용 형식이 올바르지 않습니다",
-    });
-  }
-
-  const parsed = createReportChecked.safeParse(payload);
-  if (!parsed.success) {
-    return badRequest("입력값을 확인해 주십시오", fieldErrors(parsed.error));
-  }
+  const parsed = await parseJson(request, createReport);
+  if ("response" in parsed) return parsed.response;
   const input = parsed.data;
+
+  // 실종 신고는 전용 경로를 씀. 후보 조회 규칙이 달라 섞지 않음
+  if (input.kind === "lost") {
+    return badRequest("실종 신고는 실종 신고 경로로 보내야 합니다", {
+      kind: "이 경로로는 발견 제보만 등록할 수 있습니다",
+    });
+  }
+
+  const session = await ensureDraftSession(request);
+  const setCookie = session.setCookie;
+
+  try {
+    // 응답이 유실된 재시도가 제보를 두 건 만들지 않게 키를 먼저 선점함
+    const claimed = await claimIdempotencyKey({
+      key: input.idempotencyKey,
+      sessionId: session.sessionId,
+    });
+    if (!claimed) {
+      const prior = await findIdempotencyKey({
+        key: input.idempotencyKey,
+        sessionId: session.sessionId,
+      });
+      // 같은 키의 저장이 이미 끝났으면 그 결과를 그대로 돌려줌
+      if (prior?.reportId) {
+        return okPrivate({ id: prior.reportId, duplicate: true });
+      }
+      // 앞선 요청이 아직 진행 중. 화면은 잠시 후 다시 확인함
+      return okPrivate({ pending: true }, { status: 202 });
+    }
+
+    const saved = await saveReport({
+      input,
+      sessionId: session.sessionId,
+      kind: input.kind,
+      careSituation: input.careSituation,
+      conditionTags: input.conditionTags,
+    });
+    if ("error" in saved) {
+      await releaseIdempotencyKey(input.idempotencyKey);
+      return saved.error;
+    }
+
+    await attachIdempotencyResult({
+      key: input.idempotencyKey,
+      reportId: saved.id,
+    });
+
+    return okPrivate(
+      {
+        id: saved.id,
+        lifecycle: saved.lifecycle,
+        version: saved.version,
+        // 관리 주소는 이 응답에서 한 번만 나감. 저장하지 않으면 다시 찾을 수 없음
+        manageToken: saved.manageToken,
+      },
+      {
+        status: 201,
+        headers: {
+          "set-cookie": [setCookie, saved.manageCookie]
+            .filter(Boolean)
+            .join(", "),
+        },
+      },
+    );
+  } catch (error) {
+    await releaseIdempotencyKey(input.idempotencyKey).catch(() => undefined);
+    return serverError("reports.create", error);
+  }
+}
+
+type SaveInput = {
+  input: CreateReport;
+  sessionId: string;
+  kind: "sighting" | "sheltered" | "lost";
+  careSituation: CreateReport["careSituation"];
+  conditionTags: string[];
+};
+
+/**
+ * 사진·위치 참조를 확인하고 제보 행을 만듦. 발견 제보와 실종 신고가 함께 씀
+ * 참조가 세션 소유가 아니면 여기서 끊겨 남의 자료가 붙지 않음. POL-49
+ */
+async function saveReport({
+  input,
+  sessionId,
+  kind,
+  careSituation,
+  conditionTags,
+}: SaveInput): Promise<
+  | { error: Response }
+  | {
+      id: string;
+      lifecycle: string;
+      version: number;
+      manageToken: string;
+      manageCookie: string;
+    }
+> {
+  const uploads = await findUsableUploads({
+    sessionId,
+    ids: input.uploadIds,
+  });
+  // 한 장이라도 만료·사용됨이면 무엇이 빠졌는지 알려 그것만 다시 받음
+  if (uploads.length !== input.uploadIds.length) {
+    return {
+      error: badRequest(DRAFT_EXPIRED, {
+        uploadIds: "사진을 다시 올려 주십시오",
+      }),
+    };
+  }
+
+  const location = await findDraftLocation({
+    sessionId,
+    id: input.locationToken,
+  });
+  if (!location) {
+    return {
+      error: badRequest(DRAFT_EXPIRED, {
+        locationToken: "위치를 다시 확인해 주십시오",
+      }),
+    };
+  }
 
   // 부상·어린 개체 제보는 격자를 넓혀 특정 가능성을 낮춤
   const gridMeters = coarseGridMetersFor({
     visibleInjury: input.injury,
-    young: input.conditionTags.some((t) => t.includes("어린") || t.includes("새끼")),
+    young: conditionTags.some(
+      (t) => t.includes("어린") || t.includes("새끼"),
+    ),
   });
 
-  const exact = input.coordinates;
+  // 수동 지역 선택은 좌표를 만들지 않음. 중심점을 목격 위치로 저장하지 않음
+  const exact =
+    location.lat && location.lng
+      ? { lat: Number(location.lat), lng: Number(location.lng) }
+      : undefined;
   const coarse = exact ? snapToGrid(exact, gridMeters) : undefined;
 
-  // 입력이 전부 통과한 뒤에만 창을 차감함
-  const limit = checkRateLimit(limitKey, RATE_LIMITS.createReport);
-  if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
+  const manageToken = issueToken();
+  const row = await insertReportWithPhotos(
+    {
+      kind,
+      // 사진과 필수 입력이 모두 검증됐으므로 바로 공개 상태로 넣음
+      visibility: "public",
+      lifecycle: INITIAL_LIFECYCLE[kind],
+      careSituation,
+      manageTokenHash: hashToken(manageToken),
+      manageTokenIssuedAt: new Date(),
+      animalType: input.animalType,
+      appearance: input.appearance,
+      colors: input.colors,
+      size: input.size,
+      sex: input.sex,
+      neutered: input.neutered,
+      conditionTags,
+      collar: input.collar ?? null,
+      injury: input.injury ?? null,
+      earTip: input.earTip ?? null,
+      exactPoint: exact ? { x: exact.lng, y: exact.lat } : null,
+      coarsePoint: coarse ? { x: coarse.lng, y: coarse.lat } : null,
+      coarseGridM: gridMeters,
+      locationSource: location.source,
+      locationAccuracyM: location.accuracyM,
+      areaCodeSystem: location.areaCodeSystem,
+      areaCode: location.areaCode,
+      areaName: location.areaName,
+      areaCodeVersion: location.areaCodeVersion,
+      landmarkNote: input.landmarkNote,
+      occurredAt: input.occurredAt,
+      aiEditedFields: input.aiEditedFields,
+    },
+    uploads.map((upload, index) => ({
+      storagePath: upload.storagePath!,
+      sortOrder: index,
+      width: upload.width,
+      height: upload.height,
+    })),
+  );
 
-  // 업로드가 실패하면 제보 행을 만들지 않음. 사진 없는 공개 제보를 막음
-  let storagePath: string | undefined;
-  try {
-    const buffer = await photo.arrayBuffer();
-    // insert 전에 올려야 사진 없는 제보가 안 생김. 경로는 DB 가 기억하므로
-    // 제보 id 와 같을 필요가 없고 옮기는 왕복도 만들지 않음
-    const objectId = crypto.randomUUID();
-    storagePath = photoObjectPath(objectId, 0);
-    await uploadPhoto({
-      path: storagePath,
-      body: buffer,
-      contentType: photo.type,
-    });
+  // 업로드를 사용 처리해 파기 대상에서 뺌
+  await claimUploads({
+    sessionId,
+    ids: input.uploadIds,
+    reportId: row.id,
+  });
 
-    const row = await insertReportWithPhotos(
-      {
-        kind: input.kind,
-        // 사진과 필수 입력이 모두 검증됐으므로 바로 공개 상태로 넣음
-        status: "open",
-        careSituation: input.careSituation,
-        animalType: input.animalType,
-        appearance: input.appearance,
-        colors: input.colors,
-        size: input.size,
-        sex: input.sex,
-        neutered: input.neutered,
-        conditionTags: input.conditionTags,
-        collar: input.collar ?? null,
-        injury: input.injury ?? null,
-        earTip: input.earTip ?? null,
-        exactPoint: exact ? { x: exact.lng, y: exact.lat } : null,
-        coarsePoint: coarse ? { x: coarse.lng, y: coarse.lat } : null,
-        coarseGridM: gridMeters,
-        areaCode: input.areaCode,
-        areaName: input.areaName,
-        occurredAt: input.occurredAt,
-        aiEditedFields: input.aiEditedFields,
-        aiRaw: input.aiRaw,
-        aiModel: input.aiModel,
-        aiAnalyzedAt: input.aiAnalyzedAt,
-      },
-      [{ storagePath, sortOrder: 0 }],
-    );
+  // 필수와 선택을 각각 남김. 일괄 동의로 뭉치면 POL-38 위반
+  await insertConsentRecords([
+    {
+      reportId: row.id,
+      kind: "required_terms",
+      documentVersion: input.consents.documentVersion,
+    },
+    {
+      reportId: row.id,
+      kind: "required_privacy",
+      documentVersion: input.consents.documentVersion,
+    },
+    ...(input.consents.optionalAi
+      ? [
+          {
+            reportId: row.id,
+            kind: "optional_ai" as const,
+            documentVersion: input.consents.documentVersion,
+          },
+        ]
+      : []),
+    ...(input.consents.optionalLocation
+      ? [
+          {
+            reportId: row.id,
+            kind: "optional_location" as const,
+            documentVersion: input.consents.documentVersion,
+          },
+        ]
+      : []),
+  ]);
 
-    return ok({ id: row.id, status: row.status }, { status: 201 });
-  } catch (error) {
-    // 행이 안 생겼는데 사진만 남는 것을 막음. 실패해도 원래 오류를 덮지 않음
-    if (storagePath) {
-      await removePhotos([storagePath]).catch(() => undefined);
-    }
-    return serverError("reports.create", error);
-  }
+  // 작성자가 바로 관리할 수 있게 관리 세션을 함께 발급함
+  const manage = await createManageSession();
+  await grantManageAccess({ sessionId: manage.sessionId, reportId: row.id });
+
+  return {
+    id: row.id,
+    lifecycle: row.lifecycle,
+    version: row.version,
+    manageToken,
+    manageCookie: manage.setCookie,
+  };
 }
 
 /* GET /api/reports/[id]  공개 상세. 정확 좌표와 제보자 정보를 내주지 않음 */
@@ -190,24 +318,52 @@ export async function getReportHandler(
   }
 }
 
-/* GET /api/reports  공개 목록. 좌표가 있으면 반경 검색 */
+/* GET /api/reports  공개 목록. 행정구역 코드로 좁히고 커서로 넘김 */
+
+// 커서는 목격 시각과 id 를 한 문자열로 묶음. 내부 형식이라 서명하지 않음
+function decodeCursor(value: string): PublicListCursor | undefined {
+  const separator = value.indexOf("_");
+  if (separator < 0) return undefined;
+  const occurredAt = new Date(value.slice(0, separator));
+  const id = value.slice(separator + 1);
+  if (Number.isNaN(occurredAt.getTime()) || !isUuid(id)) return undefined;
+  return { occurredAt, id };
+}
+
+function encodeCursor(row: { occurredAt: Date; id: string }): string {
+  return `${row.occurredAt.toISOString()}_${row.id}`;
+}
 
 export async function listReportsHandler(request: Request): Promise<Response> {
   const query = Object.fromEntries(new URL(request.url).searchParams);
+  const parsed = listQuery.safeParse(query);
+  if (!parsed.success) {
+    return badRequest("검색 조건을 확인해 주십시오", fieldErrors(parsed.error));
+  }
+  const { days, cursor, ...filters } = parsed.data;
+
+  if (cursor && !decodeCursor(cursor)) {
+    return badRequest("목록을 처음부터 다시 불러와 주십시오", {
+      cursor: "커서가 올바르지 않습니다",
+    });
+  }
 
   try {
-    if (query.lat !== undefined && query.lng !== undefined) {
-      const parsed = nearbyQuery.safeParse(query);
-      if (!parsed.success) {
-        return badRequest("검색 조건을 확인해 주십시오", fieldErrors(parsed.error));
-      }
-      const items = await findNearbyReports(parsed.data);
-      return ok({ items });
-    }
+    // 한 건 더 읽어 다음 페이지 존재를 판단함. 총 건수 질의를 피함
+    const rows = await listPublicReports({
+      ...filters,
+      fromOccurredAt: new Date(Date.now() - days * 86_400_000),
+      ...(cursor && { cursor: decodeCursor(cursor) }),
+      limit: LIST_PAGE_SIZE + 1,
+    });
 
-    const kind = query.kind as "sighting" | "lost" | "sheltered" | undefined;
-    const items = await listPublicReports(kind);
-    return ok({ items });
+    const items = rows.slice(0, LIST_PAGE_SIZE);
+    const last = items.at(-1);
+    return ok({
+      items,
+      nextCursor:
+        rows.length > LIST_PAGE_SIZE && last ? encodeCursor(last) : null,
+    });
   } catch (error) {
     return serverError("reports.list", error);
   }
@@ -232,9 +388,9 @@ export async function getReportPhotoHandler(
     const rows = await findReportPhotoPaths(id);
     if (rows.length === 0) return notFound("사진이 없습니다");
 
-    // 신고로 숨겨진 제보는 사진을 내주지 않음
-    if (rows[0]!.status === "hidden") {
-      return notFound("신고로 비공개된 제보입니다");
+    // 숨김·삭제된 제보는 사진을 내주지 않음. 발급마다 다시 확인함. POL-10
+    if (rows[0]!.visibility !== "public") {
+      return notFound("사진이 없습니다");
     }
 
     const photos = await Promise.all(
@@ -280,7 +436,7 @@ export async function createFlagHandler(
 
   try {
     const report = await findPublicReport(id);
-    if (!report) return notFound("찾는 제보가 없습니다");
+    if (!report) return notFound(REPORT_NOT_FOUND);
 
     const row = await insertFlag({
       reportId: id,
@@ -310,3 +466,5 @@ export async function shareReportHandler(
     return serverError("reports.share", error);
   }
 }
+
+export { saveReport, DRAFT_EXPIRED };
