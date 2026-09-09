@@ -1,8 +1,11 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Button, Flex, Heading, Input, Text, Textarea } from "@chakra-ui/react";
 import { Chip } from "../../web/components/ui/chip";
+import { EmptyState } from "../../web/components/ui/empty-state";
+import { Field } from "../../web/components/ui/field";
 import { SectionMessage } from "../../web/components/ui/section-message";
 import { Segmented } from "../../web/components/ui/segmented";
+import { Toaster, toaster } from "../../web/components/ui/toaster";
 
 // WDS 를 걷어내면서 자체 프리미티브 3종과 Chakra 기본형을 한 화면에 모아 봄
 // 화면마다 흩어진 조합을 여기서 한 번에 확인함
@@ -99,6 +102,62 @@ function Catalog() {
           <Input type="datetime-local" />
           <Textarea rows={3} placeholder="여러 줄 입력" />
         </Flex>
+      </Section>
+
+      <Section title="Field">
+        <Flex direction="column" gap="4" width="100%">
+          <Field label="외형 요약" helper="품종은 단정하지 않고 추정으로만 적습니다">
+            <Textarea rows={2} placeholder="흰색 소형견, 털이 길고 엉킴" />
+          </Field>
+          <Field
+            label="목격 지역"
+            required
+            error="목격 지역을 골라야 다음으로 넘어갑니다"
+          >
+            <Input placeholder="동, 면으로 검색" />
+          </Field>
+          <Field
+            label="외형 요약"
+            labelSuffix={
+              <Chip size="xsmall" outlined readOnly>
+                AI 초안
+              </Chip>
+            }
+          >
+            <Input defaultValue="흰색 소형견, 털이 길고 엉킴" />
+          </Field>
+        </Flex>
+      </Section>
+
+      <Section title="EmptyState">
+        <EmptyState
+          title="아직 후보가 없습니다"
+          description="같은 지역에 목격 제보가 올라오면 이 화면에 후보로 나옵니다"
+          action={<Button colorPalette="brand">처음부터 다시 보기</Button>}
+        />
+      </Section>
+
+      <Section title="Toast">
+        {/* 카탈로그 안에서도 실제로 띄워 봄 */}
+        <Toaster />
+        <Button
+          variant="outline"
+          onClick={() => toaster.create({ title: "링크를 복사했습니다", type: "success" })}
+        >
+          성공 토스트
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() =>
+            toaster.create({
+              title: "링크를 복사하지 못했습니다",
+              description: "주소창의 주소를 복사해 주십시오",
+              type: "error",
+            })
+          }
+        >
+          오류 토스트
+        </Button>
       </Section>
 
       <Section title="타이포">

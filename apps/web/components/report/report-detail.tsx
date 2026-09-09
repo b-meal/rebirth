@@ -16,6 +16,7 @@ import {
 
 import { Chip } from "@/components/ui/chip";
 import { SectionMessage } from "@/components/ui/section-message";
+import { toaster } from "@/components/ui/toaster";
 
 // 제보 상세. 사진은 비공개 버킷에 있어 서명 URL 로만 노출
 // 목격 시각은 절대 시각. 상대 시간은 목록에서만 씀
@@ -72,7 +73,6 @@ export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
   const [photoState, setPhotoState] = useState<"loading" | "ready" | "expired">(
     "loading",
   );
-  const [copied, setCopied] = useState(false);
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagSent, setFlagSent] = useState(false);
 
@@ -127,10 +127,14 @@ export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
     // 미지원 브라우저는 링크 복사로 대체
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      toaster.create({ title: "링크를 복사했습니다", type: "success" });
     } catch {
-      // 클립보드도 막히면 사용자가 주소창에서 복사
+      // 클립보드도 막히면 주소창에서 복사하도록 알림
+      toaster.create({
+        title: "링크를 복사하지 못했습니다",
+        description: "주소창의 주소를 복사해 주십시오",
+        type: "error",
+      });
     }
   }, [report.id, report.areaName, shareUrl]);
 
@@ -241,7 +245,7 @@ export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
 
       <Flex direction="column" gap="2" marginTop="2">
         <Button width="100%" colorPalette="brand" onClick={share}>
-          {copied ? "링크를 복사했습니다" : "공유하기"}
+          공유하기
         </Button>
         <Button
           width="100%"

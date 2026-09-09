@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Flex, Heading, Separator, Text } from "@chakra-ui/react";
 
 import { Chip } from "@/components/ui/chip";
+import { EmptyState } from "@/components/ui/empty-state";
 import { SectionMessage } from "@/components/ui/section-message";
 import { CandidatePhoto } from "./candidate-photo";
 
@@ -120,27 +121,24 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
 
   if (candidates.length === 0) {
     return (
-      <Flex direction="column" gap="3" padding="6">
-        <Heading size="md">아직 후보가 없습니다</Heading>
-        <Text color="fg.alternative">
-          같은 지역에 목격 제보가 올라오면 이 화면에 후보로 나옵니다. 조회 주소를
-          저장해 두고 다시 확인해 주십시오
-        </Text>
-      </Flex>
+      <EmptyState
+        title="아직 후보가 없습니다"
+        description="같은 지역에 목격 제보가 올라오면 이 화면에 후보로 나옵니다. 조회 주소를 저장해 두고 다시 확인해 주십시오"
+      />
     );
   }
 
   if (!current) {
     return (
-      <Flex direction="column" gap="3" padding="6">
-        <Heading size="md">후보를 모두 봤습니다</Heading>
-        <Text color="fg.alternative">
-          {SIMILARITY_NOTE}. 다시 보고 싶으면 처음부터 훑을 수 있습니다
-        </Text>
-        <Button colorPalette="brand" onClick={() => setIndex(0)}>
-          처음부터 다시 보기
-        </Button>
-      </Flex>
+      <EmptyState
+        title="후보를 모두 봤습니다"
+        description={`${SIMILARITY_NOTE}. 다시 보고 싶으면 처음부터 훑을 수 있습니다`}
+        action={
+          <Button colorPalette="brand" onClick={() => setIndex(0)}>
+            처음부터 다시 보기
+          </Button>
+        }
+      />
     );
   }
 

@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import { Button, Flex, Heading, Input, Text } from "@chakra-ui/react";
 
 import { SectionMessage } from "@/components/ui/section-message";
+import { toaster } from "@/components/ui/toaster";
 
 // 조회 토큰을 한 번만 보여줌. 이 화면의 유일한 위험은 사용자가 복사하지 않고 닫는 것
 // 복사 버튼을 주요 동작으로 두고 복사 전에는 이동을 막음
@@ -26,11 +27,17 @@ export function TokenNotice({ token }: TokenNoticeProps) {
   const copy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
+      toaster.create({ title: "조회 주소를 복사했습니다", type: "success" });
     } catch {
-      // 클립보드가 막히면 사용자가 입력란에서 직접 복사하도록 둠
-      setCopied(true);
+      // 클립보드가 막혀도 입력란에서 직접 복사할 수 있어 이동은 열어 둠
+      toaster.create({
+        title: "자동 복사가 막혔습니다",
+        description: "위 입력란의 주소를 직접 복사해 주십시오",
+        type: "error",
+      });
     }
+    // 복사 성공 여부와 무관하게 이동을 열어 줌. 실패했다고 가둬 두면 빠져나갈 길이 없음
+    setCopied(true);
   }, [url]);
 
   return (

@@ -1,10 +1,11 @@
 "use client";
 
-import { Button, Flex, Heading, Skeleton, Textarea, Text } from "@chakra-ui/react";
+import { Button, Flex, Heading, Skeleton, Textarea } from "@chakra-ui/react";
 
 import type { AnalyzeAdviceState } from "@/hooks/use-analyze-photo";
 import type { DraftField, ReportDraft } from "@/hooks/use-report-draft";
 import { Chip } from "@/components/ui/chip";
+import { Field } from "@/components/ui/field";
 import { SectionMessage } from "@/components/ui/section-message";
 import { Segmented } from "@/components/ui/segmented";
 
@@ -129,8 +130,17 @@ export function StepFeatures({
         />
       </Flex>
 
-      <Flex direction="column" gap="2">
-        {label("외형 요약", "appearance")}
+      <Field
+        label="외형 요약"
+        labelSuffix={
+          showBadge("appearance") ? (
+            <Chip size="xsmall" outlined readOnly>
+              AI 초안
+            </Chip>
+          ) : null
+        }
+        helper="품종은 단정하지 않고 추정으로만 적습니다"
+      >
         <Textarea
           value={draft.appearance}
           maxLength={300}
@@ -139,10 +149,7 @@ export function StepFeatures({
           placeholder="흰색 소형견, 털이 길고 엉킴"
           onChange={(event) => onEdit("appearance", event.target.value)}
         />
-        <Text textStyle="sm" color="fg.alternative">
-          품종은 단정하지 않고 추정으로만 적습니다
-        </Text>
-      </Flex>
+      </Field>
 
       <Flex direction="column" gap="2">
         {label("털색", "colors")}
