@@ -36,6 +36,21 @@ function readStepFromUrl(): ReportStep {
   return raw >= 1 && raw <= TOTAL_STEPS ? (raw as ReportStep) : 1;
 }
 
+/** 카메라 유무는 화면 폭이 아니라 장치 목록으로 판단함. 큰 화면 노트북도 촬영할 수 있음 */
+async function detectCamera(): Promise<boolean> {
+  const media = navigator.mediaDevices;
+  if (!media?.enumerateDevices) {
+    // 장치를 조회할 수 없으면 좁은 화면에서만 촬영을 내놓음
+    return window.matchMedia("(max-width: 1023px)").matches;
+  }
+  try {
+    const devices = await media.enumerateDevices();
+    return devices.some((device) => device.kind === "videoinput");
+  } catch {
+    return false;
+  }
+}
+
 export function ReportForm() {
   const router = useRouter();
   const [step, setStep] = useState<ReportStep>(1);
@@ -66,13 +81,17 @@ export function ReportForm() {
   });
 
   useEffect(() => {
-    const isMobile = window.matchMedia("(max-width: 1023px)").matches;
     const fromUrl = readStepFromUrl();
     // 하이드레이션 직후 값이라 렌더 연쇄를 피해 마이크로태스크로 미룸
-    queueMicrotask(() => {
-      setCameraAvailable(isMobile);
-      setStep(fromUrl);
+    queueMicrotask(() => setStep(fromUrl));
+
+    let alive = true;
+    void detectCamera().then((available) => {
+      if (alive) setCameraAvailable(available);
     });
+    return () => {
+      alive = false;
+    };
   }, []);
 
   // 뒤로가기로 단계가 하나 되돌아가게 함
