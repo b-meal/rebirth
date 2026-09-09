@@ -2,14 +2,9 @@
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import {
-  Divider,
-  FlexBox,
-  SectionMessage,
-  Skeleton,
-  Typography,
-} from "@wanteddev/wds";
+import { Flex, Heading, Separator, Skeleton, Text } from "@chakra-ui/react";
 
+import { SectionMessage } from "@/components/ui/section-message";
 import { CandidateDeck, type Candidate } from "./candidate-deck";
 
 // 내 신고 요약과 확인할 후보
@@ -79,65 +74,63 @@ export function LostView() {
 
   if (state.status === "loading") {
     return (
-      <FlexBox flexDirection="column" gap="12px" sx={{ padding: "20px 16px" }}>
+      <Flex direction="column" gap="3" padding="5">
         <Skeleton width="60%" height="24px" />
         <Skeleton width="100%" height="80px" />
         <Skeleton width="100%" height="280px" />
-      </FlexBox>
+      </Flex>
     );
   }
 
   if (state.status === "invalid") {
     return (
-      <FlexBox flexDirection="column" gap="12px" sx={{ padding: "24px 16px" }}>
-        <Typography variant="headline1" weight="bold">
-          조회 주소가 맞지 않습니다
-        </Typography>
-        <Typography variant="body2">
+      <Flex direction="column" gap="3" padding="6">
+        <Heading size="md">조회 주소가 맞지 않습니다</Heading>
+        <Text color="fg.alternative">
           받은 링크를 다시 확인해 주십시오. 연락처를 받지 않으므로 주소를 잃으면
           신고를 다시 찾을 수 없습니다
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
     );
   }
 
   if (state.status === "error") {
     return (
-      <FlexBox flexDirection="column" gap="12px" sx={{ padding: "24px 16px" }}>
-        <SectionMessage variant="negative" open>
+      <Flex direction="column" gap="3" padding="6">
+        <SectionMessage variant="negative">
           후보를 불러오지 못했습니다. 잠시 후에 다시 시도해 주십시오
         </SectionMessage>
-      </FlexBox>
+      </Flex>
     );
   }
 
   const { lost, candidates } = state;
 
   return (
-    <FlexBox flexDirection="column">
-      <FlexBox flexDirection="column" gap="8px" sx={{ padding: "20px 16px 12px" }}>
-        <Typography variant="title3" weight="bold">
-          내 신고
-        </Typography>
-        <Typography variant="body2">
+    <Flex direction="column">
+      <Flex direction="column" gap="2" padding="5" paddingBottom="3">
+        <Heading size="lg">내 신고</Heading>
+        <Text color="fg.alternative">
           {[ANIMAL_LABEL[lost.animalType], SIZE_LABEL[lost.size], ...lost.colors]
             .filter(Boolean)
             .join(" · ")}
-        </Typography>
+        </Text>
         {lost.appearance ? (
-          <Typography variant="caption1">{lost.appearance}</Typography>
+          <Text textStyle="sm" color="fg.alternative">
+            {lost.appearance}
+          </Text>
         ) : null}
-        <Typography variant="caption1">
+        <Text textStyle="sm" color="fg.alternative">
           {lost.areaName ?? "위치 미확인"} 에서 마지막 목격
-        </Typography>
-        <Typography variant="headline2" weight="bold" sx={{ marginTop: "8px" }}>
+        </Text>
+        <Heading size="sm" marginTop="2">
           확인할 후보 {candidates.length}건
-        </Typography>
-      </FlexBox>
+        </Heading>
+      </Flex>
 
-      <Divider />
+      <Separator />
 
       <CandidateDeck candidates={candidates} />
-    </FlexBox>
+    </Flex>
   );
 }

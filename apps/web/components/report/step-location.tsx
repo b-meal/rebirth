@@ -1,20 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Button,
-  Chip,
-  FlexBox,
-  SectionMessage,
-  Skeleton,
-  TextField,
-  Typography,
-} from "@wanteddev/wds";
+import { Button, Flex, Heading, Input, Skeleton, Text } from "@chakra-ui/react";
 
-import { useCurrentPosition } from "../../hooks/use-current-position";
-import { usePlaceSearch } from "../../hooks/use-place-search";
-import { useReverseGeocode } from "../../hooks/use-reverse-geocode";
-import { PlaceSearchField } from "../ui/place-search-field";
+import { useCurrentPosition } from "@/hooks/use-current-position";
+import { usePlaceSearch } from "@/hooks/use-place-search";
+import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
+import { Chip } from "@/components/ui/chip";
+import { PlaceSearchField } from "@/components/ui/place-search-field";
+import { SectionMessage } from "@/components/ui/section-message";
 
 // 2단계 위치. 지도 핀과 좌표 표시, 정확 주소 입력란을 만들지 않음
 // 좌표는 역지오코딩 호출과 서버 전송에만 쓰고 화면에 숫자로 내보내지 않음
@@ -53,32 +47,27 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
   const requesting = position.status === "requesting";
 
   return (
-    <FlexBox flexDirection="column" gap="16px">
-      <Typography variant="title3" weight="bold">
-        어디에서 봤습니까
-      </Typography>
+    <Flex direction="column" gap="4">
+      <Heading size="lg">어디에서 봤습니까</Heading>
 
       {/* 권한 거부는 정상 경로라 경고 색과 경고 톤을 쓰지 않음 */}
       {positionFailed ? (
-        <SectionMessage variant="info" open>
-          {position.error}
-        </SectionMessage>
+        <SectionMessage variant="info">{position.error}</SectionMessage>
       ) : null}
       {!positionFailed && geocode.error ? (
-        <SectionMessage variant="info" open>
-          {geocode.error}
-        </SectionMessage>
+        <SectionMessage variant="info">{geocode.error}</SectionMessage>
       ) : null}
 
       {value.areaName ? (
-        <FlexBox flexDirection="column" gap="8px">
-          <Typography variant="caption1">목격 지역</Typography>
-          <FlexBox gap="8px" alignItems="center" flexWrap="wrap">
-            <Chip disableInteraction>{value.areaName}</Chip>
+        <Flex direction="column" gap="2">
+          <Text textStyle="sm" color="fg.alternative">
+            목격 지역
+          </Text>
+          <Flex gap="2" align="center" wrap="wrap">
+            <Chip readOnly>{value.areaName}</Chip>
             <Button
-              variant="outlined"
-              color="assistive"
-              size="small"
+              variant="outline"
+              size="sm"
               onClick={() => {
                 onChange({ areaName: null, areaCode: null, coordinates: null });
                 setManual(true);
@@ -86,31 +75,31 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
             >
               다시 고르기
             </Button>
-          </FlexBox>
-        </FlexBox>
+          </Flex>
+        </Flex>
       ) : requesting || geocode.loading ? (
-        <FlexBox flexDirection="column" gap="8px">
-          <Typography variant="caption1">
+        <Flex direction="column" gap="2">
+          <Text textStyle="sm" color="fg.alternative">
             {requesting
               ? "권한 팝업에서 위치 사용을 확인해 주십시오"
               : "지역을 확인하고 있습니다"}
-          </Typography>
+          </Text>
           <Skeleton width="60%" height="32px" />
-        </FlexBox>
+        </Flex>
       ) : showManual ? null : (
-        <FlexBox flexDirection="column" gap="8px" alignItems="flex-start">
-          <Button onClick={position.request}>현재 위치 사용</Button>
-          <Button variant="outlined" color="assistive" size="small" onClick={() => setManual(true)}>
+        <Flex direction="column" gap="2" align="flex-start">
+          <Button colorPalette="brand" onClick={position.request}>
+            현재 위치 사용
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setManual(true)}>
             직접 선택하기
           </Button>
-        </FlexBox>
+        </Flex>
       )}
 
       {showManual && !value.areaName ? (
-        <FlexBox flexDirection="column" gap="8px">
-          <Typography variant="headline2" weight="bold">
-            동이나 면을 검색해 주십시오
-          </Typography>
+        <Flex direction="column" gap="2">
+          <Heading size="sm">동이나 면을 검색해 주십시오</Heading>
           <PlaceSearchField
             search={search}
             placeholder="동, 면, 도로명으로 검색"
@@ -126,27 +115,25 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
             }}
           />
           {!positionFailed ? (
-            <Button variant="outlined" color="assistive" size="small" onClick={position.request}>
+            <Button variant="outline" size="sm" onClick={position.request}>
               현재 위치로 다시 시도
             </Button>
           ) : null}
-        </FlexBox>
+        </Flex>
       ) : null}
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          찾아갈 단서 (선택)
-        </Typography>
-        <TextField
+      <Flex direction="column" gap="2">
+        <Heading size="sm">찾아갈 단서 (선택)</Heading>
+        <Input
           value={value.landmark}
           placeholder="새터산 12길 CU 근처"
           maxLength={100}
           onChange={(event) => onChange({ landmark: event.target.value })}
         />
-        <Typography variant="caption1">
+        <Text textStyle="sm" color="fg.alternative">
           사람이 찾아갈 수 있는 단서를 적어 주십시오. 정확한 주소는 받지 않습니다
-        </Typography>
-      </FlexBox>
-    </FlexBox>
+        </Text>
+      </Flex>
+    </Flex>
   );
 }

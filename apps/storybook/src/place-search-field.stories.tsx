@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { LocationCandidate } from "@rebirth/core/location/candidate";
-import { FlexBox, Typography } from "@wanteddev/wds";
+import { Flex, Text } from "@chakra-ui/react";
 import { useState } from "react";
 import { PlaceSearchField } from "../../web/components/ui/place-search-field";
 import {
@@ -31,7 +31,7 @@ function Demo({ mode, nearby, radiusMeters, placeholder, emptyMessage }: DemoPro
   });
 
   return (
-    <FlexBox flexDirection="column" gap="16px" sx={{ width: 390, minHeight: 320 }}>
+    <Flex direction="column" gap="4" width="390px" minHeight="320px">
       <PlaceSearchField
         search={search}
         placeholder={placeholder}
@@ -42,12 +42,12 @@ function Demo({ mode, nearby, radiusMeters, placeholder, emptyMessage }: DemoPro
         }}
       />
       {/* 결과가 겹쳐 뜨므로 이 문구는 목록이 열려도 밀리지 않음 */}
-      <Typography variant="caption1" color="semantic.label.alternative">
+      <Text textStyle="sm" color="fg.alternative">
         {picked
           ? `${picked.name} · ${picked.areaName || "행정동 없음"} · ${picked.detail}`
           : "고른 장소 없음"}
-      </Typography>
-    </FlexBox>
+      </Text>
+    </Flex>
   );
 }
 

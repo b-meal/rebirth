@@ -1,4 +1,4 @@
-import { LostView } from "../../../components/lost/lost-view";
+import { LostView } from "@/components/lost/lost-view";
 
 export const metadata = {
   title: "확인할 후보",

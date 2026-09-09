@@ -1,4 +1,4 @@
-import { ReportForm } from "../../../components/report/report-form";
+import { ReportForm } from "@/components/report/report-form";
 
 export const metadata = {
   title: "제보하기",

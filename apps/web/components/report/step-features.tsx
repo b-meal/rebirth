@@ -1,19 +1,12 @@
 "use client";
 
-import {
-  Button,
-  Chip,
-  FlexBox,
-  SectionMessage,
-  SegmentedControl,
-  SegmentedControlItem,
-  Skeleton,
-  TextArea,
-  Typography,
-} from "@wanteddev/wds";
+import { Button, Flex, Heading, Skeleton, Textarea, Text } from "@chakra-ui/react";
 
-import type { AnalyzeAdviceState } from "../../hooks/use-analyze-photo";
-import type { DraftField, ReportDraft } from "../../hooks/use-report-draft";
+import type { AnalyzeAdviceState } from "@/hooks/use-analyze-photo";
+import type { DraftField, ReportDraft } from "@/hooks/use-report-draft";
+import { Chip } from "@/components/ui/chip";
+import { SectionMessage } from "@/components/ui/section-message";
+import { Segmented } from "@/components/ui/segmented";
 
 // 3단계 특징. AI 초안을 채우고 사용자가 틀린 항목만 고침
 // confidence 수치를 화면에 노출하지 않음. 확률을 보여주면 확정으로 읽힘
@@ -83,90 +76,77 @@ export function StepFeatures({
     draft.aiRaw !== null && !draft.editedFields.includes(field);
 
   const label = (text: string, field: DraftField) => (
-    <FlexBox gap="6px" alignItems="center">
-      <Typography variant="headline2" weight="bold">
-        {text}
-      </Typography>
+    <Flex gap="1.5" align="center">
+      <Heading size="sm">{text}</Heading>
       {showBadge(field) ? (
-        <Chip size="xsmall" variant="outlined" disableInteraction>
+        <Chip size="xsmall" outlined readOnly>
           AI 초안
         </Chip>
       ) : null}
-    </FlexBox>
+    </Flex>
   );
 
   if (loading) {
     return (
-      <FlexBox flexDirection="column" gap="16px">
-        <Typography variant="title3" weight="bold">
-          사진을 정리하고 있습니다
-        </Typography>
+      <Flex direction="column" gap="4">
+        <Heading size="lg">사진을 정리하고 있습니다</Heading>
         {[0, 1, 2, 3].map((row) => (
-          <FlexBox key={row} flexDirection="column" gap="8px">
+          <Flex key={row} direction="column" gap="2">
             <Skeleton width="30%" height="20px" />
             <Skeleton width="100%" height="40px" />
-          </FlexBox>
+          </Flex>
         ))}
-      </FlexBox>
+      </Flex>
     );
   }
 
   return (
-    <FlexBox flexDirection="column" gap="20px">
-      <Typography variant="title3" weight="bold">
-        특징을 확인해 주십시오
-      </Typography>
+    <Flex direction="column" gap="5">
+      <Heading size="lg">특징을 확인해 주십시오</Heading>
 
       {advice === "not-animal" ? (
-        <SectionMessage variant="cautionary" open>
+        <SectionMessage variant="cautionary">
           {message}
-          <FlexBox sx={{ marginTop: "8px" }}>
-            <Button size="small" onClick={onRetake}>
+          <Flex marginTop="2">
+            <Button size="sm" colorPalette="brand" onClick={onRetake}>
               사진 다시 고르기
             </Button>
-          </FlexBox>
+          </Flex>
         </SectionMessage>
       ) : null}
       {advice === "low-quality" || advice === "failed" ? (
-        <SectionMessage variant="info" open>
-          {message}
-        </SectionMessage>
+        <SectionMessage variant="info">{message}</SectionMessage>
       ) : null}
 
-      <FlexBox flexDirection="column" gap="8px">
+      <Flex direction="column" gap="2">
         {label("동물 종류", "animalType")}
-        <SegmentedControl
+        <Segmented
           value={draft.animalType}
+          options={ANIMAL_OPTIONS}
           onValueChange={(value) =>
             onEdit("animalType", value as ReportDraft["animalType"])
           }
-        >
-          {ANIMAL_OPTIONS.map((option) => (
-            <SegmentedControlItem key={option.value} value={option.value}>
-              {option.label}
-            </SegmentedControlItem>
-          ))}
-        </SegmentedControl>
-      </FlexBox>
+        />
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
+      <Flex direction="column" gap="2">
         {label("외형 요약", "appearance")}
-        <TextArea
+        <Textarea
           value={draft.appearance}
           maxLength={300}
-          minRows={3}
+          rows={3}
           width="100%"
           placeholder="흰색 소형견, 털이 길고 엉킴"
           onChange={(event) => onEdit("appearance", event.target.value)}
         />
-        <Typography variant="caption1">
+        <Text textStyle="sm" color="fg.alternative">
           품종은 단정하지 않고 추정으로만 적습니다
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
+      <Flex direction="column" gap="2">
         {label("털색", "colors")}
-        <FlexBox gap="6px" flexWrap="wrap">
+        <Flex gap="1.5" wrap="wrap">
           {COLOR_OPTIONS.map((color) => {
             const selected = draft.colors.includes(color);
             return (
@@ -188,22 +168,17 @@ export function StepFeatures({
               </Chip>
             );
           })}
-        </FlexBox>
-      </FlexBox>
+        </Flex>
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
+      <Flex direction="column" gap="2">
         {label("크기", "size")}
-        <SegmentedControl
+        <Segmented
           value={draft.size}
+          options={SIZE_OPTIONS}
           onValueChange={(value) => onEdit("size", value as ReportDraft["size"])}
-        >
-          {SIZE_OPTIONS.map((option) => (
-            <SegmentedControlItem key={option.value} value={option.value}>
-              {option.label}
-            </SegmentedControlItem>
-          ))}
-        </SegmentedControl>
-      </FlexBox>
+        />
+      </Flex>
 
       {(
         [
@@ -212,20 +187,15 @@ export function StepFeatures({
           ["귀 끝 절단", "earTip"],
         ] as const
       ).map(([text, field]) => (
-        <FlexBox key={field} flexDirection="column" gap="8px">
+        <Flex key={field} direction="column" gap="2">
           {label(text, field)}
-          <SegmentedControl
+          <Segmented
             value={toTri(draft[field])}
+            options={TRISTATE}
             onValueChange={(value) => onEdit(field, fromTri(value))}
-          >
-            {TRISTATE.map((option) => (
-              <SegmentedControlItem key={option.value} value={option.value}>
-                {option.label}
-              </SegmentedControlItem>
-            ))}
-          </SegmentedControl>
-        </FlexBox>
+          />
+        </Flex>
       ))}
-    </FlexBox>
+    </Flex>
   );
 }

@@ -1,16 +1,11 @@
 "use client";
 
 import type { LocationCandidate } from "@rebirth/core/location/candidate";
-import {
-  FlexBox,
-  List,
-  ListCell,
-  SearchField,
-  SectionMessage,
-  Skeleton,
-  Typography,
-} from "@wanteddev/wds";
-import type { PlaceSearchState } from "../../hooks/use-place-search";
+import { Box, Flex, IconButton, Input, Skeleton, Text } from "@chakra-ui/react";
+
+import type { PlaceSearchState } from "@/hooks/use-place-search";
+import { IconClose } from "./icons";
+import { SectionMessage } from "./section-message";
 
 // 장소·주소 검색창. 결과를 흐름에 두면 열릴 때마다 아래 요소가 밀려 내려가므로 겹쳐 띄움
 
@@ -52,91 +47,100 @@ export function PlaceSearchField({
     Boolean(search.error);
 
   return (
-    <FlexBox flexDirection="column" sx={{ position: "relative" }}>
-      <SearchField
+    <Box position="relative">
+      <Input
         placeholder={placeholder}
         value={search.query}
         onChange={(event) => search.setQuery(event.target.value)}
-        onReset={() => search.clear()}
         aria-busy={search.loading}
+        // 지우기 버튼과 글자가 겹치지 않게 오른쪽을 비움
+        paddingRight={search.query ? "10" : undefined}
       />
+      {search.query ? (
+        <IconButton
+          aria-label="검색어 지우기"
+          variant="ghost"
+          size="sm"
+          position="absolute"
+          top="50%"
+          right="1"
+          transform="translateY(-50%)"
+          onClick={() => search.clear()}
+        >
+          <IconClose />
+        </IconButton>
+      ) : null}
 
       {open && (
-        <FlexBox
-          flexDirection="column"
-          sx={(theme) => ({
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            right: 0,
-            marginTop: "4px",
-            maxHeight: maxListHeight,
-            overflowY: "auto",
-            borderRadius: 12,
-            border: `1px solid ${theme.semantic.line.normal.normal}`,
-            backgroundColor: theme.semantic.background.elevated.normal,
-            boxShadow: theme.semantic.elevation.shadow.normal.medium,
-            // 카카오 지도 레이어보다 위
-            zIndex: 10,
-          })}
+        <Flex
+          direction="column"
+          position="absolute"
+          top="100%"
+          left="0"
+          right="0"
+          marginTop="1"
+          maxHeight={`${maxListHeight}px`}
+          overflowY="auto"
+          borderRadius="card"
+          borderWidth="1px"
+          borderColor="border"
+          backgroundColor="bg.panel"
+          boxShadow="md"
+          // 카카오 지도 레이어보다 위
+          zIndex="10"
         >
           {search.error && (
-            <SectionMessage variant="negative" open>
-              {search.error}
-            </SectionMessage>
+            <SectionMessage variant="negative">{search.error}</SectionMessage>
           )}
           {/* 앞 결과가 남아 있으면 그대로 두고, 빈 자리에서만 결과 자리를 잡아 둠 */}
           {/* 진행 상태는 검색창의 aria-busy 가 알리므로 여기는 장식으로만 둠 */}
           {search.loading && search.items.length === 0 && (
-            <FlexBox flexDirection="column" aria-hidden="true">
+            <Flex direction="column" aria-hidden="true">
               {SKELETON_ROWS.map((row) => (
-                <FlexBox
+                <Flex
                   key={row}
-                  flexDirection="column"
-                  gap="6px"
-                  sx={(theme) => ({
-                    padding: "14px 16px",
-                    borderBottom:
-                      row === SKELETON_ROWS.length - 1
-                        ? undefined
-                        : `1px solid ${theme.semantic.line.normal.normal}`,
-                  })}
+                  direction="column"
+                  gap="1.5"
+                  padding="3.5"
+                  borderBottomWidth={row === SKELETON_ROWS.length - 1 ? "0" : "1px"}
+                  borderColor="border"
                 >
-                  <Skeleton variant="text" width="45%" height="16px" />
-                  <Skeleton variant="text" width="70%" height="13px" />
-                </FlexBox>
+                  <Skeleton width="45%" height="16px" />
+                  <Skeleton width="70%" height="13px" />
+                </Flex>
               ))}
-            </FlexBox>
+            </Flex>
           )}
           {search.empty && (
-            <FlexBox sx={{ padding: "14px 16px" }}>
-              <Typography variant="body2" color="semantic.label.alternative">
-                {emptyMessage}
-              </Typography>
-            </FlexBox>
+            <Flex padding="3.5">
+              <Text color="fg.alternative">{emptyMessage}</Text>
+            </Flex>
           )}
           {search.items.length > 0 && (
-            <List>
-              {search.items.map((candidate) => (
-                <ListCell
+            <Box as="ul" listStyleType="none">
+              {search.items.map((candidate, row) => (
+                <Flex
                   key={candidate.id}
-                  divider
-                  fillWidth
-                  textProps={{
-                    caption: withDistance(
-                      candidate.detail,
-                      candidate.distanceMeters,
-                    ),
-                  }}
+                  as="li"
+                  direction="column"
+                  gap="0.5"
+                  padding="3.5"
+                  cursor="pointer"
+                  borderBottomWidth={row === search.items.length - 1 ? "0" : "1px"}
+                  borderColor="border"
+                  _hover={{ backgroundColor: "bg.alternative" }}
                   onClick={() => onPick(candidate)}
                 >
-                  {candidate.name}
-                </ListCell>
+                  <Text>{candidate.name}</Text>
+                  <Text textStyle="sm" color="fg.alternative">
+                    {withDistance(candidate.detail, candidate.distanceMeters)}
+                  </Text>
+                </Flex>
               ))}
-            </List>
+            </Box>
           )}
-        </FlexBox>
+        </Flex>
       )}
-    </FlexBox>
+    </Box>
   );
 }

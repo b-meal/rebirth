@@ -1,15 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import {
-  Chip,
-  FlexBox,
-  SectionMessage,
-  TextField,
-  Typography,
-} from "@wanteddev/wds";
+import { Flex, Heading, Input } from "@chakra-ui/react";
 
-import type { ReportDraft } from "../../hooks/use-report-draft";
+import type { ReportDraft } from "@/hooks/use-report-draft";
+import { Chip } from "@/components/ui/chip";
+import { SectionMessage } from "@/components/ui/section-message";
 
 // 4단계 상태와 제출. 보호 상황에 따라 마무리 안내가 갈림
 // 포획을 유도하거나 응급처치를 안내하지 않음
@@ -49,22 +45,16 @@ export function StepStatus({ draft, submitError, onEdit }: StepStatusProps) {
   }, [draft.occurredAt, onEdit]);
 
   return (
-    <FlexBox flexDirection="column" gap="20px">
-      <Typography variant="title3" weight="bold">
-        상태를 골라 주십시오
-      </Typography>
+    <Flex direction="column" gap="5">
+      <Heading size="lg">상태를 골라 주십시오</Heading>
 
       {submitError ? (
-        <SectionMessage variant="negative" open>
-          {submitError}
-        </SectionMessage>
+        <SectionMessage variant="negative">{submitError}</SectionMessage>
       ) : null}
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          지금 상태 (복수 선택)
-        </Typography>
-        <FlexBox gap="6px" flexWrap="wrap">
+      <Flex direction="column" gap="2">
+        <Heading size="sm">지금 상태 (복수 선택)</Heading>
+        <Flex gap="1.5" wrap="wrap">
           {TAG_OPTIONS.map((tag) => {
             const selected = draft.conditionTags.includes(tag);
             return (
@@ -86,14 +76,12 @@ export function StepStatus({ draft, submitError, onEdit }: StepStatusProps) {
               </Chip>
             );
           })}
-        </FlexBox>
-      </FlexBox>
+        </Flex>
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          목격 시각
-        </Typography>
-        <TextField
+      <Flex direction="column" gap="2">
+        <Heading size="sm">목격 시각</Heading>
+        <Input
           type="datetime-local"
           value={toLocalInput(draft.occurredAt)}
           max={toLocalInput(new Date().toISOString())}
@@ -104,21 +92,21 @@ export function StepStatus({ draft, submitError, onEdit }: StepStatusProps) {
             }
           }}
         />
-      </FlexBox>
+      </Flex>
 
       {/* 보호 상황별 마무리 안내 */}
       {draft.careSituation === "roaming" ? (
-        <SectionMessage variant="info" open>
+        <SectionMessage variant="info">
           동물에게 무리하게 다가가지 마십시오. 다치거나 도로 위에 있으면 1577-0954
           또는 관할 지자체에 먼저 신고해 주십시오
         </SectionMessage>
       ) : null}
       {draft.careSituation === "in_care" ? (
-        <SectionMessage variant="info" open>
+        <SectionMessage variant="info">
           보호 중인 장소를 안전하게 유지해 주십시오. 인계가 필요하면 1577-0954 또는
           관할 지자체에 문의할 수 있습니다
         </SectionMessage>
       ) : null}
-    </FlexBox>
+    </Flex>
   );
 }

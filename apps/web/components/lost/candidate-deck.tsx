@@ -1,15 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import {
-  Button,
-  Chip,
-  Divider,
-  FlexBox,
-  SectionMessage,
-  Typography,
-} from "@wanteddev/wds";
+import { Button, Flex, Heading, Separator, Text } from "@chakra-ui/react";
 
+import { Chip } from "@/components/ui/chip";
+import { SectionMessage } from "@/components/ui/section-message";
 import { CandidatePhoto } from "./candidate-photo";
 
 // 확인할 후보를 카드로 훑음. 좌우 스와이프를 쓰지 않음
@@ -125,47 +120,42 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
 
   if (candidates.length === 0) {
     return (
-      <FlexBox flexDirection="column" gap="12px" sx={{ padding: "24px 16px" }}>
-        <Typography variant="headline1" weight="bold">
-          아직 후보가 없습니다
-        </Typography>
-        <Typography variant="body2">
+      <Flex direction="column" gap="3" padding="6">
+        <Heading size="md">아직 후보가 없습니다</Heading>
+        <Text color="fg.alternative">
           같은 지역에 목격 제보가 올라오면 이 화면에 후보로 나옵니다. 조회 주소를
           저장해 두고 다시 확인해 주십시오
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
     );
   }
 
   if (!current) {
     return (
-      <FlexBox flexDirection="column" gap="12px" sx={{ padding: "24px 16px" }}>
-        <Typography variant="headline1" weight="bold">
-          후보를 모두 봤습니다
-        </Typography>
-        <Typography variant="body2">
+      <Flex direction="column" gap="3" padding="6">
+        <Heading size="md">후보를 모두 봤습니다</Heading>
+        <Text color="fg.alternative">
           {SIMILARITY_NOTE}. 다시 보고 싶으면 처음부터 훑을 수 있습니다
-        </Typography>
-        <Button onClick={() => setIndex(0)}>처음부터 다시 보기</Button>
-      </FlexBox>
+        </Text>
+        <Button colorPalette="brand" onClick={() => setIndex(0)}>
+          처음부터 다시 보기
+        </Button>
+      </Flex>
     );
   }
 
-  const features = [
-    ...current.colors,
-    ...current.conditionTags,
-  ].filter(Boolean);
+  const features = [...current.colors, ...current.conditionTags].filter(Boolean);
 
   return (
-    <FlexBox flexDirection="column" gap="12px" sx={{ padding: "16px 16px 96px" }}>
-      <FlexBox justifyContent="space-between" alignItems="center">
-        <Typography variant="caption1">
+    <Flex direction="column" gap="3" padding="4" paddingBottom="24">
+      <Flex justify="space-between" align="center">
+        <Text textStyle="sm" color="fg.alternative">
           {index + 1} / {ordered.length}
-        </Typography>
-        <Chip size="xsmall" disableInteraction>
+        </Text>
+        <Chip size="xsmall" readOnly>
           {CARE_LABEL[current.careSituation]}
         </Chip>
-      </FlexBox>
+      </Flex>
 
       <CandidatePhoto
         reportId={current.id}
@@ -174,63 +164,58 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
         reduceMotion={reduceMotion}
       />
 
-      <FlexBox flexDirection="column" gap="4px">
-        <FlexBox gap="8px" alignItems="baseline">
-          <Typography variant="title2" weight="bold">
-            {current.score}점
-          </Typography>
-          <Typography variant="caption1">{SIMILARITY_NOTE}</Typography>
-        </FlexBox>
-        <Typography variant="body2">{current.breakdown.reason}</Typography>
-      </FlexBox>
+      <Flex direction="column" gap="1">
+        <Flex gap="2" align="baseline">
+          <Heading size="xl">{current.score}점</Heading>
+          <Text textStyle="sm" color="fg.alternative">
+            {SIMILARITY_NOTE}
+          </Text>
+        </Flex>
+        <Text color="fg.alternative">{current.breakdown.reason}</Text>
+      </Flex>
 
       {/* 배점 구성을 5개 모두 노출. 거리 35 중 31 형태 */}
-      <FlexBox gap="6px" flexWrap="wrap">
+      <Flex gap="1.5" wrap="wrap">
         {(Object.keys(BREAKDOWN_LABEL) as (keyof typeof BREAKDOWN_LABEL)[]).map(
           (key) => (
-            <Chip key={key} size="xsmall" variant="outlined" disableInteraction>
+            <Chip key={key} size="xsmall" outlined readOnly>
               {BREAKDOWN_LABEL[key]} {WEIGHTS[key]} 중 {current.breakdown[key]}
             </Chip>
           ),
         )}
-      </FlexBox>
+      </Flex>
 
-      <Divider />
+      <Separator />
 
-      <FlexBox flexDirection="column" gap="4px">
-        <Typography variant="body1">
-          {current.appearance ?? "외형 설명이 없습니다"}
-        </Typography>
-        <FlexBox gap="6px" flexWrap="wrap" sx={{ marginTop: "4px" }}>
+      <Flex direction="column" gap="1">
+        <Text>{current.appearance ?? "외형 설명이 없습니다"}</Text>
+        <Flex gap="1.5" wrap="wrap" marginTop="1">
           {features.map((feature) => (
-            <Chip key={feature} size="small" disableInteraction>
+            <Chip key={feature} size="small" readOnly>
               {feature}
             </Chip>
           ))}
-        </FlexBox>
-        <Typography variant="caption1" sx={{ marginTop: "8px" }}>
+        </Flex>
+        <Text textStyle="sm" color="fg.alternative" marginTop="2">
           {current.areaName ?? "위치 미확인"} · {formatAbsolute(current.occurredAt)}
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
 
       {picked === current.id ? (
-        <SectionMessage variant="positive" open>
+        <SectionMessage variant="positive">
           이 후보를 표시했습니다. 제보 상세에서 더 자세히 볼 수 있습니다
         </SectionMessage>
       ) : null}
 
       {/* 제스처와 같은 일을 하는 버튼을 항상 렌더함 */}
-      <FlexBox flexDirection="column" gap="8px">
-        <FlexBox gap="8px">
-          <Button
-            fullWidth
-            onClick={() => setPicked(current.id)}
-          >
+      <Flex direction="column" gap="2">
+        <Flex gap="2">
+          <Button flex="1" colorPalette="brand" onClick={() => setPicked(current.id)}>
             맞는 것 같아요
           </Button>
           <Button
-            fullWidth
-            variant="outlined"
+            flex="1"
+            variant="outline"
             onClick={() => {
               pushBack();
               next();
@@ -238,40 +223,31 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
           >
             아니에요
           </Button>
-        </FlexBox>
-        <FlexBox gap="8px">
+        </Flex>
+        <Flex gap="2">
           <Button
-            fullWidth
-            variant="outlined"
-            color="assistive"
-            size="small"
+            flex="1"
+            variant="outline"
+            size="sm"
             disabled={index === 0}
             onClick={previous}
           >
             되돌리기
           </Button>
-          <Button
-            fullWidth
-            variant="outlined"
-            color="assistive"
-            size="small"
-            onClick={next}
-          >
+          <Button flex="1" variant="outline" size="sm" onClick={next}>
             판정하지 않고 넘기기
           </Button>
-        </FlexBox>
+        </Flex>
         {picked === current.id ? (
-          <a href={`/r/${current.id}`}>
-            <Button fullWidth variant="outlined">
-              제보 상세 보기
-            </Button>
-          </a>
+          <Button asChild width="100%" variant="outline">
+            <a href={`/r/${current.id}`}>제보 상세 보기</a>
+          </Button>
         ) : null}
-      </FlexBox>
+      </Flex>
 
-      <Typography variant="caption1">
+      <Text textStyle="sm" color="fg.alternative">
         위아래 방향키로 넘기고 Enter 로 표시할 수 있습니다
-      </Typography>
-    </FlexBox>
+      </Text>
+    </Flex>
   );
 }

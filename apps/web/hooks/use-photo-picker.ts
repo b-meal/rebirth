@@ -7,7 +7,7 @@ import {
   revokePhotoPreview,
   type PhotoItem,
   type ProcessPhotoOptions,
-} from "../lib/image";
+} from "@/lib/image";
 
 export type UsePhotoPickerOptions = ProcessPhotoOptions & {
   maxCount?: number;

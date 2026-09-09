@@ -3,23 +3,24 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   Button,
-  Chip,
-  FlexBox,
-  SectionMessage,
-  SegmentedControl,
-  SegmentedControlItem,
+  Flex,
+  Heading,
+  Image,
+  Input,
   Skeleton,
-  TextArea,
-  TextField,
-  Typography,
-} from "@wanteddev/wds";
+  Text,
+  Textarea,
+} from "@chakra-ui/react";
 
-import { useCurrentPosition } from "../../hooks/use-current-position";
-import { usePhotoPicker } from "../../hooks/use-photo-picker";
-import { usePlaceSearch } from "../../hooks/use-place-search";
-import { useReverseGeocode } from "../../hooks/use-reverse-geocode";
-import { PhotoPickerInput } from "../ui/photo-picker-input";
-import { PlaceSearchField } from "../ui/place-search-field";
+import { useCurrentPosition } from "@/hooks/use-current-position";
+import { usePhotoPicker } from "@/hooks/use-photo-picker";
+import { usePlaceSearch } from "@/hooks/use-place-search";
+import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
+import { Chip } from "@/components/ui/chip";
+import { PhotoPickerInput } from "@/components/ui/photo-picker-input";
+import { PlaceSearchField } from "@/components/ui/place-search-field";
+import { SectionMessage } from "@/components/ui/section-message";
+import { Segmented } from "@/components/ui/segmented";
 import { TokenNotice } from "./token-notice";
 
 // 실종 신고 등록. 보호자가 급한 상태라 필수 입력을 최소로 줄임
@@ -143,77 +144,55 @@ export function LostForm() {
   if (token) return <TokenNotice token={token} />;
 
   return (
-    <FlexBox flexDirection="column" gap="20px" sx={{ padding: "20px 16px 96px" }}>
-      <FlexBox flexDirection="column" gap="4px">
-        <Typography variant="title2" weight="bold">
-          반려동물을 잃어버렸어요
-        </Typography>
-        <Typography variant="caption1">
+    <Flex direction="column" gap="5" padding="5" paddingBottom="24">
+      <Flex direction="column" gap="1">
+        <Heading size="xl">반려동물을 잃어버렸어요</Heading>
+        <Text textStyle="sm" color="fg.alternative">
           연락처는 받지 않습니다. 신고 뒤에 나오는 조회 주소로만 확인합니다
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
 
-      {error ? (
-        <SectionMessage variant="negative" open>
-          {error}
-        </SectionMessage>
-      ) : null}
+      {error ? <SectionMessage variant="negative">{error}</SectionMessage> : null}
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          사진
-        </Typography>
+      <Flex direction="column" gap="2">
+        <Heading size="sm">사진</Heading>
         {photo ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={photo.previewUrl}
               alt="잃어버린 반려동물 사진"
-              style={{
-                width: "100%",
-                aspectRatio: "4 / 3",
-                objectFit: "cover",
-                borderRadius: "12px",
-                display: "block",
-              }}
+              width="100%"
+              aspectRatio="4 / 3"
+              objectFit="cover"
+              borderRadius="card"
+              display="block"
             />
-            <Button variant="outlined" size="small" onClick={() => picker.clear()}>
+            <Button variant="outline" size="sm" onClick={() => picker.clear()}>
               다시 고르기
             </Button>
           </>
         ) : picker.processing ? (
           <Skeleton width="100%" height="200px" />
         ) : (
-          <PhotoPicker onFiles={(files) => void picker.replaceFiles(files)} />
+          <LostPhotoPicker onFiles={(files) => void picker.replaceFiles(files)} />
         )}
         {picker.error ? (
-          <SectionMessage variant="negative" open>
-            {picker.error}
-          </SectionMessage>
+          <SectionMessage variant="negative">{picker.error}</SectionMessage>
         ) : null}
-      </FlexBox>
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          동물 종류
-        </Typography>
-        <SegmentedControl
+      <Flex direction="column" gap="2">
+        <Heading size="sm">동물 종류</Heading>
+        <Segmented
           value={animalType}
+          options={ANIMAL_OPTIONS}
           onValueChange={(value) => setAnimalType(value as typeof animalType)}
-        >
-          {ANIMAL_OPTIONS.map((option) => (
-            <SegmentedControlItem key={option.value} value={option.value}>
-              {option.label}
-            </SegmentedControlItem>
-          ))}
-        </SegmentedControl>
-      </FlexBox>
+        />
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          털색
-        </Typography>
-        <FlexBox gap="6px" flexWrap="wrap">
+      <Flex direction="column" gap="2">
+        <Heading size="sm">털색</Heading>
+        <Flex gap="1.5" wrap="wrap">
           {COLOR_OPTIONS.map((color) => {
             const selected = colors.includes(color);
             return (
@@ -233,55 +212,43 @@ export function LostForm() {
               </Chip>
             );
           })}
-        </FlexBox>
-      </FlexBox>
+        </Flex>
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          크기
-        </Typography>
-        <SegmentedControl
+      <Flex direction="column" gap="2">
+        <Heading size="sm">크기</Heading>
+        <Segmented
           value={size}
+          options={SIZE_OPTIONS}
           onValueChange={(value) => setSize(value as typeof size)}
-        >
-          {SIZE_OPTIONS.map((option) => (
-            <SegmentedControlItem key={option.value} value={option.value}>
-              {option.label}
-            </SegmentedControlItem>
-          ))}
-        </SegmentedControl>
-      </FlexBox>
+        />
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          특징
-        </Typography>
-        <TextArea
+      <Flex direction="column" gap="2">
+        <Heading size="sm">특징</Heading>
+        <Textarea
           value={appearance}
           maxLength={300}
-          minRows={3}
+          rows={3}
           width="100%"
           placeholder="왼쪽 귀에 갈색 반점, 분홍 목줄"
           onChange={(event) => setAppearance(event.target.value)}
         />
-        <FlexBox gap="6px">
+        <Flex gap="1.5">
           <Chip size="small" active={collar} onClick={() => setCollar((v) => !v)}>
             목줄이나 인식표 착용
           </Chip>
-        </FlexBox>
-      </FlexBox>
+        </Flex>
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          마지막 목격 장소
-        </Typography>
+      <Flex direction="column" gap="2">
+        <Heading size="sm">마지막 목격 장소</Heading>
         {areaName ? (
-          <FlexBox gap="8px" alignItems="center" flexWrap="wrap">
-            <Chip disableInteraction>{areaName}</Chip>
+          <Flex gap="2" align="center" wrap="wrap">
+            <Chip readOnly>{areaName}</Chip>
             <Button
-              variant="outlined"
-              color="assistive"
-              size="small"
+              variant="outline"
+              size="sm"
               onClick={() => {
                 setAreaName(null);
                 setAreaCode(null);
@@ -291,7 +258,7 @@ export function LostForm() {
             >
               다시 고르기
             </Button>
-          </FlexBox>
+          </Flex>
         ) : showManual ? (
           <PlaceSearchField
             search={search}
@@ -304,57 +271,60 @@ export function LostForm() {
             }}
           />
         ) : (
-          <FlexBox flexDirection="column" gap="8px" alignItems="flex-start">
-            <Button onClick={position.request}>현재 위치 사용</Button>
-            <Button
-              variant="outlined"
-              color="assistive"
-              size="small"
-              onClick={() => setManual(true)}
-            >
+          <Flex direction="column" gap="2" align="flex-start">
+            <Button colorPalette="brand" onClick={position.request}>
+              현재 위치 사용
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setManual(true)}>
               직접 선택하기
             </Button>
-          </FlexBox>
+          </Flex>
         )}
-      </FlexBox>
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          마지막 목격 시각
-        </Typography>
-        <TextField
+      <Flex direction="column" gap="2">
+        <Heading size="sm">마지막 목격 시각</Heading>
+        <Input
           type="datetime-local"
           value={occurredAt || toLocalInput(new Date())}
           max={toLocalInput(new Date())}
           onChange={(event) => setOccurredAt(event.target.value)}
         />
-      </FlexBox>
+      </Flex>
 
-      <Button fullWidth loading={submitting} disabled={!canSubmit} onClick={submit}>
+      <Button
+        width="100%"
+        colorPalette="brand"
+        loading={submitting}
+        disabled={!canSubmit}
+        onClick={submit}
+      >
         신고 등록하기
       </Button>
-    </FlexBox>
+    </Flex>
   );
 }
 
 // 사진 선택 버튼. 실종 신고는 촬영보다 앨범에서 고르는 경우가 대부분
-function PhotoPicker({ onFiles }: { onFiles: (files: File[]) => void }) {
+function LostPhotoPicker({ onFiles }: { onFiles: (files: File[]) => void }) {
   const [ref, setRef] = useState<{ open: () => void } | null>(null);
   return (
-    <FlexBox
-      flexDirection="column"
-      gap="8px"
-      alignItems="center"
-      justifyContent="center"
-      sx={{
-        aspectRatio: "4 / 3",
-        borderRadius: "12px",
-        border: "1px dashed rgba(0,0,0,0.16)",
-      }}
+    <Flex
+      direction="column"
+      gap="2"
+      align="center"
+      justify="center"
+      aspectRatio="4 / 3"
+      borderRadius="card"
+      borderWidth="1px"
+      borderStyle="dashed"
+      borderColor="border"
     >
-      <Typography variant="body2">잃어버린 반려동물의 사진</Typography>
-      <Button onClick={() => ref?.open()}>앨범에서 고르기</Button>
+      <Text color="fg.alternative">잃어버린 반려동물의 사진</Text>
+      <Button colorPalette="brand" onClick={() => ref?.open()}>
+        앨범에서 고르기
+      </Button>
       <PhotoPickerInput ref={setRef} mode="library" onFiles={onFiles} />
-    </FlexBox>
+    </Flex>
   );
 }

@@ -9,25 +9,22 @@ import {
 } from "@rebirth/core/location/geo";
 import { useEffect, useRef, useState } from "react";
 import {
+  Box,
   Button,
-  FlexBox,
+  Flex,
   IconButton,
-  Loading,
-  SectionMessage,
-  Typography,
-  useTheme,
-} from "@wanteddev/wds";
-import {
-  IconLocationFill,
-  IconMinus,
-  IconPinFill,
-  IconPlus,
-} from "@wanteddev/wds-icon";
-import { useCurrentPosition } from "../../hooks/use-current-position";
-import { useKakaoMap } from "../../hooks/use-kakao-map";
-import { usePlaceSearch } from "../../hooks/use-place-search";
-import { useReverseGeocode } from "../../hooks/use-reverse-geocode";
+  Spinner,
+  Text,
+  useToken,
+} from "@chakra-ui/react";
+
+import { useCurrentPosition } from "@/hooks/use-current-position";
+import { useKakaoMap } from "@/hooks/use-kakao-map";
+import { usePlaceSearch } from "@/hooks/use-place-search";
+import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
+import { IconLocation, IconMinus, IconPin, IconPlus } from "./icons";
 import { PlaceSearchField } from "./place-search-field";
+import { SectionMessage } from "./section-message";
 
 // 목격 위치 입력. 지도는 고르는 도구일 뿐이고 좌표 숫자는 화면에 쓰지 않음
 
@@ -65,7 +62,8 @@ export function LocationPicker({
   coarseGridMeters = COARSE_GRID_METERS.default,
 }: LocationPickerProps) {
   const [placeName, setPlaceName] = useState<string | null>(null);
-  const theme = useTheme();
+  // 카카오 지도는 CSS 변수를 못 읽어 원 색을 실제 값으로 넘김
+  const [circleColor] = useToken("colors", ["brand.500"]);
 
   const position = useCurrentPosition({ immediate: true });
 
@@ -86,7 +84,7 @@ export function LocationPicker({
     // 원은 항상 핀이 있는 지도 중앙. 반경은 공개될 때 좌표가 벗어날 수 있는 거리
     circle: {
       radiusMeters: coarseRadiusMeters(coarseGridMeters),
-      color: theme.semantic.primary.normal,
+      color: circleColor,
     },
   });
   const region = useReverseGeocode(center);
@@ -112,28 +110,25 @@ export function LocationPicker({
   const canConfirm = Boolean(region.result) && !region.loading;
 
   return (
-    <FlexBox flexDirection="column" gap="12px">
-      <FlexBox flexDirection="column" gap="4px">
-        <Typography variant="label1" weight="bold" color="semantic.label.normal">
-          목격한 위치
-        </Typography>
-        <Typography variant="caption1" color="semantic.label.alternative">
+    <Flex direction="column" gap="3">
+      <Flex direction="column" gap="1">
+        <Text fontWeight="bold">목격한 위치</Text>
+        <Text textStyle="sm" color="fg.alternative">
           지도를 움직여 핀을 목격한 자리에 맞추거나 장소를 검색하세요
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
 
       <PlaceSearchField search={search} onPick={pickCandidate} />
 
       {!mapBroken && (
-        <FlexBox
-          sx={(theme) => ({
-            position: "relative",
-            height: mapHeight,
-            borderRadius: 12,
-            overflow: "hidden",
-            border: `1px solid ${theme.semantic.line.normal.normal}`,
-            backgroundColor: theme.semantic.background.normal.alternative,
-          })}
+        <Box
+          position="relative"
+          height={mapHeight}
+          borderRadius="card"
+          overflow="hidden"
+          borderWidth="1px"
+          borderColor="border"
+          backgroundColor="bg.alternative"
         >
           <div
             ref={containerRef}
@@ -143,120 +138,120 @@ export function LocationPicker({
           />
 
           {mapStatus === "loading" && (
-            <FlexBox
-              alignItems="center"
-              justifyContent="center"
-              sx={{ position: "absolute", inset: 0, zIndex: 2 }}
+            <Flex
+              align="center"
+              justify="center"
+              position="absolute"
+              inset="0"
+              zIndex="2"
             >
-              <Loading size={28} />
-            </FlexBox>
+              <Spinner size="lg" />
+            </Flex>
           )}
 
           {mapStatus === "ready" && (
             <>
               {/* 핀 끝이 지도 중심을 가리키도록 아이콘 높이만큼 올림 */}
-              <FlexBox
-                alignItems="center"
-                justifyContent="center"
-                sx={{
-                  position: "absolute",
-                  inset: 0,
-                  pointerEvents: "none",
-                  paddingBottom: 30,
-                  // 카카오 지도가 컨테이너 안에 자체 레이어를 쌓아 위로 올려야 보임
-                  zIndex: 2,
-                }}
+              <Flex
+                align="center"
+                justify="center"
+                position="absolute"
+                inset="0"
+                pointerEvents="none"
+                paddingBottom="30px"
+                // 카카오 지도가 컨테이너 안에 자체 레이어를 쌓아 위로 올려야 보임
+                zIndex="2"
+                color="brand.500"
               >
-                <IconPinFill width={30} height={30} aria-hidden="true" />
-              </FlexBox>
+                <IconPin fontSize="30px" />
+              </Flex>
 
-              <FlexBox
-                flexDirection="column"
-                gap="6px"
-                sx={{ position: "absolute", right: 8, bottom: 8, zIndex: 2 }}
+              <Flex
+                direction="column"
+                gap="1.5"
+                position="absolute"
+                right="2"
+                bottom="2"
+                zIndex="2"
               >
                 <IconButton
-                  variant="background"
-                  size={28}
                   aria-label="확대"
+                  size="sm"
+                  variant="solid"
+                  colorPalette="gray"
                   onClick={zoomIn}
                 >
                   <IconPlus />
                 </IconButton>
                 <IconButton
-                  variant="background"
-                  size={28}
                   aria-label="축소"
+                  size="sm"
+                  variant="solid"
+                  colorPalette="gray"
                   onClick={zoomOut}
                 >
                   <IconMinus />
                 </IconButton>
                 <IconButton
-                  variant="background"
-                  size={28}
                   aria-label="현재 위치로"
+                  size="sm"
+                  variant="solid"
+                  colorPalette="gray"
                   disabled={position.status === "requesting"}
                   onClick={() => {
                     if (position.point) moveTo(position.point, { animate: true });
                     else position.request();
                   }}
                 >
-                  <IconLocationFill />
+                  <IconLocation />
                 </IconButton>
-              </FlexBox>
+              </Flex>
             </>
           )}
-        </FlexBox>
+        </Box>
       )}
 
       {mapBroken && mapError && (
-        <SectionMessage variant="info" open>
-          {mapError}
-        </SectionMessage>
+        <SectionMessage variant="info">{mapError}</SectionMessage>
       )}
 
       {position.error && position.status !== "granted" && (
-        <SectionMessage variant="info" open>
-          {position.error}
-        </SectionMessage>
+        <SectionMessage variant="info">{position.error}</SectionMessage>
       )}
 
-      <FlexBox
-        flexDirection="column"
-        gap="2px"
-        sx={(theme) => ({
-          padding: "12px",
-          borderRadius: 12,
-          backgroundColor: theme.semantic.background.normal.alternative,
-        })}
+      <Flex
+        direction="column"
+        gap="0.5"
+        padding="3"
+        borderRadius="card"
+        backgroundColor="bg.alternative"
       >
-        <Typography variant="caption1" color="semantic.label.alternative">
+        <Text textStyle="sm" color="fg.alternative">
           선택한 위치
-        </Typography>
+        </Text>
         {region.loading && (
-          <Typography variant="body2" color="semantic.label.alternative">
-            위치를 확인하고 있습니다
-          </Typography>
+          <Text color="fg.alternative">위치를 확인하고 있습니다</Text>
         )}
         {!region.loading && areaName && (
-          <Typography variant="body1" weight="bold">
+          <Text fontWeight="bold">
             {placeName ? `${placeName} · ${areaName}` : region.result?.fullName}
-          </Typography>
+          </Text>
         )}
         {!region.loading && !areaName && (
-          <Typography variant="body2" color="semantic.label.alternative">
+          <Text color="fg.alternative">
             {region.error ?? "지도를 움직여 위치를 골라 주십시오"}
-          </Typography>
+          </Text>
         )}
-        <Typography variant="caption1" color="semantic.label.assistive">
+        <Text textStyle="sm" color="fg.assistive">
           정확한 좌표는 공개하지 않습니다. 공개될 때는 점선 범위 안의 한 지점으로
           바뀌고 위치는 행정동까지만 적힙니다
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
 
       <Button
-        size="large"
-        fullWidth
+        size="xl"
+        width="100%"
+        colorPalette="brand"
         disabled={!canConfirm}
         onClick={() => {
           if (!region.result) return;
@@ -270,6 +265,6 @@ export function LocationPicker({
       >
         {confirmLabel}
       </Button>
-    </FlexBox>
+    </Flex>
   );
 }

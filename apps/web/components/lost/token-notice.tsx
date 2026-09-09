@@ -2,13 +2,9 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import {
-  Button,
-  FlexBox,
-  SectionMessage,
-  TextField,
-  Typography,
-} from "@wanteddev/wds";
+import { Button, Flex, Heading, Input, Text } from "@chakra-ui/react";
+
+import { SectionMessage } from "@/components/ui/section-message";
 
 // 조회 토큰을 한 번만 보여줌. 이 화면의 유일한 위험은 사용자가 복사하지 않고 닫는 것
 // 복사 버튼을 주요 동작으로 두고 복사 전에는 이동을 막음
@@ -38,43 +34,37 @@ export function TokenNotice({ token }: TokenNoticeProps) {
   }, [url]);
 
   return (
-    <FlexBox flexDirection="column" gap="16px" sx={{ padding: "24px 16px 96px" }}>
-      <Typography variant="title2" weight="bold">
-        신고를 등록했습니다
-      </Typography>
+    <Flex direction="column" gap="4" padding="6" paddingBottom="24">
+      <Heading size="xl">신고를 등록했습니다</Heading>
 
-      <SectionMessage variant="cautionary" open>
+      <SectionMessage variant="cautionary">
         이 주소를 잃으면 신고를 다시 찾을 수 없습니다. 반드시 복사해 두십시오
       </SectionMessage>
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline2" weight="bold">
-          내 신고 조회 주소
-        </Typography>
+      <Flex direction="column" gap="2">
+        <Heading size="sm">내 신고 조회 주소</Heading>
         {/* 읽기 전용으로 두고 전체를 선택할 수 있게 함 */}
-        <TextField value={url} readOnly onFocus={(event) => event.target.select()} />
-        <Button fullWidth onClick={copy}>
+        <Input value={url} readOnly onFocus={(event) => event.target.select()} />
+        <Button width="100%" colorPalette="brand" onClick={copy}>
           {copied ? "복사했습니다" : "주소 복사하기"}
         </Button>
-      </FlexBox>
+      </Flex>
 
-      <Typography variant="caption1">
+      <Text textStyle="sm" color="fg.alternative">
         연락처를 받지 않으므로 이 주소가 유일한 확인 수단입니다. 메모나 메신저에
         보내 두시면 안전합니다
-      </Typography>
+      </Text>
 
       {/* 복사 전에는 이동을 막음 */}
       {copied ? (
-        <Link href={`/lost/${token}`}>
-          <Button fullWidth variant="outlined">
-            확인할 후보 보기
-          </Button>
-        </Link>
+        <Button asChild width="100%" variant="outline">
+          <Link href={`/lost/${token}`}>확인할 후보 보기</Link>
+        </Button>
       ) : (
-        <Button fullWidth variant="outlined" disabled>
+        <Button width="100%" variant="outline" disabled>
           주소를 복사하면 이동할 수 있습니다
         </Button>
       )}
-    </FlexBox>
+    </Flex>
   );
 }

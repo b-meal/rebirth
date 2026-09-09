@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { FlexBox, Typography } from "@wanteddev/wds";
+import { Flex, Text } from "@chakra-ui/react";
 import { PhotoPicker } from "../../web/components/ui/photo-picker";
 import { usePhotoPicker } from "../../web/hooks/use-photo-picker";
 
@@ -17,14 +17,14 @@ function Demo({ maxCount, disabled, hint }: DemoProps) {
     .join(", ");
 
   return (
-    <FlexBox flexDirection="column" gap="16px" sx={{ maxWidth: 420 }}>
+    <Flex direction="column" gap="4" maxWidth="420px">
       <PhotoPicker picker={picker} disabled={disabled} hint={hint} />
-      <Typography variant="caption1" color="semantic.label.alternative">
+      <Text textStyle="sm" color="fg.alternative">
         {picker.photos.length === 0
           ? "선택된 사진 없음"
           : `재인코딩 결과 ${picker.photos.length}장 · ${summary}`}
-      </Typography>
-    </FlexBox>
+      </Text>
+    </Flex>
   );
 }
 

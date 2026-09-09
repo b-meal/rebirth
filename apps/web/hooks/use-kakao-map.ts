@@ -8,7 +8,7 @@ import {
   type KakaoMapInstance,
   type KakaoMapLibrary,
   type KakaoMapsNamespace,
-} from "../lib/kakao-map";
+} from "@/lib/kakao-map";
 
 // 서울시청. 위치 권한을 받기 전 첫 렌더 기준점
 const DEFAULT_CENTER: LatLng = { lat: 37.5665, lng: 126.978 };

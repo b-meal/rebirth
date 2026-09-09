@@ -4,17 +4,18 @@ import { FLAG_REASON_LABEL, type FlagReason } from "@rebirth/types";
 import { useCallback, useEffect, useState } from "react";
 import {
   Button,
-  Chip,
-  Divider,
-  FlexBox,
-  Modal,
-  ModalContainer,
-  ModalContent,
-  ModalHeading,
-  SectionMessage,
+  Dialog,
+  Flex,
+  Heading,
+  Image,
+  Portal,
+  Separator,
   Skeleton,
-  Typography,
-} from "@wanteddev/wds";
+  Text,
+} from "@chakra-ui/react";
+
+import { Chip } from "@/components/ui/chip";
+import { SectionMessage } from "@/components/ui/section-message";
 
 // 제보 상세. 사진은 비공개 버킷에 있어 서명 URL 로만 노출
 // 목격 시각은 절대 시각. 상대 시간은 목록에서만 씀
@@ -160,30 +161,25 @@ export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
   ].filter((v): v is string => Boolean(v));
 
   return (
-    <FlexBox flexDirection="column" gap="16px" sx={{ padding: "16px 16px 96px" }}>
+    <Flex direction="column" gap="4" padding="4" paddingBottom="24">
       {photoState === "loading" ? (
         <Skeleton width="100%" height="280px" />
       ) : photoState === "ready" && photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <Image
           src={photoUrl}
           alt="제보된 동물 사진"
-          style={{
-            width: "100%",
-            aspectRatio: "4 / 3",
-            objectFit: "cover",
-            borderRadius: "12px",
-            display: "block",
-          }}
+          width="100%"
+          aspectRatio="4 / 3"
+          objectFit="cover"
+          borderRadius="card"
+          display="block"
         />
       ) : (
-        <FlexBox flexDirection="column" gap="8px">
-          <SectionMessage variant="info" open>
-            사진 주소가 만료됐습니다
-          </SectionMessage>
+        <Flex direction="column" gap="2">
+          <SectionMessage variant="info">사진 주소가 만료됐습니다</SectionMessage>
           <Button
-            size="small"
-            variant="outlined"
+            size="sm"
+            variant="outline"
             onClick={() => {
               setPhotoState("loading");
               void loadPhoto().then(apply);
@@ -191,110 +187,122 @@ export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
           >
             사진 다시 불러오기
           </Button>
-        </FlexBox>
+        </Flex>
       )}
 
-      <FlexBox gap="6px" alignItems="center" flexWrap="wrap">
+      <Flex gap="1.5" align="center" wrap="wrap">
         <Chip
           size="small"
-          disableInteraction
-          variant={report.careSituation === "in_care" ? "outlined" : "solid"}
+          readOnly
+          outlined={report.careSituation === "in_care"}
+          active={report.careSituation !== "in_care"}
         >
           {CARE_LABEL[report.careSituation]}
         </Chip>
         {report.injury === true ? (
-          <Chip size="small" disableInteraction variant="outlined">
+          <Chip size="small" readOnly outlined>
             주의
           </Chip>
         ) : null}
-      </FlexBox>
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="6px">
-        <FlexBox gap="6px" alignItems="center" flexWrap="wrap">
-          <Typography variant="title3" weight="bold">
-            외형
-          </Typography>
-          <Chip size="xsmall" variant="outlined" disableInteraction>
+      <Flex direction="column" gap="1.5">
+        <Flex gap="1.5" align="center" wrap="wrap">
+          <Heading size="lg">외형</Heading>
+          <Chip size="xsmall" outlined readOnly>
             AI 초안, 수정 가능
           </Chip>
-        </FlexBox>
-        <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
+        </Flex>
+        <Text whiteSpace="pre-wrap">
           {report.appearance ?? "외형 설명이 없습니다"}
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
 
-      <FlexBox gap="6px" flexWrap="wrap">
+      <Flex gap="1.5" wrap="wrap">
         {features.map((feature) => (
-          <Chip key={feature} size="small" disableInteraction>
+          <Chip key={feature} size="small" readOnly>
             {feature}
           </Chip>
         ))}
-      </FlexBox>
+      </Flex>
 
-      <Divider />
+      <Separator />
 
-      <FlexBox flexDirection="column" gap="4px">
-        <Typography variant="caption1">목격 지역</Typography>
-        <Typography variant="body2">{report.areaName ?? "위치 미확인"}</Typography>
-        <Typography variant="caption1" sx={{ marginTop: "8px" }}>
+      <Flex direction="column" gap="1">
+        <Text textStyle="sm" color="fg.alternative">
+          목격 지역
+        </Text>
+        <Text>{report.areaName ?? "위치 미확인"}</Text>
+        <Text textStyle="sm" color="fg.alternative" marginTop="2">
           목격 시각
-        </Typography>
-        <Typography variant="body2">{formatAbsolute(report.occurredAt)}</Typography>
-      </FlexBox>
+        </Text>
+        <Text>{formatAbsolute(report.occurredAt)}</Text>
+      </Flex>
 
-      <FlexBox flexDirection="column" gap="8px" sx={{ marginTop: "8px" }}>
-        <Button fullWidth onClick={share}>
+      <Flex direction="column" gap="2" marginTop="2">
+        <Button width="100%" colorPalette="brand" onClick={share}>
           {copied ? "링크를 복사했습니다" : "공유하기"}
         </Button>
         <Button
-          fullWidth
-          variant="outlined"
-          color="assistive"
-          size="small"
+          width="100%"
+          variant="outline"
+          size="sm"
           onClick={() => setFlagOpen(true)}
         >
           이 제보 신고하기
         </Button>
-      </FlexBox>
+      </Flex>
 
-      <Modal open={flagOpen} onOpenChange={setFlagOpen}>
-        <ModalContainer variant="bottom">
-          <ModalContent>
-            <ModalHeading>
-              {flagSent ? "신고를 접수했습니다" : "신고 사유"}
-            </ModalHeading>
-            {flagSent ? (
-              <Typography variant="body2">
-                확인 후 조치합니다. 접수만으로 제보가 바로 숨겨지지는 않습니다
-              </Typography>
-            ) : (
-              <FlexBox flexDirection="column" gap="8px">
-                {(Object.keys(FLAG_REASON_LABEL) as FlagReason[]).map((reason) => (
-                  <Button
-                    key={reason}
-                    variant="outlined"
-                    fullWidth
-                    onClick={() => void sendFlag(reason)}
-                  >
-                    {FLAG_REASON_LABEL[reason]}
-                  </Button>
-                ))}
-              </FlexBox>
-            )}
-            <Button
-              variant="outlined"
-              color="assistive"
-              fullWidth
-              onClick={() => {
-                setFlagOpen(false);
-                setFlagSent(false);
-              }}
-            >
-              닫기
-            </Button>
-          </ModalContent>
-        </ModalContainer>
-      </Modal>
-    </FlexBox>
+      <Dialog.Root
+        open={flagOpen}
+        onOpenChange={(details) => setFlagOpen(details.open)}
+        placement="bottom"
+      >
+        <Portal>
+          <Dialog.Backdrop />
+          <Dialog.Positioner>
+            <Dialog.Content>
+              <Dialog.Header>
+                <Dialog.Title>
+                  {flagSent ? "신고를 접수했습니다" : "신고 사유"}
+                </Dialog.Title>
+              </Dialog.Header>
+              <Dialog.Body>
+                {flagSent ? (
+                  <Text>
+                    확인 후 조치합니다. 접수만으로 제보가 바로 숨겨지지는 않습니다
+                  </Text>
+                ) : (
+                  <Flex direction="column" gap="2">
+                    {(Object.keys(FLAG_REASON_LABEL) as FlagReason[]).map((reason) => (
+                      <Button
+                        key={reason}
+                        variant="outline"
+                        width="100%"
+                        onClick={() => void sendFlag(reason)}
+                      >
+                        {FLAG_REASON_LABEL[reason]}
+                      </Button>
+                    ))}
+                  </Flex>
+                )}
+              </Dialog.Body>
+              <Dialog.Footer>
+                <Button
+                  variant="outline"
+                  width="100%"
+                  onClick={() => {
+                    setFlagOpen(false);
+                    setFlagSent(false);
+                  }}
+                >
+                  닫기
+                </Button>
+              </Dialog.Footer>
+            </Dialog.Content>
+          </Dialog.Positioner>
+        </Portal>
+      </Dialog.Root>
+    </Flex>
   );
 }

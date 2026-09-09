@@ -2,7 +2,7 @@ import { findPublicReport } from "@rebirth/db";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { ReportDetail } from "../../../components/report/report-detail";
+import { ReportDetail } from "@/components/report/report-detail";
 
 // 공유 링크를 받은 제3자가 처음 보는 화면
 // 정확 좌표와 제보자 정보, 품종 확정 표현을 렌더하지 않음

@@ -1,4 +1,4 @@
-import { LostForm } from "../../../components/lost/lost-form";
+import { LostForm } from "@/components/lost/lost-form";
 
 export const metadata = {
   title: "반려동물을 잃어버렸어요",

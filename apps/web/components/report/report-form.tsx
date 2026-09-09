@@ -2,15 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Button, FlexBox, ProgressIndicator, Typography } from "@wanteddev/wds";
+import { Button, Flex, Progress, Text } from "@chakra-ui/react";
 
-import { useAnalyzePhoto } from "../../hooks/use-analyze-photo";
-import { usePhotoPicker } from "../../hooks/use-photo-picker";
+import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
+import { usePhotoPicker } from "@/hooks/use-photo-picker";
 import {
   useReportDraft,
   type ReportDraft,
   type ReportStep,
-} from "../../hooks/use-report-draft";
+} from "@/hooks/use-report-draft";
 import { StepFeatures } from "./step-features";
 import { StepLocation, type LocationValue } from "./step-location";
 import { StepPhoto } from "./step-photo";
@@ -168,13 +168,21 @@ export function ReportForm() {
   }, [photo, draft, reset, router]);
 
   return (
-    <FlexBox flexDirection="column" gap="20px" sx={{ padding: "20px 16px 96px" }}>
-      <FlexBox flexDirection="column" gap="8px">
-        <ProgressIndicator percent={(step / TOTAL_STEPS) * 100} />
-        <Typography variant="caption1">
+    <Flex direction="column" gap="5" padding="5" paddingBottom="24">
+      <Flex direction="column" gap="2">
+        <Progress.Root
+          value={(step / TOTAL_STEPS) * 100}
+          colorPalette="brand"
+          size="sm"
+        >
+          <Progress.Track>
+            <Progress.Range />
+          </Progress.Track>
+        </Progress.Root>
+        <Text textStyle="sm" color="fg.alternative">
           {step} / {TOTAL_STEPS} · {STEP_LABEL[step]}
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
 
       {step === 1 ? (
         <StepPhoto
@@ -216,10 +224,10 @@ export function ReportForm() {
         <StepStatus draft={draft} submitError={submitError} onEdit={edit} />
       ) : null}
 
-      <FlexBox gap="8px" sx={{ marginTop: "8px" }}>
+      <Flex gap="2" marginTop="2">
         {step > 1 ? (
           <Button
-            variant="outlined"
+            variant="outline"
             disabled={submitting}
             onClick={() => goTo((step - 1) as ReportStep)}
           >
@@ -229,7 +237,8 @@ export function ReportForm() {
 
         {step < TOTAL_STEPS ? (
           <Button
-            fullWidth
+            flex="1"
+            colorPalette="brand"
             disabled={
               picker.processing ||
               (step === 1 && !canLeaveStep1) ||
@@ -240,11 +249,16 @@ export function ReportForm() {
             다음
           </Button>
         ) : (
-          <Button fullWidth loading={submitting} onClick={handleSubmit}>
+          <Button
+            flex="1"
+            colorPalette="brand"
+            loading={submitting}
+            onClick={handleSubmit}
+          >
             제보하기
           </Button>
         )}
-      </FlexBox>
-    </FlexBox>
+      </Flex>
+    </Flex>
   );
 }

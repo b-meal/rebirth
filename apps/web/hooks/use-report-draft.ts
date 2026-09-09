@@ -3,7 +3,7 @@
 import type { AnalyzeResult, CareSituation } from "@rebirth/types";
 import { useCallback, useEffect, useState } from "react";
 
-import type { PhotoItem } from "../lib/image";
+import type { PhotoItem } from "@/lib/image";
 
 // 4단계 폼의 상태. 새로고침과 실수 이탈에서 살리려 sessionStorage 에 보관
 // 사진은 File 이라 직렬화되지 않으므로 저장하지 않음. 사진이 없으면 1단계로 돌아감

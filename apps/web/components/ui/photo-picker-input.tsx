@@ -1,7 +1,7 @@
 "use client";
 
 import { useImperativeHandle, useRef, type ChangeEvent, type Ref } from "react";
-import { PHOTO_ACCEPT } from "../../lib/image";
+import { PHOTO_ACCEPT } from "@/lib/image";
 
 export type PhotoPickerInputHandle = {
   open: () => void;

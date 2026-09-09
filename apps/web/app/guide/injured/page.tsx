@@ -1,11 +1,7 @@
 import Link from "next/link";
-import {
-  Button,
-  Divider,
-  FlexBox,
-  SectionMessage,
-  Typography,
-} from "@wanteddev/wds";
+import { Button, Flex, Heading, Separator, Text } from "@chakra-ui/react";
+
+import { SectionMessage } from "@/components/ui/section-message";
 
 // 제보보다 신고가 먼저인 상황을 위한 화면
 // 포획 방법, 응급처치, 약품, 먹이 안내를 넣지 않음
@@ -31,58 +27,46 @@ const CAT_BRANCHES = [
 
 export default function InjuredGuidePage() {
   return (
-    <FlexBox flexDirection="column" gap="16px" sx={{ padding: "20px 16px 96px" }}>
-      <Typography variant="title2" weight="bold">
-        다친 동물을 봤을 때
-      </Typography>
+    <Flex direction="column" gap="4" padding="5" paddingBottom="24">
+      <Heading size="xl">다친 동물을 봤을 때</Heading>
 
       <SectionMessage variant="cautionary">
         동물을 직접 잡으려 하지 마십시오. 사람과 동물 모두 위험해집니다
       </SectionMessage>
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="headline1" weight="bold">
-          먼저 신고해 주십시오
-        </Typography>
-        <a href="tel:1577-0954" style={{ display: "block" }}>
-          <Button fullWidth size="large">
-            1577-0954 로 전화하기
-          </Button>
-        </a>
-        <Typography variant="caption1">
+      <Flex direction="column" gap="2">
+        <Heading size="md">먼저 신고해 주십시오</Heading>
+        <Button asChild size="xl" colorPalette="brand" width="100%">
+          <a href="tel:1577-0954">1577-0954 로 전화하기</a>
+        </Button>
+        <Text textStyle="sm" color="fg.alternative">
           국가동물보호정보시스템 발견 신고 번호입니다. 통화가 어려우면 관할 시·군·구
           청 당직실이나 120 에 연락할 수 있습니다
-        </Typography>
-      </FlexBox>
+        </Text>
+      </Flex>
 
-      <Divider />
+      <Separator />
 
-      <FlexBox flexDirection="column" gap="12px">
-        <Typography variant="headline1" weight="bold">
-          길고양이라면
-        </Typography>
+      <Flex direction="column" gap="3">
+        <Heading size="md">길고양이라면</Heading>
         {CAT_BRANCHES.map((branch) => (
-          <FlexBox key={branch.title} flexDirection="column" gap="4px">
-            <Typography variant="headline2" weight="bold">
-              {branch.title}
-            </Typography>
-            <Typography variant="body2">{branch.body}</Typography>
-          </FlexBox>
+          <Flex key={branch.title} direction="column" gap="1">
+            <Heading size="sm">{branch.title}</Heading>
+            <Text color="fg.alternative">{branch.body}</Text>
+          </Flex>
         ))}
-      </FlexBox>
+      </Flex>
 
-      <Divider />
+      <Separator />
 
-      <FlexBox flexDirection="column" gap="8px">
-        <Typography variant="body2">
+      <Flex direction="column" gap="2">
+        <Text color="fg.alternative">
           신고를 마쳤다면 목격 정보를 남겨 주십시오. 보호자가 찾고 있을 수 있습니다
-        </Typography>
-        <Link href="/report">
-          <Button fullWidth variant="outlined">
-            제보 이어서 하기
-          </Button>
-        </Link>
-      </FlexBox>
-    </FlexBox>
+        </Text>
+        <Button asChild variant="outline" width="100%">
+          <Link href="/report">제보 이어서 하기</Link>
+        </Button>
+      </Flex>
+    </Flex>
   );
 }
