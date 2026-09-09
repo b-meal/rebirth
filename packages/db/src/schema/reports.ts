@@ -18,6 +18,7 @@ import {
   animalSex,
   animalSize,
   animalType,
+  careSituation,
   neuterStatus,
   reportKind,
   reportStatus,
@@ -37,6 +38,9 @@ export const reports = pgTable(
     reporterId: uuid(),
     // 연락처는 저장하지 않음. 익명 조회·수정용 토큰만 발급
     contactToken: text().unique(),
+
+    // 제보 1단계 필수 입력. condition_tags 에 섞으면 분기할 수 없어 열로 둠
+    careSituation: careSituation().notNull().default('unknown'),
 
     // 사용자가 확정한 값. AI 초안을 그대로 두거나 고쳐서 저장
     animalType: animalType().notNull().default('unknown'),

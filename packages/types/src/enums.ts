@@ -7,6 +7,7 @@ export const animalType = z.enum(['dog', 'cat', 'other', 'unknown'])
 export const animalSize = z.enum(['small', 'medium', 'large', 'unknown'])
 export const animalSex = z.enum(['male', 'female', 'unknown'])
 export const neuterStatus = z.enum(['done', 'not_done', 'unknown'])
+export const careSituation = z.enum(['roaming', 'in_care', 'unknown'])
 
 export type ReportKind = z.infer<typeof reportKind>
 export type ReportStatus = z.infer<typeof reportStatus>
@@ -14,3 +15,4 @@ export type AnimalType = z.infer<typeof animalType>
 export type AnimalSize = z.infer<typeof animalSize>
 export type AnimalSex = z.infer<typeof animalSex>
 export type NeuterStatus = z.infer<typeof neuterStatus>
+export type CareSituation = z.infer<typeof careSituation>
