@@ -39,5 +39,9 @@ Thumbs.db
 /tmp/
 /scratch/
 
+# swagger mcp 로컬 캐시
+.swagger-cache/
+.swagger-mcp
+
 # 로컬 이미지 작업 산출물
 generated-images/

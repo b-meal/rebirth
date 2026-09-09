@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // 워크스페이스 패키지를 TS 소스 그대로 소비
-  transpilePackages: ["@rebirth/core"],
+  transpilePackages: ["@rebirth/core", "@rebirth/db", "@rebirth/types"],
 };
 
 export default nextConfig;
