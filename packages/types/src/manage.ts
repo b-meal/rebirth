@@ -1,8 +1,19 @@
 import { z } from 'zod'
 
-import { closeReason, supportRequestKind } from './enums'
+import {
+  closeReason,
+  supportRequestKind,
+  type SupportRequestKind,
+} from './enums'
 
 // 관리 권한과 문의. WEB-12, WEB-16, WEB-17, WEB-24, WEB-36
+
+/**
+ * 화면이 보여주는 약관·개인정보 문서 버전
+ * 동의 기록에 이 값이 함께 남아 "그때 어떤 문구에 동의했는가" 를 답할 수 있음
+ * 문서를 개정하면 이 값을 올리고 legal_documents 에 새 버전을 발행함. POL-22
+ */
+export const CONSENT_DOCUMENT_VERSION = '2026-09-01'
 
 /* 관리 주소 교환 */
 
@@ -90,6 +101,15 @@ export type ResolutionStatus = z.infer<typeof resolutionStatus>
 
 const SUPPORT_BODY_MIN = 10
 const SUPPORT_BODY_MAX = 1000
+
+// 사용자가 고르는 문의 유형 문구. 법 용어 대신 무엇이 필요한지로 씀
+export const SUPPORT_KIND_LABEL: Record<SupportRequestKind, string> = {
+  manage_token_lost: '관리 주소를 잃어버렸습니다',
+  deletion: '내 기록을 삭제해 주십시오',
+  correction: '잘못된 내용을 고쳐 주십시오',
+  privacy_exposure: '개인정보가 노출됐습니다',
+  general: '그 외 문의',
+}
 
 /**
  * 문의 접수. WEB-24

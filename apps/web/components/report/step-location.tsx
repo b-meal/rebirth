@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button, Flex, Heading, Input, Skeleton, Text } from "@chakra-ui/react";
 
 import { useCurrentPosition } from "@/hooks/use-current-position";
+import { useLocationToken } from "@/hooks/use-location-token";
 import { usePlaceSearch } from "@/hooks/use-place-search";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { Chip } from "@/components/ui/chip";
@@ -11,12 +12,12 @@ import { PlaceSearchField } from "@/components/ui/place-search-field";
 import { SectionMessage } from "@/components/ui/section-message";
 
 // 2단계 위치. 지도 핀과 좌표 표시, 정확 주소 입력란을 만들지 않음
-// 좌표는 역지오코딩 호출과 서버 전송에만 쓰고 화면에 숫자로 내보내지 않음
+// 좌표는 서버 참조로 바로 바꿔 폼 상태에 숫자를 남기지 않음. POL-08
 
 export type LocationValue = {
   areaName: string | null;
-  areaCode: string | null;
-  coordinates: { lat: number; lng: number } | null;
+  locationToken: string | null;
+  usableForDistance: boolean;
   landmark: string;
 };
 
@@ -29,21 +30,44 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
   const position = useCurrentPosition();
   const [manual, setManual] = useState(false);
   const search = usePlaceSearch({ mode: "address" });
+  const locationToken = useLocationToken();
 
   const geocode = useReverseGeocode(position.point);
 
-  // 좌표에서 행정동을 받으면 폼에 반영. 좌표는 상태에만 두고 화면에 쓰지 않음
+  // 현재 위치로 확인된 지역을 서버 참조로 바꿈. 좌표는 여기서 서버로만 나감
   useEffect(() => {
     if (!geocode.result || !position.point) return;
-    onChange({
-      areaName: geocode.result.fullName || geocode.result.areaName,
-      areaCode: geocode.result.code,
-      coordinates: position.point,
-    });
-  }, [geocode.result, position.point, onChange]);
+    if (locationToken.status !== "idle") return;
+
+    const areaName = geocode.result.fullName || geocode.result.areaName;
+    void locationToken
+      .resolve({
+        source: "gps",
+        lat: position.point.lat,
+        lng: position.point.lng,
+        ...(position.accuracyMeters !== null && { accuracyM: Math.round(position.accuracyMeters) }),
+        // 현재 위치를 목격 위치로 쓰겠다는 확인. 화면이 이 단계를 거쳐야만 값이 참
+        confirmedHere: true,
+        areaName,
+        ...(geocode.result.code && {
+          areaCode: geocode.result.code,
+          areaCodeSystem: "H" as const,
+        }),
+      })
+      .then((result) => {
+        if (!result) return;
+        onChange({
+          areaName: result.areaName,
+          locationToken: result.locationToken,
+          usableForDistance: result.usableForDistance,
+        });
+      });
+  }, [geocode.result, position.point, position.accuracyMeters, locationToken, onChange]);
 
   const positionFailed = position.status === "denied" || position.status === "unavailable";
-  const showManual = manual || positionFailed || geocode.error !== null;
+  const resolveFailed = locationToken.status === "failed";
+  const showManual =
+    manual || positionFailed || geocode.error !== null || resolveFailed;
   const requesting = position.status === "requesting";
 
   return (
@@ -69,7 +93,12 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
               variant="outline"
               size="sm"
               onClick={() => {
-                onChange({ areaName: null, areaCode: null, coordinates: null });
+                onChange({
+                  areaName: null,
+                  locationToken: null,
+                  usableForDistance: false,
+                });
+                locationToken.clear();
                 setManual(true);
               }}
             >
@@ -105,12 +134,23 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
             placeholder="동, 면, 도로명으로 검색"
             emptyMessage="검색 결과가 없습니다. 동이나 면 이름으로 찾아 주십시오"
             onPick={(candidate) => {
-              onChange({
-                areaName: candidate.areaName || candidate.name,
-                areaCode: null,
-                // 검색으로 고른 지점의 좌표도 함께 보냄. 반경 검색에 쓰임
-                coordinates: candidate.point,
-              });
+              const areaName = candidate.areaName || candidate.name;
+              // 검색으로 고른 지점도 서버에서 참조로 바꿈. 좌표가 폼에 남지 않음
+              void locationToken
+                .resolve({
+                  source: "place",
+                  lat: candidate.point.lat,
+                  lng: candidate.point.lng,
+                  areaName,
+                })
+                .then((result) => {
+                  if (!result) return;
+                  onChange({
+                    areaName: result.areaName,
+                    locationToken: result.locationToken,
+                    usableForDistance: result.usableForDistance,
+                  });
+                });
               search.clear();
             }}
           />

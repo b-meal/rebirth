@@ -15,7 +15,7 @@ export type AnalyzeState = {
   draft: AnalyzeResult | null;
   model: string | null;
   analyzedAt: string | null;
-  start: (file: File) => void;
+  start: (uploadId: string) => void;
   clear: () => void;
 };
 
@@ -39,7 +39,7 @@ export function useAnalyzePhoto(): AnalyzeState {
 
   useEffect(() => () => inflight.current?.abort(), []);
 
-  const start = useCallback((file: File) => {
+  const start = useCallback((uploadId: string) => {
     inflight.current?.abort();
     const controller = new AbortController();
     inflight.current = controller;
@@ -48,14 +48,13 @@ export function useAnalyzePhoto(): AnalyzeState {
     setAdvice(null);
     setMessage(null);
 
-    const body = new FormData();
-    body.append("photo", file);
-
     void (async () => {
       try {
-        const response = await fetch("/api/analyze", {
+        // 이미 올린 사진을 참조로 지목함. 같은 파일을 두 번 올리지 않음
+        const response = await fetch("/api/draft/analyze", {
           method: "POST",
-          body,
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ uploadId }),
           signal: controller.signal,
         });
         const payload = (await response.json()) as Payload;
