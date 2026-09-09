@@ -65,7 +65,8 @@ export function LocationPicker({
   // 카카오 지도는 CSS 변수를 못 읽어 원 색을 실제 값으로 넘김
   const [circleColor] = useToken("colors", ["brand.500"]);
 
-  const position = useCurrentPosition({ immediate: true });
+  // 화면 진입만으로 권한을 묻지 않음. 현재 위치 버튼을 눌러야 요청함
+  const position = useCurrentPosition();
 
   // containerRef 를 품은 객체는 그대로 읽으면 ref 접근으로 잡혀 구조분해로 받음
   const {
@@ -217,6 +218,12 @@ export function LocationPicker({
 
       {position.error && position.status !== "granted" && (
         <SectionMessage variant="info">{position.error}</SectionMessage>
+      )}
+
+      {position.status === "idle" && (
+        <Text textStyle="xs" color="fg.assistive">
+          현재 위치를 쓰지 않아도 됩니다. 장소를 검색하거나 지도를 옮겨 고를 수 있습니다
+        </Text>
       )}
 
       <Flex
