@@ -10,6 +10,7 @@ export type CurrentPositionStatus =
   | "requesting"
   | "granted"
   | "denied"
+  | "timeout"
   | "unavailable";
 
 export type CurrentPositionState = {
@@ -23,12 +24,17 @@ export type CurrentPositionState = {
 // AI 분석 상한과 같은 8초. 넘으면 직접 입력으로 돌림
 const TIMEOUT_MS = 8000;
 
-const DENIED_MESSAGE = "목격한 동이나 면을 직접 선택해 주십시오";
-const FAILED_MESSAGE = "현재 위치를 가져오지 못했습니다. 동이나 면을 직접 선택해 주십시오";
+// 권한을 주지 않아도 제보를 끝낼 수 있다는 점을 함께 알림
+const MESSAGE: Record<"denied" | "timeout" | "unavailable", string> = {
+  denied:
+    "현재 위치를 허용하지 않아도 제보할 수 있습니다. 목격한 동이나 면을 직접 선택해 주십시오",
+  timeout: "현재 위치를 확인하는 데 오래 걸립니다. 동이나 면을 직접 선택해 주십시오",
+  unavailable: "현재 위치를 가져오지 못했습니다. 동이나 면을 직접 선택해 주십시오",
+};
 
 type Outcome =
   | { ok: true; point: LatLng; accuracyMeters: number | null }
-  | { ok: false; status: "denied" | "unavailable" };
+  | { ok: false; status: "denied" | "timeout" | "unavailable" };
 
 function locate(): Promise<Outcome> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -45,12 +51,16 @@ function locate(): Promise<Outcome> {
           },
           accuracyMeters: position.coords.accuracy ?? null,
         }),
-      (cause) =>
+      (cause) => {
+        if (cause.code === cause.PERMISSION_DENIED) {
+          resolve({ ok: false, status: "denied" });
+          return;
+        }
         resolve({
           ok: false,
-          status:
-            cause.code === cause.PERMISSION_DENIED ? "denied" : "unavailable",
-        }),
+          status: cause.code === cause.TIMEOUT ? "timeout" : "unavailable",
+        });
+      },
       { enableHighAccuracy: true, timeout: TIMEOUT_MS, maximumAge: 30_000 },
     );
   });
@@ -75,7 +85,7 @@ export function useCurrentPosition({
       return;
     }
     setStatus(outcome.status);
-    setError(outcome.status === "denied" ? DENIED_MESSAGE : FAILED_MESSAGE);
+    setError(MESSAGE[outcome.status]);
   }, []);
 
   const request = useCallback(() => {

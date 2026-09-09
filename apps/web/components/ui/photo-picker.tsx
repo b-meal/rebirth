@@ -14,6 +14,8 @@ export type PhotoPickerProps = {
   label?: string;
   hint?: string;
   disabled?: boolean;
+  // 데스크톱처럼 카메라가 없는 환경에서는 촬영 버튼을 감춤
+  cameraAvailable?: boolean;
   // 여러 장 모드의 썸네일 열 수. 한 장 모드에서는 무시
   columns?: number;
 };
@@ -27,6 +29,7 @@ export function PhotoPicker({
   label = "사진",
   hint = "사진을 촬영하거나 앨범에서 선택하세요",
   disabled = false,
+  cameraAvailable = true,
   columns = 3,
 }: PhotoPickerProps) {
   const cameraRef = useRef<PhotoPickerInputHandle>(null);
@@ -155,16 +158,18 @@ export function PhotoPicker({
       )}
 
       <Flex gap="2">
-        <Button
-          variant="outline"
-          flex="1"
-          disabled={locked}
-          loading={processing && activeSource === "camera"}
-          onClick={() => cameraRef.current?.open()}
-        >
-          <IconCamera />
-          {replacing ? "다시 촬영" : "사진 촬영"}
-        </Button>
+        {cameraAvailable && (
+          <Button
+            variant="outline"
+            flex="1"
+            disabled={locked}
+            loading={processing && activeSource === "camera"}
+            onClick={() => cameraRef.current?.open()}
+          >
+            <IconCamera />
+            {replacing ? "다시 촬영" : "사진 촬영"}
+          </Button>
+        )}
         <Button
           variant="outline"
           flex="1"
@@ -189,12 +194,14 @@ export function PhotoPicker({
         </SectionMessage>
       )}
 
-      <PhotoPickerInput
-        ref={cameraRef}
-        mode="camera"
-        disabled={locked}
-        onFiles={handleFiles("camera")}
-      />
+      {cameraAvailable && (
+        <PhotoPickerInput
+          ref={cameraRef}
+          mode="camera"
+          disabled={locked}
+          onFiles={handleFiles("camera")}
+        />
+      )}
       <PhotoPickerInput
         ref={libraryRef}
         mode="library"
