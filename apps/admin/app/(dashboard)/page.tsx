@@ -1,55 +1,84 @@
-import { HugeiconsIcon } from "@hugeicons/react";
-import { DatabaseIcon } from "@hugeicons/core-free-icons";
+"use client";
+
+import Link from "next/link";
 import {
   Card,
-  CardDescription,
-  CardHeader,
+  CardCaption,
+  CardContent,
   CardTitle,
-} from "@/components/ui/card";
+  Chip,
+  Divider,
+  FlexBox,
+  Typography,
+} from "@wanteddev/wds";
 import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty";
-
-// 집계 쿼리 연결 전 자리표시자
-const TILES = [
-  { label: "오늘 제보", hint: "sightings" },
-  { label: "검수 대기", hint: "status open" },
-  { label: "실종 신고", hint: "lost_pets" },
-  { label: "확인할 후보", hint: "match_scores" },
-] as const;
+  ANIMAL_LABEL,
+  CUSTODY_LABEL,
+  OVERVIEW,
+  SIGHTINGS,
+  STATUS_LABEL,
+} from "@/lib/mock";
 
 export default function DashboardPage() {
+  const recent = SIGHTINGS.filter((s) => s.status !== "hidden").slice(0, 3);
+
   return (
     <>
-      <h1 className="text-lg font-semibold">개요</h1>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {TILES.map((tile) => (
-          <Card key={tile.label}>
-            <CardHeader>
-              <CardTitle className="text-sm">{tile.label}</CardTitle>
-              <CardDescription className="tabular-nums">
-                집계 연결 전
-              </CardDescription>
-            </CardHeader>
+      <Typography variant="title3" weight="bold">
+        개요
+      </Typography>
+      <FlexBox flexWrap="wrap" gap="12px">
+        {OVERVIEW.map((tile) => (
+          <Card key={tile.label} width="220px">
+            <CardContent>
+              <CardCaption variant="caption1">{tile.label}</CardCaption>
+              <CardTitle variant="title2" weight="bold">
+                {tile.value}
+              </CardTitle>
+              <CardCaption variant="caption2">{tile.source}</CardCaption>
+            </CardContent>
           </Card>
         ))}
-      </div>
-      <Empty className="border">
-        <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <HugeiconsIcon icon={DatabaseIcon} strokeWidth={2} />
-          </EmptyMedia>
-          <EmptyTitle>데이터 연결 전</EmptyTitle>
-          <EmptyDescription>
-            운영 대시보드는 P1입니다. P0 기간에는 제보 검수를 Supabase
-            대시보드로 직접 처리합니다.
-          </EmptyDescription>
-        </EmptyHeader>
-      </Empty>
+      </FlexBox>
+
+      <Divider />
+
+      <Typography variant="headline1" weight="bold">
+        최근 제보
+      </Typography>
+      <FlexBox flexDirection="column" gap="8px">
+        {recent.map((s) => (
+          <Link
+            key={s.id}
+            href={`/sightings/${s.id}`}
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            <Card>
+              <CardContent>
+                <FlexBox alignItems="center" flexWrap="wrap" gap="6px">
+                  <Chip size="xsmall" disableInteraction>
+                    {ANIMAL_LABEL[s.animalType]}
+                  </Chip>
+                  <Chip size="xsmall" variant="outlined" disableInteraction>
+                    {CUSTODY_LABEL[s.custody]}
+                  </Chip>
+                  <Chip size="xsmall" variant="outlined" disableInteraction>
+                    {STATUS_LABEL[s.status]}
+                  </Chip>
+                  <Typography variant="caption1">{s.sightedAt}</Typography>
+                </FlexBox>
+                <CardTitle variant="headline2">{s.appearance}</CardTitle>
+                <CardCaption variant="caption1">
+                  {s.areaName} · 확인할 후보 {s.candidateCount}건
+                </CardCaption>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
+      </FlexBox>
+      <Typography variant="caption1">
+        목데이터입니다. API 연결 시 lib/mock 대신 조회 결과를 넣습니다.
+      </Typography>
     </>
   );
 }

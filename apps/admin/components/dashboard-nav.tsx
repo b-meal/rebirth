@@ -2,57 +2,46 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Analytics01Icon,
-  DashboardCircleIcon,
-  PawPrintIcon,
-  SearchAlertIcon,
-  Shield01Icon,
-} from "@hugeicons/core-free-icons";
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+import { FlexBox, Typography } from "@wanteddev/wds";
 
 const NAV = [
-  { href: "/", label: "개요", icon: DashboardCircleIcon },
-  { href: "/sightings", label: "제보", icon: PawPrintIcon },
-  { href: "/lost", label: "실종 신고", icon: SearchAlertIcon },
-  { href: "/moderation", label: "검수", icon: Shield01Icon },
-  { href: "/metrics", label: "지표", icon: Analytics01Icon },
+  { href: "/", label: "개요" },
+  { href: "/sightings", label: "제보" },
+  { href: "/lost", label: "실종 신고" },
+  { href: "/moderation", label: "검수" },
+  { href: "/metrics", label: "지표" },
 ] as const;
 
 export function DashboardNav() {
   const pathname = usePathname();
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel>운영</SidebarGroupLabel>
-      <SidebarGroupContent>
-        <SidebarMenu>
-          {NAV.map((item) => (
-            <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                isActive={
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href)
-                }
-                tooltip={item.label}
-                render={<Link href={item.href} />}
-              >
-                <HugeiconsIcon icon={item.icon} strokeWidth={2} />
-                <span>{item.label}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
-        </SidebarMenu>
-      </SidebarGroupContent>
-    </SidebarGroup>
+    <FlexBox flexDirection="column" gap="2px" sx={{ padding: "8px" }}>
+      {NAV.map((item) => {
+        const active =
+          item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            style={{ textDecoration: "none", color: "inherit" }}
+          >
+            <FlexBox
+              alignItems="center"
+              sx={{
+                padding: "8px 12px",
+                borderRadius: "8px",
+                background: active ? "rgba(0, 0, 0, 0.06)" : "transparent",
+              }}
+            >
+              <Typography variant="label1" weight={active ? "bold" : "regular"}>
+                {item.label}
+              </Typography>
+            </FlexBox>
+          </Link>
+        );
+      })}
+    </FlexBox>
   );
 }

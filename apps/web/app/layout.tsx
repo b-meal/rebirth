@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { Providers } from "./providers";
 
 // OG 메타와 QR 코드의 절대 URL 생성 기준
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -21,8 +22,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">{children}</body>
+    <html lang="ko">
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
