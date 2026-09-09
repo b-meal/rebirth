@@ -22,7 +22,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko">
+    // ThemeProvider 가 저장된 테마를 클라이언트에서 html 에 넣어 서버 표시와 어긋남
+    <html lang="ko" suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>
       </body>
