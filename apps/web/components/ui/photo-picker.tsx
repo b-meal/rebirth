@@ -1,17 +1,12 @@
 "use client";
 
 import { useRef, useState } from "react";
-import {
-  Button,
-  FlexBox,
-  IconButton,
-  SectionMessage,
-  Thumbnail,
-  Typography,
-} from "@wanteddev/wds";
-import { IconCamera, IconClose, IconImage } from "@wanteddev/wds-icon";
-import type { PhotoItem } from "../../lib/image";
-import type { PhotoPickerState } from "../../hooks/use-photo-picker";
+import { Box, Button, Flex, IconButton, Image, Text } from "@chakra-ui/react";
+
+import type { PhotoItem } from "@/lib/image";
+import type { PhotoPickerState } from "@/hooks/use-photo-picker";
+import { IconCamera, IconClose, IconImage } from "./icons";
+import { SectionMessage } from "./section-message";
 import { PhotoPickerInput, type PhotoPickerInputHandle } from "./photo-picker-input";
 
 export type PhotoPickerProps = {
@@ -26,9 +21,6 @@ export type PhotoPickerProps = {
 type Source = "camera" | "library";
 
 const THUMBNAIL_GAP = 8;
-
-// 원본 비율이 달라도 Thumbnail 의 ratio 를 지키도록 이미지를 절대 배치해 cover 로 채움
-const coverImageSx = { "& > img": { position: "absolute", inset: 0 } } as const;
 
 export function PhotoPicker({
   picker,
@@ -70,129 +62,129 @@ export function PhotoPicker({
     }
   };
 
-  const renderRemoveButton = (photo: PhotoItem, index: number) => (
-    // Thumbnail 의 테두리 오버레이 위로 올려 클릭 가능하게 유지
-    <FlexBox sx={{ position: "absolute", top: 8, right: 8, zIndex: 1 }}>
+  // 원본 비율이 달라도 지정한 비율을 지키도록 cover 로 채움
+  const renderThumbnail = (
+    photo: PhotoItem,
+    index: number,
+    options: { width: string; ratio: string; alt: string },
+  ) => (
+    <Box
+      key={photo.id}
+      position="relative"
+      width={options.width}
+      borderRadius="card"
+      borderWidth="1px"
+      borderColor="border"
+      overflow="hidden"
+    >
+      <Image
+        src={photo.previewUrl}
+        alt={options.alt}
+        width="100%"
+        aspectRatio={options.ratio}
+        objectFit="cover"
+        display="block"
+      />
       <IconButton
-        variant="background"
-        alternative
-        size={22}
         aria-label={single ? "사진 삭제" : `사진 ${index + 1} 삭제`}
+        size="xs"
+        variant="solid"
+        colorPalette="gray"
+        position="absolute"
+        top="2"
+        right="2"
+        borderRadius="full"
         disabled={disabled || processing}
         onClick={() => removePhoto(photo.id)}
       >
         <IconClose />
       </IconButton>
-    </FlexBox>
+    </Box>
   );
 
   return (
-    <FlexBox flexDirection="column" gap="12px">
-      <FlexBox justifyContent="space-between" alignItems="baseline">
-        <Typography variant="label1" weight="bold" color="semantic.label.normal">
-          {label}
-        </Typography>
+    <Flex direction="column" gap="3">
+      <Flex justify="space-between" align="baseline">
+        <Text fontWeight="bold">{label}</Text>
         {!single && (
-          <Typography variant="caption1" color="semantic.label.alternative">
+          <Text textStyle="sm" color="fg.alternative">
             {photos.length} / {maxCount}장
-          </Typography>
+          </Text>
         )}
-      </FlexBox>
+      </Flex>
 
       {!hasPhoto && (
-        <FlexBox
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          gap="8px"
-          sx={(theme) => ({
-            padding: "28px 16px",
-            borderRadius: 12,
-            border: `1px dashed ${theme.semantic.line.normal.normal}`,
-            backgroundColor: theme.semantic.background.normal.alternative,
-            color: theme.semantic.label.assistive,
-          })}
+        <Flex
+          direction="column"
+          align="center"
+          justify="center"
+          gap="2"
+          padding="7"
+          borderRadius="card"
+          borderWidth="1px"
+          borderStyle="dashed"
+          borderColor="border"
+          backgroundColor="bg.alternative"
+          color="fg.assistive"
         >
-          <IconCamera width={28} height={28} aria-hidden="true" />
-          <Typography variant="body2" color="semantic.label.alternative" align="center">
+          <IconCamera fontSize="28px" />
+          <Text color="fg.alternative" textAlign="center">
             {hint}
-          </Typography>
-        </FlexBox>
+          </Text>
+        </Flex>
       )}
 
-      {hasPhoto && single && (
-        <Thumbnail
-          src={photos[0].previewUrl}
-          alt="선택한 사진"
-          ratio="4:3"
-          radius
-          border
-          width="100%"
-          sx={coverImageSx}
-        >
-          {renderRemoveButton(photos[0], 0)}
-        </Thumbnail>
-      )}
+      {hasPhoto &&
+        single &&
+        renderThumbnail(photos[0], 0, {
+          width: "100%",
+          ratio: "4 / 3",
+          alt: "선택한 사진",
+        })}
 
       {hasPhoto && !single && (
-        <FlexBox flexWrap="wrap" gap={`${THUMBNAIL_GAP}px`}>
-          {photos.map((photo, index) => (
-            <Thumbnail
-              key={photo.id}
-              src={photo.previewUrl}
-              alt={`선택한 사진 ${index + 1}`}
-              ratio="1:1"
-              radius
-              border
-              width={thumbnailWidth}
-              sx={coverImageSx}
-            >
-              {renderRemoveButton(photo, index)}
-            </Thumbnail>
-          ))}
-        </FlexBox>
+        <Flex wrap="wrap" gap={`${THUMBNAIL_GAP}px`}>
+          {photos.map((photo, index) =>
+            renderThumbnail(photo, index, {
+              width: thumbnailWidth,
+              ratio: "1 / 1",
+              alt: `선택한 사진 ${index + 1}`,
+            }),
+          )}
+        </Flex>
       )}
 
-      <FlexBox gap="8px">
+      <Flex gap="2">
         <Button
-          variant="outlined"
-          color="assistive"
-          fullWidth
-          leadingContent={<IconCamera />}
+          variant="outline"
+          flex="1"
           disabled={locked}
           loading={processing && activeSource === "camera"}
           onClick={() => cameraRef.current?.open()}
         >
+          <IconCamera />
           {replacing ? "다시 촬영" : "사진 촬영"}
         </Button>
         <Button
-          variant="outlined"
-          color="assistive"
-          fullWidth
-          leadingContent={<IconImage />}
+          variant="outline"
+          flex="1"
           disabled={locked}
           loading={processing && activeSource === "library"}
           onClick={() => libraryRef.current?.open()}
         >
+          <IconImage />
           {replacing ? "다른 사진 선택" : "앨범에서 선택"}
         </Button>
-      </FlexBox>
+      </Flex>
 
       {isFull && !single && !error && (
-        <Typography variant="caption1" color="semantic.label.alternative">
+        <Text textStyle="sm" color="fg.alternative">
           사진은 최대 {maxCount}장까지 올릴 수 있습니다
-        </Typography>
+        </Text>
       )}
 
       {error && (
-        <SectionMessage
-          variant="negative"
-          closeButton
-          open
-          onOpenChange={(open) => {
-            if (!open) dismissError();
-          }}
-        >
+        <SectionMessage variant="negative" onClose={dismissError}>
           {error}
         </SectionMessage>
       )}
@@ -210,6 +202,6 @@ export function PhotoPicker({
         disabled={locked}
         onFiles={handleFiles("library")}
       />
-    </FlexBox>
+    </Flex>
   );
 }

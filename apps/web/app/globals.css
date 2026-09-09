@@ -1,4 +1,2 @@
-@import "@wanteddev/wds/reset.css";
-@import "@wanteddev/wds/global.css";
-/* Montage 서체 스택의 최우선 값을 자체 호스팅으로 공급 */
+/* 서체는 자체 호스팅. Chakra 테마의 fonts 토큰이 이 패밀리를 가리킴 */
 @import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { FlexBox, Typography } from "@wanteddev/wds";
+import { Flex, Text } from "@chakra-ui/react";
 import { LocationPicker } from "../../web/components/ui/location-picker";
 
 // 검색과 역지오코딩은 web 의 /api 라우트를 거치므로 pnpm -F @rebirth/web dev 가 함께 떠 있어야 함
@@ -22,9 +22,9 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <FlexBox flexDirection="column" gap="8px" sx={{ width: 390 }}>
+      <Flex direction="column" gap="2" width="390px">
         <Story />
-      </FlexBox>
+      </Flex>
     ),
   ],
 } satisfies Meta<typeof LocationPicker>;
@@ -45,9 +45,9 @@ export const 초기위치지정: Story = {
   args: { initialCenter: { lat: 35.1796, lng: 129.0756 } },
   render: (args) => (
     <>
-      <Typography variant="caption1" color="semantic.label.alternative">
+      <Text textStyle="sm" color="fg.alternative">
         위치 권한을 허용하면 현재 위치로 옮겨 갑니다
-      </Typography>
+      </Text>
       <LocationPicker {...args} />
     </>
   ),

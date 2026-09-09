@@ -33,3 +33,15 @@ export const careSituation = pgEnum('care_situation', [
   'in_care',
   'unknown',
 ])
+
+// 화면 기획서 S-006 신고 사유 5종. 값은 @rebirth/types 의 REPORT_REASONS 와 같음
+export const flagReason = pgEnum('flag_reason', [
+  'not-animal',
+  'duplicate',
+  'wrong-info',
+  'privacy',
+  'other',
+])
+
+// 운영자 판정. hide 는 제보를 hidden 으로, keep 은 신고를 기각
+export const flagResolution = pgEnum('flag_resolution', ['hide', 'keep'])

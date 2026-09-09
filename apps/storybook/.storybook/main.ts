@@ -67,6 +67,14 @@ const config: StorybookConfig = {
   addons: [],
   viteFinal: async (config) => {
     config.plugins = [...(config.plugins ?? []), webApiProxy()];
+    // web 컴포넌트가 자기 앱 기준의 @/ 별칭으로 서로를 부름
+    config.resolve = {
+      ...config.resolve,
+      alias: {
+        ...config.resolve?.alias,
+        "@": path.resolve(process.cwd(), "../web"),
+      },
+    };
     config.define = {
       ...config.define,
       // Next 전용 접두사라 Vite 가 자동으로 넣어 주지 않음

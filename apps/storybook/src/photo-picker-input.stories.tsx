@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef, useState } from "react";
-import { Button, FlexBox, IconButton, Typography } from "@wanteddev/wds";
-import { IconCamera, IconImage } from "@wanteddev/wds-icon";
+import { Button, Flex, IconButton, Text } from "@chakra-ui/react";
+import { IconCamera, IconImage } from "../../web/components/ui/icons";
 import {
   PhotoPickerInput,
   type PhotoPickerInputHandle,
@@ -24,19 +24,18 @@ function Demo({ mode, multiple, disabled, trigger }: DemoProps) {
     .join(" / ");
 
   return (
-    <FlexBox flexDirection="column" alignItems="flex-start" gap="12px" sx={{ maxWidth: 420 }}>
+    <Flex direction="column" align="flex-start" gap="3" maxWidth="420px">
       {trigger === "icon" ? (
-        <IconButton variant="outlined" aria-label="사진 선택" disabled={disabled} onClick={open}>
+        <IconButton variant="outline" aria-label="사진 선택" disabled={disabled} onClick={open}>
           <IconCamera />
         </IconButton>
       ) : (
         <Button
-          variant="outlined"
-          color="assistive"
-          leadingContent={mode === "camera" ? <IconCamera /> : <IconImage />}
+          variant="outline"
           disabled={disabled}
           onClick={open}
         >
+          {mode === "camera" ? <IconCamera /> : <IconImage />}
           {mode === "camera" ? "사진 촬영" : "앨범에서 선택"}
         </Button>
       )}
@@ -49,12 +48,12 @@ function Demo({ mode, multiple, disabled, trigger }: DemoProps) {
         onFiles={setFiles}
       />
 
-      <Typography variant="caption1" color="semantic.label.alternative">
+      <Text textStyle="sm" color="fg.alternative">
         {files.length === 0
           ? "onFiles 로 전달된 파일 없음. 선택할 때마다 새 배열로 호출됨"
           : `onFiles(${files.length}건): ${summary}`}
-      </Typography>
-    </FlexBox>
+      </Text>
+    </Flex>
   );
 }
 
