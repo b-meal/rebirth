@@ -3,9 +3,6 @@
 import type { ReactNode } from "react";
 import { FlexBox, TopNavigation, TopNavigationButton, Typography } from "@wanteddev/wds";
 
-// 모바일 전용 화면 셸. 큰 화면에서도 같은 폭의 모바일 프레임을 가운데 둠
-const FRAME_WIDTH = 430;
-
 export type ReportShellProps = {
   title: string;
   onBack?: () => void;
@@ -17,15 +14,8 @@ export type ReportShellProps = {
 
 export function ReportShell({ title, onBack, onClose, action, children }: ReportShellProps) {
   return (
-    <FlexBox
-      flexDirection="column"
-      sx={(theme) => ({
-        minHeight: "100dvh",
-        maxWidth: FRAME_WIDTH,
-        margin: "0 auto",
-        backgroundColor: theme.semantic.background.normal.normal,
-      })}
-    >
+    // 헤더와 하단은 자리를 지키고 본문만 스크롤함
+    <FlexBox flexDirection="column" sx={{ flex: 1, height: "100%", minHeight: 0 }}>
       <TopNavigation
         background
         leadingContent={
@@ -51,7 +41,8 @@ export function ReportShell({ title, onBack, onClose, action, children }: Report
       <FlexBox
         flexDirection="column"
         gap="20px"
-        sx={{ flex: 1, overflowY: "auto", padding: "16px" }}
+        // minHeight 0 이 없으면 flex 항목이 내용만큼 늘어나 안쪽 스크롤이 생기지 않음
+        sx={{ flex: 1, minHeight: 0, overflowY: "auto", padding: "16px" }}
       >
         {children}
       </FlexBox>
@@ -59,8 +50,7 @@ export function ReportShell({ title, onBack, onClose, action, children }: Report
       {action && (
         <FlexBox
           sx={(theme) => ({
-            position: "sticky",
-            bottom: 0,
+            flex: "none",
             padding: "12px 16px calc(12px + env(safe-area-inset-bottom))",
             borderTop: `1px solid ${theme.semantic.line.normal.alternative}`,
             backgroundColor: theme.semantic.background.normal.normal,

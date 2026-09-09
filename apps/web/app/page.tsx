@@ -12,7 +12,7 @@ export default function HomePage() {
       alignItems="center"
       justifyContent="center"
       gap="8px"
-      sx={{ minHeight: "100vh", padding: "24px", textAlign: "center" }}
+      sx={{ flex: 1, padding: "24px", textAlign: "center" }}
     >
       <Typography variant="title2" weight="bold">
         다시집

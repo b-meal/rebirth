@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { AppFrame } from "../components/layout/app-frame";
 import { Providers } from "./providers";
 
 // OG 메타와 QR 코드의 절대 URL 생성 기준
@@ -25,7 +26,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // ThemeProvider 가 저장된 테마를 클라이언트에서 html 에 넣어 서버 표시와 어긋남
     <html lang="ko" suppressHydrationWarning>
       <body>
-        <Providers>{children}</Providers>
+        <Providers>
+          <AppFrame>{children}</AppFrame>
+        </Providers>
       </body>
     </html>
   );
