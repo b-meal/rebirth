@@ -170,3 +170,43 @@ export const adminReportQuery = z.object({
 })
 
 export type AdminReportQuery = z.infer<typeof adminReportQuery>
+
+/* 실종 신고 */
+
+/**
+ * 실종 신고 등록. 연락처를 받지 않고 조회 토큰만 발급함
+ * 목격 제보와 열을 공유하지만 필수 입력이 달라 스키마를 따로 둠
+ */
+export const createLostReport = z.object({
+  animalType: animalType.default('unknown'),
+  appearance: z.string().max(300, '특징은 300자까지 넣을 수 있습니다').optional(),
+  colors: z
+    .array(z.string().min(1, '빈 털색은 넣을 수 없습니다').max(20, '털색은 20자까지 넣을 수 있습니다'))
+    .max(5, '털색은 5개까지 고를 수 있습니다')
+    .default([]),
+  size: animalSize.default('unknown'),
+  sex: animalSex.default('unknown'),
+  neutered: neuterStatus.default('unknown'),
+  collar: z.boolean().nullish(),
+  injury: z.boolean().nullish(),
+  earTip: z.boolean().nullish(),
+  // 마지막 목격 장소
+  coordinates: coordinates.optional(),
+  areaCode: z.string().max(20, '지역 코드가 너무 깁니다').optional(),
+  areaName: z.string().max(100, '지역명이 너무 깁니다').optional(),
+  // 마지막 목격 시각
+  occurredAt: z.coerce
+    .date({ error: '마지막 목격 시각이 올바르지 않습니다' })
+    .refine((v) => v.getTime() <= Date.now(), '미래 시각은 넣을 수 없습니다'),
+})
+
+export type CreateLostReport = z.infer<typeof createLostReport>
+
+/** 마지막 목격 장소가 없으면 후보를 찾을 수 없음 */
+export const createLostReportChecked = createLostReport.refine(
+  (v) => v.coordinates !== undefined || v.areaName !== undefined,
+  { message: '마지막 목격 장소를 알려 주십시오', path: ['coordinates'] },
+)
+
+// 토큰은 URL 에 담겨 공유되지 않아야 하므로 추측이 어려운 길이로 발급
+export const LOST_TOKEN_BYTES = 24

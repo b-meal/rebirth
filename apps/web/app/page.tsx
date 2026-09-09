@@ -30,6 +30,9 @@ export default function HomePage() {
         <Link href="/guide/injured">
           <Typography variant="caption1">다친 동물을 봤어요</Typography>
         </Link>
+        <Link href="/lost/new">
+          <Typography variant="caption1">반려동물을 잃어버렸어요</Typography>
+        </Link>
       </FlexBox>
     </FlexBox>
   );
