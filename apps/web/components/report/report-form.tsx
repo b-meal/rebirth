@@ -57,6 +57,9 @@ export function ReportForm() {
     onChange: (photos) => {
       const next = photos[0] ?? null;
       setPhoto(next);
+      // 대표 사진이 바뀌면 이전 분석과 업로드 결과를 쓰지 않음
+      analyze.clear();
+      upload.clear();
       // 고른 즉시 올려 둠. 2단계에서 위치를 정하는 동안 업로드가 끝남
       if (next) void upload.upload(next.file);
     },
@@ -92,16 +95,6 @@ export function ReportForm() {
     if (analyze.status !== "done" || !analyze.draft) return;
     applyAiDraft(analyze.draft, analyze.model ?? "", analyze.analyzedAt ?? "");
   }, [analyze.status, analyze.draft, analyze.model, analyze.analyzedAt, applyAiDraft]);
-
-  const handleFiles = useCallback(
-    async (files: File[]) => {
-      analyze.clear();
-      upload.clear();
-      // 업로드는 picker 의 onChange 에서 시작함. 재인코딩된 파일을 올려야 함
-      await picker.replaceFiles(files);
-    },
-    [picker, analyze, upload],
-  );
 
   const onLocationChange = useCallback(
     (next: Partial<LocationValue>) => {
@@ -221,14 +214,12 @@ export function ReportForm() {
 
       {step === 1 ? (
         <StepPhoto
-          photo={photo}
+          picker={picker}
           careSituation={draft.careSituation}
-          processing={picker.processing || upload.status === "uploading"}
-          error={picker.error ?? upload.message}
+          uploading={upload.status === "uploading"}
+          uploadError={picker.error === null ? upload.message : null}
           cameraAvailable={cameraAvailable ?? false}
-          onFiles={handleFiles}
           onCareSituation={(value) => edit("careSituation", value)}
-          onClearError={picker.dismissError}
         />
       ) : null}
 
