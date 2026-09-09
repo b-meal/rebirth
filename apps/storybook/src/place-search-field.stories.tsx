@@ -14,6 +14,7 @@ const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.978 };
 
 type DemoProps = {
   mode: PlaceSearchMode;
+  emptyMessage?: string;
   // 켜면 서울시청을 기준으로 반경 검색과 거리 표시를 함
   nearby: boolean;
   radiusMeters: number;
@@ -21,7 +22,7 @@ type DemoProps = {
 };
 
 // 실제 폼에서 쓰는 방식 그대로 훅과 컴포넌트를 연결
-function Demo({ mode, nearby, radiusMeters, placeholder }: DemoProps) {
+function Demo({ mode, nearby, radiusMeters, placeholder, emptyMessage }: DemoProps) {
   const [picked, setPicked] = useState<LocationCandidate | null>(null);
   const search = usePlaceSearch({
     mode,
@@ -34,6 +35,7 @@ function Demo({ mode, nearby, radiusMeters, placeholder }: DemoProps) {
       <PlaceSearchField
         search={search}
         placeholder={placeholder}
+        emptyMessage={emptyMessage}
         onPick={(candidate) => {
           setPicked(candidate);
           search.clear();
@@ -81,5 +83,10 @@ export const 반경검색: Story = {
 
 export const 주소검색: Story = {
   name: "주소 검색",
-  args: { mode: "address", placeholder: "도로명이나 지번으로 검색" },
+  args: {
+    mode: "address",
+    placeholder: "도로명이나 지번으로 검색",
+    // 장소명으로는 결과가 오지 않아 다음 행동을 알려 줌
+    emptyMessage: "도로명이나 지번으로 입력해 보십시오. 건물 이름은 장소 검색에서 찾습니다",
+  },
 };

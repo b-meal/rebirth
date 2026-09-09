@@ -5,8 +5,10 @@ import {
   FlexBox,
   List,
   ListCell,
+  Loading,
   SearchField,
   SectionMessage,
+  Typography,
 } from "@wanteddev/wds";
 import type { PlaceSearchState } from "../../hooks/use-place-search";
 
@@ -18,6 +20,8 @@ export type PlaceSearchFieldProps = {
   placeholder?: string;
   // 결과 목록의 최대 높이. 겹칠 대상에 맞춰 조절
   maxListHeight?: number;
+  // 결과가 없을 때 띄울 안내. 검색 방식마다 다음 행동이 다름
+  emptyMessage?: string;
 };
 
 const MAX_LIST_HEIGHT = 220;
@@ -35,8 +39,14 @@ export function PlaceSearchField({
   onPick,
   placeholder = "지하철역, 건물, 주소로 검색",
   maxListHeight = MAX_LIST_HEIGHT,
+  emptyMessage = "검색 결과가 없습니다",
 }: PlaceSearchFieldProps) {
-  const open = search.items.length > 0 || Boolean(search.error);
+  // 결과가 없거나 찾는 중에도 열어 둠. 아무것도 안 뜨면 고장난 것으로 보임
+  const open =
+    search.loading ||
+    search.empty ||
+    search.items.length > 0 ||
+    Boolean(search.error);
 
   return (
     <FlexBox flexDirection="column" sx={{ position: "relative" }}>
@@ -70,6 +80,21 @@ export function PlaceSearchField({
             <SectionMessage variant="negative" open>
               {search.error}
             </SectionMessage>
+          )}
+          {search.loading && (
+            <FlexBox alignItems="center" gap="8px" sx={{ padding: "14px 16px" }}>
+              <Loading size={16} />
+              <Typography variant="body2" color="semantic.label.alternative">
+                찾고 있습니다
+              </Typography>
+            </FlexBox>
+          )}
+          {search.empty && (
+            <FlexBox sx={{ padding: "14px 16px" }}>
+              <Typography variant="body2" color="semantic.label.alternative">
+                {emptyMessage}
+              </Typography>
+            </FlexBox>
           )}
           {search.items.length > 0 && (
             <List>

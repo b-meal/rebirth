@@ -24,6 +24,8 @@ export type PlaceSearchState = {
   items: LocationCandidate[];
   loading: boolean;
   error: string | null;
+  // 조회를 마쳤는데 결과가 없음. 안내 문구를 띄울 시점
+  empty: boolean;
   // 디바운스를 기다리지 않고 즉시 조회
   searchNow: () => void;
   clear: () => void;
@@ -65,6 +67,10 @@ export function usePlaceSearch({
     return search;
   }, [mode, query, category, centerKey, radiusMeters, size]);
 
+  // 어떤 조건으로 조회했는지 담는 키. 디바운스 대기 중에 결과 없음이 뜨는 것을 막음
+  const requestKey = params.toString();
+  const [settledKey, setSettledKey] = useState("");
+
   const needsQuery = mode !== "category";
   const ready = needsQuery ? query.trim().length >= MIN_QUERY_LENGTH : Boolean(category);
 
@@ -95,15 +101,17 @@ export function usePlaceSearch({
         setItems([]);
         setError("검색에 실패했습니다. 잠시 후에 다시 시도해 주십시오");
       } finally {
+        // 새 입력에 밀려 취소된 요청은 조회를 마친 것으로 보지 않음
         if (inflight.current === controller) {
           inflight.current = null;
           setLoading(false);
+          setSettledKey(requestKey);
         }
       }
     }, debounceMs);
 
     return () => clearTimeout(timer);
-  }, [ready, params, debounceMs, tick]);
+  }, [ready, params, requestKey, debounceMs, tick]);
 
   useEffect(() => {
     return () => inflight.current?.abort();
@@ -116,6 +124,7 @@ export function usePlaceSearch({
     setQuery("");
     setItems([]);
     setError(null);
+    setSettledKey("");
   }, []);
 
   return {
@@ -125,6 +134,12 @@ export function usePlaceSearch({
     items: ready ? items : [],
     loading: ready && loading,
     error: ready ? error : null,
+    empty:
+      ready &&
+      !loading &&
+      !error &&
+      items.length === 0 &&
+      settledKey === requestKey,
     searchNow,
     clear,
   };
