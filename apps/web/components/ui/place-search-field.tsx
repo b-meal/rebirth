@@ -81,7 +81,8 @@ export function PlaceSearchField({
               {search.error}
             </SectionMessage>
           )}
-          {search.loading && (
+          {/* 앞 결과가 남아 있으면 그대로 두고, 빈 자리에서만 진행 상태를 보여 줌 */}
+          {search.loading && search.items.length === 0 && (
             <FlexBox alignItems="center" gap="8px" sx={{ padding: "14px 16px" }}>
               <Loading size={16} />
               <Typography variant="body2" color="semantic.label.alternative">

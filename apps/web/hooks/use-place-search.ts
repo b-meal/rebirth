@@ -43,7 +43,6 @@ export function usePlaceSearch({
 }: UsePlaceSearchOptions = {}): PlaceSearchState {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<LocationCandidate[]>([]);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
 
@@ -81,7 +80,6 @@ export function usePlaceSearch({
       inflight.current?.abort();
       const controller = new AbortController();
       inflight.current = controller;
-      setLoading(true);
       setError(null);
 
       try {
@@ -104,7 +102,6 @@ export function usePlaceSearch({
         // 새 입력에 밀려 취소된 요청은 조회를 마친 것으로 보지 않음
         if (inflight.current === controller) {
           inflight.current = null;
-          setLoading(false);
           setSettledKey(requestKey);
         }
       }
@@ -127,19 +124,17 @@ export function usePlaceSearch({
     setSettledKey("");
   }, []);
 
+  // 이 조건으로 조회를 마쳤는지. 디바운스 대기와 요청 중을 한 상태로 묶음
+  const settled = settledKey === requestKey;
+
   return {
     query,
     setQuery,
     // 검색어가 짧아지면 앞 결과를 감춤. 상태를 지우면 effect 에서 동기 갱신이 됨
     items: ready ? items : [],
-    loading: ready && loading,
-    error: ready ? error : null,
-    empty:
-      ready &&
-      !loading &&
-      !error &&
-      items.length === 0 &&
-      settledKey === requestKey,
+    loading: ready && !settled,
+    error: ready && settled ? error : null,
+    empty: ready && settled && !error && items.length === 0,
     searchNow,
     clear,
   };
