@@ -1,0 +1,96 @@
+// 인메모리 고정 창 레이트리밋. 무가입 공개 제보라 스팸 한 번에 데모가 끝나는 것을 막음
+// server-only 를 import 하지 않음. 서버 자원을 잡지 않아 단위 테스트에서 그대로 돎
+// 서버리스 인스턴스마다 창이 따로 도는 한계가 있어 상한을 넉넉히 잡지 않음
+// P1 에서 Upstash 같은 공유 저장소로 옮김
+
+type Window = { count: number; resetAt: number };
+
+declare global {
+  var __rebirthRateLimit: Map<string, Window> | undefined;
+}
+
+const buckets = (globalThis.__rebirthRateLimit ??= new Map());
+
+// 창이 지난 항목이 계속 쌓이지 않게 호출마다 조금씩 정리
+const SWEEP_EVERY = 200;
+let calls = 0;
+
+function sweep(now: number) {
+  if (++calls % SWEEP_EVERY !== 0) return;
+  for (const [key, window] of buckets) {
+    if (window.resetAt <= now) buckets.delete(key);
+  }
+}
+
+export type RateLimitRule = { limit: number; windowSeconds: number };
+
+// 제보 생성은 사진 업로드와 AI 호출이 붙어 가장 비쌈
+export const RATE_LIMITS = {
+  createReport: { limit: 5, windowSeconds: 600 },
+  createFlag: { limit: 10, windowSeconds: 600 },
+  analyze: { limit: 10, windowSeconds: 600 },
+  signPhoto: { limit: 60, windowSeconds: 60 },
+} as const satisfies Record<string, RateLimitRule>;
+
+export type RateLimitResult =
+  | { allowed: true; remaining: number }
+  | { allowed: false; retryAfterSeconds: number };
+
+export function checkRateLimit(
+  key: string,
+  rule: RateLimitRule,
+): RateLimitResult {
+  const now = Date.now();
+  sweep(now);
+
+  const existing = buckets.get(key);
+  if (!existing || existing.resetAt <= now) {
+    buckets.set(key, { count: 1, resetAt: now + rule.windowSeconds * 1000 });
+    return { allowed: true, remaining: rule.limit - 1 };
+  }
+
+  if (existing.count >= rule.limit) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+    };
+  }
+
+  existing.count += 1;
+  return { allowed: true, remaining: rule.limit - existing.count };
+}
+
+/**
+ * 창을 소모하지 않고 상태만 봄
+ * 검증 실패로 되돌려보내는 요청이 상한을 깎지 않게 할 때 씀
+ */
+export function peekRateLimit(
+  key: string,
+  rule: RateLimitRule,
+): RateLimitResult {
+  const now = Date.now();
+  const existing = buckets.get(key);
+  if (!existing || existing.resetAt <= now) {
+    return { allowed: true, remaining: rule.limit };
+  }
+  if (existing.count >= rule.limit) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.max(1, Math.ceil((existing.resetAt - now) / 1000)),
+    };
+  }
+  return { allowed: true, remaining: rule.limit - existing.count };
+}
+
+/**
+ * 요청자 식별용 키. 프록시 뒤라 x-forwarded-for 의 첫 값을 씀
+ * IP 를 저장하지 않고 창이 지나면 사라지는 메모리에만 둠
+ */
+export function clientKey(request: Request, scope: string): string {
+  const forwarded = request.headers.get("x-forwarded-for");
+  const ip =
+    forwarded?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+  return `${scope}:${ip}`;
+}

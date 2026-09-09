@@ -4,14 +4,20 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./http": "./src/http/index.ts",
     "./location": "./src/location/index.ts",
-    "./location/*": "./src/location/*.ts"
+    "./location/*": "./src/location/*.ts",
+    "./reports": "./src/reports/index.ts",
+    "./reports/*": "./src/reports/*.ts",
+    "./storage": "./src/storage/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@rebirth/db": "workspace:*",
+    "@rebirth/types": "workspace:*",
     "server-only": "0.0.1",
     "zod": "4.5.4"
   },

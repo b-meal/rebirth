@@ -29,6 +29,20 @@
       "when": 1788933306708,
       "tag": "0003_add_care_situation",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788935657752,
+      "tag": "0004_add_report_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788935658752,
+      "tag": "0005_lock_down_flags_rls",
+      "breakpoints": true
     }
   ]
 }

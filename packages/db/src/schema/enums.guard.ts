@@ -7,6 +7,8 @@ import type {
   animalSize,
   animalType,
   careSituation,
+  flagReason,
+  flagResolution,
   neuterStatus,
   reportKind,
   reportStatus,
@@ -22,5 +24,17 @@ const _size: Same<Values<typeof animalSize>, t.AnimalSize> = true
 const _sex: Same<Values<typeof animalSex>, t.AnimalSex> = true
 const _neuter: Same<Values<typeof neuterStatus>, t.NeuterStatus> = true
 const _care: Same<Values<typeof careSituation>, t.CareSituation> = true
+const _flagReason: Same<Values<typeof flagReason>, t.FlagReason> = true
+const _flagResolution: Same<Values<typeof flagResolution>, t.FlagResolution> = true
 
-void [_kind, _status, _animal, _size, _sex, _neuter, _care]
+void [
+  _kind,
+  _status,
+  _animal,
+  _size,
+  _sex,
+  _neuter,
+  _care,
+  _flagReason,
+  _flagResolution,
+]

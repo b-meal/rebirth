@@ -12,6 +12,7 @@
   "dependencies": {
     "@emotion/cache": "11.14.0",
     "@emotion/react": "11.14.0",
+    "@rebirth/core": "workspace:*",
     "@rebirth/db": "workspace:*",
     "@rebirth/types": "workspace:*",
     "@wanteddev/wds": "3.12.0",

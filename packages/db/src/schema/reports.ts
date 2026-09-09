@@ -19,6 +19,8 @@ import {
   animalSize,
   animalType,
   careSituation,
+  flagReason,
+  flagResolution,
   neuterStatus,
   reportKind,
   reportStatus,
@@ -135,10 +137,41 @@ export type MatchBreakdown = {
   reason: string
 }
 
+// 제3자 신고. 같은 제보에 여러 건이 쌓이고 운영자가 한 번에 판정
+export const reportFlags = pgTable(
+  'report_flags',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    reportId: uuid()
+      .notNull()
+      .references(() => reports.id, { onDelete: 'cascade' }),
+    reason: flagReason().notNull(),
+    detail: text(),
+    // 신고자를 식별하지 않음. 중복 신고 억제는 레이트리밋으로만 함
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    // 운영자가 판정하면 채워짐. null 이면 검수 대기
+    resolvedAt: timestamp({ withTimezone: true }),
+    resolution: flagResolution(),
+    note: text(),
+  },
+  (t) => [
+    index('report_flags_pending_idx').on(t.reportId, t.resolvedAt),
+    index('report_flags_queue_idx').on(t.resolvedAt, t.createdAt.desc()),
+  ],
+)
+
 export const reportsRelations = relations(reports, ({ many }) => ({
   photos: many(reportPhotos),
+  flags: many(reportFlags),
   matchesAsLost: many(matchScores, { relationName: 'lost' }),
   matchesAsSighting: many(matchScores, { relationName: 'sighting' }),
+}))
+
+export const reportFlagsRelations = relations(reportFlags, ({ one }) => ({
+  report: one(reports, {
+    fields: [reportFlags.reportId],
+    references: [reports.id],
+  }),
 }))
 
 export const reportPhotosRelations = relations(reportPhotos, ({ one }) => ({
@@ -167,3 +200,5 @@ export type ReportPhoto = typeof reportPhotos.$inferSelect
 export type NewReportPhoto = typeof reportPhotos.$inferInsert
 export type MatchScore = typeof matchScores.$inferSelect
 export type NewMatchScore = typeof matchScores.$inferInsert
+export type ReportFlag = typeof reportFlags.$inferSelect
+export type NewReportFlag = typeof reportFlags.$inferInsert
