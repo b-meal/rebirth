@@ -9,13 +9,15 @@
     "./location/*": "./src/location/*.ts",
     "./reports": "./src/reports/index.ts",
     "./reports/*": "./src/reports/*.ts",
-    "./storage": "./src/storage/index.ts"
+    "./storage": "./src/storage/index.ts",
+    "./vision": "./src/vision/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test src/**/*.test.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
     "@rebirth/db": "workspace:*",
     "@rebirth/types": "workspace:*",
     "server-only": "0.0.1",

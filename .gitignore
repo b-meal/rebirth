@@ -49,3 +49,8 @@ generated-images/
 # next dev 가 앱마다 자동 생성. 프로젝트 규칙은 루트 CLAUDE.md 하나만 씀
 apps/*/AGENTS.md
 apps/*/CLAUDE.md
+
+# playwright 실행 산출물
+test-results/
+playwright-report/
+.femc/

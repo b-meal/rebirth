@@ -151,6 +151,9 @@ export async function createReportHandler(request: Request): Promise<Response> {
         areaName: input.areaName,
         occurredAt: input.occurredAt,
         aiEditedFields: input.aiEditedFields,
+        aiRaw: input.aiRaw,
+        aiModel: input.aiModel,
+        aiAnalyzedAt: input.aiAnalyzedAt,
       },
       [{ storagePath, sortOrder: 0 }],
     );

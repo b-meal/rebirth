@@ -24,12 +24,16 @@ function sweep(now: number) {
 
 export type RateLimitRule = { limit: number; windowSeconds: number };
 
+// e2e 는 한 흐름에서 여러 건을 만들어 기본 상한에 바로 걸림
+// 로컬과 CI 에서만 켜고 배포 환경에는 넣지 않음
+const RELAXED = process.env.RATE_LIMIT_RELAXED === "true";
+
 // 제보 생성은 사진 업로드와 AI 호출이 붙어 가장 비쌈
 export const RATE_LIMITS = {
-  createReport: { limit: 5, windowSeconds: 600 },
-  createFlag: { limit: 10, windowSeconds: 600 },
-  analyze: { limit: 10, windowSeconds: 600 },
-  signPhoto: { limit: 60, windowSeconds: 60 },
+  createReport: { limit: RELAXED ? 200 : 5, windowSeconds: 600 },
+  createFlag: { limit: RELAXED ? 200 : 10, windowSeconds: 600 },
+  analyze: { limit: RELAXED ? 200 : 10, windowSeconds: 600 },
+  signPhoto: { limit: RELAXED ? 600 : 60, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitResult =

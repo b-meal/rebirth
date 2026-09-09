@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { analyzeResult } from './analyze'
 import {
   animalSex,
   animalSize,
@@ -59,6 +60,11 @@ export const createReport = z.object({
     .array(z.string().max(40, '필드명이 너무 깁니다'))
     .max(20, '수정 필드는 20개까지 기록합니다')
     .default([]),
+  // AI 초안 원본. 사용자 확정값과 분리해 보관하고 정확도 측정의 근거로 씀
+  // 분석 실패로 직접 입력한 제보는 없음
+  aiRaw: analyzeResult.optional(),
+  aiModel: z.string().max(60, '모델명이 너무 깁니다').optional(),
+  aiAnalyzedAt: z.coerce.date().optional(),
 })
 
 export type CreateReport = z.infer<typeof createReport>
