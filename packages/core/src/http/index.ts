@@ -1,6 +1,7 @@
 export {
   badRequest,
   fieldErrors,
+  isUuid,
   notFound,
   ok,
   parseJson,

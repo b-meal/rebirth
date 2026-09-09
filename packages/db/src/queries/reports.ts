@@ -32,6 +32,29 @@ export type PublicReport = {
   [K in keyof typeof publicReportColumns]: (typeof reports.$inferSelect)[K]
 }
 
+// storagePath 는 서명 URL 발급에만 쓰는 내부 경로. 공개 응답에 넣지 않음
+const publicPhotoColumns = {
+  id: true,
+  width: true,
+  height: true,
+  sortOrder: true,
+  createdAt: true,
+} as const
+
+export const publicPhotoSelection = {
+  columns: publicPhotoColumns,
+  orderBy: [reportPhotos.sortOrder],
+}
+
+// 공개 사진 컬럼에 storagePath 나 reportId 가 섞이면 typecheck 가 깨짐
+const _noPhotoLeak: Extract<
+  keyof typeof publicPhotoColumns,
+  'storagePath' | 'reportId'
+> extends never
+  ? true
+  : never = true
+void _noPhotoLeak
+
 type SensitiveKey =
   | 'exactPoint'
   | 'reporterId'
@@ -91,7 +114,7 @@ export function findPublicReport(id: string) {
       aiRaw: false,
       aiEditedFields: false,
     },
-    with: { photos: { orderBy: [reportPhotos.sortOrder] } },
+    with: { photos: publicPhotoSelection },
   })
 }
 

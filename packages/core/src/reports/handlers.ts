@@ -23,6 +23,7 @@ import {
   checkRateLimit,
   clientKey,
   fieldErrors,
+  isUuid,
   notFound,
   ok,
   parseJson,
@@ -45,6 +46,8 @@ import {
 
 const PHOTO_FIELD = "photo";
 const PAYLOAD_FIELD = "payload";
+
+const REPORT_NOT_FOUND = "찾는 제보가 없습니다. 주소를 다시 확인해 주십시오";
 
 /* POST /api/reports  사진과 폼 데이터를 multipart 로 한 번에 받음 */
 
@@ -175,10 +178,11 @@ export async function getReportHandler(
   context: RouteContext,
 ): Promise<Response> {
   const { id } = await context.params;
+  if (!isUuid(id)) return notFound(REPORT_NOT_FOUND);
   try {
     const report = await findPublicReport(id);
     if (!report) {
-      return notFound("찾는 제보가 없습니다. 주소를 다시 확인해 주십시오");
+      return notFound(REPORT_NOT_FOUND);
     }
     return ok(report);
   } catch (error) {
@@ -222,6 +226,7 @@ export async function getReportPhotoHandler(
   if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
 
   const { id } = await context.params;
+  if (!isUuid(id)) return notFound("사진이 없습니다");
 
   try {
     const rows = await findReportPhotoPaths(id);
@@ -264,6 +269,7 @@ export async function createFlagHandler(
   if (!peeked.allowed) return tooManyRequests(peeked.retryAfterSeconds);
 
   const { id } = await context.params;
+  if (!isUuid(id)) return notFound(REPORT_NOT_FOUND);
 
   const parsed = await parseJson(request, createFlag);
   if ("response" in parsed) return parsed.response;
@@ -295,9 +301,10 @@ export async function shareReportHandler(
   context: RouteContext,
 ): Promise<Response> {
   const { id } = await context.params;
+  if (!isUuid(id)) return notFound(REPORT_NOT_FOUND);
   try {
     const row = await bumpShareCount(id);
-    if (!row) return notFound("찾는 제보가 없습니다");
+    if (!row) return notFound(REPORT_NOT_FOUND);
     return ok({ shareCount: row.shareCount });
   } catch (error) {
     return serverError("reports.share", error);

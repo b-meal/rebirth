@@ -60,6 +60,15 @@ export function ok<T>(body: T, init?: ResponseInit): Response {
   });
 }
 
+// 경로의 id 는 사용자 입력. uuid 가 아니면 Postgres 까지 가서 드라이버가 터짐
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** 경로 파라미터가 uuid 인지 확인. 형식이 틀린 것과 없는 것을 구분해 알려주지 않음 */
+export function isUuid(value: string): boolean {
+  return UUID_PATTERN.test(value);
+}
+
 /** zod 로 JSON 본문을 검증. 실패하면 400 Response 를 돌려줌 */
 export async function parseJson<S extends z.ZodType>(
   request: Request,

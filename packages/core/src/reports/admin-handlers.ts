@@ -12,6 +12,7 @@ import { adminReportQuery, moderationDecision } from "@rebirth/types";
 import {
   badRequest,
   fieldErrors,
+  isUuid,
   notFound,
   ok,
   parseJson,
@@ -94,6 +95,7 @@ export async function adminGetReportHandler(
   if (denied) return denied;
 
   const { id } = await context.params;
+  if (!isUuid(id)) return notFound("찾는 제보가 없습니다");
 
   try {
     const report = await findAdminReport(id);
@@ -130,6 +132,7 @@ export async function adminModerateHandler(
   if (denied) return denied;
 
   const { id } = await context.params;
+  if (!isUuid(id)) return notFound("찾는 제보가 없습니다");
 
   const parsed = await parseJson(request, moderationDecision);
   if ("response" in parsed) return parsed.response;
