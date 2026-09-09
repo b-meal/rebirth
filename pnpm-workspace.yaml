@@ -6,5 +6,5 @@ packages:
 allowBuilds:
   # eslint-config-next 의 네이티브 resolver 바이너리 필요
   unrs-resolver: true
-  # Storybook 의 Vite 번들러가 네이티브 바이너리 필요
+  # Storybook 의 Vite 번들러와 drizzle-kit 이 네이티브 바이너리 필요
   esbuild: true

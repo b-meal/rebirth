@@ -1,0 +1,34 @@
+{
+  "name": "@rebirth/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./drafts": "./src/drafts/index.ts",
+    "./http": "./src/http/index.ts",
+    "./location": "./src/location/index.ts",
+    "./location/*": "./src/location/*.ts",
+    "./manage": "./src/manage/index.ts",
+    "./matching": "./src/matching/index.ts",
+    "./reports": "./src/reports/index.ts",
+    "./reports/*": "./src/reports/*.ts",
+    "./storage": "./src/storage/index.ts",
+    "./support": "./src/support/index.ts",
+    "./vision": "./src/vision/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
+    "@rebirth/db": "workspace:*",
+    "@rebirth/types": "workspace:*",
+    "server-only": "0.0.1",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5"
+  }
+}
