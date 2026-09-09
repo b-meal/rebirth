@@ -5,9 +5,9 @@ import {
   FlexBox,
   List,
   ListCell,
-  Loading,
   SearchField,
   SectionMessage,
+  Skeleton,
   Typography,
 } from "@wanteddev/wds";
 import type { PlaceSearchState } from "../../hooks/use-place-search";
@@ -25,6 +25,9 @@ export type PlaceSearchFieldProps = {
 };
 
 const MAX_LIST_HEIGHT = 220;
+
+// 결과 자리를 잡아 두는 행 수. 결과가 들어오면 그대로 목록으로 바뀜
+const SKELETON_ROWS = [0, 1];
 
 // 반경 검색에서만 거리가 오므로 있을 때만 덧붙임
 function withDistance(detail: string, meters: number | null): string {
@@ -55,6 +58,7 @@ export function PlaceSearchField({
         value={search.query}
         onChange={(event) => search.setQuery(event.target.value)}
         onReset={() => search.clear()}
+        aria-busy={search.loading}
       />
 
       {open && (
@@ -81,13 +85,27 @@ export function PlaceSearchField({
               {search.error}
             </SectionMessage>
           )}
-          {/* 앞 결과가 남아 있으면 그대로 두고, 빈 자리에서만 진행 상태를 보여 줌 */}
+          {/* 앞 결과가 남아 있으면 그대로 두고, 빈 자리에서만 결과 자리를 잡아 둠 */}
+          {/* 진행 상태는 검색창의 aria-busy 가 알리므로 여기는 장식으로만 둠 */}
           {search.loading && search.items.length === 0 && (
-            <FlexBox alignItems="center" gap="8px" sx={{ padding: "14px 16px" }}>
-              <Loading size={16} />
-              <Typography variant="body2" color="semantic.label.alternative">
-                찾고 있습니다
-              </Typography>
+            <FlexBox flexDirection="column" aria-hidden="true">
+              {SKELETON_ROWS.map((row) => (
+                <FlexBox
+                  key={row}
+                  flexDirection="column"
+                  gap="6px"
+                  sx={(theme) => ({
+                    padding: "14px 16px",
+                    borderBottom:
+                      row === SKELETON_ROWS.length - 1
+                        ? undefined
+                        : `1px solid ${theme.semantic.line.normal.normal}`,
+                  })}
+                >
+                  <Skeleton variant="text" width="45%" height="16px" />
+                  <Skeleton variant="text" width="70%" height="13px" />
+                </FlexBox>
+              ))}
             </FlexBox>
           )}
           {search.empty && (
