@@ -38,6 +38,11 @@ Thumbs.db
 .playwright-mcp/
 /tmp/
 /scratch/
+# 저장소 루트에 임시로 만드는 검증 스크립트와 화면 캡처
+/tmp-*
+/*.png
+/*.jpg
+/*.bak
 
 # swagger mcp 로컬 캐시
 .swagger-cache/
