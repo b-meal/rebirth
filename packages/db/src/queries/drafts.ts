@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, eq, isNull, lt, or, sql as raw } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
 import {
@@ -132,7 +132,7 @@ export function findUsableUploads(input: {
     .where(
       and(
         eq(draftUploads.sessionId, input.sessionId),
-        raw`${draftUploads.id} = any(${input.ids}::uuid[])`,
+        inArray(draftUploads.id, input.ids),
         eq(draftUploads.status, 'ready'),
         isNull(draftUploads.claimedAt),
         raw`${draftUploads.expiresAt} > now()`,
@@ -152,7 +152,7 @@ export function claimUploads(input: {
     .where(
       and(
         eq(draftUploads.sessionId, input.sessionId),
-        raw`${draftUploads.id} = any(${input.ids}::uuid[])`,
+        inArray(draftUploads.id, input.ids),
       ),
     )
     .returning({ id: draftUploads.id })

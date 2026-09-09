@@ -43,6 +43,20 @@
       "when": 1788935658752,
       "tag": "0005_lock_down_flags_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788958564071,
+      "tag": "0006_add_manage_and_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788958565071,
+      "tag": "0007_lock_down_new_tables_rls",
+      "breakpoints": true
     }
   ]
 }
