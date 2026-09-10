@@ -332,6 +332,7 @@ export function ReportForm() {
                 areaName: draft.areaName,
                 locationToken: draft.locationToken,
                 usableForDistance: draft.usableForDistance,
+                landmark: draft.landmark,
               }}
               onChange={onLocationChange}
             />

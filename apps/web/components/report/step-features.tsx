@@ -17,14 +17,14 @@ const ANIMAL_OPTIONS = [
   { value: "dog", label: "개" },
   { value: "cat", label: "고양이" },
   { value: "other", label: "그 외" },
-  { value: "unknown", label: "모르겠음" },
+  { value: "unknown", label: "모름" },
 ] as const;
 
 const SIZE_OPTIONS = [
   { value: "small", label: "소형" },
   { value: "medium", label: "중형" },
   { value: "large", label: "대형" },
-  { value: "unknown", label: "모르겠음" },
+  { value: "unknown", label: "모름" },
 ] as const;
 
 const COLOR_OPTIONS = [
@@ -38,10 +38,21 @@ const COLOR_OPTIONS = [
   "삼색",
 ] as const;
 
+// 상세의 특징 절에 그대로 나오는 값. 관찰한 것만 고르게 두고 의료 판단은 넣지 않음
+const CONDITION_OPTIONS = [
+  "말랐음",
+  "털이 엉킴",
+  "다리를 절뚝임",
+  "사람을 피함",
+  "사람을 따름",
+  "겁먹은 상태",
+  "새끼로 보임",
+] as const;
+
 const TRISTATE = [
   { value: "true", label: "있음" },
   { value: "false", label: "없음" },
-  { value: "null", label: "모르겠음" },
+  { value: "null", label: "모름" },
 ] as const;
 
 const TRISTATE_FIELDS = [
@@ -132,17 +143,19 @@ export function StepFeatures({
 
       <Section>
         {label("동물 종류", "animalType")}
-        <SegmentedControl
+        <Chip.RadioRoot
           value={draft.animalType}
           onValueChange={(value) => onEdit("animalType", value as ReportDraft["animalType"])}
           aria-label="동물 종류"
         >
-          {ANIMAL_OPTIONS.map((option) => (
-            <SegmentedControlItem key={option.value} value={option.value}>
-              {option.label}
-            </SegmentedControlItem>
-          ))}
-        </SegmentedControl>
+          <HStack gap="spacingX.betweenChips" wrap>
+            {ANIMAL_OPTIONS.map((option) => (
+              <Chip.RadioItem key={option.value} value={option.value}>
+                <Chip.Label>{option.label}</Chip.Label>
+              </Chip.RadioItem>
+            ))}
+          </HStack>
+        </Chip.RadioRoot>
       </Section>
 
       <TextField
@@ -207,20 +220,54 @@ export function StepFeatures({
 
       <Section>
         {label("크기", "size")}
-        <SegmentedControl
+        <Chip.RadioRoot
           value={draft.size}
           onValueChange={(value) => onEdit("size", value as ReportDraft["size"])}
           aria-label="크기"
         >
-          {SIZE_OPTIONS.map((option) => (
-            <SegmentedControlItem key={option.value} value={option.value}>
-              {option.label}
-            </SegmentedControlItem>
-          ))}
-        </SegmentedControl>
+          <HStack gap="spacingX.betweenChips" wrap>
+            {SIZE_OPTIONS.map((option) => (
+              <Chip.RadioItem key={option.value} value={option.value}>
+                <Chip.Label>{option.label}</Chip.Label>
+              </Chip.RadioItem>
+            ))}
+          </HStack>
+        </Chip.RadioRoot>
       </Section>
 
-      {TRISTATE_FIELDS.map(([text, field]) => (
+      <Section>
+        <Text as="h3" textStyle="t5Bold" color="fg.neutral">
+          지금 상태
+        </Text>
+        <HStack gap="spacingX.betweenChips" wrap>
+          {CONDITION_OPTIONS.map((tag) => {
+            const selected = draft.conditionTags.includes(tag);
+            return (
+              <Chip.Toggle
+                key={tag}
+                size="small"
+                checked={selected}
+                onCheckedChange={() =>
+                  onEdit(
+                    "conditionTags",
+                    selected
+                      ? draft.conditionTags.filter((item) => item !== tag)
+                      : // 서버 상한이 8개
+                        [...draft.conditionTags, tag].slice(0, 8),
+                  )
+                }
+              >
+                <Chip.Label>{tag}</Chip.Label>
+              </Chip.Toggle>
+            );
+          })}
+        </HStack>
+      </Section>
+
+      {TRISTATE_FIELDS.filter(
+        // 귀 끝은 고양이만 관찰값을 가짐. 개에 값이 들어가면 저장이 거부됨
+        ([, field]) => field !== "earTip" || draft.animalType === "cat",
+      ).map(([text, field]) => (
         <Section key={field}>
           {label(text, field)}
           <SegmentedControl
