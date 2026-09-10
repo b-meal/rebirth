@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useRef, useState } from "react";
-import { Button, Flex, IconButton, Text } from "@chakra-ui/react";
-import { IconCamera, IconImage } from "../../web/components/ui/icons";
+import { Icon, PrefixIcon, Text, VStack } from "@seed-design/react";
+import { IconCameraFill, IconPictureFill } from "@karrotmarket/react-monochrome-icon";
+import { ActionButton } from "../../web/seed-design/ui/action-button";
 import {
   PhotoPickerInput,
   type PhotoPickerInputHandle,
@@ -24,20 +25,22 @@ function Demo({ mode, multiple, disabled, trigger }: DemoProps) {
     .join(" / ");
 
   return (
-    <Flex direction="column" align="flex-start" gap="3" maxWidth="420px">
+    <VStack align="flex-start" gap="x3" maxWidth="420px">
       {trigger === "icon" ? (
-        <IconButton variant="outline" aria-label="사진 선택" disabled={disabled} onClick={open}>
-          <IconCamera />
-        </IconButton>
-      ) : (
-        <Button
-          variant="outline"
+        <ActionButton
+          variant="neutralOutline"
+          layout="iconOnly"
+          aria-label="사진 선택"
           disabled={disabled}
           onClick={open}
         >
-          {mode === "camera" ? <IconCamera /> : <IconImage />}
+          <Icon svg={<IconCameraFill />} />
+        </ActionButton>
+      ) : (
+        <ActionButton variant="neutralOutline" disabled={disabled} onClick={open}>
+          <PrefixIcon svg={mode === "camera" ? <IconCameraFill /> : <IconPictureFill />} />
           {mode === "camera" ? "사진 촬영" : "앨범에서 선택"}
-        </Button>
+        </ActionButton>
       )}
 
       <PhotoPickerInput
@@ -48,12 +51,12 @@ function Demo({ mode, multiple, disabled, trigger }: DemoProps) {
         onFiles={setFiles}
       />
 
-      <Text textStyle="sm" color="fg.alternative">
+      <Text textStyle="t3Regular" color="fg.neutralMuted">
         {files.length === 0
           ? "onFiles 로 전달된 파일 없음. 선택할 때마다 새 배열로 호출됨"
           : `onFiles(${files.length}건): ${summary}`}
       </Text>
-    </Flex>
+    </VStack>
   );
 }
 

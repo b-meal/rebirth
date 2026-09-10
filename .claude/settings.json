@@ -18,6 +18,15 @@
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce-montage.mjs\""
           }
         ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce-design-system.mjs\""
+          }
+        ]
       }
     ]
   },
@@ -38,5 +47,18 @@
         "repo": "dietrichgebert/ponytail"
       }
     }
-  }
+  },
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:seed-design.io)",
+      "Bash(curl -sL https://seed-design.io/*)",
+      "Bash(pnpm --filter @rebirth/web exec npx @seed-design/cli@latest add:*)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm build)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "seed-docs"
+  ]
 }

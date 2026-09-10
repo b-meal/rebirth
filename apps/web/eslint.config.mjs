@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // SEED CLI 가 내려받는 원본 스니펫이라 우리 규칙의 검사 대상 제외
+    "seed-design/**",
   ]),
 ]);
 

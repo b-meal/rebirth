@@ -13,7 +13,8 @@
     "isolatedModules": true,
     "types": ["vite/client"],
     "paths": {
-      "@/*": ["../web/*"]
+      "@/*": ["../web/*"],
+      "seed-design/*": ["../web/seed-design/*"]
     }
   },
   "include": [".storybook/**/*.ts", ".storybook/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"]

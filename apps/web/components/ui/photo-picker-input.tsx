@@ -1,5 +1,7 @@
 "use client";
 
+// design-system-allow:raw-element 카메라 즉시 실행에 네이티브 file 입력이 필요함
+
 import { useImperativeHandle, useRef, type ChangeEvent, type Ref } from "react";
 import { PHOTO_ACCEPT } from "@/lib/image";
 
@@ -44,7 +46,14 @@ export function PhotoPickerInput({
       multiple={mode === "library" && multiple}
       disabled={disabled}
       onChange={handleChange}
-      hidden
+      // display:none 인 입력은 Safari 가 open() 을 무시해 크기만 줄여 숨김
+      style={{
+        position: "absolute",
+        width: 1,
+        height: 1,
+        opacity: 0,
+        pointerEvents: "none",
+      }}
       tabIndex={-1}
       aria-hidden="true"
     />

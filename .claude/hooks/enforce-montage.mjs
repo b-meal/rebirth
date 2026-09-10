@@ -1,14 +1,13 @@
 #!/usr/bin/env node
-// UI 는 Montage(@wanteddev/wds) 단일 원천, shadcn 잔존물 유입 차단
+// admin 의 UI 단일 원천 유지, web 은 enforce-design-system 이 SEED 로 검사
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-const APPS = ['apps/admin', 'apps/web'];
+const APPS = ['apps/admin'];
 
 // 제거된 shadcn 계열. 되살아나면 차단
 const BANNED_IMPORTS = [
-  '@/components/ui/',
   'class-variance-authority',
   'tailwind-merge',
   'tw-animate-css',
@@ -19,6 +18,15 @@ const BANNED_IMPORTS = [
   'from "cn"',
   "from 'cn'",
 ];
+
+// admin 은 Montage 를 그대로 쓰므로 shadcn 경로가 되살아나면 안 됨
+const BANNED_BY_APP = {
+  'apps/admin': ['@/components/ui/'],
+};
+
+const UI_SOURCE = {
+  'apps/admin': '@wanteddev/wds 와 @wanteddev/wds-icon',
+};
 
 function deny(reason) {
   process.stdout.write(
@@ -56,13 +64,14 @@ if (!/\.(tsx|jsx)$/.test(rel)) process.exit(0);
 const text = tool === 'Write' ? (params.content ?? '') : (params.new_string ?? '');
 if (!text) process.exit(0);
 
-const hits = BANNED_IMPORTS.filter((b) => text.includes(b));
+const banned = [...BANNED_IMPORTS, ...(BANNED_BY_APP[app] ?? [])];
+const hits = banned.filter((b) => text.includes(b));
 if (hits.length) {
   deny(
     [
       'shadcn 계열 import 가 남아 있습니다: ' + hits.join(', '),
-      'UI 는 @wanteddev/wds 와 @wanteddev/wds-icon 만 씁니다.',
-      '필요한 컴포넌트가 없으면 wds-theme 토큰 위에 직접 만들고 components/ 아래에 둡니다.',
+      `${app} 의 UI 는 ${UI_SOURCE[app]} 를 씁니다.`,
+      '필요한 컴포넌트가 없으면 테마 토큰 위에 직접 만들고 components/ 아래에 둡니다.',
     ].join('\n'),
   );
 }
@@ -71,8 +80,8 @@ if (hits.length) {
 if (/className=["'][^"']*\b(flex|grid|gap-\d|p-\d|px-\d|py-\d|m-\d|mt-\d|text-(xs|sm|base|lg|xl)|font-(medium|semibold|bold)|rounded|border|bg-|w-full|min-h-)/.test(text)) {
   deny(
     [
-      'Tailwind 유틸리티 클래스를 썼습니다. admin 과 web 에서 Tailwind 를 제거했습니다.',
-      'FlexBox 와 Box 의 props, 또는 sx prop 으로 대체하십시오.',
+      'Tailwind 유틸리티 클래스를 썼습니다. admin 에서 Tailwind 를 제거했습니다.',
+      '레이아웃 컴포넌트의 props 나 sx prop 으로 대체하십시오.',
     ].join('\n'),
   );
 }

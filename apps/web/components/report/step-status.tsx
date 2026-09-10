@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { Flex, Heading, Input } from "@chakra-ui/react";
+import { HStack, Text, VStack } from "@seed-design/react";
+import { Callout } from "seed-design/ui/callout";
+import { Chip } from "seed-design/ui/chip";
+import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import type { ReportDraft } from "@/hooks/use-report-draft";
-import { Chip } from "@/components/ui/chip";
-import { SectionMessage } from "@/components/ui/section-message";
+import { Section } from "@/components/ui/screen";
 
-// 4단계 상태와 제출. 보호 상황에 따라 마무리 안내가 갈림
-// 포획을 유도하거나 응급처치를 안내하지 않음
+// 4단계 상태와 제출, 포획 유도나 응급처치 안내는 넣지 않음
 
 const TAG_OPTIONS = [
   "배회 중",
@@ -21,7 +22,7 @@ const TAG_OPTIONS = [
   "어린 개체로 보임",
 ] as const;
 
-// datetime-local 이 쓰는 형태. 초와 타임존을 떼어냄
+// datetime-local 이 쓰는 형태, 초와 타임존을 떼어냄
 function toLocalInput(iso: string): string {
   const date = iso ? new Date(iso) : new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -36,7 +37,6 @@ export type StepStatusProps = {
 
 export function StepStatus({ draft, submitError, onEdit }: StepStatusProps) {
   // 목격 시각 기본값은 이 단계에 처음 왔을 때의 현재 시각
-  // 초안 생성 시점에 넣으면 서버 렌더와 값이 갈림
   useEffect(() => {
     if (draft.occurredAt) return;
     const now = new Date().toISOString();
@@ -45,24 +45,26 @@ export function StepStatus({ draft, submitError, onEdit }: StepStatusProps) {
   }, [draft.occurredAt, onEdit]);
 
   return (
-    <Flex direction="column" gap="5">
-      <Heading size="lg">상태를 골라 주십시오</Heading>
+    <VStack align="stretch" gap="x6">
+      <Text as="h2" textStyle="t7Bold" color="fg.neutral">
+        상태를 골라 주십시오
+      </Text>
 
-      {submitError ? (
-        <SectionMessage variant="negative">{submitError}</SectionMessage>
-      ) : null}
+      {submitError ? <Callout tone="critical" description={submitError} /> : null}
 
-      <Flex direction="column" gap="2">
-        <Heading size="sm">지금 상태 (복수 선택)</Heading>
-        <Flex gap="1.5" wrap="wrap">
+      <Section>
+        <Text as="h3" textStyle="t5Bold" color="fg.neutral">
+          지금 상태
+        </Text>
+        <HStack gap="spacingX.betweenChips" wrap>
           {TAG_OPTIONS.map((tag) => {
             const selected = draft.conditionTags.includes(tag);
             return (
-              <Chip
+              <Chip.Toggle
                 key={tag}
                 size="small"
-                active={selected}
-                onClick={() =>
+                checked={selected}
+                onCheckedChange={() =>
                   onEdit(
                     "conditionTags",
                     selected
@@ -72,16 +74,15 @@ export function StepStatus({ draft, submitError, onEdit }: StepStatusProps) {
                   )
                 }
               >
-                {tag}
-              </Chip>
+                <Chip.Label>{tag}</Chip.Label>
+              </Chip.Toggle>
             );
           })}
-        </Flex>
-      </Flex>
+        </HStack>
+      </Section>
 
-      <Flex direction="column" gap="2">
-        <Heading size="sm">목격 시각</Heading>
-        <Input
+      <TextField label="목격 시각">
+        <TextFieldInput
           type="datetime-local"
           value={toLocalInput(draft.occurredAt)}
           max={toLocalInput(new Date().toISOString())}
@@ -92,21 +93,20 @@ export function StepStatus({ draft, submitError, onEdit }: StepStatusProps) {
             }
           }}
         />
-      </Flex>
+      </TextField>
 
-      {/* 보호 상황별 마무리 안내 */}
       {draft.careSituation === "roaming" ? (
-        <SectionMessage variant="info">
-          동물에게 무리하게 다가가지 마십시오. 다치거나 도로 위에 있으면 1577-0954
-          또는 관할 지자체에 먼저 신고해 주십시오
-        </SectionMessage>
+        <Callout
+          tone="informative"
+          description="동물에게 무리하게 다가가지 마십시오. 다치거나 도로 위에 있으면 1577-0954 또는 관할 지자체에 먼저 신고해 주십시오"
+        />
       ) : null}
       {draft.careSituation === "in_care" ? (
-        <SectionMessage variant="info">
-          보호 중인 장소를 안전하게 유지해 주십시오. 인계가 필요하면 1577-0954 또는
-          관할 지자체에 문의할 수 있습니다
-        </SectionMessage>
+        <Callout
+          tone="informative"
+          description="보호 중인 장소를 안전하게 유지해 주십시오. 인계가 필요하면 1577-0954 또는 관할 지자체에 문의할 수 있습니다"
+        />
       ) : null}
-    </Flex>
+    </VStack>
   );
 }
