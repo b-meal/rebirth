@@ -18,7 +18,7 @@ export function SectionHeader({ title, description, count, action, ...rest }: Se
         <Text as="h2" textStyle="title3">
           {title}
           {typeof count === "number" ? (
-            <Text as="span" color="fg.assistive" fontWeight="500" marginInlineStart="1.5">
+            <Text as="span" color="fg.assistive" fontWeight="medium" marginInlineStart="1.5">
               {count}
             </Text>
           ) : null}

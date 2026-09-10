@@ -2,10 +2,23 @@ import { Box, Flex, type BoxProps, type FlexProps } from "@chakra-ui/react";
 
 // 화면 배치 프리미티브, 여백 값을 화면 쪽에 적지 않고 여기서 한 번만 정함
 
-/** 데스크톱 390px 프레임 안에 오버레이를 가두는 좌우 inset */
-export const FRAME_INSET = {
-  base: "0",
-  lg: "calc(50% - var(--chakra-sizes-frame) / 2)",
+/**
+ * 오버레이를 폰 폭 안에 가두는 props. Positioner 의 inset 은
+ * 레시피의 width 100% 와 겹쳐 무시되므로 Content 의 폭을 제한함
+ */
+export const FRAME_OVERLAY = {
+  width: "100%",
+  maxWidth: "frame",
+  marginInline: "auto",
+} as const;
+
+/**
+ * 가장자리에 붙는 오버레이용 Positioner props. 절대 배치라 margin auto 가 먹지 않아
+ * 시작 위치를 직접 계산하고 폭을 프레임으로 제한함
+ */
+export const FRAME_COLUMN = {
+  width: "min(100%, var(--chakra-sizes-frame))",
+  insetInlineStart: "max(0px, calc(50% - var(--chakra-sizes-frame) / 2))",
 } as const;
 
 /** 화면 루트, 세로 플렉스에 최소 한 화면 높이 */

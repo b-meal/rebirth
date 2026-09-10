@@ -17,6 +17,16 @@ export const POINT = { hue: 92, chroma: 0.14 } as const;
 /** 회색과 배경에 섞는 포인트 틴트 채도. 0 이면 완전 무채색 */
 const TINT = 0.01;
 
+/** 동물 털색 프리셋. 색 선택기처럼 hex 원문이 필요한 곳이 참조하는 단일 원천 */
+export const COAT_COLORS = {
+  white: "#f5f3ee",
+  brown: "#8a5a34",
+  black: "#2b2724",
+  gray: "#9a9691",
+  yellow: "#d8b25c",
+  calico: "#c98a5e",
+} as const;
+
 const oklch = (l: number, c: number, hue: number = POINT.hue) => `oklch(${l} ${c} ${hue})`;
 
 // 그림자에 쓰는 반투명 잉크, 포인트 색상각을 따라가 배경과 같은 계열 유지
@@ -69,6 +79,10 @@ const tokens = defineTokens({
     brand: scale(BRAND_STEPS, POINT.chroma),
     // Chakra 기본 gray 를 덮어써 border bg fg 기본값이 모두 틴트를 따르게 함
     gray: scale(NEUTRAL_STEPS, TINT),
+    // 동물 털색 프리셋, 브랜드와 무관한 실제 사물 색이라 별도 눈금으로 둠
+    coat: Object.fromEntries(
+      Object.entries(COAT_COLORS).map(([name, value]) => [name, { value }]),
+    ),
   },
   // 모바일 화면 배치 상수, 화면 쪽에서 숫자를 직접 쓰지 않는 기준
   spacing: {
@@ -171,6 +185,8 @@ const textStyles = defineTextStyles({
   overline: {
     value: { fontSize: "11px", lineHeight: "14px", fontWeight: "600", letterSpacing: "0.04em" },
   },
+  // 배지 안 숫자처럼 원 안에 들어가는 가장 작은 글자
+  counter: { value: { fontSize: "10px", lineHeight: "12px", fontWeight: "700" } },
 });
 
 // 손가락 기준 최소 44px 확보를 위해 기본 크기를 lg 로 상향

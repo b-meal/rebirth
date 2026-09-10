@@ -53,6 +53,8 @@ import { SearchBar } from "@/components/ui/search-bar";
 import { Segmented } from "@/components/ui/segmented";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
 
+import { COAT_COLORS } from "@/lib/theme";
+
 import { Demo, Spec, SpecTable, ThemeStage, Token, TokenRow, Usage } from "./spec";
 
 // 입력과 선택 절의 예시 모음, 절마다 자기 상태를 가진 작은 컴포넌트로 나눔
@@ -1053,12 +1055,12 @@ function RatingDemo() {
 }
 
 const COAT_PRESETS = [
-  { label: "흰색", value: "#f5f3ee" },
-  { label: "갈색", value: "#8a5a34" },
-  { label: "검정", value: "#2b2724" },
-  { label: "회색", value: "#9a9691" },
-  { label: "노란색", value: "#d8b25c" },
-  { label: "삼색", value: "#c98a5e" },
+  { label: "흰색", value: COAT_COLORS.white },
+  { label: "갈색", value: COAT_COLORS.brown },
+  { label: "검정", value: COAT_COLORS.black },
+  { label: "회색", value: COAT_COLORS.gray },
+  { label: "노란색", value: COAT_COLORS.yellow },
+  { label: "삼색", value: COAT_COLORS.calico },
 ];
 
 function ColorPickerDemo() {
@@ -1095,7 +1097,7 @@ function ColorPickerDemo() {
         </Text>
       </Demo>
       <Demo label="전체 선택기" note="자유 색이 필요할 때만 열고 결과는 hex 로 저장합니다">
-        <ColorPicker.Root defaultValue={parseColor("#8a5a34")} width="100%">
+        <ColorPicker.Root defaultValue={parseColor(COAT_COLORS.brown)} width="100%">
           <ColorPicker.HiddenInput />
           <ColorPicker.Label>색 고르기</ColorPicker.Label>
           <ColorPicker.Control>

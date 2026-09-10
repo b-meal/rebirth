@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Box, CloseButton, Drawer, Flex, Portal } from "@chakra-ui/react";
 
-import { FRAME_INSET } from "./screen";
+import { FRAME_OVERLAY } from "./screen";
 
 // 아래에서 올라오는 시트, 선택지와 짧은 폼을 화면을 떠나지 않고 처리
 
@@ -42,10 +42,9 @@ export function BottomSheet({
       {trigger ? <Drawer.Trigger asChild>{trigger}</Drawer.Trigger> : null}
       <Portal>
         <Drawer.Backdrop />
-        <Drawer.Positioner insetInline={FRAME_INSET}>
+        <Drawer.Positioner>
           <Drawer.Content
-            width="100%"
-            maxWidth="100%"
+            {...FRAME_OVERLAY}
             maxHeight={maxHeight}
             borderTopRadius="sheet"
             backgroundColor="bg.panel"

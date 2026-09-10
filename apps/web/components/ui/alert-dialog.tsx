@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Button, Dialog, Portal } from "@chakra-ui/react";
 
-import { FRAME_INSET } from "./screen";
+import { FRAME_OVERLAY } from "./screen";
 
 // 확인이 필요한 결정을 가운데 작은 창으로 묻는 대화상자, 선택지는 최대 둘
 
@@ -44,9 +44,9 @@ export function AlertDialog({
       {trigger ? <Dialog.Trigger asChild>{trigger}</Dialog.Trigger> : null}
       <Portal>
         <Dialog.Backdrop />
-        <Dialog.Positioner insetInline={FRAME_INSET} padding="screen">
+        <Dialog.Positioner padding="screen">
           <Dialog.Content
-            width="100%"
+            {...FRAME_OVERLAY}
             maxWidth="320px"
             borderRadius="sheet"
             backgroundColor="bg.panel"

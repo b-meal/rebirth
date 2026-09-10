@@ -1,5 +1,7 @@
 "use client";
 
+// design-system-allow:raw-element 카메라 즉시 실행에 네이티브 file 입력이 필요함
+
 import { useImperativeHandle, useRef, type ChangeEvent, type Ref } from "react";
 import { PHOTO_ACCEPT } from "@/lib/image";
 

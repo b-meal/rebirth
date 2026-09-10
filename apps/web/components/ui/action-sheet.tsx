@@ -54,7 +54,7 @@ export function ActionSheet({
             justifyContent="flex-start"
             gap="3"
             paddingInline="3"
-            fontWeight="500"
+            fontWeight="medium"
             color={action.destructive ? "fg.error" : "fg.default"}
             disabled={action.disabled}
             onClick={() => {
