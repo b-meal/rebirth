@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Flex, HStack, Icon, ImageFrame, ImageFrameFloater, Text, VStack } from "@seed-design/react";
+import { Grid, HStack, Icon, ImageFrame, ImageFrameFloater, Text, VStack } from "@seed-design/react";
 import { IconCameraFill, IconPictureFill, IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { DismissibleCallout } from "seed-design/ui/callout";
@@ -20,6 +20,8 @@ export type PhotoFieldProps = {
   disabled?: boolean;
   /** 데스크톱처럼 카메라가 없는 환경에서는 촬영 버튼을 감춤 */
   cameraAvailable?: boolean;
+  /** 현장 촬영만 받는 화면에서는 앨범 버튼을 감춤 */
+  libraryAvailable?: boolean;
 };
 
 type Source = "camera" | "library";
@@ -32,6 +34,7 @@ export function PhotoField({
   hint = "사진을 촬영하거나 앨범에서 선택하세요",
   disabled = false,
   cameraAvailable = true,
+  libraryAvailable = true,
 }: PhotoFieldProps) {
   const cameraRef = useRef<PhotoPickerInputHandle>(null);
   const libraryRef = useRef<PhotoPickerInputHandle>(null);
@@ -115,9 +118,9 @@ export function PhotoField({
       {hasPhoto && single ? thumbnail(photos[0], 0, SINGLE_RATIO, "full") : null}
 
       {hasPhoto && !single ? (
-        <Flex wrap="wrap" gap="x2">
-          {photos.map((photo, index) => thumbnail(photo, index, 1, "calc((100% - 16px) / 3)"))}
-        </Flex>
+        <Grid columns={Math.min(maxCount, 3)} gap="x2">
+          {photos.map((photo, index) => thumbnail(photo, index, 1, "full"))}
+        </Grid>
       ) : null}
 
       <HStack gap="x2">
@@ -134,22 +137,24 @@ export function PhotoField({
             {replacing ? "다시 촬영" : "사진 촬영"}
           </ActionButton>
         ) : null}
-        <ActionButton
-          variant="neutralOutline"
-          size="medium"
-          flexGrow={1}
-          disabled={locked}
-          loading={processing && activeSource === "library"}
-          onClick={() => libraryRef.current?.open()}
-        >
-          <Icon svg={<IconPictureFill />} />
-          {replacing ? "다른 사진 선택" : "앨범에서 선택"}
-        </ActionButton>
+        {libraryAvailable ? (
+          <ActionButton
+            variant="neutralOutline"
+            size="medium"
+            flexGrow={1}
+            disabled={locked}
+            loading={processing && activeSource === "library"}
+            onClick={() => libraryRef.current?.open()}
+          >
+            <Icon svg={<IconPictureFill />} />
+            {replacing ? "다른 사진 선택" : "앨범에서 선택"}
+          </ActionButton>
+        ) : null}
       </HStack>
 
       {isFull && !single && !error ? (
         <Text textStyle="t3Regular" color="fg.neutralMuted">
-          사진은 최대 {maxCount}장까지 올릴 수 있습니다
+          사진은 최대 {maxCount}장까지 올릴 수 있어요
         </Text>
       ) : null}
 
@@ -165,13 +170,15 @@ export function PhotoField({
           onFiles={handleFiles("camera")}
         />
       ) : null}
-      <PhotoPickerInput
-        ref={libraryRef}
-        mode="library"
-        multiple={!single && remaining > 1}
-        disabled={locked}
-        onFiles={handleFiles("library")}
-      />
+      {libraryAvailable ? (
+        <PhotoPickerInput
+          ref={libraryRef}
+          mode="library"
+          multiple={!single && remaining > 1}
+          disabled={locked}
+          onFiles={handleFiles("library")}
+        />
+      ) : null}
     </VStack>
   );
 }

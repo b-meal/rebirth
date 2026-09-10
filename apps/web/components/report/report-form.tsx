@@ -1,31 +1,41 @@
 "use client";
 
-import { CONSENT_DOCUMENT_VERSION } from "@rebirth/types";
+import { CONSENT_DOCUMENT_VERSION, type CareSituation } from "@rebirth/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, HStack, Text, VStack } from "@seed-design/react";
+import { Box, Grid, HStack, ImageFrame, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
+import { Callout } from "seed-design/ui/callout";
+import { Chip } from "seed-design/ui/chip";
 
 import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
 import { usePhotoUpload } from "@/hooks/use-photo-upload";
 import { useReportDraft, type ReportDraft, type ReportStep } from "@/hooks/use-report-draft";
-import { Screen, ScreenBody } from "@/components/ui/screen";
+import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { ReportLocation, type LocationValue } from "./report-location";
 import { StepFeatures } from "./step-features";
-import { StepLocation, type LocationValue } from "./step-location";
 import { StepPhoto } from "./step-photo";
-import { StepStatus } from "./step-status";
 
-// 한 라우트에서 4단계를 클라이언트 상태로 돌리고 뒤로가기는 단계 하나만 되돌림
+// 촬영과 등록 두 단계를 한 라우트에서 클라이언트 상태로 돌리고 뒤로가기는 단계 하나만 되돌림
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 2;
+
+/** 대표 사진 한 장과 보조 한 장. 서버 상한은 더 크지만 제보 흐름은 두 장만 받음 */
+const MAX_PHOTOS = 2;
 
 const STEP_LABEL: Record<ReportStep, string> = {
   1: "사진",
-  2: "위치",
-  3: "특징",
-  4: "상태",
+  2: "제보 등록",
 };
+
+// 실종 신고에만 쓰는 unknown 은 제보 폼에 내놓지 않음
+const CARE_OPTIONS: { value: Exclude<CareSituation, "unknown">; label: string }[] = [
+  { value: "roaming", label: "배회 중" },
+  { value: "in_care", label: "내가 데리고 있음" },
+];
+
+const THUMBNAIL_RATIO = 4 / 3;
 
 function readStepFromUrl(): ReportStep {
   if (typeof window === "undefined") return 1;
@@ -37,7 +47,7 @@ function readStepFromUrl(): ReportStep {
 async function detectCamera(): Promise<boolean> {
   const media = navigator.mediaDevices;
   if (!media?.enumerateDevices) {
-    // 장치를 조회할 수 없으면 좁은 화면에서만 촬영을 내놓음
+    // 장치를 조회할 수 없으면 좁은 화면에서만 촬영으로 봄
     return window.matchMedia("(max-width: 1023px)").matches;
   }
   try {
@@ -53,10 +63,12 @@ export function ReportForm() {
   const [step, setStep] = useState<ReportStep>(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // 서버는 뷰포트를 몰라 null 로 시작하고 마운트 뒤에만 촬영 버튼을 렌더
+  // 서버는 장치 목록을 몰라 null 로 시작하고 마운트 뒤에만 확정함
   const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
+  // 사진 순서대로 받은 참조. 훅은 한 장씩 올리므로 결과를 여기에 모음
+  const [uploadIds, setUploadIds] = useState<string[]>([]);
 
-  const { draft, photo, setPhoto, applyAiDraft, edit, reset } = useReportDraft();
+  const { draft, photos, setPhotos, applyAiDraft, edit, reset } = useReportDraft();
   const analyze = useAnalyzePhoto();
   const upload = usePhotoUpload();
 
@@ -64,22 +76,23 @@ export function ReportForm() {
   const idempotencyKey = useRef<string | null>(null);
 
   const picker = usePhotoPicker({
-    maxCount: 1,
-    onChange: (photos) => {
-      const next = photos[0] ?? null;
-      setPhoto(next);
-      // 대표 사진이 바뀌면 이전 분석과 업로드 결과를 쓰지 않음
+    maxCount: MAX_PHOTOS,
+    onChange: (next) => {
+      setPhotos(next);
+      // 사진이 바뀌면 이전 분석과 업로드 결과를 쓰지 않음
       analyze.clear();
       upload.clear();
-      // 고른 즉시 올려 둠, 2단계에서 위치를 정하는 동안 업로드가 끝남
-      if (next) void upload.upload(next.file);
+      setUploadIds([]);
     },
   });
 
   useEffect(() => {
-    const fromUrl = readStepFromUrl();
-    // 하이드레이션 직후 값이라 렌더 연쇄를 피해 마이크로태스크로 미룸
-    queueMicrotask(() => setStep(fromUrl));
+    // 사진은 File 이라 복원되지 않으므로 새로고침은 늘 1단계에서 다시 시작함
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("step")) {
+      url.searchParams.delete("step");
+      window.history.replaceState({ step: 1 }, "", url);
+    }
 
     let alive = true;
     void detectCamera().then((available) => {
@@ -96,6 +109,34 @@ export function ReportForm() {
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
+
+  // 사진 확정 전에는 서버에 올리지 않음. 다시 찍기를 반복해도 스토리지에 쌓이지 않음
+  // 같은 사진 묶음은 한 번만 올려 StrictMode 의 이펙트 두 번 실행에서도 두 건이 생기지 않음
+  const uploadedKey = useRef<string | null>(null);
+  const { upload: startUpload } = upload;
+  useEffect(() => {
+    if (step !== 2 || photos.length === 0) return;
+    const key = photos.map((photo) => photo.id).join(",");
+    if (uploadedKey.current === key) return;
+    uploadedKey.current = key;
+
+    void (async () => {
+      const ids: string[] = [];
+      // 훅이 앞 요청을 취소하므로 순서대로 올림
+      for (const photo of photos) {
+        const id = await startUpload(photo.file);
+        if (id) ids.push(id);
+      }
+      setUploadIds(ids);
+    })();
+  }, [step, photos, startUpload]);
+
+  // 올린 사진을 모두 한 요청에 넣어 초안 하나를 받음. 호출은 사진 수와 무관하게 한 번
+  const { status: analyzeStatus, start: startAnalyze } = analyze;
+  useEffect(() => {
+    if (step !== 2 || uploadIds.length === 0) return;
+    if (analyzeStatus === "idle") startAnalyze(uploadIds);
+  }, [step, uploadIds, analyzeStatus, startAnalyze]);
 
   const goTo = useCallback((next: ReportStep) => {
     setStep(next);
@@ -120,25 +161,16 @@ export function ReportForm() {
     [edit],
   );
 
-  // 업로드가 끝나야 다음으로 감, 참조 없이는 저장할 수 없음
-  const canLeaveStep1 =
-    photo !== null && draft.careSituation !== null && upload.status === "ready";
-  const canLeaveStep2 = draft.locationToken !== null;
-
-  const handleNext = useCallback(() => {
-    if (step === 1) {
-      // 올린 사진의 참조로 분석을 백그라운드로 시작
-      if (upload.uploadId && analyze.status === "idle") {
-        analyze.start(upload.uploadId);
-      }
-      goTo(2);
-      return;
-    }
-    if (step < TOTAL_STEPS) goTo((step + 1) as ReportStep);
-  }, [step, upload.uploadId, analyze, goTo]);
+  // 업로드를 기다리지 않고 넘어감, 등록 버튼에서만 참조가 필요함
+  const canLeaveStep1 = photos.length > 0 && !picker.processing;
+  const uploadsReady = uploadIds.length === photos.length && uploadIds.length > 0;
+  // 동물이 안 보이는 사진은 등록을 막음. 어두운 사진은 막지 않고 안내만 함
+  const notAnimal = analyze.advice === "not-animal";
+  const canSubmit =
+    uploadsReady && draft.locationToken !== null && draft.careSituation !== null && !notAnimal;
 
   const handleSubmit = useCallback(async () => {
-    if (!upload.uploadId || !draft.locationToken) return;
+    if (uploadIds.length === 0 || !draft.locationToken) return;
     setSubmitting(true);
     setSubmitError(null);
 
@@ -149,17 +181,18 @@ export function ReportForm() {
       kind: "sighting" as const,
       careSituation: draft.careSituation,
       animalType: draft.animalType,
-      appearance: draft.appearance,
+      // 첫 줄이 제목, 빈 줄 뒤가 본문. 상세와 공유 카드가 첫 줄을 제목으로 읽음
+      appearance: [draft.appearance, draft.story].filter(Boolean).join("\n\n"),
       colors: draft.colors,
       size: draft.size,
       conditionTags: draft.conditionTags,
       collar: draft.collar,
       injury: draft.injury,
       earTip: draft.earTip,
-      uploadIds: [upload.uploadId],
+      uploadIds,
       locationToken: draft.locationToken,
       ...(draft.landmark && { landmarkNote: draft.landmark }),
-      // 4단계에서 채우지만 비어 있으면 제출 시각으로 둠
+      // 촬영 직후 등록이라 입력을 받지 않고 제출 시각으로 둠
       occurredAt: draft.occurredAt || new Date().toISOString(),
       aiEditedFields: draft.editedFields,
       idempotencyKey: idempotencyKey.current,
@@ -187,26 +220,25 @@ export function ReportForm() {
 
       // 앞선 요청이 아직 처리 중, 키를 유지한 채 다시 누르게 함
       if (response.status === 202 || result.pending) {
-        setSubmitError("저장하고 있습니다. 잠시 후 다시 눌러 주십시오");
+        setSubmitError("저장하고 있어요. 잠시 후 다시 눌러 주세요");
         setSubmitting(false);
         return;
       }
 
       if (!response.ok || !result.id) {
         // 입력값은 그대로 두고 재시도만 노출
-        setSubmitError(result.message ?? "제보가 저장되지 않았습니다. 다시 시도해 주십시오");
+        setSubmitError(result.message ?? "제보가 저장되지 않았어요. 다시 시도해 주세요");
         setSubmitting(false);
         return;
       }
 
-      // 완료 화면을 따로 만들지 않고 상세로 바로 보냄
       reset();
       router.push(`/r/${result.id}`);
     } catch {
-      setSubmitError("제보가 저장되지 않았습니다. 입력한 내용은 그대로 있습니다");
+      setSubmitError("제보가 저장되지 않았어요. 입력한 내용은 그대로 있어요");
       setSubmitting(false);
     }
-  }, [upload.uploadId, draft, reset, router]);
+  }, [uploadIds, draft, reset, router]);
 
   return (
     <Screen>
@@ -226,75 +258,117 @@ export function ReportForm() {
         </VStack>
 
         {step === 1 ? (
-          <StepPhoto
-            picker={picker}
-            careSituation={draft.careSituation}
-            uploading={upload.status === "uploading"}
-            uploadError={picker.error === null ? upload.message : null}
-            cameraAvailable={cameraAvailable ?? false}
-            onCareSituation={(value) => edit("careSituation", value)}
-          />
+          <StepPhoto picker={picker} cameraAvailable={cameraAvailable} />
         ) : null}
 
         {step === 2 ? (
-          <StepLocation
-            value={{
-              areaName: draft.areaName,
-              locationToken: draft.locationToken,
-              usableForDistance: draft.usableForDistance,
-              landmark: draft.landmark,
-            }}
-            onChange={onLocationChange}
-          />
-        ) : null}
+          <VStack align="stretch" gap="x6">
+            {photos.length > 0 ? (
+              <Grid columns={photos.length} gap="x2">
+                {photos.map((photo, index) => (
+                  <ImageFrame
+                    key={photo.id}
+                    src={photo.previewUrl}
+                    alt={index === 0 ? "대표 사진" : `사진 ${index + 1}`}
+                    ratio={THUMBNAIL_RATIO}
+                    width="full"
+                    borderRadius="r3"
+                    stroke
+                  />
+                ))}
+              </Grid>
+            ) : null}
 
-        {step === 3 ? (
-          <StepFeatures
-            draft={draft}
-            loading={analyze.status === "loading"}
-            advice={analyze.advice}
-            message={analyze.message}
-            onEdit={edit}
-            onRetake={() => goTo(1)}
-          />
-        ) : null}
+            {upload.status === "uploading" ? (
+              <Text textStyle="t3Regular" color="fg.neutralMuted">
+                사진을 올리고 있어요
+              </Text>
+            ) : null}
 
-        {step === 4 ? (
-          <StepStatus draft={draft} submitError={submitError} onEdit={edit} />
+            {upload.status === "failed" ? (
+              <Callout tone="critical" description={upload.message ?? ""} />
+            ) : null}
+
+            <StepFeatures
+              draft={draft}
+              // 업로드가 실패하면 분석이 시작되지 않으므로 스켈레톤을 걷고 직접 입력을 받음
+              loading={
+                upload.status !== "failed" &&
+                (analyze.status === "loading" || analyze.status === "idle")
+              }
+              advice={analyze.advice}
+              message={analyze.message}
+              onEdit={edit}
+              onRetake={() => goTo(1)}
+            />
+
+            <Section>
+              <Text as="h3" textStyle="t5Bold" color="fg.neutral">
+                지금 어떤 상황인가요
+              </Text>
+              <Chip.RadioRoot
+                value={draft.careSituation ?? ""}
+                onValueChange={(value) => edit("careSituation", value as CareSituation)}
+                aria-label="보호 상황"
+              >
+                <HStack gap="spacingX.betweenChips" wrap>
+                  {CARE_OPTIONS.map((option) => (
+                    <Chip.RadioItem key={option.value} value={option.value}>
+                      <Chip.Label>{option.label}</Chip.Label>
+                    </Chip.RadioItem>
+                  ))}
+                </HStack>
+              </Chip.RadioRoot>
+              {draft.careSituation === null ? (
+                <Text textStyle="t3Regular" color="fg.neutralMuted">
+                  둘 중 하나를 골라야 제보할 수 있어요
+                </Text>
+              ) : null}
+            </Section>
+
+            <ReportLocation
+              value={{
+                areaName: draft.areaName,
+                locationToken: draft.locationToken,
+                usableForDistance: draft.usableForDistance,
+              }}
+              onChange={onLocationChange}
+            />
+
+            {submitError ? <Callout tone="critical" description={submitError} /> : null}
+          </VStack>
         ) : null}
 
         <HStack gap="x2" mt="x2">
           {step > 1 ? (
             <ActionButton
-              variant="neutralOutline"
+              variant={notAnimal ? "brandSolid" : "neutralOutline"}
               size="large"
+              flexGrow={notAnimal ? 1 : undefined}
               disabled={submitting}
-              onClick={() => goTo((step - 1) as ReportStep)}
+              onClick={() => goTo(1)}
             >
-              이전
+              다시 찍기
             </ActionButton>
           ) : null}
 
-          {step < TOTAL_STEPS ? (
+          {step === 1 ? (
             <ActionButton
               variant="brandSolid"
               size="large"
               flexGrow={1}
-              disabled={
-                picker.processing ||
-                (step === 1 && !canLeaveStep1) ||
-                (step === 2 && !canLeaveStep2)
-              }
-              onClick={handleNext}
+              disabled={picker.processing || !canLeaveStep1}
+              onClick={() => goTo(2)}
             >
               다음
             </ActionButton>
           ) : (
             <ActionButton
-              variant="brandSolid"
+              variant={notAnimal ? "neutralOutline" : "brandSolid"}
               size="large"
               flexGrow={1}
               loading={submitting}
+              disabled={!canSubmit}
               onClick={handleSubmit}
             >
               제보하기

@@ -100,7 +100,7 @@ export function StepFeatures({
     return (
       <VStack align="stretch" gap="x5">
         <Text as="h2" textStyle="t7Bold" color="fg.neutral">
-          사진을 정리하고 있습니다
+          사진을 정리하고 있어요
         </Text>
         {[0, 1, 2, 3].map((row) => (
           <VStack key={row} align="stretch" gap="x2">
@@ -115,7 +115,7 @@ export function StepFeatures({
   return (
     <VStack align="stretch" gap="x6">
       <Text as="h2" textStyle="t7Bold" color="fg.neutral">
-        특징을 확인해 주십시오
+        특징을 확인해 주세요
       </Text>
 
       {advice === "not-animal" ? (
@@ -148,12 +148,23 @@ export function StepFeatures({
       <TextField
         label="외형 요약"
         indicator={showBadge("appearance") ? "AI 초안" : undefined}
-        description="품종은 단정하지 않고 추정으로만 적습니다"
+        description="품종은 단정하지 않고 추정으로만 적어요"
         value={draft.appearance}
         maxGraphemeCount={300}
         onValueChange={(next) => onEdit("appearance", next.value)}
       >
         <TextFieldTextarea placeholder="흰색 소형견, 털이 길고 엉킴" />
+      </TextField>
+
+      <TextField
+        label="제보 글"
+        indicator={showBadge("story") ? "AI 초안" : undefined}
+        description="AI 가 쓴 초안이에요. 사실과 다르면 고쳐 주세요"
+        value={draft.story}
+        maxGraphemeCount={180}
+        onValueChange={(next) => onEdit("story", next.value)}
+      >
+        <TextFieldTextarea placeholder="화단 근처에 혼자 있었고 사람을 피하지 않음" />
       </TextField>
 
       <Section>
