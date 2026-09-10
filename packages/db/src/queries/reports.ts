@@ -7,6 +7,7 @@ import {
   eq,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lte,
   sql as raw,
@@ -166,6 +167,56 @@ export function listPublicReports({
         cursor
           ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt}, ${cursor.id})`
           : undefined,
+      ),
+    )
+    .orderBy(desc(reports.occurredAt), desc(reports.id))
+    .limit(limit)
+}
+
+/** 홈 지도 마커 상한. 한 화면에 그릴 수 있는 수를 넘기지 않음 */
+const MAP_LIMIT = 100
+
+export type MapListOptions = {
+  fromOccurredAt?: Date
+  limit?: number
+}
+
+/**
+ * 홈 지도 마커. 격자 스냅 좌표만 고르고 exactPoint 는 선택하지 않음
+ * 공개 응답은 POL-09 대로 좌표를 내주지 않으므로 서버 컴포넌트에서만 부름
+ */
+export function listMapReports({
+  fromOccurredAt,
+  limit = MAP_LIMIT,
+}: MapListOptions = {}) {
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      size: reports.size,
+      colors: reports.colors,
+      careSituation: reports.careSituation,
+      injury: reports.injury,
+      areaName: reports.areaName,
+      occurredAt: reports.occurredAt,
+      coarsePoint: reports.coarsePoint,
+      coarseGridM: reports.coarseGridM,
+      // 카드에 쓸 첫 사진 경로. 서명 URL 은 호출자가 한 번에 만듦
+      photoPath: raw<string | null>`(
+        select p.storage_path from ${reportPhotos} p
+        where p.report_id = ${reports}.id
+        order by p.sort_order limit 1
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.kind, 'sighting'),
+        eq(reports.visibility, 'public'),
+        eq(reports.lifecycle, 'active'),
+        // 지역만 고른 제보는 격자 좌표가 없어 마커로 찍지 않음
+        isNotNull(reports.coarsePoint),
+        fromOccurredAt ? gte(reports.occurredAt, fromOccurredAt) : undefined,
       ),
     )
     .orderBy(desc(reports.occurredAt), desc(reports.id))

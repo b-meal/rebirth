@@ -1,37 +1,46 @@
-import Link from "next/link";
-import { Text, VStack } from "@seed-design/react";
-import { ActionButton } from "seed-design/ui/action-button";
+import { createSignedUrls } from "@rebirth/core/storage";
+import { listMapReports } from "@rebirth/db";
+import { LIST_PERIOD_DAYS } from "@rebirth/types";
 
-import { Screen, ScreenBody } from "@/components/ui/screen";
+import { sinceLabel } from "@/lib/report-label";
+import { HomeScreen, type MapMarker } from "@/components/home/home-screen";
 
-// 길에서 휴대폰을 꺼낸 사람이 3초 안에 무엇을 하는 화면인지 알아야 하는 자리
+// 마커는 격자 좌표만 서버에서 읽어 넘김, 정확 좌표는 공개 응답과 이 화면에 넣지 않음
 
-export default function HomePage() {
-  return (
-    <Screen>
-      <ScreenBody justify="center" gap="x6">
-        <VStack align="stretch" gap="x2">
-          <Text as="h1" textStyle="screenTitle" color="fg.neutral" align="center">
-            다시집
-          </Text>
-          <Text textStyle="t5Regular" color="fg.neutralMuted" align="center">
-            길에서 만난 보호자 없는 동물을 사진 한 장으로 제보합니다
-          </Text>
-        </VStack>
+// 새 제보가 바로 지도에 올라와야 해 캐시하지 않음
+export const dynamic = "force-dynamic";
 
-        <ActionButton variant="brandSolid" size="large" asChild>
-          <Link href="/report">제보 시작하기</Link>
-        </ActionButton>
+// 지도에 올릴 조회 기간, 목록의 확장 기간과 같은 30일
+const MAP_DAYS = LIST_PERIOD_DAYS[1];
 
-        <VStack gap="x2" align="center">
-          <ActionButton variant="ghost" size="small" asChild>
-            <Link href="/guide/injured">다친 동물을 봤어요</Link>
-          </ActionButton>
-          <ActionButton variant="ghost" size="small" asChild>
-            <Link href="/lost/new">반려동물을 잃어버렸어요</Link>
-          </ActionButton>
-        </VStack>
-      </ScreenBody>
-    </Screen>
-  );
+async function loadMarkers(): Promise<MapMarker[]> {
+  try {
+    const since = new Date(Date.now() - MAP_DAYS * 86_400_000);
+    const rows = (await listMapReports({ fromOccurredAt: since })).filter(
+      (row) => row.coarsePoint !== null,
+    );
+
+    // 비공개 버킷이라 서명이 필요하고 사진 수만큼 요청하지 않게 한 번에 묶음
+    const paths = rows.flatMap((row) => (row.photoPath ? [row.photoPath] : []));
+    const signed = await createSignedUrls(paths).catch(() => new Map<string, string>());
+
+    return rows.map((row) => ({
+      id: row.id,
+      animalType: row.animalType,
+      colors: row.colors,
+      size: row.size,
+      careSituation: row.careSituation,
+      injury: row.injury,
+      areaName: row.areaName,
+      sinceLabel: sinceLabel(row.occurredAt),
+      photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
+      point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export default async function HomePage() {
+  return <HomeScreen markers={await loadMarkers()} />;
 }

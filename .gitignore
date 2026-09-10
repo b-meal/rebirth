@@ -59,3 +59,4 @@ apps/*/CLAUDE.md
 test-results/
 playwright-report/
 .femc/
+apps/web/public/maplibre/

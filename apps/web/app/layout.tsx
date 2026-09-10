@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 
 import "@seed-design/css/all.css";
 import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+import "maplibre-gl/dist/maplibre-gl.css";
 import "./globals.css";
 
 import { AppFrame } from "@/components/ui/app-frame";
