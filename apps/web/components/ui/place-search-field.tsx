@@ -2,7 +2,10 @@
 
 import type { LocationCandidate } from "@rebirth/core/location/candidate";
 import { Box, Icon, Skeleton, Text, VStack } from "@seed-design/react";
-import { IconXmarkCircleFill } from "@karrotmarket/react-monochrome-icon";
+import {
+  IconMagnifyingglassLine,
+  IconXmarkCircleFill,
+} from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { List, ListButtonItem } from "seed-design/ui/list";
@@ -46,7 +49,11 @@ export function PlaceSearchField({
 
   return (
     <Box position="relative">
-      <TextField value={search.query} onValueChange={(next) => search.setQuery(next.value)}>
+      <TextField
+        prefixIcon={<IconMagnifyingglassLine />}
+        value={search.query}
+        onValueChange={(next) => search.setQuery(next.value)}
+      >
         <TextFieldInput
           placeholder={placeholder}
           aria-label={placeholder}

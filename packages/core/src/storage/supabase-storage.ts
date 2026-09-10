@@ -148,6 +148,35 @@ export async function createSignedUrl(
   };
 }
 
+/** 여러 경로를 한 번에 서명함. 목록 화면이 사진 수만큼 요청을 보내지 않게 함 */
+export async function createSignedUrls(
+  paths: string[],
+  expiresIn: number = SIGNED_URL_TTL_SECONDS,
+): Promise<Map<string, string>> {
+  if (paths.length === 0) return new Map();
+
+  const response = await call(`/object/sign/${PHOTO_BUCKET}`, {
+    method: "POST",
+    body: JSON.stringify({ expiresIn, paths }),
+    headers: { "content-type": "application/json" },
+  });
+
+  const rows = (await response.json()) as {
+    path?: string;
+    signedURL?: string;
+    error?: string | null;
+  }[];
+
+  const { base } = config();
+  const signed = new Map<string, string>();
+  for (const row of rows) {
+    // 일부 경로만 실패해도 나머지는 그대로 씀
+    if (!row.path || !row.signedURL || row.error) continue;
+    signed.set(row.path, `${base}${row.signedURL.startsWith("/") ? "" : "/"}${row.signedURL}`);
+  }
+  return signed;
+}
+
 /** 제보 삭제 시 사진도 함께 지움. 실패해도 호출자가 제보 삭제를 되돌리지 않음 */
 export async function removePhotos(paths: string[]): Promise<void> {
   if (paths.length === 0) return;
