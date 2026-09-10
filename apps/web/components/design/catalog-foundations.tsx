@@ -11,6 +11,7 @@ import { CATEGORIES } from "./registry";
 import { Demo, Spec, SpecTable, ThemeStage, TokenRow, Usage } from "./spec";
 
 // Foundations 분류, lib/theme.ts 의 토큰 값을 눈으로 확인하는 절 모음
+// design-system-allow:color 포인트 색을 바꿔 보여 주는 절이라 값 자체가 내용임
 
 const PRINCIPLES: [icon: IconName, title: string, rule: string][] = [
   ["grid", "390px 프레임", "모바일 전용 한 벌만 설계하고 데스크톱에서는 같은 폭을 가운데에 가둡니다"],

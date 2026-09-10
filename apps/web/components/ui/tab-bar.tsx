@@ -81,8 +81,7 @@ export function TabBar({ items, activeHref, sticky = true }: TabBarProps) {
                           size="4"
                           backgroundColor="red.solid"
                           color="white"
-                          fontSize="10px"
-                          fontWeight="600"
+                          textStyle="counter"
                           paddingInline="1"
                         >
                           {item.badge > 99 ? "99+" : item.badge}

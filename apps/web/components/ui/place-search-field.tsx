@@ -85,7 +85,7 @@ export function PlaceSearchField({
           borderWidth="1px"
           borderColor="border"
           backgroundColor="bg.panel"
-          boxShadow="md"
+          boxShadow="float"
           // 카카오 지도 레이어보다 위
           zIndex="10"
         >

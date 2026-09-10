@@ -309,7 +309,7 @@ function LineChart() {
         />
         <circle cx={LINE_LAST.x} cy={LINE_LAST.y} r="3.5" fill="currentColor" />
         <chakra.g fill="fg.default">
-          <text x={LINE_W - 4} y={LINE_LAST.y - 9} textAnchor="end" fontSize="11" fontWeight="600">
+          <text x={LINE_W - 4} y={LINE_LAST.y - 9} textAnchor="end" fontSize="11" fontWeight="semibold">
             {`${LINE_END}건`}
           </text>
         </chakra.g>
@@ -436,7 +436,7 @@ function Heatmap() {
                 <Box
                   key={`cell-${offset}`}
                   height={`${HEAT_CELL}px`}
-                  borderRadius="3px"
+                  borderRadius="xs"
                   backgroundColor={HEAT_STEPS[heatStep(count)]}
                   borderWidth={count === 0 ? "1px" : "0"}
                   borderColor="border.muted"
@@ -456,7 +456,7 @@ function Heatmap() {
             key={step}
             width="12px"
             height="12px"
-            borderRadius="3px"
+            borderRadius="xs"
             backgroundColor={step}
             borderWidth={index === 0 ? "1px" : "0"}
             borderColor="border.muted"

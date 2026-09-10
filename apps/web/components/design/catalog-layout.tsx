@@ -414,7 +414,7 @@ export function LayoutCatalog() {
               width="180px"
               borderWidth="2px"
               borderColor="border.emphasized"
-              borderRadius="24px"
+              borderRadius="sheet"
               overflow="hidden"
               backgroundColor="bg.canvas"
             >

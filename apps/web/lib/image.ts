@@ -1,4 +1,5 @@
 // 브라우저 전용 이미지 처리. 캔버스 재인코딩으로 EXIF(GPS 포함) 제거와 용량 축소를 함께 수행
+// design-system-allow:color 캔버스 픽셀 값이라 CSS 토큰을 쓸 수 없음
 
 export type PhotoItem = {
   id: string;

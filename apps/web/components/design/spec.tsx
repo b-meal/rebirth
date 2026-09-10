@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from "react";
 import { Box, Flex, Text, Theme } from "@chakra-ui/react";
 
 // 카탈로그 한 절과 그 안의 예시 상자, 모든 절이 같은 간격과 틀을 갖게 하는 래퍼
+// design-system-allow:type 인라인 토큰은 감싼 문장 크기를 따라가야 해 상대 단위 사용
 
 export type SpecProps = {
   /** registry 의 section id 와 일치, 칩 내비게이션 anchor */

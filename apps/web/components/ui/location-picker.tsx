@@ -54,6 +54,9 @@ const LEVEL_BY_GRID: Record<number, number> = {
   [COARSE_GRID_METERS.wide]: 5,
 };
 
+// 핀 끝이 컨테이너 중심에 오도록 아이콘 크기만큼 위로 올림
+const PIN_SIZE = 30;
+
 export function LocationPicker({
   onSelect,
   initialCenter,
@@ -159,12 +162,12 @@ export function LocationPicker({
                 position="absolute"
                 inset="0"
                 pointerEvents="none"
-                paddingBottom="30px"
+                paddingBottom={`${PIN_SIZE}px`}
                 // 카카오 지도가 컨테이너 안에 자체 레이어를 쌓아 위로 올려야 보임
                 zIndex="2"
                 color="brand.500"
               >
-                <IconPin fontSize="30px" />
+                <IconPin size={PIN_SIZE} />
               </Flex>
 
               <Flex

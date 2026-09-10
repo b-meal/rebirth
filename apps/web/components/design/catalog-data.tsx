@@ -538,7 +538,7 @@ function ActivityFeedSection() {
               </Flex>
               <Box flex="1" minWidth="0">
                 <Text textStyle="bodySm">
-                  <Text as="span" textStyle="bodySm" fontWeight="600">
+                  <Text as="span" textStyle="bodySm" fontWeight="semibold">
                     {item.who}
                   </Text>{" "}
                   {item.what}
