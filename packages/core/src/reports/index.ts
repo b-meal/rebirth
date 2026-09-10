@@ -1,5 +1,6 @@
 export {
   DRAFT_EXPIRED,
+  createCommentHandler,
   createFlagHandler,
   createReportHandler,
   getReportHandler,
@@ -7,6 +8,7 @@ export {
   listReportsHandler,
   saveReport,
   shareReportHandler,
+  toggleInterestHandler,
 } from "./handlers";
 
 export {

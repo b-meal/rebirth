@@ -8,6 +8,8 @@ import { animalSize, animalType } from './enums'
  */
 export const analyzeResult = z.object({
   animalType,
+  // 품종 추정 라벨. 화면이 계열 추정으로 붙여 쓰므로 품종명만 담음
+  breedGuess: z.string().max(30).nullable(),
   // 품종을 단정하지 않음. "흰색 소형견, 말티즈 계열 추정" 같은 형태
   appearance: z.string().min(1).max(300),
   color: z.array(z.string().min(1).max(20)).max(5),

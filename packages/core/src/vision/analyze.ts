@@ -39,7 +39,8 @@ warnings 는 사용자가 읽을 문장입니다. 사진이 어둡거나 멀거�
 
 const PROMPT = `이 사진의 동물 외형을 제보 초안으로 정리해 주십시오.
 사진이 여러 장이면 같은 개체를 다른 각도에서 찍은 것으로 보고 초안 하나로 합쳐 주십시오.
-보이지 않는 항목은 추측하지 말고 목줄·부상·귀 끝은 확실하지 않으면 null 로 두십시오.`;
+보이지 않는 항목은 추측하지 말고 목줄·부상·귀 끝은 확실하지 않으면 null 로 두십시오.
+breedGuess 는 품종명만 짧게 적고 확실하지 않으면 null 로 두십시오. 확정 표현은 쓰지 마십시오.`;
 
 let cached: Anthropic | null = null;
 
@@ -98,7 +99,9 @@ const MOCK_LATENCY_MS = 800;
 // 크레딧 없이 화면을 돌려보기 위한 고정 초안. ANALYZE_MOCK=1 일 때만 씀
 const MOCK_RESULT: AnalyzeResult = {
   animalType: "dog",
-  appearance: "흰색 소형견, 말티즈 계열 추정",
+  // 품종은 breedGuess 로 따로 들고 appearance 에 확정 표현을 섞지 않음
+  breedGuess: "말티즈",
+  appearance: "흰색 소형견, 털이 길고 엉킴",
   color: ["흰색"],
   size: "small",
   condition: "털이 엉키고 발이 흙에 젖음",
@@ -115,6 +118,7 @@ const MOCK_VARIANTS: Record<string, Partial<AnalyzeResult>> = {
   "1": {},
   "not-animal": {
     animalType: "unknown",
+    breedGuess: null,
     appearance: "사진에서 동물을 찾지 못함",
     story: "",
     warnings: ["동물이 보이지 않음"],

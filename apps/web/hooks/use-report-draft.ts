@@ -16,6 +16,7 @@ export type ReportStep = 1 | 2;
 // AI 초안에서 사용자가 고칠 수 있는 필드. ai_edited_fields 에 이 이름으로 기록
 export const DRAFT_FIELDS = [
   "animalType",
+  "breedGuess",
   "appearance",
   "story",
   "colors",
@@ -37,6 +38,8 @@ export type ReportDraft = {
   landmark: string;
   // 특징과 글
   animalType: "dog" | "cat" | "other" | "unknown";
+  // AI 라벨링이 채우는 품종 추정. 확인이 안 되면 빈 문자열
+  breedGuess: string;
   appearance: string;
   /** AI 가 쓴 제보 본문 초안. 저장할 때 appearance 아래에 붙임 */
   story: string;
@@ -64,6 +67,7 @@ function emptyDraft(): ReportDraft {
     usableForDistance: false,
     landmark: "",
     animalType: "unknown",
+    breedGuess: "",
     appearance: "",
     story: "",
     colors: [],
@@ -138,6 +142,7 @@ export function useReportDraft(): UseReportDraft {
         return {
           ...prev,
           animalType: keep("animalType", result.animalType, prev.animalType),
+          breedGuess: keep("breedGuess", result.breedGuess ?? "", prev.breedGuess),
           appearance: keep("appearance", result.appearance, prev.appearance),
           story: keep("story", result.story, prev.story),
           colors: keep("colors", result.color, prev.colors),

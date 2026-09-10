@@ -5,7 +5,7 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
-import { TextField, TextFieldTextarea } from "seed-design/ui/text-field";
+import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/text-field";
 
 import type { AnalyzeAdviceState } from "@/hooks/use-analyze-photo";
 import type { DraftField, ReportDraft } from "@/hooks/use-report-draft";
@@ -144,6 +144,17 @@ export function StepFeatures({
           ))}
         </SegmentedControl>
       </Section>
+
+      <TextField
+        label="품종 추정"
+        indicator={showBadge("breedGuess") ? "AI 초안" : undefined}
+        description="확정이 아니라 계열 추정으로만 표시됩니다. 모르면 비워 두십시오"
+        value={draft.breedGuess}
+        maxGraphemeCount={30}
+        onValueChange={(next) => onEdit("breedGuess", next.value)}
+      >
+        <TextFieldInput placeholder="말티즈" />
+      </TextField>
 
       <TextField
         label="외형 요약"

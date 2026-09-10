@@ -1,4 +1,4 @@
-import { createSignedUrls } from "@rebirth/core/storage";
+import { createSignedThumbUrls } from "@rebirth/core/storage";
 import { listMapReports } from "@rebirth/db";
 import { LIST_PERIOD_DAYS } from "@rebirth/types";
 
@@ -20,9 +20,9 @@ async function loadMarkers(): Promise<MapMarker[]> {
       (row) => row.coarsePoint !== null,
     );
 
-    // 비공개 버킷이라 서명이 필요하고 사진 수만큼 요청하지 않게 한 번에 묶음
+    // 비공개 버킷이라 서명이 필요하고 카드와 핀이 같은 축소본을 함께 씀
     const paths = rows.flatMap((row) => (row.photoPath ? [row.photoPath] : []));
-    const signed = await createSignedUrls(paths).catch(() => new Map<string, string>());
+    const signed = await createSignedThumbUrls(paths).catch(() => new Map<string, string>());
 
     return rows.map((row) => ({
       id: row.id,

@@ -181,6 +181,7 @@ export function ReportForm() {
       kind: "sighting" as const,
       careSituation: draft.careSituation,
       animalType: draft.animalType,
+      breedGuess: draft.breedGuess.trim() || null,
       // 첫 줄이 제목, 빈 줄 뒤가 본문. 상세와 공유 카드가 첫 줄을 제목으로 읽음
       appearance: [draft.appearance, draft.story].filter(Boolean).join("\n\n"),
       colors: draft.colors,
