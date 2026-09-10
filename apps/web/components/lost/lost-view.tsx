@@ -116,11 +116,11 @@ export function LostView() {
             .join(" · ")}
         </Text>
         {lost.appearance ? (
-          <Text textStyle="sm" color="fg.alternative">
+          <Text textStyle="bodySm" color="fg.alternative">
             {lost.appearance}
           </Text>
         ) : null}
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           {lost.areaName ?? "위치 미확인"} 에서 마지막 목격
         </Text>
         <Heading size="sm" marginTop="2">

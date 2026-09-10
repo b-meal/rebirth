@@ -39,7 +39,7 @@ export default function InjuredGuidePage() {
         <Button asChild size="xl" colorPalette="brand" width="100%">
           <a href="tel:1577-0954">1577-0954 로 전화하기</a>
         </Button>
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           국가동물보호정보시스템 발견 신고 번호입니다. 통화가 어려우면 관할 시·군·구
           청 당직실이나 120 에 연락할 수 있습니다
         </Text>

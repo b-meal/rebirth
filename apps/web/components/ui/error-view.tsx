@@ -23,9 +23,17 @@ export type ErrorViewProps = {
   requestId?: string;
   // 있으면 같은 요청을 한 번 더 시도함
   onRetry?: () => void;
+  // 급한 상황 안내 링크. 안전과 무관한 화면에서는 끔
+  safetyLink?: boolean;
 };
 
-export function ErrorView({ title, description, requestId, onRetry }: ErrorViewProps) {
+export function ErrorView({
+  title,
+  description,
+  requestId,
+  onRetry,
+  safetyLink = true,
+}: ErrorViewProps) {
   const online = useSyncExternalStore(
     subscribeOnline,
     () => navigator.onLine,
@@ -33,7 +41,7 @@ export function ErrorView({ title, description, requestId, onRetry }: ErrorViewP
   );
 
   return (
-    <Flex direction="column" gap="4" padding="5" paddingTop="16">
+    <Flex direction="column" gap="4" paddingInline="screen" paddingTop="16" paddingBottom="block">
       <Flex direction="column" gap="2">
         <Heading size="xl">{online ? title : "연결이 끊긴 것 같습니다"}</Heading>
         <Text color="fg.alternative">
@@ -43,10 +51,10 @@ export function ErrorView({ title, description, requestId, onRetry }: ErrorViewP
 
       {requestId ? (
         <Flex direction="column" gap="1">
-          <Text textStyle="xs" color="fg.assistive">
+          <Text textStyle="caption" color="fg.assistive">
             요청 번호와 함께 문의할 수 있습니다
           </Text>
-          <Text textStyle="xs" userSelect="all">
+          <Text textStyle="caption" userSelect="all">
             {requestId}
           </Text>
         </Flex>
@@ -61,9 +69,11 @@ export function ErrorView({ title, description, requestId, onRetry }: ErrorViewP
         <Button asChild variant="outline" width="100%">
           <Link href="/">홈으로</Link>
         </Button>
-        <Button asChild variant="ghost" width="100%">
-          <Link href="/guide/injured">급한 상황이라면 안전 안내 보기</Link>
-        </Button>
+        {safetyLink ? (
+          <Button asChild variant="ghost" width="100%">
+            <Link href="/guide/injured">급한 상황이라면 안전 안내 보기</Link>
+          </Button>
+        ) : null}
       </Flex>
     </Flex>
   );

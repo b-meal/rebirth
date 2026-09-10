@@ -205,7 +205,7 @@ export function LostForm() {
     <Flex direction="column" gap="5" padding="5" paddingBottom="24">
       <Flex direction="column" gap="1">
         <Heading size="xl">반려동물을 잃어버렸어요</Heading>
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           연락처는 받지 않습니다. 신고 뒤에 나오는 조회 주소로만 확인합니다
         </Text>
       </Flex>

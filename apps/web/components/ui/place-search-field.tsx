@@ -132,7 +132,7 @@ export function PlaceSearchField({
                   onClick={() => onPick(candidate)}
                 >
                   <Text>{candidate.name}</Text>
-                  <Text textStyle="sm" color="fg.alternative">
+                  <Text textStyle="bodySm" color="fg.alternative">
                     {withDistance(candidate.detail, candidate.distanceMeters)}
                   </Text>
                 </Flex>

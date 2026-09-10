@@ -12,11 +12,19 @@ export type EmptyStateProps = {
   icon?: ReactNode;
   // 다음 행동이 있으면 버튼을 받음
   action?: ReactNode;
+  // 목록 안에 끼울 때는 sm 으로 줄임
+  size?: "sm" | "md";
 };
 
-export function EmptyState({ title, description, icon, action }: EmptyStateProps) {
+export function EmptyState({
+  title,
+  description,
+  icon,
+  action,
+  size = "md",
+}: EmptyStateProps) {
   return (
-    <ChakraEmptyState.Root paddingY="10">
+    <ChakraEmptyState.Root size={size}>
       <ChakraEmptyState.Content>
         {icon ? (
           <ChakraEmptyState.Indicator color="fg.assistive">

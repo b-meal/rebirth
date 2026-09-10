@@ -26,12 +26,12 @@ export default function HomePage() {
 
       <Flex direction="column" gap="2" marginTop="4">
         <Link href="/guide/injured">
-          <Text textStyle="sm" color="fg.alternative" textDecoration="underline">
+          <Text textStyle="bodySm" color="fg.alternative" textDecoration="underline">
             다친 동물을 봤어요
           </Text>
         </Link>
         <Link href="/lost/new">
-          <Text textStyle="sm" color="fg.alternative" textDecoration="underline">
+          <Text textStyle="bodySm" color="fg.alternative" textDecoration="underline">
             반려동물을 잃어버렸어요
           </Text>
         </Link>

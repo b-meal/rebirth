@@ -108,9 +108,9 @@ export function PhotoPicker({
   return (
     <Flex direction="column" gap="3">
       <Flex justify="space-between" align="baseline">
-        <Text fontWeight="bold">{label}</Text>
+        <Text textStyle="heading">{label}</Text>
         {!single && (
-          <Text textStyle="sm" color="fg.alternative">
+          <Text textStyle="bodySm" color="fg.alternative">
             {photos.length} / {maxCount}장
           </Text>
         )}
@@ -130,7 +130,7 @@ export function PhotoPicker({
           backgroundColor="bg.alternative"
           color="fg.assistive"
         >
-          <IconCamera fontSize="28px" />
+          <IconCamera size={28} />
           <Text color="fg.alternative" textAlign="center">
             {hint}
           </Text>
@@ -183,7 +183,7 @@ export function PhotoPicker({
       </Flex>
 
       {isFull && !single && !error && (
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           사진은 최대 {maxCount}장까지 올릴 수 있습니다
         </Text>
       )}
