@@ -41,6 +41,23 @@ function snapToGrid({ lat, lng }, meters) {
   return { lat: snappedLat, lng: snapAxis(lng, lngStep) };
 }
 
+// dog.ceo 품종 키를 화면 표기로 옮김, 값은 품종명만 담고 계열 추정 문구는 UI 가 붙임
+const BREED_LABEL = {
+  maltese: "말티즈",
+  shihtzu: "시추",
+  pomeranian: "포메라니안",
+  beagle: "비글",
+  chihuahua: "치와와",
+  "poodle/toy": "푸들",
+  "spitz/japanese": "스피츠",
+  dachshund: "닥스훈트",
+  "retriever/golden": "골든 리트리버",
+  "corgi/cardigan": "웰시 코기",
+  pug: "퍼그",
+  husky: "허스키",
+  mix: null,
+};
+
 // 데모 기준점, 과천대로7길 33 주변으로 흩음
 const BASE = { lat: 37.41380, lng: 126.97717 };
 
@@ -260,12 +277,13 @@ try {
 
     await sql`
       insert into reports (
-        id, kind, visibility, lifecycle, care_situation, animal_type, appearance,
+        id, kind, visibility, lifecycle, care_situation, animal_type, breed_guess, appearance,
         colors, size, sex, neutered, condition_tags, collar, injury,
         coarse_point, coarse_grid_m, location_source,
         area_code_system, area_code, area_name, landmark_note, occurred_at
       ) values (
-        ${id}, 'sighting', 'public', 'active', ${spot.care}, 'dog', ${spot.appearance},
+        ${id}, 'sighting', 'public', 'active', ${spot.care}, 'dog',
+        ${BREED_LABEL[spot.breed] ?? null}, ${spot.appearance},
         ${spot.colors}, ${spot.size}, 'unknown', 'unknown', ${spot.tags},
         ${spot.collar}, ${spot.injury},
         ST_SetSRID(ST_MakePoint(${coarse.lng}, ${coarse.lat}), 4326), ${grid}, 'gps',
@@ -274,6 +292,7 @@ try {
       )
       on conflict (id) do update set
         care_situation = excluded.care_situation,
+        breed_guess = excluded.breed_guess,
         appearance = excluded.appearance,
         colors = excluded.colors,
         size = excluded.size,

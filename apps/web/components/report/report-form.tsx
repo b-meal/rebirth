@@ -149,6 +149,7 @@ export function ReportForm() {
       kind: "sighting" as const,
       careSituation: draft.careSituation,
       animalType: draft.animalType,
+      breedGuess: draft.breedGuess.trim() || null,
       appearance: draft.appearance,
       colors: draft.colors,
       size: draft.size,
