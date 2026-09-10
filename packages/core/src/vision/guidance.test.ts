@@ -9,6 +9,7 @@ const base = {
   color: ["흰색"],
   size: "small" as const,
   condition: "털이 엉킴",
+  story: "화단 근처에 혼자 있었고 사람을 피하지 않음",
   collarOrHarness: false,
   visibleInjury: false,
   earTip: null,
