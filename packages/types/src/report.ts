@@ -188,6 +188,8 @@ export const LIST_PAGE_SIZE = 20
  */
 export const listQuery = z.object({
   kind: reportKind.optional(),
+  // 자유 검색어. 외형 문장과 지역명, 털색에서 부분 일치로 찾음
+  q: z.string().trim().max(40, '검색어가 너무 깁니다').optional(),
   // 행정구역 코드. 상위 코드를 주면 하위를 포함함
   areaCode: z.string().max(20, '지역 코드가 너무 깁니다').optional(),
   animalType: animalType.optional(),

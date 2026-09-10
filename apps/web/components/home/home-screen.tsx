@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   useCallback,
@@ -14,6 +15,7 @@ import { Box, Grid, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/
 import {
   IconBellLine,
   IconCrosshairLine,
+  IconMagnifyingglassLine,
   IconPawprintFill,
   IconPlusLine,
 } from "@karrotmarket/react-monochrome-icon";
@@ -27,12 +29,10 @@ import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 import { describeAnimal } from "@/lib/report-label";
 import { useCurrentPosition } from "@/hooks/use-current-position";
 import { useMap } from "@/hooks/use-map";
-import { usePlaceSearch } from "@/hooks/use-place-search";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { BottomNav } from "@/components/ui/bottom-nav";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
-import { PlaceSearchField } from "@/components/ui/place-search-field";
 
 // 지도가 맨 아래, 그 위에 시트, 맨 위에 떠 있는 내비게이션을 겹치는 첫 화면
 
@@ -116,11 +116,6 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
   );
 }
 
-function matchesQuery(item: MapMarker, query: string): boolean {
-  const fields = [describeAnimal(item), item.areaName ?? "", ...item.colors];
-  return fields.some((field) => field.includes(query));
-}
-
 export type HomeScreenProps = {
   markers: MapMarker[];
 };
@@ -129,7 +124,6 @@ export function HomeScreen({ markers }: HomeScreenProps) {
   const router = useRouter();
   const snackbar = useSnackbarAdapter();
   const position = useCurrentPosition({ immediate: true });
-  const search = usePlaceSearch();
   const { containerRef, status, error, center, moveTo, map } = useMap();
 
   const ready = status === "ready";
@@ -193,13 +187,6 @@ export function HomeScreen({ markers }: HomeScreenProps) {
         ? markers.filter((item) => distanceKm(center, item.point) <= NEARBY_RADIUS_KM)
         : markers,
     [ready, center, markers],
-  );
-
-  // 검색어는 지도 이동과 목록 좁히기에 함께 쓰임
-  const query = search.query.trim();
-  const listed = useMemo(
-    () => (query ? nearby.filter((item) => matchesQuery(item, query)) : nearby),
-    [nearby, query],
   );
 
   const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
@@ -379,7 +366,9 @@ export function HomeScreen({ markers }: HomeScreenProps) {
         gap="x2"
         align="center"
       >
+        {/* 지도 위에서는 입력을 받지 않고 검색 화면으로 넘김 */}
         <VStack
+          asChild
           align="stretch"
           grow={1}
           minWidth="0"
@@ -387,15 +376,14 @@ export function HomeScreen({ markers }: HomeScreenProps) {
           bg="bg.layerFloating"
           boxShadow="s2"
         >
-          <PlaceSearchField
-            search={search}
-            placeholder="동물 특징이나 동네로 검색"
-            emptyMessage="같은 이름의 장소가 없습니다. 아래 목록이 특징으로 좁혀집니다"
-            onPick={(candidate) => {
-              moveTo(candidate.point, { animate: true });
-              search.clear();
-            }}
-          />
+          <Link href="/search" aria-label="제보 검색">
+            <HStack gap="x2" align="center" px="x4" py="x3">
+              <Icon svg={<IconMagnifyingglassLine />} size="x5" color="fg.neutralSubtle" />
+              <Text textStyle="t4Regular" color="fg.neutralSubtle">
+                동물 특징이나 동네로 검색
+              </Text>
+            </HStack>
+          </Link>
         </VStack>
         <ContextualFloatingButton
           variant="layer"
@@ -459,24 +447,24 @@ export function HomeScreen({ markers }: HomeScreenProps) {
                 : "최근 발견 제보"}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {listed.length}건
+              {nearby.length}건
             </Text>
           </HStack>
 
           {/* 아래 여백은 떠 있는 내비게이션이 가리는 만큼 비워 두는 자리 */}
           <Box height={`${Math.round(sheetRatio * 100)}dvh`} pb="x16" overflowY="auto">
-            {listed.length === 0 ? (
+            {nearby.length === 0 ? (
               <VStack px="spacingX.globalGutter" py="x2" gap="x1" align="stretch">
                 <Text textStyle="t4Regular" color="fg.neutralMuted">
-                  {query ? "검색과 맞는 제보가 없습니다" : "이 지역에는 아직 제보가 없습니다"}
+                  이 지역에는 아직 제보가 없습니다
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  지도를 옮기거나 검색어를 지우면 다른 지역의 제보를 볼 수 있습니다
+                  지도를 옮기면 다른 지역의 제보를 볼 수 있습니다
                 </Text>
               </VStack>
             ) : (
               <Grid columns={2} gap="x4" px="spacingX.globalGutter">
-                {listed.map((item) => (
+                {nearby.map((item) => (
                   <ReportCard key={item.id} item={item} />
                 ))}
               </Grid>

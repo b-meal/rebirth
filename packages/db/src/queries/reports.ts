@@ -121,6 +121,8 @@ export function findPublicReport(id: string) {
 
 export type PublicListOptions = {
   kind?: (typeof reports.kind.enumValues)[number]
+  // 자유 검색어. 외형·지역명·털색을 부분 일치로 봄
+  q?: string
   // 행정구역 코드. 상위 코드를 주면 하위를 접두 일치로 포함함
   areaCode?: string
   animalType?: (typeof reports.animalType.enumValues)[number]
@@ -146,6 +148,7 @@ const PUBLIC_LIST_LIMIT = 20
 /** 공개 목록. 좌표가 아니라 행정구역 코드로 좁힘. WEB-08 */
 export function listPublicReports({
   kind,
+  q,
   areaCode,
   animalType,
   size,
@@ -163,6 +166,16 @@ export function listPublicReports({
       and(
         eq(reports.visibility, 'public'),
         kind ? eq(reports.kind, kind) : undefined,
+        // 대소문자와 자모 분해는 다루지 않음. 한글 부분 일치면 충분함
+        q
+          ? raw`(${reports.appearance} ilike ${'%' + q + '%'}
+              or ${reports.areaName} ilike ${'%' + q + '%'}
+              or ${reports.breedGuess} ilike ${'%' + q + '%'}
+              or exists (
+                select 1 from unnest(${reports.colors}) as color
+                where color ilike ${'%' + q + '%'}
+              ))`
+          : undefined,
         includeClosed
           ? undefined
           : raw`${reports.lifecycle} in ('active', 'searching')`,
@@ -230,6 +243,96 @@ export function listMapReports({
       ),
     )
     .orderBy(desc(reports.occurredAt), desc(reports.id))
+    .limit(limit)
+}
+
+/** 카드용 첫 사진 경로. 경로는 공개 응답에 넣지 않고 서명에만 씀 */
+export async function findFirstPhotoPaths(reportIds: string[]) {
+  const found = new Map<string, string>()
+  if (reportIds.length === 0) return found
+
+  const rows = await db
+    .select({
+      reportId: reportPhotos.reportId,
+      storagePath: reportPhotos.storagePath,
+    })
+    .from(reportPhotos)
+    .where(inArray(reportPhotos.reportId, reportIds))
+    .orderBy(reportPhotos.reportId, reportPhotos.sortOrder)
+
+  for (const row of rows) {
+    if (!found.has(row.reportId)) found.set(row.reportId, row.storagePath)
+  }
+  return found
+}
+
+/* 실시간 차트 */
+
+export type TrendingSort = 'interest' | 'help'
+
+export type TrendingOptions = {
+  sort?: TrendingSort
+  days?: number
+  limit?: number
+}
+
+/**
+ * 검색 화면의 실시간 차트. 관심·댓글 수를 함께 세고 좌표는 고르지 않음
+ * help 는 부상 제보와 오래 배회 중인 제보를 먼저 올려 도움이 급한 순서로 봄
+ */
+export function listTrendingReports({
+  sort = 'interest',
+  days = 7,
+  limit = 10,
+}: TrendingOptions = {}) {
+  const interestCount = raw<number>`(
+    select count(*)::int from ${reportInterests} i where i.report_id = ${reports}.id
+  )`
+  const commentCount = raw<number>`(
+    select count(*)::int from ${reportComments} c where c.report_id = ${reports}.id
+  )`
+
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      breedGuess: reports.breedGuess,
+      colors: reports.colors,
+      size: reports.size,
+      careSituation: reports.careSituation,
+      injury: reports.injury,
+      areaName: reports.areaName,
+      occurredAt: reports.occurredAt,
+      interestCount,
+      commentCount,
+      photoPath: raw<string | null>`(
+        select p.storage_path from ${reportPhotos} p
+        where p.report_id = ${reports}.id
+        order by p.sort_order limit 1
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.kind, 'sighting'),
+        eq(reports.visibility, 'public'),
+        eq(reports.lifecycle, 'active'),
+        gte(reports.occurredAt, new Date(Date.now() - days * 86_400_000)),
+      ),
+    )
+    .orderBy(
+      ...(sort === 'help'
+        ? [
+            raw`(${reports.injury} is true) desc`,
+            raw`${interestCount} asc`,
+            reports.occurredAt,
+          ]
+        : [
+            raw`${interestCount} desc`,
+            raw`${commentCount} desc`,
+            desc(reports.occurredAt),
+          ]),
+    )
     .limit(limit)
 }
 

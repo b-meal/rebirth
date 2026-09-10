@@ -36,6 +36,13 @@ type Detail = {
 // 390px 화면에서 좌우 여백이 남는 폭
 const CARD_WIDTH = "232px";
 
+// 흐림과 반투명이 SEED prop 에 없고 지도 위 가독성도 필요해 면 토큰을 섞어 씀
+const GLASS = {
+  background: "color-mix(in srgb, var(--seed-color-bg-layer-floating) 76%, transparent)",
+  backdropFilter: "blur(20px)",
+  WebkitBackdropFilter: "blur(20px)",
+} as const;
+
 export type MapPreviewCardProps = {
   item: MapMarker;
   onClose: () => void;
@@ -73,10 +80,13 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
       align="stretch"
       width={CARD_WIDTH}
       borderRadius="r4"
+      borderWidth={1}
+      borderColor="stroke.neutralMuted"
       bg="bg.layerFloating"
       boxShadow="s3"
       overflowX="hidden"
       overflowY="hidden"
+      style={GLASS}
     >
       <Box position="relative">
         {item.photoUrl ? (
