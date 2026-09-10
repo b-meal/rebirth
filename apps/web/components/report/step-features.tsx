@@ -1,16 +1,17 @@
 "use client";
 
-import { Button, Flex, Heading, Skeleton, Textarea } from "@chakra-ui/react";
+import { Badge, HStack, Skeleton, Text, VStack } from "@seed-design/react";
+import { ActionButton } from "seed-design/ui/action-button";
+import { Callout } from "seed-design/ui/callout";
+import { Chip } from "seed-design/ui/chip";
+import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
+import { TextField, TextFieldTextarea } from "seed-design/ui/text-field";
 
 import type { AnalyzeAdviceState } from "@/hooks/use-analyze-photo";
 import type { DraftField, ReportDraft } from "@/hooks/use-report-draft";
-import { Chip } from "@/components/ui/chip";
-import { Field } from "@/components/ui/field";
-import { SectionMessage } from "@/components/ui/section-message";
-import { Segmented } from "@/components/ui/segmented";
+import { Section } from "@/components/ui/screen";
 
-// 3단계 특징. AI 초안을 채우고 사용자가 틀린 항목만 고침
-// confidence 수치를 화면에 노출하지 않음. 확률을 보여주면 확정으로 읽힘
+// 3단계 특징, confidence 수치는 확정으로 읽히므로 화면에 내지 않음
 
 const ANIMAL_OPTIONS = [
   { value: "dog", label: "개" },
@@ -41,6 +42,12 @@ const TRISTATE = [
   { value: "true", label: "있음" },
   { value: "false", label: "없음" },
   { value: "null", label: "모르겠음" },
+] as const;
+
+const TRISTATE_FIELDS = [
+  ["목줄이나 하네스", "collar"],
+  ["눈에 보이는 부상", "injury"],
+  ["귀 끝 절단", "earTip"],
 ] as const;
 
 function toTri(value: boolean | null): "true" | "false" | "null" {
@@ -77,91 +84,89 @@ export function StepFeatures({
     draft.aiRaw !== null && !draft.editedFields.includes(field);
 
   const label = (text: string, field: DraftField) => (
-    <Flex gap="1.5" align="center">
-      <Heading size="sm">{text}</Heading>
+    <HStack gap="x1_5" align="center">
+      <Text as="h3" textStyle="t5Bold" color="fg.neutral">
+        {text}
+      </Text>
       {showBadge(field) ? (
-        <Chip size="xsmall" outlined readOnly>
+        <Badge size="medium" variant="outline" tone="neutral">
           AI 초안
-        </Chip>
+        </Badge>
       ) : null}
-    </Flex>
+    </HStack>
   );
 
   if (loading) {
     return (
-      <Flex direction="column" gap="4">
-        <Heading size="lg">사진을 정리하고 있습니다</Heading>
+      <VStack align="stretch" gap="x5">
+        <Text as="h2" textStyle="t7Bold" color="fg.neutral">
+          사진을 정리하고 있습니다
+        </Text>
         {[0, 1, 2, 3].map((row) => (
-          <Flex key={row} direction="column" gap="2">
-            <Skeleton width="30%" height="20px" />
-            <Skeleton width="100%" height="40px" />
-          </Flex>
+          <VStack key={row} align="stretch" gap="x2">
+            <Skeleton width="30%" height="x5" radius="8" />
+            <Skeleton width="full" height="x10" radius="8" />
+          </VStack>
         ))}
-      </Flex>
+      </VStack>
     );
   }
 
   return (
-    <Flex direction="column" gap="5">
-      <Heading size="lg">특징을 확인해 주십시오</Heading>
+    <VStack align="stretch" gap="x6">
+      <Text as="h2" textStyle="t7Bold" color="fg.neutral">
+        특징을 확인해 주십시오
+      </Text>
 
       {advice === "not-animal" ? (
-        <SectionMessage variant="cautionary">
-          {message}
-          <Flex marginTop="2">
-            <Button size="sm" colorPalette="brand" onClick={onRetake}>
-              사진 다시 고르기
-            </Button>
-          </Flex>
-        </SectionMessage>
+        <VStack align="stretch" gap="x2">
+          <Callout tone="warning" description={message ?? ""} />
+          <ActionButton variant="brandSolid" size="small" onClick={onRetake}>
+            사진 다시 고르기
+          </ActionButton>
+        </VStack>
       ) : null}
       {advice === "low-quality" || advice === "failed" ? (
-        <SectionMessage variant="info">{message}</SectionMessage>
+        <Callout tone="informative" description={message ?? ""} />
       ) : null}
 
-      <Flex direction="column" gap="2">
+      <Section>
         {label("동물 종류", "animalType")}
-        <Segmented
+        <SegmentedControl
           value={draft.animalType}
-          options={ANIMAL_OPTIONS}
-          onValueChange={(value) =>
-            onEdit("animalType", value as ReportDraft["animalType"])
-          }
-        />
-      </Flex>
+          onValueChange={(value) => onEdit("animalType", value as ReportDraft["animalType"])}
+          aria-label="동물 종류"
+        >
+          {ANIMAL_OPTIONS.map((option) => (
+            <SegmentedControlItem key={option.value} value={option.value}>
+              {option.label}
+            </SegmentedControlItem>
+          ))}
+        </SegmentedControl>
+      </Section>
 
-      <Field
+      <TextField
         label="외형 요약"
-        labelSuffix={
-          showBadge("appearance") ? (
-            <Chip size="xsmall" outlined readOnly>
-              AI 초안
-            </Chip>
-          ) : null
-        }
-        helper="품종은 단정하지 않고 추정으로만 적습니다"
+        indicator={showBadge("appearance") ? "AI 초안" : undefined}
+        description="품종은 단정하지 않고 추정으로만 적습니다"
+        value={draft.appearance}
+        maxGraphemeCount={300}
+        onValueChange={(next) => onEdit("appearance", next.value)}
       >
-        <Textarea
-          value={draft.appearance}
-          maxLength={300}
-          rows={3}
-          width="100%"
-          placeholder="흰색 소형견, 털이 길고 엉킴"
-          onChange={(event) => onEdit("appearance", event.target.value)}
-        />
-      </Field>
+        <TextFieldTextarea placeholder="흰색 소형견, 털이 길고 엉킴" />
+      </TextField>
 
-      <Flex direction="column" gap="2">
+      <Section>
         {label("털색", "colors")}
-        <Flex gap="1.5" wrap="wrap">
+        <HStack gap="spacingX.betweenChips" wrap>
           {COLOR_OPTIONS.map((color) => {
             const selected = draft.colors.includes(color);
             return (
-              <Chip
+              <Chip.Toggle
                 key={color}
                 size="small"
-                active={selected}
-                onClick={() =>
+                checked={selected}
+                onCheckedChange={() =>
                   onEdit(
                     "colors",
                     selected
@@ -171,38 +176,44 @@ export function StepFeatures({
                   )
                 }
               >
-                {color}
-              </Chip>
+                <Chip.Label>{color}</Chip.Label>
+              </Chip.Toggle>
             );
           })}
-        </Flex>
-      </Flex>
+        </HStack>
+      </Section>
 
-      <Flex direction="column" gap="2">
+      <Section>
         {label("크기", "size")}
-        <Segmented
+        <SegmentedControl
           value={draft.size}
-          options={SIZE_OPTIONS}
           onValueChange={(value) => onEdit("size", value as ReportDraft["size"])}
-        />
-      </Flex>
+          aria-label="크기"
+        >
+          {SIZE_OPTIONS.map((option) => (
+            <SegmentedControlItem key={option.value} value={option.value}>
+              {option.label}
+            </SegmentedControlItem>
+          ))}
+        </SegmentedControl>
+      </Section>
 
-      {(
-        [
-          ["목줄이나 하네스", "collar"],
-          ["눈에 보이는 부상", "injury"],
-          ["귀 끝 절단", "earTip"],
-        ] as const
-      ).map(([text, field]) => (
-        <Flex key={field} direction="column" gap="2">
+      {TRISTATE_FIELDS.map(([text, field]) => (
+        <Section key={field}>
           {label(text, field)}
-          <Segmented
+          <SegmentedControl
             value={toTri(draft[field])}
-            options={TRISTATE}
             onValueChange={(value) => onEdit(field, fromTri(value))}
-          />
-        </Flex>
+            aria-label={text}
+          >
+            {TRISTATE.map((option) => (
+              <SegmentedControlItem key={option.value} value={option.value}>
+                {option.label}
+              </SegmentedControlItem>
+            ))}
+          </SegmentedControl>
+        </Section>
       ))}
-    </Flex>
+    </VStack>
   );
 }

@@ -3,16 +3,17 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Button, Flex, Heading, Spinner, Text } from "@chakra-ui/react";
+import { Box, HStack, Text, VStack } from "@seed-design/react";
 import type { AnimalType } from "@rebirth/types";
 import { LIST_PERIOD_DAYS } from "@rebirth/types";
+import { ActionButton } from "seed-design/ui/action-button";
+import { Callout } from "seed-design/ui/callout";
+import { Chip } from "seed-design/ui/chip";
+import { ResultSection } from "seed-design/ui/result-section";
 
-import { Chip } from "@/components/ui/chip";
-import { EmptyState } from "@/components/ui/empty-state";
-import { SectionMessage } from "@/components/ui/section-message";
+import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 
-// WEB-08. 최근 제보를 조건으로 좁혀 훑음
-// 품종 필터를 두지 않고 지역은 행정동까지만 보임. 거리 정렬도 제공하지 않음
+// WEB-08 최근 제보를 조건으로 좁혀 훑되 품종 필터와 거리 정렬은 두지 않음
 
 export type ListItem = {
   id: string;
@@ -61,38 +62,39 @@ function describe(item: ListItem) {
 
 function Card({ item }: { item: ListItem }) {
   return (
-    <Flex
+    <Box
       asChild
-      direction="column"
-      gap="1"
-      padding="4"
-      borderRadius="card"
-      borderWidth="1px"
-      borderColor="border"
-      textDecoration="none"
-      color="inherit"
+      p="x4"
+      borderRadius="r3"
+      borderWidth={1}
+      borderColor="stroke.neutralMuted"
+      bg="bg.layerDefault"
     >
       {/* 링크로 두어 키보드 이동과 새 탭 열기가 그대로 동작함 */}
       <Link href={`/r/${item.id}`}>
-        <Text textStyle="heading">{describe(item)}</Text>
-        <Text textStyle="bodySm" color="fg.alternative">
-          {item.areaName ?? "지역 미확인"}
-        </Text>
-        <Text textStyle="caption" color="fg.assistive">
-          {KST.format(item.occurredAt)}
-        </Text>
-        <Flex gap="2" marginTop="1">
-          <Text textStyle="caption" color="fg.alternative">
-            {CARE_LABEL[item.careSituation] ?? ""}
+        <VStack align="stretch" gap="x1">
+          <Text textStyle="t5Bold" color="fg.neutral">
+            {describe(item)}
           </Text>
-          {item.injury === true ? (
-            <Text textStyle="caption" color="fg.error">
-              다친 것으로 보임
+          <Text textStyle="t3Regular" color="fg.neutralMuted">
+            {item.areaName ?? "지역 미확인"}
+          </Text>
+          <Text textStyle="t2Regular" color="fg.neutralSubtle">
+            {KST.format(item.occurredAt)}
+          </Text>
+          <HStack gap="x2" mt="x1">
+            <Text textStyle="t2Regular" color="fg.neutralMuted">
+              {CARE_LABEL[item.careSituation] ?? ""}
             </Text>
-          ) : null}
-        </Flex>
+            {item.injury === true ? (
+              <Text textStyle="t2Regular" color="fg.critical">
+                다친 것으로 보임
+              </Text>
+            ) : null}
+          </HStack>
+        </VStack>
       </Link>
-    </Flex>
+    </Box>
   );
 }
 
@@ -149,76 +151,85 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
   const filtered = Boolean(animalType) || days !== LIST_PERIOD_DAYS[0];
 
   return (
-    <Flex direction="column" gap="4" padding="5" paddingBottom="16">
-      <Heading size="xl">최근 발견 제보</Heading>
-
-      <Flex direction="column" gap="2">
-        <Flex gap="2" wrap="wrap">
-          {TYPE_OPTIONS.map((option) => (
-            <Chip
-              key={option.value}
-              active={animalType === option.value}
-              onClick={() => setParam("animalType", option.value)}
-            >
-              {option.label}
-            </Chip>
-          ))}
-        </Flex>
-        <Flex gap="2" wrap="wrap">
-          {LIST_PERIOD_DAYS.map((period) => (
-            <Chip
-              key={period}
-              active={days === period}
-              onClick={() => setParam("days", String(period))}
-            >
-              최근 {period}일
-            </Chip>
-          ))}
-        </Flex>
-      </Flex>
-
-      <Flex justify="space-between" align="center">
-        <Text textStyle="bodySm" color="fg.alternative">
-          {pending ? "불러오는 중" : `${rows.length}건`}
+    <Screen>
+      <ScreenBody gap="x5">
+        <Text as="h1" textStyle="t8Bold" color="fg.neutral">
+          최근 발견 제보
         </Text>
-        {filtered ? (
-          <Button variant="plain" size="sm" onClick={() => router.replace(pathname)}>
-            조건 초기화
-          </Button>
+
+        <Section gap="x2">
+          <HStack gap="spacingX.betweenChips" wrap>
+            {TYPE_OPTIONS.map((option) => (
+              <Chip.Toggle
+                key={option.value}
+                checked={animalType === option.value}
+                onCheckedChange={() => setParam("animalType", option.value)}
+              >
+                <Chip.Label>{option.label}</Chip.Label>
+              </Chip.Toggle>
+            ))}
+          </HStack>
+          <HStack gap="spacingX.betweenChips" wrap>
+            {LIST_PERIOD_DAYS.map((period) => (
+              <Chip.Toggle
+                key={period}
+                checked={days === period}
+                onCheckedChange={() => setParam("days", String(period))}
+              >
+                <Chip.Label>최근 {period}일</Chip.Label>
+              </Chip.Toggle>
+            ))}
+          </HStack>
+        </Section>
+
+        <HStack justify="space-between" align="center">
+          <Text textStyle="t3Regular" color="fg.neutralMuted">
+            {pending ? "불러오는 중" : `${rows.length}건`}
+          </Text>
+          {filtered ? (
+            <ActionButton variant="ghost" size="xsmall" onClick={() => router.replace(pathname)}>
+              조건 초기화
+            </ActionButton>
+          ) : null}
+        </HStack>
+
+        {rows.length === 0 ? (
+          <ResultSection
+            size="medium"
+            title="조건에 맞는 제보가 없습니다"
+            description="조건을 줄이면 더 많은 제보를 볼 수 있습니다"
+            {...(filtered && {
+              primaryActionProps: {
+                children: "전체 보기",
+                onClick: () => router.replace(pathname),
+              },
+            })}
+          />
+        ) : (
+          <VStack align="stretch" gap="x2">
+            {rows.map((item) => (
+              <Card key={item.id} item={item} />
+            ))}
+          </VStack>
+        )}
+
+        {loadError ? <Callout tone="critical" description={loadError} /> : null}
+
+        {cursor ? (
+          <ActionButton
+            variant="neutralOutline"
+            size="large"
+            loading={loadingMore}
+            onClick={loadMore}
+          >
+            더 보기
+          </ActionButton>
+        ) : rows.length > 0 ? (
+          <Text textStyle="t2Regular" color="fg.neutralSubtle" align="center">
+            마지막 제보까지 모두 보셨습니다
+          </Text>
         ) : null}
-      </Flex>
-
-      {rows.length === 0 ? (
-        <EmptyState
-          title="조건에 맞는 제보가 없습니다"
-          description="조건을 줄이면 더 많은 제보를 볼 수 있습니다"
-          action={
-            filtered ? (
-              <Button variant="outline" onClick={() => router.replace(pathname)}>
-                전체 보기
-              </Button>
-            ) : undefined
-          }
-        />
-      ) : (
-        <Flex direction="column" gap="2">
-          {rows.map((item) => (
-            <Card key={item.id} item={item} />
-          ))}
-        </Flex>
-      )}
-
-      {loadError ? <SectionMessage variant="negative">{loadError}</SectionMessage> : null}
-
-      {cursor ? (
-        <Button variant="outline" width="100%" disabled={loadingMore} onClick={loadMore}>
-          {loadingMore ? <Spinner size="sm" /> : "더 보기"}
-        </Button>
-      ) : rows.length > 0 ? (
-        <Text textStyle="caption" color="fg.assistive" textAlign="center">
-          마지막 제보까지 모두 보셨습니다
-        </Text>
-      ) : null}
-    </Flex>
+      </ScreenBody>
+    </Screen>
   );
 }

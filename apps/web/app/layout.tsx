@@ -1,10 +1,17 @@
 import type { Metadata, Viewport } from "next";
+
+import "@seed-design/css/all.css";
+import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "./globals.css";
+
 import { AppFrame } from "@/components/ui/app-frame";
 import { Providers } from "./providers";
 
 // OG 메타와 QR 코드의 절대 URL 생성 기준
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+// 첫 페인트 전에 SEED 색 모드 속성을 채워 하이드레이션 불일치 방지
+const COLOR_SCHEME_SCRIPT = `try{var m=window.matchMedia("(prefers-color-scheme: dark)");var a=function(){document.documentElement.dataset.seedUserColorScheme=m.matches?"dark":"light"};a();m.addEventListener?m.addEventListener("change",a):m.addListener(a)}catch(e){}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -19,11 +26,21 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  colorScheme: "light dark",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    <html
+      lang="ko"
+      data-seed=""
+      data-seed-color-mode="system"
+      data-seed-user-color-scheme="light"
+      suppressHydrationWarning
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: COLOR_SCHEME_SCRIPT }} />
+      </head>
       <body>
         <Providers>
           <AppFrame>{children}</AppFrame>

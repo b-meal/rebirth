@@ -73,6 +73,7 @@ const config: StorybookConfig = {
       alias: {
         ...config.resolve?.alias,
         "@": path.resolve(process.cwd(), "../web"),
+        "seed-design": path.resolve(process.cwd(), "../web/seed-design"),
       },
     };
     config.define = {

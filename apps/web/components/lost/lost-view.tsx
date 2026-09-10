@@ -2,13 +2,13 @@
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Flex, Heading, Separator, Skeleton, Text } from "@chakra-ui/react";
+import { Divider, Skeleton, Text, VStack } from "@seed-design/react";
+import { Callout } from "seed-design/ui/callout";
 
-import { SectionMessage } from "@/components/ui/section-message";
+import { Screen, ScreenBody } from "@/components/ui/screen";
 import { CandidateDeck, type Candidate } from "./candidate-deck";
 
-// 내 신고 요약과 확인할 후보
-// 토큰은 클라이언트에서만 읽어 서버 렌더 로그에 남지 않게 함
+// 내 신고 요약과 확인할 후보, 토큰은 클라이언트에서만 읽어 서버 로그에 남지 않음
 
 type LostSummary = {
   id: string;
@@ -74,63 +74,76 @@ export function LostView() {
 
   if (state.status === "loading") {
     return (
-      <Flex direction="column" gap="3" padding="5">
-        <Skeleton width="60%" height="24px" />
-        <Skeleton width="100%" height="80px" />
-        <Skeleton width="100%" height="280px" />
-      </Flex>
+      <Screen>
+        <ScreenBody gap="x3">
+          <Skeleton width="60%" height="x6" radius="8" />
+          <Skeleton width="full" height="x16" radius="8" />
+          <Skeleton width="full" height="280px" radius="16" />
+        </ScreenBody>
+      </Screen>
     );
   }
 
   if (state.status === "invalid") {
     return (
-      <Flex direction="column" gap="3" padding="6">
-        <Heading size="md">조회 주소가 맞지 않습니다</Heading>
-        <Text color="fg.alternative">
-          받은 링크를 다시 확인해 주십시오. 연락처를 받지 않으므로 주소를 잃으면
-          신고를 다시 찾을 수 없습니다
-        </Text>
-      </Flex>
+      <Screen>
+        <ScreenBody gap="x3">
+          <Text as="h1" textStyle="t7Bold" color="fg.neutral">
+            조회 주소가 맞지 않습니다
+          </Text>
+          <Text textStyle="t5Regular" color="fg.neutralMuted">
+            받은 링크를 다시 확인해 주십시오. 연락처를 받지 않으므로 주소를 잃으면 신고를
+            다시 찾을 수 없습니다
+          </Text>
+        </ScreenBody>
+      </Screen>
     );
   }
 
   if (state.status === "error") {
     return (
-      <Flex direction="column" gap="3" padding="6">
-        <SectionMessage variant="negative">
-          후보를 불러오지 못했습니다. 잠시 후에 다시 시도해 주십시오
-        </SectionMessage>
-      </Flex>
+      <Screen>
+        <ScreenBody>
+          <Callout
+            tone="critical"
+            description="후보를 불러오지 못했습니다. 잠시 후에 다시 시도해 주십시오"
+          />
+        </ScreenBody>
+      </Screen>
     );
   }
 
   const { lost, candidates } = state;
 
   return (
-    <Flex direction="column">
-      <Flex direction="column" gap="2" padding="5" paddingBottom="3">
-        <Heading size="lg">내 신고</Heading>
-        <Text color="fg.alternative">
-          {[ANIMAL_LABEL[lost.animalType], SIZE_LABEL[lost.size], ...lost.colors]
-            .filter(Boolean)
-            .join(" · ")}
-        </Text>
-        {lost.appearance ? (
-          <Text textStyle="bodySm" color="fg.alternative">
-            {lost.appearance}
+    <Screen>
+      <VStack align="stretch">
+        <ScreenBody pb="x3" gap="x2">
+          <Text as="h1" textStyle="t7Bold" color="fg.neutral">
+            내 신고
           </Text>
-        ) : null}
-        <Text textStyle="bodySm" color="fg.alternative">
-          {lost.areaName ?? "위치 미확인"} 에서 마지막 목격
-        </Text>
-        <Heading size="sm" marginTop="2">
-          확인할 후보 {candidates.length}건
-        </Heading>
-      </Flex>
+          <Text textStyle="t4Regular" color="fg.neutralMuted">
+            {[ANIMAL_LABEL[lost.animalType], SIZE_LABEL[lost.size], ...lost.colors]
+              .filter(Boolean)
+              .join(" · ")}
+          </Text>
+          {lost.appearance ? (
+            <Text textStyle="t3Regular" color="fg.neutralMuted">
+              {lost.appearance}
+            </Text>
+          ) : null}
+          <Text textStyle="t3Regular" color="fg.neutralMuted">
+            {lost.areaName ?? "위치 미확인"} 에서 마지막 목격
+          </Text>
+          <Text as="h2" textStyle="t5Bold" color="fg.neutral">
+            확인할 후보 {candidates.length}건
+          </Text>
+        </ScreenBody>
 
-      <Separator />
+        <Divider />
 
-      <CandidateDeck candidates={candidates} />
-    </Flex>
+        <CandidateDeck candidates={candidates} />
+      </VStack>
+    </Screen>
   );
 }
