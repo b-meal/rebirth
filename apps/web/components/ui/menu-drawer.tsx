@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 import { Box, CloseButton, Drawer, Flex, Portal, Text } from "@chakra-ui/react";
 
 import { ListGroup, ListItem } from "./list-item";
+import { FRAME_COLUMN } from "./screen";
 import type { IconName } from "./icons";
-import { FRAME_INSET } from "./screen";
 
 // 햄버거로 여는 옆 메뉴, 항목은 ListItem 행으로 통일하고 프레임 안에서만 열림
 
@@ -55,7 +55,8 @@ export function MenuDrawer({
       {trigger ? <Drawer.Trigger asChild>{trigger}</Drawer.Trigger> : null}
       <Portal>
         <Drawer.Backdrop />
-        <Drawer.Positioner insetInline={FRAME_INSET}>
+        {/* 옆 메뉴는 폰 프레임의 가장자리에 붙어야 해 Positioner 를 프레임 폭으로 둠 */}
+        <Drawer.Positioner {...FRAME_COLUMN}>
           <Drawer.Content
             width="82%"
             maxWidth="320px"

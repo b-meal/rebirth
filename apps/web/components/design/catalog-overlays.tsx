@@ -34,7 +34,7 @@ import { Icon } from "@/components/ui/icons";
 import { ListGroup, ListItem } from "@/components/ui/list-item";
 import { MenuDrawer } from "@/components/ui/menu-drawer";
 import { PageIndicator } from "@/components/ui/page-indicator";
-import { FRAME_INSET } from "@/components/ui/screen";
+import { FRAME_OVERLAY } from "@/components/ui/screen";
 import { toaster } from "@/components/ui/toaster";
 
 import { Demo, Spec, SpecTable, Token, Usage } from "./spec";
@@ -49,7 +49,7 @@ function CenterDialogDemo() {
       </Dialog.Trigger>
       <Portal>
         <Dialog.Backdrop />
-        <Dialog.Positioner insetInline={FRAME_INSET} padding="screen">
+        <Dialog.Positioner padding="screen">
           <Dialog.Content borderRadius="sheet" backgroundColor="bg.panel" boxShadow="float">
             <Dialog.Header paddingBottom="2">
               <Dialog.Title textStyle="title3">위치는 행정동까지 공개합니다</Dialog.Title>
@@ -86,7 +86,7 @@ function FullDialogDemo() {
       </Dialog.Trigger>
       <Portal>
         <Dialog.Backdrop />
-        <Dialog.Positioner insetInline={FRAME_INSET}>
+        <Dialog.Positioner>
           <Dialog.Content backgroundColor="bg.canvas">
             <Dialog.Header
               display="grid"
@@ -609,7 +609,7 @@ function ActionBarDemo() {
 
       <ActionBar.Root open={selected.length > 0}>
         <Portal>
-          <ActionBar.Positioner insetInline={FRAME_INSET}>
+          <ActionBar.Positioner>
             <ActionBar.Content boxShadow="float">
               <ActionBar.SelectionTrigger>{selected.length}건 선택</ActionBar.SelectionTrigger>
               <ActionBar.Separator />
@@ -757,8 +757,7 @@ function NotificationCenterDemo() {
               size="4"
               backgroundColor="red.solid"
               color="white"
-              fontSize="10px"
-              fontWeight="600"
+              textStyle="counter"
             >
               {unread}
             </Circle>
@@ -853,7 +852,7 @@ function LightboxDemo() {
       </Dialog.Trigger>
       <Portal>
         <Dialog.Backdrop />
-        <Dialog.Positioner insetInline={FRAME_INSET}>
+        <Dialog.Positioner>
           <Dialog.Content
             display="flex"
             flexDirection="column"
@@ -946,7 +945,7 @@ function TourDemo() {
         borderRadius="card"
         overflow="hidden"
       >
-        <Stack gap="3" padding="4" paddingBottom="160px">
+        <Stack gap="3" padding="4" paddingBottom="40">
           {TOUR_TARGETS.map((label, index) => {
             const lit = step === index;
             return (
@@ -1022,14 +1021,14 @@ export function OverlaysCatalog() {
       >
         <Demo
           label="가운데 다이얼로그"
-          note="Positioner 에 insetInline={FRAME_INSET} 을 주어 데스크톱 프레임 안에서만 뜹니다."
+          note="FRAME_OVERLAY 를 Content 에 펼쳐 데스크톱에서도 폰 폭 안에서만 뜹니다."
         >
           <CenterDialogDemo />
         </Demo>
         <Demo label="전체 화면 다이얼로그" note="머리는 상단 바처럼 제목과 닫기만 둡니다.">
           <FullDialogDemo />
         </Demo>
-        <Usage code={'<Dialog.Positioner insetInline={FRAME_INSET} padding="screen">'} />
+        <Usage code={'<Dialog.Positioner padding="screen">'} />
       </Spec>
 
       <Spec
@@ -1180,7 +1179,7 @@ export function OverlaysCatalog() {
         <Demo label="선택 모드" note="한 건이라도 고르면 나타나고 모두 풀면 사라집니다.">
           <ActionBarDemo />
         </Demo>
-        <Usage code={"<ActionBar.Positioner insetInline={FRAME_INSET}>"} />
+        <Usage code={"<ActionBar.Positioner>"} />
       </Spec>
 
       <Spec
