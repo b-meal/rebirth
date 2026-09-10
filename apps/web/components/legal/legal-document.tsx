@@ -33,7 +33,7 @@ export function LegalDocument({
     <Flex direction="column" gap="4" padding="5" paddingBottom="16">
       <Flex direction="column" gap="1">
         <Heading size="xl">{title}</Heading>
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           {effectiveAt ? `${version} · ${KST.format(effectiveAt)} 시행` : version}
         </Text>
       </Flex>

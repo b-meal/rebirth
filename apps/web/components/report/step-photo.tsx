@@ -50,7 +50,7 @@ export function StepPhoto({
       />
 
       {uploading ? (
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           사진을 올리고 있습니다
         </Text>
       ) : null}
@@ -73,7 +73,7 @@ export function StepPhoto({
           ))}
         </Flex>
         {careSituation === null ? (
-          <Text textStyle="sm" color="fg.alternative">
+          <Text textStyle="bodySm" color="fg.alternative">
             둘 중 하나를 골라야 다음으로 넘어갑니다
           </Text>
         ) : null}

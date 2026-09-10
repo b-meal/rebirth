@@ -233,11 +233,11 @@ export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
       <Separator />
 
       <Flex direction="column" gap="1">
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           목격 지역
         </Text>
         <Text>{report.areaName ?? "위치 미확인"}</Text>
-        <Text textStyle="sm" color="fg.alternative" marginTop="2">
+        <Text textStyle="bodySm" color="fg.alternative" marginTop="2">
           목격 시각
         </Text>
         <Text>{formatAbsolute(report.occurredAt)}</Text>

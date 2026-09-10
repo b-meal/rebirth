@@ -74,19 +74,19 @@ function Card({ item }: { item: ListItem }) {
     >
       {/* 링크로 두어 키보드 이동과 새 탭 열기가 그대로 동작함 */}
       <Link href={`/r/${item.id}`}>
-        <Text fontWeight="bold">{describe(item)}</Text>
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="heading">{describe(item)}</Text>
+        <Text textStyle="bodySm" color="fg.alternative">
           {item.areaName ?? "지역 미확인"}
         </Text>
-        <Text textStyle="xs" color="fg.assistive">
+        <Text textStyle="caption" color="fg.assistive">
           {KST.format(item.occurredAt)}
         </Text>
         <Flex gap="2" marginTop="1">
-          <Text textStyle="xs" color="fg.alternative">
+          <Text textStyle="caption" color="fg.alternative">
             {CARE_LABEL[item.careSituation] ?? ""}
           </Text>
           {item.injury === true ? (
-            <Text textStyle="xs" color="fg.error">
+            <Text textStyle="caption" color="fg.error">
               다친 것으로 보임
             </Text>
           ) : null}
@@ -178,7 +178,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
       </Flex>
 
       <Flex justify="space-between" align="center">
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           {pending ? "불러오는 중" : `${rows.length}건`}
         </Text>
         {filtered ? (
@@ -215,7 +215,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
           {loadingMore ? <Spinner size="sm" /> : "더 보기"}
         </Button>
       ) : rows.length > 0 ? (
-        <Text textStyle="xs" color="fg.assistive" textAlign="center">
+        <Text textStyle="caption" color="fg.assistive" textAlign="center">
           마지막 제보까지 모두 보셨습니다
         </Text>
       ) : null}

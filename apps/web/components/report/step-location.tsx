@@ -84,7 +84,7 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
 
       {value.areaName ? (
         <Flex direction="column" gap="2">
-          <Text textStyle="sm" color="fg.alternative">
+          <Text textStyle="bodySm" color="fg.alternative">
             목격 지역
           </Text>
           <Flex gap="2" align="center" wrap="wrap">
@@ -108,7 +108,7 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
         </Flex>
       ) : requesting || geocode.loading ? (
         <Flex direction="column" gap="2">
-          <Text textStyle="sm" color="fg.alternative">
+          <Text textStyle="bodySm" color="fg.alternative">
             {requesting
               ? "권한 팝업에서 위치 사용을 확인해 주십시오"
               : "지역을 확인하고 있습니다"}
@@ -170,7 +170,7 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
           maxLength={100}
           onChange={(event) => onChange({ landmark: event.target.value })}
         />
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           사람이 찾아갈 수 있는 단서를 적어 주십시오. 정확한 주소는 받지 않습니다
         </Text>
       </Flex>

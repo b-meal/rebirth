@@ -147,7 +147,7 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
   return (
     <Flex direction="column" gap="3" padding="4" paddingBottom="24">
       <Flex justify="space-between" align="center">
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           {index + 1} / {ordered.length}
         </Text>
         <Chip size="xsmall" readOnly>
@@ -165,7 +165,7 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
       <Flex direction="column" gap="1">
         <Flex gap="2" align="baseline">
           <Heading size="xl">{current.score}점</Heading>
-          <Text textStyle="sm" color="fg.alternative">
+          <Text textStyle="bodySm" color="fg.alternative">
             {SIMILARITY_NOTE}
           </Text>
         </Flex>
@@ -194,7 +194,7 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
             </Chip>
           ))}
         </Flex>
-        <Text textStyle="sm" color="fg.alternative" marginTop="2">
+        <Text textStyle="bodySm" color="fg.alternative" marginTop="2">
           {current.areaName ?? "위치 미확인"} · {formatAbsolute(current.occurredAt)}
         </Text>
       </Flex>
@@ -243,7 +243,7 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
         ) : null}
       </Flex>
 
-      <Text textStyle="sm" color="fg.alternative">
+      <Text textStyle="bodySm" color="fg.alternative">
         위아래 방향키로 넘기고 Enter 로 표시할 수 있습니다
       </Text>
     </Flex>

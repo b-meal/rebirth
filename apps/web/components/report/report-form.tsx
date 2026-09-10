@@ -226,7 +226,7 @@ export function ReportForm() {
             <Progress.Range />
           </Progress.Track>
         </Progress.Root>
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           {step} / {TOTAL_STEPS} · {STEP_LABEL[step]}
         </Text>
       </Flex>

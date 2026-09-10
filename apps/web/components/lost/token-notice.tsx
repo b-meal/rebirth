@@ -57,7 +57,7 @@ export function TokenNotice({ token }: TokenNoticeProps) {
         </Button>
       </Flex>
 
-      <Text textStyle="sm" color="fg.alternative">
+      <Text textStyle="bodySm" color="fg.alternative">
         연락처를 받지 않으므로 이 주소가 유일한 확인 수단입니다. 메모나 메신저에
         보내 두시면 안전합니다
       </Text>

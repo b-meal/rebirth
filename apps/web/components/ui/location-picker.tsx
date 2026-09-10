@@ -113,8 +113,8 @@ export function LocationPicker({
   return (
     <Flex direction="column" gap="3">
       <Flex direction="column" gap="1">
-        <Text fontWeight="bold">목격한 위치</Text>
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="heading">목격한 위치</Text>
+        <Text textStyle="bodySm" color="fg.alternative">
           지도를 움직여 핀을 목격한 자리에 맞추거나 장소를 검색하세요
         </Text>
       </Flex>
@@ -221,7 +221,7 @@ export function LocationPicker({
       )}
 
       {position.status === "idle" && (
-        <Text textStyle="xs" color="fg.assistive">
+        <Text textStyle="caption" color="fg.assistive">
           현재 위치를 쓰지 않아도 됩니다. 장소를 검색하거나 지도를 옮겨 고를 수 있습니다
         </Text>
       )}
@@ -233,14 +233,14 @@ export function LocationPicker({
         borderRadius="card"
         backgroundColor="bg.alternative"
       >
-        <Text textStyle="sm" color="fg.alternative">
+        <Text textStyle="bodySm" color="fg.alternative">
           선택한 위치
         </Text>
         {region.loading && (
           <Text color="fg.alternative">위치를 확인하고 있습니다</Text>
         )}
         {!region.loading && areaName && (
-          <Text fontWeight="bold">
+          <Text textStyle="bodyStrong">
             {placeName ? `${placeName} · ${areaName}` : region.result?.fullName}
           </Text>
         )}
@@ -249,7 +249,7 @@ export function LocationPicker({
             {region.error ?? "지도를 움직여 위치를 골라 주십시오"}
           </Text>
         )}
-        <Text textStyle="sm" color="fg.assistive">
+        <Text textStyle="bodySm" color="fg.assistive">
           정확한 좌표는 공개하지 않습니다. 공개될 때는 점선 범위 안의 한 지점으로
           바뀌고 위치는 행정동까지만 적힙니다
         </Text>
