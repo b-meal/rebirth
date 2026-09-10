@@ -57,6 +57,16 @@ API를 건드렸다면 정상 경로와 오류 경로를 모두 호출해 확인
 | 동일 개체 확정 | 확인할 후보 |
 | AI 진단 | AI 초안, 수정 가능 |
 
+## 디자인 시스템
+
+`apps/web` 의 화면은 디자인 시스템 밖의 값을 쓰지 않습니다. 색, 여백, 글자 크기, 모서리, 그림자를 코드에 직접 적지 않고 `apps/web/lib/theme.ts` 의 토큰과 `apps/web/components/ui` 의 컴포넌트만 씁니다.
+
+필요한 것이 없으면 시스템에 먼저 추가한 뒤 씁니다. 값은 `theme.ts` 에, 컴포넌트는 `components/ui` 에 만들고 `components/design/registry.ts` 에 절을 등록해 `/design` 에서 확인합니다.
+
+규칙 전문은 `.claude/DESIGN.md` 입니다. `.claude/hooks/enforce-design-system.mjs` 가 PreToolUse 에서 하드코딩을 차단합니다.
+
+포인트 색은 `theme.ts` 의 `POINT` 한 값입니다. hue 를 바꾸면 brand 단계, 틴트 회색, 배경, 그림자가 함께 따라옵니다.
+
 ## 코드 컨벤션
 
 - 파일명은 kebab-case, 컴포넌트는 PascalCase, 훅은 `use` 접두사입니다.
