@@ -1,18 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button, Flex, Heading, Input, Skeleton, Text } from "@chakra-ui/react";
+import { HStack, Skeleton, Text, VStack } from "@seed-design/react";
+import { ActionButton } from "seed-design/ui/action-button";
+import { Callout } from "seed-design/ui/callout";
+import { TagGroupItem, TagGroupRoot } from "seed-design/ui/tag-group";
+import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import { useCurrentPosition } from "@/hooks/use-current-position";
 import { useLocationToken } from "@/hooks/use-location-token";
 import { usePlaceSearch } from "@/hooks/use-place-search";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
-import { Chip } from "@/components/ui/chip";
 import { PlaceSearchField } from "@/components/ui/place-search-field";
-import { SectionMessage } from "@/components/ui/section-message";
+import { Section } from "@/components/ui/screen";
 
-// 2단계 위치. 지도 핀과 좌표 표시, 정확 주소 입력란을 만들지 않음
-// 좌표는 서버 참조로 바로 바꿔 폼 상태에 숫자를 남기지 않음. POL-08
+// 2단계 위치, 좌표는 서버 참조로 바로 바꿔 폼 상태에 숫자를 남기지 않는 POL-08
 
 export type LocationValue = {
   areaName: string | null;
@@ -34,7 +36,7 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
 
   const geocode = useReverseGeocode(position.point);
 
-  // 현재 위치로 확인된 지역을 서버 참조로 바꿈. 좌표는 여기서 서버로만 나감
+  // 현재 위치로 확인된 지역을 서버 참조로 바꿈, 좌표는 여기서 서버로만 나감
   useEffect(() => {
     if (!geocode.result || !position.point) return;
     if (locationToken.status !== "idle") return;
@@ -45,8 +47,10 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
         source: "gps",
         lat: position.point.lat,
         lng: position.point.lng,
-        ...(position.accuracyMeters !== null && { accuracyM: Math.round(position.accuracyMeters) }),
-        // 현재 위치를 목격 위치로 쓰겠다는 확인. 화면이 이 단계를 거쳐야만 값이 참
+        ...(position.accuracyMeters !== null && {
+          accuracyM: Math.round(position.accuracyMeters),
+        }),
+        // 현재 위치를 목격 위치로 쓰겠다는 확인, 이 단계를 거쳐야만 값이 참
         confirmedHere: true,
         areaName,
         ...(geocode.result.code && {
@@ -66,32 +70,33 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
 
   const positionFailed = position.status === "denied" || position.status === "unavailable";
   const resolveFailed = locationToken.status === "failed";
-  const showManual =
-    manual || positionFailed || geocode.error !== null || resolveFailed;
+  const showManual = manual || positionFailed || geocode.error !== null || resolveFailed;
   const requesting = position.status === "requesting";
 
   return (
-    <Flex direction="column" gap="4">
-      <Heading size="lg">어디에서 봤습니까</Heading>
+    <VStack align="stretch" gap="x5">
+      <Text as="h2" textStyle="t7Bold" color="fg.neutral">
+        어디에서 봤습니까
+      </Text>
 
       {/* 권한 거부는 정상 경로라 경고 색과 경고 톤을 쓰지 않음 */}
-      {positionFailed ? (
-        <SectionMessage variant="info">{position.error}</SectionMessage>
-      ) : null}
+      {positionFailed ? <Callout tone="informative" description={position.error ?? ""} /> : null}
       {!positionFailed && geocode.error ? (
-        <SectionMessage variant="info">{geocode.error}</SectionMessage>
+        <Callout tone="informative" description={geocode.error} />
       ) : null}
 
       {value.areaName ? (
-        <Flex direction="column" gap="2">
-          <Text textStyle="bodySm" color="fg.alternative">
+        <Section>
+          <Text textStyle="t3Regular" color="fg.neutralMuted">
             목격 지역
           </Text>
-          <Flex gap="2" align="center" wrap="wrap">
-            <Chip readOnly>{value.areaName}</Chip>
-            <Button
-              variant="outline"
-              size="sm"
+          <HStack gap="x2" align="center" wrap>
+            <TagGroupRoot>
+              <TagGroupItem label={value.areaName} tone="brand" />
+            </TagGroupRoot>
+            <ActionButton
+              variant="neutralOutline"
+              size="xsmall"
               onClick={() => {
                 onChange({
                   areaName: null,
@@ -103,39 +108,41 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
               }}
             >
               다시 고르기
-            </Button>
-          </Flex>
-        </Flex>
+            </ActionButton>
+          </HStack>
+        </Section>
       ) : requesting || geocode.loading ? (
-        <Flex direction="column" gap="2">
-          <Text textStyle="bodySm" color="fg.alternative">
+        <Section>
+          <Text textStyle="t3Regular" color="fg.neutralMuted">
             {requesting
               ? "권한 팝업에서 위치 사용을 확인해 주십시오"
               : "지역을 확인하고 있습니다"}
           </Text>
-          <Skeleton width="60%" height="32px" />
-        </Flex>
+          <Skeleton width="60%" height="x8" radius="8" />
+        </Section>
       ) : showManual ? null : (
-        <Flex direction="column" gap="2" align="flex-start">
-          <Button colorPalette="brand" onClick={position.request}>
+        <VStack align="stretch" gap="x2">
+          <ActionButton variant="brandSolid" size="large" onClick={position.request}>
             현재 위치 사용
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setManual(true)}>
+          </ActionButton>
+          <ActionButton variant="ghost" size="small" onClick={() => setManual(true)}>
             직접 선택하기
-          </Button>
-        </Flex>
+          </ActionButton>
+        </VStack>
       )}
 
       {showManual && !value.areaName ? (
-        <Flex direction="column" gap="2">
-          <Heading size="sm">동이나 면을 검색해 주십시오</Heading>
+        <Section>
+          <Text as="h3" textStyle="t5Bold" color="fg.neutral">
+            동이나 면을 검색해 주십시오
+          </Text>
           <PlaceSearchField
             search={search}
             placeholder="동, 면, 도로명으로 검색"
             emptyMessage="검색 결과가 없습니다. 동이나 면 이름으로 찾아 주십시오"
             onPick={(candidate) => {
               const areaName = candidate.areaName || candidate.name;
-              // 검색으로 고른 지점도 서버에서 참조로 바꿈. 좌표가 폼에 남지 않음
+              // 검색으로 고른 지점도 서버에서 참조로 바꿈, 좌표가 폼에 남지 않음
               void locationToken
                 .resolve({
                   source: "place",
@@ -155,25 +162,22 @@ export function StepLocation({ value, onChange }: StepLocationProps) {
             }}
           />
           {!positionFailed ? (
-            <Button variant="outline" size="sm" onClick={position.request}>
+            <ActionButton variant="ghost" size="small" onClick={position.request}>
               현재 위치로 다시 시도
-            </Button>
+            </ActionButton>
           ) : null}
-        </Flex>
+        </Section>
       ) : null}
 
-      <Flex direction="column" gap="2">
-        <Heading size="sm">찾아갈 단서 (선택)</Heading>
-        <Input
-          value={value.landmark}
-          placeholder="새터산 12길 CU 근처"
-          maxLength={100}
-          onChange={(event) => onChange({ landmark: event.target.value })}
-        />
-        <Text textStyle="bodySm" color="fg.alternative">
-          사람이 찾아갈 수 있는 단서를 적어 주십시오. 정확한 주소는 받지 않습니다
-        </Text>
-      </Flex>
-    </Flex>
+      <TextField
+        label="찾아갈 단서"
+        description="사람이 찾아갈 수 있는 단서를 적어 주십시오. 정확한 주소는 받지 않습니다"
+        value={value.landmark}
+        maxGraphemeCount={100}
+        onValueChange={(next) => onChange({ landmark: next.value })}
+      >
+        <TextFieldInput placeholder="새터산 12길 CU 근처" />
+      </TextField>
+    </VStack>
   );
 }

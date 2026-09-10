@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// UI 단일 원천 유지. admin 은 Montage, web 은 Chakra 를 쓰고 shadcn 잔존물을 막음
+// admin 의 UI 단일 원천 유지, web 은 enforce-design-system 이 SEED 로 검사
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-const APPS = ['apps/admin', 'apps/web'];
+const APPS = ['apps/admin'];
 
 // 제거된 shadcn 계열. 되살아나면 차단
 const BANNED_IMPORTS = [
@@ -20,15 +20,12 @@ const BANNED_IMPORTS = [
 ];
 
 // admin 은 Montage 를 그대로 쓰므로 shadcn 경로가 되살아나면 안 됨
-// web 은 Chakra 로 옮기며 자체 컴포넌트를 components/ui 아래에 두어 허용함
 const BANNED_BY_APP = {
   'apps/admin': ['@/components/ui/'],
-  'apps/web': [],
 };
 
 const UI_SOURCE = {
   'apps/admin': '@wanteddev/wds 와 @wanteddev/wds-icon',
-  'apps/web': '@chakra-ui/react',
 };
 
 function deny(reason) {
@@ -83,7 +80,7 @@ if (hits.length) {
 if (/className=["'][^"']*\b(flex|grid|gap-\d|p-\d|px-\d|py-\d|m-\d|mt-\d|text-(xs|sm|base|lg|xl)|font-(medium|semibold|bold)|rounded|border|bg-|w-full|min-h-)/.test(text)) {
   deny(
     [
-      'Tailwind 유틸리티 클래스를 썼습니다. admin 과 web 에서 Tailwind 를 제거했습니다.',
+      'Tailwind 유틸리티 클래스를 썼습니다. admin 에서 Tailwind 를 제거했습니다.',
       '레이아웃 컴포넌트의 props 나 sx prop 으로 대체하십시오.',
     ].join('\n'),
   );

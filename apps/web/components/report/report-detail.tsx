@@ -2,24 +2,21 @@
 
 import { FLAG_REASON_LABEL, type FlagReason } from "@rebirth/types";
 import { useCallback, useEffect, useState } from "react";
+import { Divider, HStack, ImageFrame, Skeleton, Text, VStack } from "@seed-design/react";
+import { ActionButton } from "seed-design/ui/action-button";
 import {
-  Button,
-  Dialog,
-  Flex,
-  Heading,
-  Image,
-  Portal,
-  Separator,
-  Skeleton,
-  Text,
-} from "@chakra-ui/react";
+  BottomSheetBody,
+  BottomSheetContent,
+  BottomSheetFooter,
+  BottomSheetRoot,
+} from "seed-design/ui/bottom-sheet";
+import { Callout } from "seed-design/ui/callout";
+import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
+import { TagGroupItem, TagGroupRoot } from "seed-design/ui/tag-group";
 
-import { Chip } from "@/components/ui/chip";
-import { SectionMessage } from "@/components/ui/section-message";
-import { toaster } from "@/components/ui/toaster";
+import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 
-// 제보 상세. 사진은 비공개 버킷에 있어 서명 URL 로만 노출
-// 목격 시각은 절대 시각. 상대 시간은 목록에서만 씀
+// 제보 상세, 사진은 비공개 버킷이라 서명 URL 로만 노출하고 시각은 절대 시각
 
 type PublicReport = {
   id: string;
@@ -69,14 +66,13 @@ export type ReportDetailProps = {
 };
 
 export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
+  const snackbar = useSnackbarAdapter();
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-  const [photoState, setPhotoState] = useState<"loading" | "ready" | "expired">(
-    "loading",
-  );
+  const [photoState, setPhotoState] = useState<"loading" | "ready" | "expired">("loading");
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagSent, setFlagSent] = useState(false);
 
-  // 서명 URL 을 받아옴. 상태 갱신은 응답이 온 뒤에만 해 렌더 연쇄를 만들지 않음
+  // 서명 URL 을 받아옴, 상태 갱신은 응답이 온 뒤에만 해 렌더 연쇄를 만들지 않음
   const loadPhoto = useCallback(async () => {
     try {
       const response = await fetch(`/api/reports/${report.id}/photo`);
@@ -92,13 +88,10 @@ export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
     }
   }, [report.id]);
 
-  const apply = useCallback(
-    (outcome: { state: "ready" | "expired"; url: string | null }) => {
-      setPhotoUrl(outcome.url);
-      setPhotoState(outcome.state);
-    },
-    [],
-  );
+  const apply = useCallback((outcome: { state: "ready" | "expired"; url: string | null }) => {
+    setPhotoUrl(outcome.url);
+    setPhotoState(outcome.state);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,16 +120,20 @@ export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
     // 미지원 브라우저는 링크 복사로 대체
     try {
       await navigator.clipboard.writeText(shareUrl);
-      toaster.create({ title: "링크를 복사했습니다", type: "success" });
+      snackbar.create({
+        onClose: () => {},
+        render: () => <Snackbar variant="positive" message="링크를 복사했습니다" />,
+      });
     } catch {
       // 클립보드도 막히면 주소창에서 복사하도록 알림
-      toaster.create({
-        title: "링크를 복사하지 못했습니다",
-        description: "주소창의 주소를 복사해 주십시오",
-        type: "error",
+      snackbar.create({
+        onClose: () => {},
+        render: () => (
+          <Snackbar variant="critical" message="링크를 복사하지 못했습니다. 주소창의 주소를 복사해 주십시오" />
+        ),
       });
     }
-  }, [report.id, report.areaName, shareUrl]);
+  }, [report.id, report.areaName, shareUrl, snackbar]);
 
   const sendFlag = useCallback(
     async (reason: FlagReason) => {
@@ -165,148 +162,129 @@ export function ReportDetail({ report, shareUrl }: ReportDetailProps) {
   ].filter((v): v is string => Boolean(v));
 
   return (
-    <Flex direction="column" gap="4" padding="4" paddingBottom="24">
-      {photoState === "loading" ? (
-        <Skeleton width="100%" height="280px" />
-      ) : photoState === "ready" && photoUrl ? (
-        <Image
-          src={photoUrl}
-          alt="제보된 동물 사진"
-          width="100%"
-          aspectRatio="4 / 3"
-          objectFit="cover"
-          borderRadius="card"
-          display="block"
-        />
-      ) : (
-        <Flex direction="column" gap="2">
-          <SectionMessage variant="info">사진 주소가 만료됐습니다</SectionMessage>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setPhotoState("loading");
-              void loadPhoto().then(apply);
-            }}
-          >
-            사진 다시 불러오기
-          </Button>
-        </Flex>
-      )}
+    <Screen>
+      <ScreenBody gap="x5">
+        {photoState === "loading" ? (
+          <Skeleton width="full" height="280px" radius="16" />
+        ) : photoState === "ready" && photoUrl ? (
+          <ImageFrame
+            src={photoUrl}
+            alt="제보된 동물 사진"
+            ratio={4 / 3}
+            width="full"
+            borderRadius="r3"
+          />
+        ) : (
+          <VStack align="stretch" gap="x2">
+            <Callout tone="informative" description="사진 주소가 만료됐습니다" />
+            <ActionButton
+              variant="neutralOutline"
+              size="small"
+              onClick={() => {
+                setPhotoState("loading");
+                void loadPhoto().then(apply);
+              }}
+            >
+              사진 다시 불러오기
+            </ActionButton>
+          </VStack>
+        )}
 
-      <Flex gap="1.5" align="center" wrap="wrap">
-        <Chip
-          size="small"
-          readOnly
-          outlined={report.careSituation === "in_care"}
-          active={report.careSituation !== "in_care"}
-        >
-          {CARE_LABEL[report.careSituation]}
-        </Chip>
-        {report.injury === true ? (
-          <Chip size="small" readOnly outlined>
-            주의
-          </Chip>
-        ) : null}
-      </Flex>
+        <TagGroupRoot>
+          <TagGroupItem
+            label={CARE_LABEL[report.careSituation]}
+            tone={report.careSituation === "in_care" ? "neutral" : "brand"}
+          />
+          {report.injury === true ? <TagGroupItem label="주의" tone="neutral" /> : null}
+        </TagGroupRoot>
 
-      <Flex direction="column" gap="1.5">
-        <Flex gap="1.5" align="center" wrap="wrap">
-          <Heading size="lg">외형</Heading>
-          <Chip size="xsmall" outlined readOnly>
-            AI 초안, 수정 가능
-          </Chip>
-        </Flex>
-        <Text whiteSpace="pre-wrap">
-          {report.appearance ?? "외형 설명이 없습니다"}
-        </Text>
-      </Flex>
+        <Section gap="x2">
+          <HStack gap="x1_5" align="center" wrap>
+            <Text as="h2" textStyle="t7Bold" color="fg.neutral">
+              외형
+            </Text>
+            <TagGroupRoot>
+              <TagGroupItem label="AI 초안, 수정 가능" size="t2" tone="neutralSubtle" />
+            </TagGroupRoot>
+          </HStack>
+          <Text textStyle="articleBody" color="fg.neutral" whiteSpace="pre-wrap">
+            {report.appearance ?? "외형 설명이 없습니다"}
+          </Text>
+        </Section>
 
-      <Flex gap="1.5" wrap="wrap">
-        {features.map((feature) => (
-          <Chip key={feature} size="small" readOnly>
-            {feature}
-          </Chip>
-        ))}
-      </Flex>
+        <TagGroupRoot>
+          {features.map((feature) => (
+            <TagGroupItem key={feature} label={feature} tone="neutralSubtle" />
+          ))}
+        </TagGroupRoot>
 
-      <Separator />
+        <Divider />
 
-      <Flex direction="column" gap="1">
-        <Text textStyle="bodySm" color="fg.alternative">
-          목격 지역
-        </Text>
-        <Text>{report.areaName ?? "위치 미확인"}</Text>
-        <Text textStyle="bodySm" color="fg.alternative" marginTop="2">
-          목격 시각
-        </Text>
-        <Text>{formatAbsolute(report.occurredAt)}</Text>
-      </Flex>
+        <VStack align="stretch" gap="x3">
+          <VStack align="stretch" gap="x1">
+            <Text textStyle="t3Regular" color="fg.neutralMuted">
+              목격 지역
+            </Text>
+            <Text textStyle="t5Regular" color="fg.neutral">
+              {report.areaName ?? "위치 미확인"}
+            </Text>
+          </VStack>
+          <VStack align="stretch" gap="x1">
+            <Text textStyle="t3Regular" color="fg.neutralMuted">
+              목격 시각
+            </Text>
+            <Text textStyle="t5Regular" color="fg.neutral">
+              {formatAbsolute(report.occurredAt)}
+            </Text>
+          </VStack>
+        </VStack>
 
-      <Flex direction="column" gap="2" marginTop="2">
-        <Button width="100%" colorPalette="brand" onClick={share}>
-          공유하기
-        </Button>
-        <Button
-          width="100%"
-          variant="outline"
-          size="sm"
-          onClick={() => setFlagOpen(true)}
-        >
-          이 제보 신고하기
-        </Button>
-      </Flex>
+        <VStack align="stretch" gap="x2" mt="x2">
+          <ActionButton variant="brandSolid" size="large" onClick={share}>
+            공유하기
+          </ActionButton>
+          <ActionButton variant="neutralOutline" size="small" onClick={() => setFlagOpen(true)}>
+            이 제보 신고하기
+          </ActionButton>
+        </VStack>
 
-      <Dialog.Root
-        open={flagOpen}
-        onOpenChange={(details) => setFlagOpen(details.open)}
-        placement="bottom"
-      >
-        <Portal>
-          <Dialog.Backdrop />
-          <Dialog.Positioner>
-            <Dialog.Content>
-              <Dialog.Header>
-                <Dialog.Title>
-                  {flagSent ? "신고를 접수했습니다" : "신고 사유"}
-                </Dialog.Title>
-              </Dialog.Header>
-              <Dialog.Body>
-                {flagSent ? (
-                  <Text>
-                    확인 후 조치합니다. 접수만으로 제보가 바로 숨겨지지는 않습니다
-                  </Text>
-                ) : (
-                  <Flex direction="column" gap="2">
-                    {(Object.keys(FLAG_REASON_LABEL) as FlagReason[]).map((reason) => (
-                      <Button
-                        key={reason}
-                        variant="outline"
-                        width="100%"
-                        onClick={() => void sendFlag(reason)}
-                      >
-                        {FLAG_REASON_LABEL[reason]}
-                      </Button>
-                    ))}
-                  </Flex>
-                )}
-              </Dialog.Body>
-              <Dialog.Footer>
-                <Button
-                  variant="outline"
-                  width="100%"
-                  onClick={() => {
-                    setFlagOpen(false);
-                    setFlagSent(false);
-                  }}
-                >
-                  닫기
-                </Button>
-              </Dialog.Footer>
-            </Dialog.Content>
-          </Dialog.Positioner>
-        </Portal>
-      </Dialog.Root>
-    </Flex>
+        <BottomSheetRoot open={flagOpen} onOpenChange={(open) => setFlagOpen(open)}>
+          <BottomSheetContent title={flagSent ? "신고를 접수했습니다" : "신고 사유"}>
+            <BottomSheetBody>
+              {flagSent ? (
+                <Text textStyle="t5Regular" color="fg.neutral">
+                  확인 후 조치합니다. 접수만으로 제보가 바로 숨겨지지는 않습니다
+                </Text>
+              ) : (
+                <VStack align="stretch" gap="x2">
+                  {(Object.keys(FLAG_REASON_LABEL) as FlagReason[]).map((reason) => (
+                    <ActionButton
+                      key={reason}
+                      variant="neutralOutline"
+                      size="medium"
+                      onClick={() => void sendFlag(reason)}
+                    >
+                      {FLAG_REASON_LABEL[reason]}
+                    </ActionButton>
+                  ))}
+                </VStack>
+              )}
+            </BottomSheetBody>
+            <BottomSheetFooter>
+              <ActionButton
+                variant="neutralOutline"
+                size="large"
+                onClick={() => {
+                  setFlagOpen(false);
+                  setFlagSent(false);
+                }}
+              >
+                닫기
+              </ActionButton>
+            </BottomSheetFooter>
+          </BottomSheetContent>
+        </BottomSheetRoot>
+      </ScreenBody>
+    </Screen>
   );
 }

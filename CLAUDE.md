@@ -22,7 +22,7 @@
 
 ## 스택
 
-Next.js 16 App Router · React 19 · TypeScript · Montage(`@wanteddev/wds`) · Emotion · Supabase Postgres(PostGIS, pgvector) · Supabase Storage · Drizzle ORM · Vercel · Anthropic `claude-sonnet-5`
+Next.js 16 App Router · React 19 · TypeScript · web 은 SEED(`@seed-design/react`) · admin 은 Montage(`@wanteddev/wds`) · Supabase Postgres(PostGIS, pgvector) · Supabase Storage · Drizzle ORM · Vercel · Anthropic `claude-sonnet-5`
 
 ## 검증
 
@@ -59,13 +59,25 @@ API를 건드렸다면 정상 경로와 오류 경로를 모두 호출해 확인
 
 ## 디자인 시스템
 
-`apps/web` 의 화면은 디자인 시스템 밖의 값을 쓰지 않습니다. 색, 여백, 글자 크기, 모서리, 그림자를 코드에 직접 적지 않고 `apps/web/lib/theme.ts` 의 토큰과 `apps/web/components/ui` 의 컴포넌트만 씁니다.
+`apps/web` 의 UI 단일 원천은 당근 SEED 하나입니다. 자체 디자인 시스템을 만들지 않고 컴포넌트와 토큰을 모두 SEED 에서 가져옵니다.
 
-필요한 것이 없으면 시스템에 먼저 추가한 뒤 씁니다. 값은 `theme.ts` 에, 컴포넌트는 `components/ui` 에 만들고 `components/design/registry.ts` 에 절을 등록해 `/design` 에서 확인합니다.
+| 대상 | 위치 |
+|---|---|
+| 컴포넌트 | `apps/web/seed-design/ui/*` |
+| 레이아웃과 타이포 | `@seed-design/react` |
+| 토큰 | `@seed-design/css/vars` |
+| 아이콘 | `@karrotmarket/react-monochrome-icon` |
+| 앱 전용 껍데기 | `apps/web/components/ui` |
 
-규칙 전문은 `.claude/DESIGN.md` 입니다. `.claude/hooks/enforce-design-system.mjs` 가 PreToolUse 에서 하드코딩을 차단합니다.
+`apps/web/seed-design/**` 은 SEED CLI 가 내려받은 원본이라 직접 고치지 않습니다. 없는 컴포넌트는 손으로 만들기 전에 레지스트리에서 찾아 내려받습니다.
 
-포인트 색은 `theme.ts` 의 `POINT` 한 값입니다. hue 를 바꾸면 brand 단계, 틴트 회색, 배경, 그림자가 함께 따라옵니다.
+```bash
+pnpm --filter @rebirth/web exec npx @seed-design/cli@latest add ui:<이름>
+```
+
+규칙 전문은 `.claude/DESIGN.md`, 탐색 절차는 `.claude/skills/seed-design` 입니다. `.claude/hooks/enforce-design-system.mjs` 가 PreToolUse 에서 하드코딩과 다른 UI 라이브러리 유입을 차단하고, 토큰 이름은 설치된 `@seed-design/css` 에서 읽어 검사합니다.
+
+문서는 llms.txt 가 단일 원천입니다. 전체는 `https://seed-design.io/llms.txt`, React 는 `https://seed-design.io/react/llms.txt` 이고 `.mcp.json` 의 `seed-docs` 서버로도 같은 내용을 조회합니다. 값은 `/design` 화면에서 눈으로 확인합니다.
 
 ## 코드 컨벤션
 

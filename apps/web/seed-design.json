@@ -1,0 +1,8 @@
+{
+  "$schema": "https://seed-design.io/schema.json",
+  "rsc": true,
+  "tsx": true,
+  "framework": "react",
+  "path": "./seed-design",
+  "telemetry": false
+}

@@ -1,2 +1,39 @@
-/* 서체는 자체 호스팅. Chakra 테마의 fonts 토큰이 이 패밀리를 가리킴 */
-@import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
+/* SEED 는 서체를 정하지 않아 앱에서 한 번만 지정 */
+html {
+  font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  /* clip 은 hidden 과 달리 스크롤 컨테이너를 만들지 않아 sticky 유지 */
+  overflow-x: clip;
+}
+
+body {
+  margin: 0;
+  background: var(--seed-color-bg-layer-default);
+  color: var(--seed-color-fg-neutral);
+  /* 길에서 한 손으로 쓰는 화면이라 가로 스크롤 차단 */
+  overflow-x: clip;
+  font-feature-settings: "tnum";
+}
+
+/* 더블탭 확대 대기를 없애 첫 탭이 바로 반응하게 하는 설정 */
+button,
+[role="button"],
+a {
+  touch-action: manipulation;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* 스크롤 막대를 감추는 가로 나열용 유틸 */
+.rebirth-scroll-row {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.rebirth-scroll-row::-webkit-scrollbar {
+  display: none;
+}

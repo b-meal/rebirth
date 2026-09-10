@@ -1,241 +1,134 @@
-import type { IconName } from "@/components/ui/icons";
+// 카탈로그 절 목록, 좌측 이동과 본문이 같은 배열을 봄
 
-// 디자인 시스템 카탈로그의 분류와 절 목록, 각 catalog-*.tsx 의 Spec id 가 여기와 일치해야 함
-
-export type SectionMeta = { id: string; label: string };
-
-export type CategoryMeta = {
-  id: CategoryId;
-  label: string;
-  description: string;
-  icon: IconName;
-  sections: SectionMeta[];
+export type CatalogSection = {
+  id: string;
+  title: string;
+  /** SEED 문서에서 대응하는 항목 경로 */
+  doc?: string;
 };
 
-export type CategoryId =
-  | "foundations"
-  | "elements"
-  | "forms"
-  | "overlays"
-  | "navigation"
-  | "data"
-  | "feedback"
-  | "charts"
-  | "layout"
-  | "shells";
+export type CatalogGroup = {
+  id: string;
+  title: string;
+  sections: CatalogSection[];
+};
 
-export const CATEGORIES: CategoryMeta[] = [
+export const CATALOG: CatalogGroup[] = [
   {
     id: "foundations",
-    label: "Foundations",
-    description: "색, 글자, 간격, 모서리, 움직임, 아이콘의 기준값",
-    icon: "grid",
+    title: "파운데이션",
     sections: [
-      { id: "overview", label: "Overview" },
-      { id: "brand", label: "Brand" },
-      { id: "colors", label: "Colors" },
-      { id: "typography", label: "Typography" },
-      { id: "spacing", label: "Spacing & Layout" },
-      { id: "radius", label: "Radius & Elevation" },
-      { id: "motion", label: "Motion" },
-      { id: "icons", label: "Icons" },
+      { id: "color", title: "색", doc: "foundations/color" },
+      { id: "typography", title: "타이포그래피", doc: "foundations/typography" },
+      { id: "spacing", title: "간격", doc: "foundations/spacing" },
+      { id: "radius", title: "모서리", doc: "foundations/radius" },
+      { id: "elevation", title: "그림자", doc: "foundations/elevation" },
+      { id: "iconography", title: "아이콘", doc: "foundations/iconography" },
     ],
   },
   {
-    id: "elements",
-    label: "Elements",
-    description: "혼자 쓰이는 가장 작은 단위",
-    icon: "star",
+    id: "action",
+    title: "액션",
     sections: [
-      { id: "button", label: "Button" },
-      { id: "icon-button", label: "Icon Button" },
-      { id: "button-group", label: "Button Group" },
-      { id: "split-button", label: "Split Button" },
-      { id: "copy-button", label: "Copy Button" },
-      { id: "chip", label: "Chip" },
-      { id: "badge", label: "Badge & Tag" },
-      { id: "avatar", label: "Avatar" },
-      { id: "progress", label: "Progress" },
-      { id: "spinner", label: "Spinner" },
-      { id: "skeleton", label: "Skeleton" },
-      { id: "separator", label: "Separator" },
-      { id: "status", label: "Status" },
-      { id: "kbd", label: "Kbd" },
+      { id: "action-button", title: "ActionButton", doc: "react/components/action-button" },
+      {
+        id: "floating-action-button",
+        title: "FloatingActionButton",
+        doc: "react/components/floating-action-button",
+      },
+      {
+        id: "contextual-floating-button",
+        title: "ContextualFloatingButton",
+        doc: "react/components/contextual-floating-button",
+      },
+      { id: "toggle-button", title: "ToggleButton", doc: "react/components/toggle-button" },
+      { id: "reaction-button", title: "ReactionButton", doc: "react/components/reaction-button" },
+      { id: "quantity-picker", title: "QuantityPicker", doc: "react/components/quantity-picker" },
     ],
   },
   {
-    id: "forms",
-    label: "Forms",
-    description: "입력, 선택, 슬라이더, 파일",
-    icon: "edit",
+    id: "form",
+    title: "입력",
     sections: [
-      { id: "field", label: "Field" },
-      { id: "input", label: "Input" },
-      { id: "textarea", label: "Textarea" },
-      { id: "number-input", label: "Number Input" },
-      { id: "pin-input", label: "PIN Input" },
-      { id: "search-bar", label: "Search Bar" },
-      { id: "password-input", label: "Password Input" },
-      { id: "tags-input", label: "Tags Input" },
-      { id: "select", label: "Select" },
-      { id: "combobox", label: "Combobox" },
-      { id: "multi-select", label: "Multi Select" },
-      { id: "checkbox", label: "Checkbox" },
-      { id: "radio", label: "Radio" },
-      { id: "switch", label: "Switch" },
-      { id: "toggle", label: "Toggle" },
-      { id: "segmented", label: "Segmented" },
-      { id: "slider", label: "Slider" },
-      { id: "rating", label: "Rating" },
-      { id: "color-picker", label: "Color Picker" },
-      { id: "date-time", label: "Date & Time" },
-      { id: "calendar", label: "Calendar" },
-      { id: "file-upload", label: "File Upload" },
-      { id: "attachment-list", label: "Attachment List" },
-      { id: "avatar-uploader", label: "Avatar Uploader" },
-      { id: "editable", label: "Editable" },
-      { id: "fieldset", label: "Fieldset" },
+      { id: "text-field", title: "TextField", doc: "react/components/text-field-input" },
+      {
+        id: "segmented-control",
+        title: "SegmentedControl",
+        doc: "react/components/segmented-control",
+      },
+      { id: "chip", title: "Chip", doc: "react/components/chip" },
+      { id: "checkbox", title: "Checkbox", doc: "react/components/checkbox" },
+      { id: "radio-group", title: "RadioGroup", doc: "react/components/radio-group" },
+      { id: "switch", title: "Switch", doc: "react/components/switch" },
+      { id: "select", title: "Select", doc: "react/components/select" },
+      { id: "select-box", title: "SelectBox", doc: "react/components/select-box" },
+      { id: "slider", title: "Slider", doc: "react/components/slider" },
+      { id: "field-button", title: "FieldButton", doc: "react/components/field-button" },
+      { id: "attachment-field", title: "AttachmentField", doc: "react/components/attachment-field" },
     ],
   },
   {
-    id: "overlays",
-    label: "Overlays",
-    description: "화면 위에 겹쳐 뜨는 것",
-    icon: "copy",
+    id: "display",
+    title: "표시",
     sections: [
-      { id: "dialog", label: "Dialog" },
-      { id: "alert-dialog", label: "Alert Dialog" },
-      { id: "bottom-sheet", label: "Bottom Sheet" },
-      { id: "action-sheet", label: "Action Sheet" },
-      { id: "menu-drawer", label: "Menu Drawer" },
-      { id: "menu", label: "Dropdown Menu" },
-      { id: "popover", label: "Popover" },
-      { id: "confirm-popover", label: "Confirm Popover" },
-      { id: "tooltip", label: "Tooltip" },
-      { id: "toast", label: "Toast" },
-      { id: "notification-center", label: "Notification Center" },
-      { id: "action-bar", label: "Action Bar" },
-      { id: "lightbox", label: "Lightbox" },
-      { id: "tour", label: "Tour" },
-      { id: "loader-overlay", label: "Loader Overlay" },
-    ],
-  },
-  {
-    id: "navigation",
-    label: "Navigation",
-    description: "화면 사이와 화면 안을 오가는 것",
-    icon: "navigation",
-    sections: [
-      { id: "app-bar", label: "App Bar" },
-      { id: "tab-bar", label: "Tab Bar" },
-      { id: "tabs", label: "Tabs" },
-      { id: "scroll-nav", label: "Scroll Nav" },
-      { id: "breadcrumb", label: "Breadcrumb" },
-      { id: "command-palette", label: "Command Palette" },
-      { id: "tree-view", label: "Tree View" },
-      { id: "steps", label: "Steps" },
-      { id: "pagination", label: "Pagination" },
-      { id: "link", label: "Link" },
-      { id: "collapsible", label: "Collapsible" },
-      { id: "back-to-top", label: "Back to Top" },
-      { id: "page-indicator", label: "Page Indicator" },
-    ],
-  },
-  {
-    id: "data",
-    label: "Data Display",
-    description: "내용을 보여주는 틀",
-    icon: "list",
-    sections: [
-      { id: "card", label: "Card" },
-      { id: "list-item", label: "List Item" },
-      { id: "data-list", label: "Data List" },
-      { id: "table", label: "Table" },
-      { id: "accordion", label: "Accordion" },
-      { id: "timeline", label: "Timeline" },
-      { id: "activity-feed", label: "Activity Feed" },
-      { id: "user-card", label: "User Card" },
-      { id: "comparison-table", label: "Comparison Table" },
-      { id: "code-block", label: "Code Block" },
-      { id: "stat", label: "Stat" },
-      { id: "carousel", label: "Carousel" },
-      { id: "marquee", label: "Marquee" },
-      { id: "image", label: "Image" },
-      { id: "qr-code", label: "QR Code" },
-      { id: "avatar-group", label: "Avatar Group" },
-      { id: "clipboard", label: "Clipboard" },
+      { id: "badge", title: "Badge", doc: "react/components/badge" },
+      { id: "tag-group", title: "TagGroup", doc: "react/components/tag-group" },
+      { id: "avatar", title: "Avatar", doc: "react/components/avatar" },
+      { id: "image-frame", title: "ImageFrame", doc: "react/components/image-frame" },
+      {
+        id: "content-placeholder",
+        title: "ContentPlaceholder",
+        doc: "react/components/content-placeholder",
+      },
+      {
+        id: "identity-placeholder",
+        title: "IdentityPlaceholder",
+        doc: "react/components/identity-placeholder",
+      },
+      { id: "skeleton", title: "Skeleton", doc: "react/components/skeleton" },
+      { id: "progress-circle", title: "ProgressCircle", doc: "react/components/progress-circle" },
+      { id: "manner-temp", title: "MannerTemp", doc: "react/components/manner-temp" },
+      { id: "list", title: "List", doc: "react/components/list" },
+      { id: "accordion", title: "Accordion", doc: "react/components/accordion" },
     ],
   },
   {
     id: "feedback",
-    label: "Feedback",
-    description: "상태와 결과를 알리는 것",
-    icon: "bell",
+    title: "피드백",
     sections: [
-      { id: "section-message", label: "Section Message" },
-      { id: "banner", label: "Banner" },
-      { id: "empty-state", label: "Empty State" },
-      { id: "callout", label: "Callout" },
-      { id: "result-view", label: "Result View" },
-      { id: "error-view", label: "Error View" },
-      { id: "progress-ring", label: "Progress Ring" },
-      { id: "gauge", label: "Gauge" },
-      { id: "loading", label: "Loading Pattern" },
+      { id: "callout", title: "Callout", doc: "react/components/callout" },
+      { id: "page-banner", title: "PageBanner", doc: "react/components/page-banner" },
+      { id: "snackbar", title: "Snackbar", doc: "react/components/snackbar" },
+      { id: "result-section", title: "ResultSection", doc: "react/components/result-section" },
+      { id: "help-bubble", title: "HelpBubble", doc: "react/components/help-bubble" },
     ],
   },
   {
-    id: "charts",
-    label: "Charts",
-    description: "좁은 폭에서 읽히는 최소 차트",
-    icon: "sliders",
+    id: "overlay",
+    title: "오버레이",
     sections: [
-      { id: "sparkline", label: "Sparkline" },
-      { id: "bar-chart", label: "Bar Chart" },
-      { id: "line-chart", label: "Line Chart" },
-      { id: "donut-chart", label: "Donut Chart" },
-      { id: "heatmap", label: "Heatmap Calendar" },
+      { id: "dialog", title: "Dialog", doc: "react/components/dialog" },
+      { id: "alert-dialog", title: "AlertDialog", doc: "react/components/alert-dialog" },
+      { id: "bottom-sheet", title: "BottomSheet", doc: "react/components/bottom-sheet" },
+      {
+        id: "swipeable-menu-sheet",
+        title: "SwipeableMenuSheet",
+        doc: "react/components/swipeable-menu-sheet",
+      },
+      { id: "menu", title: "Menu", doc: "react/components/menu" },
+      { id: "side-panel", title: "SidePanel", doc: "react/components/side-panel" },
     ],
   },
   {
-    id: "layout",
-    label: "Layout",
-    description: "배치와 스크롤을 다루는 도구",
-    icon: "grid",
+    id: "navigation",
+    title: "탐색",
     sections: [
-      { id: "aspect-ratio", label: "Aspect Ratio" },
-      { id: "scroll-area", label: "Scroll Area" },
-      { id: "sticky", label: "Sticky" },
-      { id: "masonry", label: "Masonry" },
-      { id: "overflow-menu", label: "Overflow Menu" },
-      { id: "safe-area", label: "Safe Area" },
-      { id: "pull-refresh", label: "Pull to Refresh" },
-    ],
-  },
-  {
-    id: "shells",
-    label: "Shells",
-    description: "화면 전체를 짜는 틀과 조합 예시",
-    icon: "home",
-    sections: [
-      { id: "screen", label: "Screen" },
-      { id: "page-header", label: "Page Header" },
-      { id: "section-header", label: "Section Header" },
-      { id: "cta-bar", label: "CTA Bar" },
-      { id: "fab", label: "FAB" },
-      { id: "shell-home", label: "홈 화면" },
-      { id: "shell-form", label: "단계 폼" },
-      { id: "shell-detail", label: "상세 화면" },
-      { id: "shell-settings", label: "설정 화면" },
-      { id: "shell-onboarding", label: "온보딩" },
-      { id: "shell-auth", label: "인증 화면" },
-      { id: "shell-list", label: "목록 화면" },
-      { id: "shell-map", label: "지도 화면" },
+      { id: "tabs", title: "Tabs", doc: "react/components/tabs" },
+      { id: "chip-tabs", title: "ChipTabs", doc: "react/components/chip-tabs" },
+      { id: "pagination", title: "Pagination", doc: "react/components/pagination" },
+      { id: "scroll-fog", title: "ScrollFog", doc: "react/components/scroll-fog" },
     ],
   },
 ];
 
-export const CATEGORY_IDS = CATEGORIES.map((category) => category.id);
-
-export function isCategoryId(value: string | undefined): value is CategoryId {
-  return (CATEGORY_IDS as string[]).includes(value ?? "");
-}
+export const SEED_DOCS_ORIGIN = "https://seed-design.io";
