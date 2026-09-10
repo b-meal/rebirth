@@ -1,10 +1,16 @@
 import { createSignedThumbUrls } from "@rebirth/core/storage";
-import { findFirstPhotoPaths, listPublicReports, listTrendingReports } from "@rebirth/db";
+import {
+  findFirstPhotoPaths,
+  listMapReports,
+  listPublicReports,
+  listTrendingReports,
+} from "@rebirth/db";
 import { LIST_PERIOD_DAYS, listQuery } from "@rebirth/types";
 
 import { sinceLabel } from "@/lib/report-label";
 import { SearchScreen } from "@/components/search/search-screen";
 import type { ReportCardItem } from "@/components/report/report-card";
+import type { NearbyItem } from "@/components/search/search-screen";
 import type { TrendingItem } from "@/components/search/trending-chart";
 
 // 검색 화면, 글자와 사진 두 갈래로 제보를 찾고 좌표는 다루지 않음
@@ -16,6 +22,10 @@ const TREND_DAYS = LIST_PERIOD_DAYS[0];
 const TREND_LIMIT = 8;
 
 const RESULT_LIMIT = 30;
+
+// 검색 조건이 없을 때 깔아 두는 주변 제보 수와 기간
+const NEARBY_LIMIT = 24;
+const NEARBY_DAYS = LIST_PERIOD_DAYS[1];
 
 type SearchParams = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 
@@ -101,16 +111,54 @@ async function loadTrending(sort: "interest" | "help"): Promise<TrendingItem[]> 
   }
 }
 
+/**
+ * 조건이 없을 때 깔아 두는 최근 제보. 격자 좌표를 함께 넘겨 브라우저가 거리로 좁힘
+ * 좌표는 서버에서만 읽고 공개 API 는 좌표를 내주지 않음. POL-09
+ */
+async function loadNearby(): Promise<NearbyItem[]> {
+  try {
+    const rows = (
+      await listMapReports({
+        fromOccurredAt: new Date(Date.now() - NEARBY_DAYS * 86_400_000),
+        limit: NEARBY_LIMIT,
+      })
+    ).filter((row) => row.coarsePoint !== null);
+
+    const signed = await signThumbs(rows.map((row) => row.photoPath));
+
+    return rows.map((row) => ({
+      id: row.id,
+      animalType: row.animalType,
+      colors: row.colors,
+      size: row.size,
+      careSituation: row.careSituation,
+      injury: row.injury,
+      areaName: row.areaName,
+      sinceLabel: sinceLabel(row.occurredAt),
+      photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
+      point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export default async function SearchPage({ searchParams }: SearchParams) {
   const params = await searchParams;
 
-  const [results, interest, help] = await Promise.all([
+  const [results, interest, help, nearby] = await Promise.all([
     loadResults(params),
     loadTrending("interest"),
     loadTrending("help"),
+    loadNearby(),
   ]);
 
   return (
-    <SearchScreen query={first(params.q) ?? ""} results={results} trending={{ interest, help }} />
+    <SearchScreen
+      query={first(params.q) ?? ""}
+      results={results}
+      trending={{ interest, help }}
+      nearby={nearby}
+    />
   );
 }

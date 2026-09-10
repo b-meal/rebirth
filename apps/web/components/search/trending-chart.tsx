@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Box, HStack, Text, VStack } from "@seed-design/react";
 import type { AnimalType } from "@rebirth/types";
 
 import { describeAnimal } from "@/lib/report-label";
 
-// 실시간 차트, 줄을 한 칸씩 밀어 올려 지금 보이는 제보가 계속 바뀜
+// 실시간 차트, 한 줄씩 밀어 올려 지금 보이는 제보가 계속 바뀜
 
 export type TrendingItem = {
   id: string;
@@ -23,11 +23,11 @@ export type TrendingItem = {
   photoUrl: string | null;
 };
 
-// 한 번에 보이는 줄 수와 밀어 올리는 간격
+// 한 번에 보이는 줄 수와 머무는 시간, 밀어 올리는 시간
 const VISIBLE_ROWS = 3;
-const ROLL_MS = 2600;
-
 const ROW_HEIGHT = 28;
+const HOLD_MS = 2600;
+const SLIDE_MS = 420;
 
 export type TrendingChartProps = {
   items: TrendingItem[];
@@ -36,15 +36,25 @@ export type TrendingChartProps = {
 };
 
 export function TrendingChart({ items, help = false }: TrendingChartProps) {
-  const [offset, setOffset] = useState(0);
+  const [index, setIndex] = useState(0);
+  const [sliding, setSliding] = useState(false);
+  const slide = useRef<number | null>(null);
 
   useEffect(() => {
     if (items.length <= VISIBLE_ROWS) return;
-    const timer = setInterval(() => {
-      setOffset((value) => (value + 1) % items.length);
-    }, ROLL_MS);
+
+    const hold = window.setInterval(() => {
+      setSliding(true);
+      // 밀어 올리는 애니메이션이 끝난 뒤에 순서를 돌려 자리를 맞춤
+      slide.current = window.setTimeout(() => {
+        setIndex((value) => (value + 1) % items.length);
+        setSliding(false);
+      }, SLIDE_MS);
+    }, HOLD_MS);
+
     return () => {
-      clearInterval(timer);
+      window.clearInterval(hold);
+      if (slide.current !== null) window.clearTimeout(slide.current);
     };
   }, [items.length]);
 
@@ -56,19 +66,38 @@ export function TrendingChart({ items, help = false }: TrendingChartProps) {
     );
   }
 
-  // 끝에서 처음으로 이어 붙여 마지막 줄 뒤에도 빈 자리가 생기지 않음
-  const rolled = [...items.slice(offset), ...items.slice(0, offset)];
+  // 다음에 올라올 줄까지 미리 그려 두어 미는 동안 빈 자리가 생기지 않음
+  const rows = Array.from(
+    { length: Math.min(VISIBLE_ROWS + 1, items.length) },
+    (_, step) => (index + step) % items.length,
+  );
+
+  // 이동값과 전환 시간은 줄 높이에 묶여 있어 토큰으로 부를 수 없음
+  const track = {
+    transform: sliding ? `translateY(-${ROW_HEIGHT}px)` : "translateY(0)",
+    transition: sliding ? `transform ${SLIDE_MS}ms ease-in-out` : "none",
+  } as const;
 
   return (
     <Box height={`${VISIBLE_ROWS * ROW_HEIGHT}px`} overflowY="hidden">
-      <VStack align="stretch">
-        {rolled.slice(0, VISIBLE_ROWS + 1).map((item) => {
-          const rank = items.indexOf(item) + 1;
+      <VStack align="stretch" style={track}>
+        {rows.map((position) => {
+          const item = items[position]!;
           return (
-            <HStack asChild key={item.id} gap="x2" align="center" height={`${ROW_HEIGHT}px`}>
+            <HStack
+              asChild
+              key={item.id}
+              gap="x2"
+              align="center"
+              height={`${ROW_HEIGHT}px`}
+              flexShrink={0}
+            >
               <Link href={`/r/${item.id}`}>
-                <Text textStyle="t3Bold" color={rank <= 3 ? "fg.brand" : "fg.neutralSubtle"}>
-                  {rank}
+                <Text
+                  textStyle="t3Bold"
+                  color={position < 3 ? "fg.brand" : "fg.neutralSubtle"}
+                >
+                  {position + 1}
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutral" maxLines={1}>
                   {describeAnimal(item)}

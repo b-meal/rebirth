@@ -14,6 +14,9 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Chip } from "seed-design/ui/chip";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
+import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
+
+import { useCurrentPosition } from "@/hooks/use-current-position";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
 import { PhotoSearchSheet } from "@/components/search/photo-search-sheet";
@@ -69,15 +72,24 @@ function writeRecent(list: string[]) {
   window.dispatchEvent(new Event(RECENT_EVENT));
 }
 
+// 거리로 좁힐 때 쓰는 격자 좌표, 정확한 목격 지점이 아님
+export type NearbyItem = ReportCardItem & { point: LatLng };
+
+// 주변으로 볼 반경과 위치를 모를 때 보여 줄 수
+const NEARBY_RADIUS_KM = 3;
+const NEARBY_FALLBACK = 6;
+
 export type SearchScreenProps = {
   query: string;
   /** 조건이 없으면 null, 조건이 있고 결과가 없으면 빈 배열 */
   results: ReportCardItem[] | null;
   trending: Record<ChartKey, TrendingItem[]>;
+  nearby: NearbyItem[];
 };
 
-export function SearchScreen({ query, results, trending }: SearchScreenProps) {
+export function SearchScreen({ query, results, trending, nearby }: SearchScreenProps) {
   const router = useRouter();
+  const position = useCurrentPosition({ immediate: true });
   const [keyword, setKeyword] = useState(query);
   const [chart, setChart] = useState<ChartKey>("interest");
   const [photoOpen, setPhotoOpen] = useState(false);
@@ -107,6 +119,17 @@ export function SearchScreen({ query, results, trending }: SearchScreenProps) {
   const clearRecent = () => {
     writeRecent([]);
   };
+
+  // 위치를 알면 가까운 순으로 좁히고 모르면 최근 제보를 그대로 보여 줌
+  const here = position.point;
+  const around = useMemo(() => {
+    if (!here) return nearby.slice(0, NEARBY_FALLBACK);
+    return nearby
+      .map((item) => ({ item, km: distanceKm(here, item.point) }))
+      .filter((row) => row.km <= NEARBY_RADIUS_KM)
+      .sort((a, b) => a.km - b.km)
+      .map((row) => row.item);
+  }, [nearby, here]);
 
   return (
     <Screen bg="bg.layerBasement">
@@ -173,7 +196,7 @@ export function SearchScreen({ query, results, trending }: SearchScreenProps) {
                   size="medium"
                   onClick={() => router.push(`/search?${item.params}`)}
                 >
-                  {item.label}
+                  <Chip.Label>{item.label}</Chip.Label>
                 </Chip.Button>
               ))}
             </HStack>
@@ -219,12 +242,30 @@ export function SearchScreen({ query, results, trending }: SearchScreenProps) {
                 checked={chart === item.key}
                 onCheckedChange={() => setChart(item.key)}
               >
-                {item.label}
+                <Chip.Label>{item.label}</Chip.Label>
               </Chip.Toggle>
             ))}
           </HStack>
           <TrendingChart items={trending[chart]} help={chart === "help"} />
         </SectionCard>
+
+        {results === null && around.length > 0 ? (
+          <SectionCard gap="x3">
+            <HStack justify="space-between" align="center">
+              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+                {here ? `내 주변 ${NEARBY_RADIUS_KM}km 제보` : "최근 올라온 제보"}
+              </Text>
+              <Text textStyle="t3Regular" color="fg.neutralMuted">
+                {around.length}건
+              </Text>
+            </HStack>
+            <Grid columns={2} gap="x4">
+              {around.map((item) => (
+                <ReportCard key={item.id} item={item} />
+              ))}
+            </Grid>
+          </SectionCard>
+        ) : null}
 
         {recent.length > 0 ? (
           <SectionCard gap="x2">
