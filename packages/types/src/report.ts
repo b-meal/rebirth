@@ -61,6 +61,12 @@ const APPEARANCE_MAX = 500
 // 사용자가 관찰한 값. AI 초안을 그대로 두거나 고쳐서 확정함
 const observedFields = z.object({
   animalType: animalType.default('unknown'),
+  // AI 라벨링이 채우는 품종 추정. 확인이 안 되면 비움
+  breedGuess: z
+    .string()
+    .trim()
+    .max(30, '품종 추정은 30자까지 넣을 수 있습니다')
+    .nullish(),
   appearance: z
     .string()
     .trim()
@@ -259,6 +265,36 @@ export const createFlag = z
   )
 
 export type CreateFlag = z.infer<typeof createFlag>
+
+/* 관심 표시 */
+
+/** 관심 켜고 끄기. 상태를 클라이언트가 보내고 서버가 그대로 맞춤 */
+export const toggleInterest = z.object({
+  interested: z.boolean({ error: '관심 여부가 필요합니다' }),
+})
+
+export type ToggleInterest = z.infer<typeof toggleInterest>
+
+/* 댓글 */
+
+/** 한 제보에 붙여 보여 주는 댓글 수. 넘으면 오래된 것부터 접음 */
+export const COMMENT_PAGE_SIZE = 100
+
+const COMMENT_MAX = 300
+
+/**
+ * 댓글 작성. 비로그인이라 본문만 받고 작성자 정보를 받지 않음
+ * 표시명은 서버가 제보 안에서만 유효한 번호로 매김
+ */
+export const createComment = z.object({
+  body: z
+    .string()
+    .trim()
+    .min(1, '댓글을 적어 주십시오')
+    .max(COMMENT_MAX, `댓글은 ${COMMENT_MAX}자까지 넣을 수 있습니다`),
+})
+
+export type CreateComment = z.infer<typeof createComment>
 
 // 운영자 판정. hide 는 status 를 hidden 으로, keep 은 신고를 기각
 export const moderationDecision = z.object({

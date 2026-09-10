@@ -13,17 +13,21 @@ import {
   grantManageAccess,
   insertConsentRecords,
   insertFlag,
+  insertReportComment,
   insertReportWithPhotos,
   listPublicReports,
   releaseIdempotencyKey,
+  toggleReportInterest,
   type PublicListCursor,
 } from "@rebirth/db";
 import {
   INITIAL_LIFECYCLE,
   LIST_PAGE_SIZE,
+  createComment,
   createFlag,
   createReport,
   listQuery,
+  toggleInterest,
   type CreateReport,
 } from "@rebirth/types";
 
@@ -217,6 +221,7 @@ async function saveReport({
       manageTokenHash: hashToken(manageToken),
       manageTokenIssuedAt: new Date(),
       animalType: input.animalType,
+      breedGuess: input.breedGuess ?? null,
       appearance: input.appearance,
       colors: input.colors,
       size: input.size,
@@ -447,6 +452,86 @@ export async function createFlagHandler(
     return ok({ id: row?.id, received: true }, { status: 201 });
   } catch (error) {
     return serverError("reports.flag", error);
+  }
+}
+
+/* POST /api/reports/[id]/comments  공개 댓글. 표시명은 서버가 제보 안에서만 매김 */
+
+export async function createCommentHandler(
+  request: Request,
+  context: RouteContext,
+): Promise<Response> {
+  const limitKey = clientKey(request, "createComment");
+  const peeked = peekRateLimit(limitKey, RATE_LIMITS.comment);
+  if (!peeked.allowed) return tooManyRequests(peeked.retryAfterSeconds);
+
+  const { id } = await context.params;
+  if (!isUuid(id)) return notFound(REPORT_NOT_FOUND);
+
+  const parsed = await parseJson(request, createComment);
+  if ("response" in parsed) return parsed.response;
+
+  // 본문이 유효할 때만 창을 차감함
+  const limit = checkRateLimit(limitKey, RATE_LIMITS.comment);
+  if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
+
+  try {
+    const report = await findPublicReport(id);
+    if (!report) return notFound(REPORT_NOT_FOUND);
+
+    // 초안 세션을 작성자 구분에만 씀. 같은 사람의 댓글을 이 제보 안에서 묶어 보이게 함
+    const session = await ensureDraftSession(request);
+    const row = await insertReportComment({
+      reportId: id,
+      sessionId: session.sessionId,
+      body: parsed.data.body,
+    });
+
+    return okPrivate(row, {
+      status: 201,
+      ...(session.setCookie && {
+        headers: { "set-cookie": session.setCookie },
+      }),
+    });
+  } catch (error) {
+    return serverError("reports.comment", error);
+  }
+}
+
+/* POST /api/reports/[id]/interest  관심 켜고 끄기. 누가 눌렀는지는 응답에 넣지 않음 */
+
+export async function toggleInterestHandler(
+  request: Request,
+  context: RouteContext,
+): Promise<Response> {
+  const limitKey = clientKey(request, "interest");
+  const limit = checkRateLimit(limitKey, RATE_LIMITS.interest);
+  if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
+
+  const { id } = await context.params;
+  if (!isUuid(id)) return notFound(REPORT_NOT_FOUND);
+
+  const parsed = await parseJson(request, toggleInterest);
+  if ("response" in parsed) return parsed.response;
+
+  try {
+    const report = await findPublicReport(id);
+    if (!report) return notFound(REPORT_NOT_FOUND);
+
+    // 초안 세션을 관심 주체로만 씀. 계정 없이도 눌러 둔 상태가 유지됨
+    const session = await ensureDraftSession(request);
+    const count = await toggleReportInterest({
+      reportId: id,
+      sessionId: session.sessionId,
+      interested: parsed.data.interested,
+    });
+
+    return okPrivate(
+      { interested: parsed.data.interested, count },
+      session.setCookie ? { headers: { "set-cookie": session.setCookie } } : undefined,
+    );
+  } catch (error) {
+    return serverError("reports.interest", error);
   }
 }
 

@@ -8,6 +8,7 @@ import {
   integer,
   jsonb,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -62,6 +63,8 @@ export const reports = pgTable(
 
     // 사용자가 확정한 값. AI 초안을 그대로 두거나 고쳐서 저장
     animalType: animalType().notNull().default('unknown'),
+    // AI 라벨링이 채우는 품종 추정값. 화면에서는 계열 추정으로만 표기함
+    breedGuess: text(),
     appearance: text(),
     colors: text().array().notNull().default([]),
     size: animalSize().notNull().default('unknown'),
@@ -218,11 +221,58 @@ export const reportFlags = pgTable(
   ],
 )
 
+// 제보에 달리는 공개 댓글. 비로그인이라 작성자 대신 초안 세션만 붙임
+export const reportComments = pgTable(
+  'report_comments',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    reportId: uuid()
+      .notNull()
+      .references(() => reports.id, { onDelete: 'cascade' }),
+    // 초안 세션 id. drafts 가 reports 를 참조해 순환을 피하려 FK 없이 참조
+    sessionId: uuid(),
+    // 이 제보 안에서만 유효한 작성자 번호. 다른 제보의 댓글과 이어 볼 수 없음
+    authorSeq: integer().notNull(),
+    body: text().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index('report_comments_thread_idx').on(t.reportId, t.createdAt),
+    // 같은 세션이 이 제보에서 이미 받은 번호를 찾는 질의
+    index('report_comments_author_idx').on(t.reportId, t.sessionId),
+  ],
+)
+
+// 관심 표시. 비로그인이라 초안 세션 단위로 한 번만 남고 취소하면 지움
+export const reportInterests = pgTable(
+  'report_interests',
+  {
+    reportId: uuid()
+      .notNull()
+      .references(() => reports.id, { onDelete: 'cascade' }),
+    // 초안 세션 id. drafts 가 reports 를 참조해 순환을 피하려 FK 없이 참조
+    sessionId: uuid().notNull(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.reportId, t.sessionId] }),
+    index('report_interests_session_idx').on(t.sessionId),
+  ],
+)
+
 export const reportsRelations = relations(reports, ({ many }) => ({
   photos: many(reportPhotos),
   flags: many(reportFlags),
+  comments: many(reportComments),
   matchesAsLost: many(matchScores, { relationName: 'lost' }),
   matchesAsSighting: many(matchScores, { relationName: 'sighting' }),
+}))
+
+export const reportCommentsRelations = relations(reportComments, ({ one }) => ({
+  report: one(reports, {
+    fields: [reportComments.reportId],
+    references: [reports.id],
+  }),
 }))
 
 export const reportFlagsRelations = relations(reportFlags, ({ one }) => ({
@@ -260,3 +310,6 @@ export type MatchScore = typeof matchScores.$inferSelect
 export type NewMatchScore = typeof matchScores.$inferInsert
 export type ReportFlag = typeof reportFlags.$inferSelect
 export type NewReportFlag = typeof reportFlags.$inferInsert
+export type ReportComment = typeof reportComments.$inferSelect
+export type NewReportComment = typeof reportComments.$inferInsert
+export type ReportInterest = typeof reportInterests.$inferSelect

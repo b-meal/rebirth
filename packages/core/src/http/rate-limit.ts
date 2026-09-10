@@ -41,6 +41,10 @@ export const RATE_LIMITS = {
   manageExchange: { limit: RELAXED ? 200 : 10, windowSeconds: 600 },
   // 문의 접수. 남용을 막되 권리 요청 경로를 잠그지 않을 정도로 둠
   support: { limit: RELAXED ? 200 : 5, windowSeconds: 600 },
+  // 댓글. 여러 번 주고받는 대화는 막지 않되 도배는 걸리는 수준
+  comment: { limit: RELAXED ? 200 : 10, windowSeconds: 300 },
+  // 관심. 켜고 끄기를 반복해도 막히지 않을 만큼 넉넉히 둠
+  interest: { limit: RELAXED ? 400 : 60, windowSeconds: 300 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export type RateLimitResult =
