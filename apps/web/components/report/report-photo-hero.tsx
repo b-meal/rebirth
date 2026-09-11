@@ -30,7 +30,8 @@ export type ReportPhotoHeroProps = {
   step: number;
   total: number;
   label: string;
-  onRetake: () => void;
+  /** 사진 위에 다시 찍기를 얹을 때만 넘김. 1단계는 하단 버튼이 그 일을 해 생략함 */
+  onRetake?: () => void;
 };
 
 export function ReportPhotoHero({ photos, step, total, label, onRetake }: ReportPhotoHeroProps) {
@@ -105,12 +106,14 @@ export function ReportPhotoHero({ photos, step, total, label, onRetake }: Report
             <Text textStyle="t3Medium" color="fg.neutral">
               {step} / {total} · {label}
             </Text>
-            <Box style={{ pointerEvents: "auto" }}>
-              <ActionButton variant="neutralSolid" size="small" onClick={onRetake}>
-                <Icon svg={<IconCameraFill />} />
-                다시 찍기
-              </ActionButton>
-            </Box>
+            {onRetake ? (
+              <Box style={{ pointerEvents: "auto" }}>
+                <ActionButton variant="neutralSolid" size="small" onClick={onRetake}>
+                  <Icon svg={<IconCameraFill />} />
+                  다시 찍기
+                </ActionButton>
+              </Box>
+            ) : null}
           </HStack>
         </VStack>
 

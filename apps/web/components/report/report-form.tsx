@@ -22,7 +22,7 @@ import { ReportDraftCard } from "./report-draft-card";
 import { ReportFeatureForm } from "./report-feature-form";
 import { ReportLocation, type LocationValue } from "./report-location";
 import { ReportPhotoHero } from "./report-photo-hero";
-import { StepPhoto } from "./step-photo";
+import { ReportCapture } from "./report-capture";
 
 // 촬영과 등록 두 단계를 한 라우트에서 클라이언트 상태로 돌리고 뒤로가기는 단계 하나만 되돌림
 
@@ -169,7 +169,6 @@ export function ReportForm() {
   );
 
   // 업로드를 기다리지 않고 넘어감, 등록 버튼에서만 참조가 필요함
-  const canLeaveStep1 = photos.length > 0 && !picker.processing;
   const uploadsReady = uploadIds.length === photos.length && uploadIds.length > 0;
   // 동물이 안 보이는 사진은 등록을 막음. 어두운 사진은 막지 않고 안내만 함
   const notAnimal = analyze.advice === "not-animal";
@@ -256,35 +255,14 @@ export function ReportForm() {
   return (
     <Screen>
       {step === 1 ? (
-        <ScreenBody gap="x6">
-          <VStack align="stretch" gap="x2">
-            <Box height="x1" borderRadius="full" bg="bg.neutralWeak" overflowX="hidden">
-              <Box
-                height="x1"
-                borderRadius="full"
-                bg="bg.brandSolid"
-                width={`${(step / TOTAL_STEPS) * 100}%`}
-              />
-            </Box>
-            <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {step} / {TOTAL_STEPS} · {STEP_LABEL[step]}
-            </Text>
-          </VStack>
-
-          <StepPhoto picker={picker} cameraAvailable={cameraAvailable} />
-
-          <HStack gap="x2" mt="x2">
-            <ActionButton
-              variant="brandSolid"
-              size="large"
-              flexGrow={1}
-              disabled={picker.processing || !canLeaveStep1}
-              onClick={() => goTo(2)}
-            >
-              다음
-            </ActionButton>
-          </HStack>
-        </ScreenBody>
+        <ReportCapture
+          picker={picker}
+          cameraAvailable={cameraAvailable}
+          step={step}
+          total={TOTAL_STEPS}
+          label={STEP_LABEL[step]}
+          onNext={() => goTo(2)}
+        />
       ) : (
         <>
           <ReportPhotoHero
