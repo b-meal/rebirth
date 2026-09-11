@@ -26,7 +26,7 @@ import { ReportLocationMap } from "./report-location-map";
 const ITEM = "location";
 
 const BLOCKED_MESSAGE =
-  "위치 권한을 켜야 제보할 수 있어요. 설정에서 위치 접근을 허용한 뒤 다시 시도해 주세요";
+  "위치를 알아야 제보할 수 있어요. 설정에서 위치 권한을 켜 주세요";
 
 export type LocationValue = {
   areaName: string | null;
@@ -124,7 +124,7 @@ export function ReportLocation({ value, onChange }: ReportLocationProps) {
         <AccordionItem value={ITEM}>
           <AccordionTrigger
             title={value.areaName}
-            description="자동으로 잡은 위치예요. 고칠 수 없어요"
+            description="지금 있는 위치예요. 눌러서 지도로 확인해요"
             prefix={<Icon svg={<IconLocationpinLine />} />}
           />
           <AccordionContent>
