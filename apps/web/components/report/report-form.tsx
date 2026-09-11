@@ -381,7 +381,8 @@ export function ReportForm() {
           <BottomSheetRoot open={formOpen} onOpenChange={(open) => setFormOpen(open)}>
             <BottomSheetContent title="초안 고치기">
               <BottomSheetBody>
-                <Box maxHeight="60dvh" overflowY="auto">
+                {/* 마지막 입력이 시트 경계에 붙지 않게 아래에 여백을 둠 */}
+                <Box maxHeight="60dvh" overflowY="auto" pb="x5">
                   <ReportFeatureForm draft={draft} onEdit={edit} />
                 </Box>
               </BottomSheetBody>

@@ -13,23 +13,32 @@ import { Badge, type BadgeTone } from "@/components/ui/badge";
 // AI 가 읽은 것을 읽기 카드 하나로 묶는 자리. 고칠 때만 상세 입력을 엶
 // 사용자가 이 화면에서 직접 고르는 것은 보호 상황 하나뿐이라는 전제
 
-type SummaryTag = { label: string; tone: BadgeTone };
+type SummaryTag = { name?: string; label: string; tone: BadgeTone };
 
-/** 카드에 접어 보여줄 뱃지. 값이 없는 항목은 줄에서 빠짐 */
+/**
+ * 카드에 접어 보여줄 뱃지. 값이 없는 항목은 줄에서 빠짐
+ * 종류·크기·털색·품종·목줄은 값만 보면 무엇인지 모르므로 이름을 붙이고
+ * 상태 태그와 부상은 문장 자체가 말해 주므로 이름 없이 둠
+ */
 function summaryTags(draft: ReportDraft): SummaryTag[] {
-  const labels = [
-    ANIMAL_LABEL[draft.animalType] ?? "",
-    SIZE_LABEL[draft.size] ?? "",
-    ...draft.colors,
-    breedLabel(draft.breedGuess.trim() || null) ?? "",
-    draft.collar === true ? "목줄 있음" : draft.collar === false ? "목줄 없음" : "",
-    ...draft.conditionTags,
-  ].filter(Boolean);
+  const named: SummaryTag[] = [
+    { name: "종류", label: ANIMAL_LABEL[draft.animalType] ?? "", tone: "neutral" },
+    { name: "크기", label: SIZE_LABEL[draft.size] ?? "", tone: "neutral" },
+    // 색이 여러 개면 이름을 한 번만 쓰고 값을 이어 붙임
+    { name: "털색", label: draft.colors.join(" "), tone: "neutral" },
+    { name: "품종", label: breedLabel(draft.breedGuess.trim() || null) ?? "", tone: "neutral" },
+    {
+      name: "목줄",
+      label: draft.collar === true ? "있음" : draft.collar === false ? "없음" : "",
+      tone: "neutral",
+    },
+  ];
 
-  const tags: SummaryTag[] = labels.map((label) => ({ label, tone: "neutral" }));
+  const bare: SummaryTag[] = draft.conditionTags.map((tag) => ({ label: tag, tone: "neutral" }));
   // 부상은 읽는 사람이 먼저 봐야 하는 값이라 색을 달리 줌
-  if (draft.injury === true) tags.push({ label: "다친 것으로 보임", tone: "critical" });
-  return tags;
+  if (draft.injury === true) bare.push({ label: "다친 것으로 보임", tone: "critical" });
+
+  return [...named, ...bare].filter((tag) => tag.label !== "");
 }
 
 export type ReportDraftCardProps = {
@@ -104,7 +113,7 @@ export function ReportDraftCard({
       {tags.length > 0 ? (
         <Flex wrap="wrap" gap="x1_5">
           {tags.map((tag) => (
-            <Badge key={tag.label} label={tag.label} tone={tag.tone} />
+            <Badge key={tag.label} name={tag.name} label={tag.label} tone={tag.tone} />
           ))}
         </Flex>
       ) : null}
