@@ -234,7 +234,8 @@ export function ReportForm() {
       }
 
       reset();
-      router.push(`/r/${result.id}`);
+      // 뒤로가기로 폼에 돌아가지 않게 push 가 아니라 replace 로 완료 화면에 들어감
+      router.replace(`/r/${result.id}/done`);
     } catch {
       setSubmitError("제보가 저장되지 않았어요. 입력한 내용은 그대로 있어요");
       setSubmitting(false);
