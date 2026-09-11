@@ -1,17 +1,15 @@
 "use client";
 
-import { Badge, HStack, Skeleton, Text, VStack } from "@seed-design/react";
-import { ActionButton } from "seed-design/ui/action-button";
-import { Callout } from "seed-design/ui/callout";
+import { Badge, HStack, Text, VStack } from "@seed-design/react";
 import { Chip } from "seed-design/ui/chip";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
 import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/text-field";
 
-import type { AnalyzeAdviceState } from "@/hooks/use-analyze-photo";
 import type { DraftField, ReportDraft } from "@/hooks/use-report-draft";
 import { Section } from "@/components/ui/screen";
 
-// 3단계 특징, confidence 수치는 확정으로 읽히므로 화면에 내지 않음
+// 초안을 고치는 상세 입력. 바텀시트 안에서만 열림
+// confidence 수치는 확정으로 읽히므로 화면에 내지 않음
 
 const ANIMAL_OPTIONS = [
   { value: "dog", label: "개" },
@@ -73,23 +71,12 @@ function fromTri(value: string): boolean | null {
   return null;
 }
 
-export type StepFeaturesProps = {
+export type ReportFeatureFormProps = {
   draft: ReportDraft;
-  loading: boolean;
-  advice: AnalyzeAdviceState | null;
-  message: string | null;
   onEdit: <K extends keyof ReportDraft>(key: K, value: ReportDraft[K]) => void;
-  onRetake: () => void;
 };
 
-export function StepFeatures({
-  draft,
-  loading,
-  advice,
-  message,
-  onEdit,
-  onRetake,
-}: StepFeaturesProps) {
+export function ReportFeatureForm({ draft, onEdit }: ReportFeatureFormProps) {
   // 초안이 있고 아직 고치지 않은 필드에만 배지를 붙임
   const showBadge = (field: DraftField) =>
     draft.aiRaw !== null && !draft.editedFields.includes(field);
@@ -107,40 +94,8 @@ export function StepFeatures({
     </HStack>
   );
 
-  if (loading) {
-    return (
-      <VStack align="stretch" gap="x5">
-        <Text as="h2" textStyle="t7Bold" color="fg.neutral">
-          사진을 정리하고 있어요
-        </Text>
-        {[0, 1, 2, 3].map((row) => (
-          <VStack key={row} align="stretch" gap="x2">
-            <Skeleton width="30%" height="x5" radius="8" />
-            <Skeleton width="full" height="x10" radius="8" />
-          </VStack>
-        ))}
-      </VStack>
-    );
-  }
-
   return (
     <VStack align="stretch" gap="x6">
-      <Text as="h2" textStyle="t7Bold" color="fg.neutral">
-        특징을 확인해 주세요
-      </Text>
-
-      {advice === "not-animal" ? (
-        <VStack align="stretch" gap="x2">
-          <Callout tone="warning" description={message ?? ""} />
-          <ActionButton variant="brandSolid" size="small" onClick={onRetake}>
-            사진 다시 고르기
-          </ActionButton>
-        </VStack>
-      ) : null}
-      {advice === "low-quality" || advice === "failed" ? (
-        <Callout tone="informative" description={message ?? ""} />
-      ) : null}
-
       <Section>
         {label("동물 종류", "animalType")}
         <Chip.RadioRoot
@@ -161,7 +116,7 @@ export function StepFeatures({
       <TextField
         label="품종 추정"
         indicator={showBadge("breedGuess") ? "AI 초안" : undefined}
-        description="확정이 아니라 계열 추정으로만 표시됩니다. 모르면 비워 두십시오"
+        description="계열 추정으로만 적어요. 모르면 비워 두세요"
         value={draft.breedGuess}
         maxGraphemeCount={30}
         onValueChange={(next) => onEdit("breedGuess", next.value)}

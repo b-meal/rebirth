@@ -14,16 +14,23 @@ export type BadgeTone = keyof typeof TONE;
 
 export type BadgeProps = {
   label: string;
+  /** 값이 무엇을 말하는지. 값만으로 알 수 없는 항목에만 붙임 */
+  name?: string;
   tone?: BadgeTone;
   icon?: ReactNode;
 };
 
-export function Badge({ label, tone = "neutral", icon }: BadgeProps) {
+export function Badge({ label, name, tone = "neutral", icon }: BadgeProps) {
   const { bg, fg } = TONE[tone];
 
   return (
     <HStack align="center" gap="x1" px="x2" py="x1" borderRadius="full" bg={bg}>
       {icon ? <Icon svg={icon} size="x3_5" color={fg} /> : null}
+      {name ? (
+        <Text textStyle="t2Regular" color={fg}>
+          {name}
+        </Text>
+      ) : null}
       <Text textStyle="t2Bold" color={fg}>
         {label}
       </Text>
