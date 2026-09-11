@@ -3,8 +3,13 @@
 import { CONSENT_DOCUMENT_VERSION, type CareSituation } from "@rebirth/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Grid, HStack, ImageFrame, Text, VStack } from "@seed-design/react";
+import { Box, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
+import {
+  BottomSheetBody,
+  BottomSheetContent,
+  BottomSheetRoot,
+} from "seed-design/ui/bottom-sheet";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 
@@ -13,8 +18,10 @@ import { usePhotoPicker } from "@/hooks/use-photo-picker";
 import { usePhotoUpload } from "@/hooks/use-photo-upload";
 import { useReportDraft, type ReportDraft, type ReportStep } from "@/hooks/use-report-draft";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { ReportDraftCard } from "./report-draft-card";
+import { ReportFeatureForm } from "./report-feature-form";
 import { ReportLocation, type LocationValue } from "./report-location";
-import { StepFeatures } from "./step-features";
+import { ReportPhotoHero } from "./report-photo-hero";
 import { StepPhoto } from "./step-photo";
 
 // 촬영과 등록 두 단계를 한 라우트에서 클라이언트 상태로 돌리고 뒤로가기는 단계 하나만 되돌림
@@ -34,8 +41,6 @@ const CARE_OPTIONS: { value: Exclude<CareSituation, "unknown">; label: string }[
   { value: "roaming", label: "배회 중" },
   { value: "in_care", label: "내가 데리고 있음" },
 ];
-
-const THUMBNAIL_RATIO = 4 / 3;
 
 function readStepFromUrl(): ReportStep {
   if (typeof window === "undefined") return 1;
@@ -67,6 +72,8 @@ export function ReportForm() {
   const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
   // 사진 순서대로 받은 참조. 훅은 한 장씩 올리므로 결과를 여기에 모음
   const [uploadIds, setUploadIds] = useState<string[]>([]);
+  // 초안을 고칠 때만 여는 상세 입력
+  const [formOpen, setFormOpen] = useState(false);
 
   const { draft, photos, setPhotos, applyAiDraft, edit, reset } = useReportDraft();
   const analyze = useAnalyzePhoto();
@@ -242,45 +249,53 @@ export function ReportForm() {
     }
   }, [uploadIds, draft, reset, router]);
 
+  const loadingDraft =
+    upload.status !== "failed" &&
+    (analyze.status === "loading" || analyze.status === "idle");
+
   return (
     <Screen>
-      <ScreenBody gap="x6">
-        <VStack align="stretch" gap="x2">
-          <Box height="x1" borderRadius="full" bg="bg.neutralWeak" overflowX="hidden">
-            <Box
-              height="x1"
-              borderRadius="full"
-              bg="bg.brandSolid"
-              width={`${(step / TOTAL_STEPS) * 100}%`}
-            />
-          </Box>
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {step} / {TOTAL_STEPS} · {STEP_LABEL[step]}
-          </Text>
-        </VStack>
+      {step === 1 ? (
+        <ScreenBody gap="x6">
+          <VStack align="stretch" gap="x2">
+            <Box height="x1" borderRadius="full" bg="bg.neutralWeak" overflowX="hidden">
+              <Box
+                height="x1"
+                borderRadius="full"
+                bg="bg.brandSolid"
+                width={`${(step / TOTAL_STEPS) * 100}%`}
+              />
+            </Box>
+            <Text textStyle="t3Regular" color="fg.neutralMuted">
+              {step} / {TOTAL_STEPS} · {STEP_LABEL[step]}
+            </Text>
+          </VStack>
 
-        {step === 1 ? (
           <StepPhoto picker={picker} cameraAvailable={cameraAvailable} />
-        ) : null}
 
-        {step === 2 ? (
-          <VStack align="stretch" gap="x6">
-            {photos.length > 0 ? (
-              <Grid columns={photos.length} gap="x2">
-                {photos.map((photo, index) => (
-                  <ImageFrame
-                    key={photo.id}
-                    src={photo.previewUrl}
-                    alt={index === 0 ? "대표 사진" : `사진 ${index + 1}`}
-                    ratio={THUMBNAIL_RATIO}
-                    width="full"
-                    borderRadius="r3"
-                    stroke
-                  />
-                ))}
-              </Grid>
-            ) : null}
+          <HStack gap="x2" mt="x2">
+            <ActionButton
+              variant="brandSolid"
+              size="large"
+              flexGrow={1}
+              disabled={picker.processing || !canLeaveStep1}
+              onClick={() => goTo(2)}
+            >
+              다음
+            </ActionButton>
+          </HStack>
+        </ScreenBody>
+      ) : (
+        <>
+          <ReportPhotoHero
+            photos={photos}
+            step={step}
+            total={TOTAL_STEPS}
+            label={STEP_LABEL[step]}
+            onRetake={() => goTo(1)}
+          />
 
+          <ScreenBody gap="x4" pt="x4" pb="x4">
             {upload.status === "uploading" ? (
               <Text textStyle="t3Regular" color="fg.neutralMuted">
                 사진을 올리고 있어요
@@ -291,23 +306,24 @@ export function ReportForm() {
               <Callout tone="critical" description={upload.message ?? ""} />
             ) : null}
 
-            <StepFeatures
+            <ReportDraftCard
               draft={draft}
-              // 업로드가 실패하면 분석이 시작되지 않으므로 스켈레톤을 걷고 직접 입력을 받음
-              loading={
-                upload.status !== "failed" &&
-                (analyze.status === "loading" || analyze.status === "idle")
-              }
+              loading={loadingDraft}
               advice={analyze.advice}
               message={analyze.message}
-              onEdit={edit}
+              onEdit={() => setFormOpen(true)}
               onRetake={() => goTo(1)}
             />
 
-            <Section>
-              <Text as="h3" textStyle="t5Bold" color="fg.neutral">
-                지금 어떤 상황인가요
-              </Text>
+            <Section gap="x2">
+              <HStack gap="x1_5" align="center">
+                <Text as="h3" textStyle="t5Bold" color="fg.neutral">
+                  지금 어떤 상황인가요
+                </Text>
+                <Text textStyle="t2Regular" color="fg.brand">
+                  직접 골라 주세요
+                </Text>
+              </HStack>
               <Chip.RadioRoot
                 value={draft.careSituation ?? ""}
                 onValueChange={(value) => edit("careSituation", value as CareSituation)}
@@ -321,11 +337,6 @@ export function ReportForm() {
                   ))}
                 </HStack>
               </Chip.RadioRoot>
-              {draft.careSituation === null ? (
-                <Text textStyle="t3Regular" color="fg.neutralMuted">
-                  둘 중 하나를 골라야 제보할 수 있어요
-                </Text>
-              ) : null}
             </Section>
 
             <ReportLocation
@@ -339,46 +350,45 @@ export function ReportForm() {
             />
 
             {submitError ? <Callout tone="critical" description={submitError} /> : null}
-          </VStack>
-        ) : null}
 
-        <HStack gap="x2" mt="x2">
-          {step > 1 ? (
-            <ActionButton
-              variant={notAnimal ? "brandSolid" : "neutralOutline"}
-              size="large"
-              flexGrow={notAnimal ? 1 : undefined}
-              disabled={submitting}
-              onClick={() => goTo(1)}
-            >
-              다시 찍기
-            </ActionButton>
-          ) : null}
+            {/* 하단 CTA 가 화면에 붙어 있어 마지막 입력이 그 아래로 빠져나갈 자리 */}
+            <Box height="x8" />
+          </ScreenBody>
 
-          {step === 1 ? (
+          <VStack
+            position="sticky"
+            bottom="0"
+            zIndex={1}
+            align="stretch"
+            px="spacingX.globalGutter"
+            pt="x3"
+            pb="x5"
+            bg="bg.layerDefault"
+            borderTopWidth="1px"
+            borderColor="stroke.neutralMuted"
+          >
             <ActionButton
               variant="brandSolid"
               size="large"
-              flexGrow={1}
-              disabled={picker.processing || !canLeaveStep1}
-              onClick={() => goTo(2)}
-            >
-              다음
-            </ActionButton>
-          ) : (
-            <ActionButton
-              variant={notAnimal ? "neutralOutline" : "brandSolid"}
-              size="large"
-              flexGrow={1}
               loading={submitting}
               disabled={!canSubmit}
               onClick={handleSubmit}
             >
               제보하기
             </ActionButton>
-          )}
-        </HStack>
-      </ScreenBody>
+          </VStack>
+
+          <BottomSheetRoot open={formOpen} onOpenChange={(open) => setFormOpen(open)}>
+            <BottomSheetContent title="초안 고치기">
+              <BottomSheetBody>
+                <Box maxHeight="60dvh" overflowY="auto">
+                  <ReportFeatureForm draft={draft} onEdit={edit} />
+                </Box>
+              </BottomSheetBody>
+            </BottomSheetContent>
+          </BottomSheetRoot>
+        </>
+      )}
     </Screen>
   );
 }
