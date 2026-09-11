@@ -52,7 +52,7 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
         setError("사진을 올리지 못했습니다. 다시 골라 주십시오");
         return;
       }
-      analyze.start(uploadId);
+      analyze.start([uploadId]);
     },
     [upload, analyze],
   );

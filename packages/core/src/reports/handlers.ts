@@ -230,7 +230,8 @@ async function saveReport({
       conditionTags,
       collar: input.collar ?? null,
       injury: input.injury ?? null,
-      earTip: input.earTip ?? null,
+      // 고양이가 아니면 귀 끝은 의미가 없고 DB 체크 제약이 거부함. 여기서 한 번에 눌러 둠
+      earTip: input.animalType === "cat" ? (input.earTip ?? null) : null,
       exactPoint: exact ? { x: exact.lng, y: exact.lat } : null,
       coarsePoint: coarse ? { x: coarse.lng, y: coarse.lat } : null,
       coarseGridM: gridMeters,

@@ -15,6 +15,8 @@ export const analyzeResult = z.object({
   color: z.array(z.string().min(1).max(20)).max(5),
   size: animalSize,
   condition: z.string().max(300),
+  // 제보 글 본문 초안. appearance 아래에 붙여 한 열에 저장하므로 합계가 500자를 넘지 않게 짧게 둠
+  story: z.string().max(180),
   collarOrHarness: z.boolean().nullable(),
   visibleInjury: z.boolean().nullable(),
   earTip: z.boolean().nullable(),

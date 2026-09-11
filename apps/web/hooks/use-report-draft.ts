@@ -5,19 +5,20 @@ import { useCallback, useEffect, useState } from "react";
 
 import type { PhotoItem } from "@/lib/image";
 
-// 4단계 폼의 상태. 새로고침과 실수 이탈에서 살리려 sessionStorage 에 보관
+// 2단계 폼의 상태. 새로고침과 실수 이탈에서 살리려 sessionStorage 에 보관
 // 사진은 File 이라 직렬화되지 않으므로 저장하지 않음. 사진이 없으면 1단계로 돌아감
 // 좌표는 담지 않음. 서버가 발급한 참조만 들고 다녀 브라우저에 정확 위치가 남지 않음
 
 const STORAGE_KEY = "rebirth:report-draft";
 
-export type ReportStep = 1 | 2 | 3 | 4;
+export type ReportStep = 1 | 2;
 
 // AI 초안에서 사용자가 고칠 수 있는 필드. ai_edited_fields 에 이 이름으로 기록
 export const DRAFT_FIELDS = [
   "animalType",
   "breedGuess",
   "appearance",
+  "story",
   "colors",
   "size",
   "collar",
@@ -29,23 +30,25 @@ export type DraftField = (typeof DRAFT_FIELDS)[number];
 
 export type ReportDraft = {
   careSituation: CareSituation | null;
-  // 2단계. 좌표 대신 서버 발급 참조만 보관함
+  // 위치. 좌표 대신 서버 발급 참조만 보관함
   areaName: string | null;
   locationToken: string | null;
   /** 거리 근거로 쓸 수 있는 위치인지. false 면 후보 화면이 정보 부족으로 표시 */
   usableForDistance: boolean;
   landmark: string;
-  // 3단계
+  // 특징과 글
   animalType: "dog" | "cat" | "other" | "unknown";
   // AI 라벨링이 채우는 품종 추정. 확인이 안 되면 빈 문자열
   breedGuess: string;
   appearance: string;
+  /** AI 가 쓴 제보 본문 초안. 저장할 때 appearance 아래에 붙임 */
+  story: string;
   colors: string[];
   size: "small" | "medium" | "large" | "unknown";
   collar: boolean | null;
   injury: boolean | null;
   earTip: boolean | null;
-  // 4단계
+  // 상태 태그, 지금은 입력 화면이 없어 빈 배열로 저장됨
   conditionTags: string[];
   // 서버 렌더와 값이 갈리지 않게 빈 문자열로 시작하고 4단계에서 채움
   occurredAt: string;
@@ -66,6 +69,7 @@ function emptyDraft(): ReportDraft {
     animalType: "unknown",
     breedGuess: "",
     appearance: "",
+    story: "",
     colors: [],
     size: "unknown",
     collar: null,
@@ -94,8 +98,8 @@ function readStored(): ReportDraft | null {
 
 export type UseReportDraft = {
   draft: ReportDraft;
-  photo: PhotoItem | null;
-  setPhoto: (photo: PhotoItem | null) => void;
+  photos: PhotoItem[];
+  setPhotos: (photos: PhotoItem[]) => void;
   // AI 초안을 채움. 사용자가 이미 고친 필드는 덮지 않음
   applyAiDraft: (result: AnalyzeResult, model: string, analyzedAt: string) => void;
   // 사용자 수정. 초안과 다른 값이면 editedFields 에 기록
@@ -107,7 +111,7 @@ export function useReportDraft(): UseReportDraft {
   // 서버 렌더에는 sessionStorage 가 없어 빈 초안으로 시작함
   // 복원은 마운트 뒤 한 번만 반영해 하이드레이션 불일치를 만들지 않음
   const [draft, setDraft] = useState<ReportDraft>(emptyDraft);
-  const [photo, setPhoto] = useState<PhotoItem | null>(null);
+  const [photos, setPhotos] = useState<PhotoItem[]>([]);
 
   const restore = useCallback(() => {
     const stored = readStored();
@@ -140,12 +144,13 @@ export function useReportDraft(): UseReportDraft {
           animalType: keep("animalType", result.animalType, prev.animalType),
           breedGuess: keep("breedGuess", result.breedGuess ?? "", prev.breedGuess),
           appearance: keep("appearance", result.appearance, prev.appearance),
+          story: keep("story", result.story, prev.story),
           colors: keep("colors", result.color, prev.colors),
           size: keep("size", result.size, prev.size),
           collar: keep("collar", result.collarOrHarness, prev.collar),
           injury: keep("injury", result.visibleInjury, prev.injury),
           earTip: keep("earTip", result.earTip, prev.earTip),
-          // 상태 태그는 초안의 condition 문장을 그대로 넣지 않음. 4단계에서 사용자가 고름
+          // 상태 태그는 초안의 condition 문장을 그대로 넣지 않음. 고르는 화면이 아직 없어 비워 둠
           aiRaw: result,
           aiModel: model,
           aiAnalyzedAt: analyzedAt,
@@ -175,7 +180,7 @@ export function useReportDraft(): UseReportDraft {
 
   const reset = useCallback(() => {
     setDraft(emptyDraft());
-    setPhoto(null);
+    setPhotos([]);
     try {
       sessionStorage.removeItem(STORAGE_KEY);
     } catch {
@@ -183,5 +188,5 @@ export function useReportDraft(): UseReportDraft {
     }
   }, []);
 
-  return { draft, photo, setPhoto, applyAiDraft, edit, reset };
+  return { draft, photos, setPhotos, applyAiDraft, edit, reset };
 }

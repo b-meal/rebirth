@@ -15,7 +15,7 @@ export type AnalyzeState = {
   draft: AnalyzeResult | null;
   model: string | null;
   analyzedAt: string | null;
-  start: (uploadId: string) => void;
+  start: (uploadIds: string[]) => void;
   clear: () => void;
 };
 
@@ -39,7 +39,7 @@ export function useAnalyzePhoto(): AnalyzeState {
 
   useEffect(() => () => inflight.current?.abort(), []);
 
-  const start = useCallback((uploadId: string) => {
+  const start = useCallback((uploadIds: string[]) => {
     inflight.current?.abort();
     const controller = new AbortController();
     inflight.current = controller;
@@ -50,11 +50,11 @@ export function useAnalyzePhoto(): AnalyzeState {
 
     void (async () => {
       try {
-        // 이미 올린 사진을 참조로 지목함. 같은 파일을 두 번 올리지 않음
+        // 이미 올린 사진을 참조로 지목함. 두 장을 한 요청에 넣어 호출은 한 번만 함
         const response = await fetch("/api/draft/analyze", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ uploadId }),
+          body: JSON.stringify({ uploadIds }),
           signal: controller.signal,
         });
         const payload = (await response.json()) as Payload;
@@ -79,7 +79,7 @@ export function useAnalyzePhoto(): AnalyzeState {
         if (controller.signal.aborted) return;
         setStatus("failed");
         setAdvice("failed");
-        setMessage("자동 정리가 안 됐습니다. 내용을 직접 적어 제보할 수 있습니다");
+        setMessage("자동 정리가 안 됐어요. 내용을 직접 적어 제보할 수 있어요");
       }
     })();
   }, []);

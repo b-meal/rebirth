@@ -1,88 +1,58 @@
 "use client";
 
-import type { CareSituation } from "@rebirth/types";
-import { HStack, Text, VStack } from "@seed-design/react";
-import { Callout } from "seed-design/ui/callout";
-import { Chip } from "seed-design/ui/chip";
+import { Text, VStack } from "@seed-design/react";
 
 import type { PhotoPickerState } from "@/hooks/use-photo-picker";
 import { PhotoField } from "@/components/ui/photo-field";
 import { Section } from "@/components/ui/screen";
 
-// 1단계 사진과 보호 상황, 보호 상황이 이후 안내를 갈라 여기서 받음
+// 1단계 사진 한 장. 현장에서 지금 찍은 사진만 받고 카메라가 없는 기기에서만 앨범을 엶
+// 서버로 올리지 않는 단계라 업로드 상태를 다루지 않음
 
-// 실종 신고에만 쓰는 unknown 은 제보 폼에 내놓지 않음
-const CARE_OPTIONS: { value: Exclude<CareSituation, "unknown">; label: string }[] = [
-  { value: "roaming", label: "배회 중" },
-  { value: "in_care", label: "내가 데리고 있음" },
+// 레퍼런스가 오면 이 문안 자리에 예시 이미지를 붙임
+const TIPS = [
+  "얼굴이 보이게 찍어 주세요",
+  "몸 전체가 들어오면 더 좋아요",
+  "목줄이나 옷이 있으면 같이",
+  "다가가지 말고 그 자리에서",
 ];
 
 export type StepPhotoProps = {
   /** 썸네일 삭제 오류를 함께 다루는 공용 선택기를 그대로 씀 */
   picker: PhotoPickerState;
-  careSituation: CareSituation | null;
-  /** 선택은 끝났고 서버로 올리는 중 */
-  uploading: boolean;
-  /** 업로드 단계에서 생긴 오류, 선택 오류는 PhotoField 가 직접 보임 */
-  uploadError: string | null;
-  /** 데스크톱 프레임에서는 촬영 버튼을 렌더하지 않고 앨범만 노출 */
-  cameraAvailable: boolean;
-  onCareSituation: (value: CareSituation) => void;
+  /** 장치 조회가 끝나기 전에는 null. 모바일이 기본이라 그동안 촬영으로 둠 */
+  cameraAvailable: boolean | null;
 };
 
-export function StepPhoto({
-  picker,
-  careSituation,
-  uploading,
-  uploadError,
-  cameraAvailable,
-  onCareSituation,
-}: StepPhotoProps) {
+export function StepPhoto({ picker, cameraAvailable }: StepPhotoProps) {
+  // 조회 중에는 촬영으로 두고, 카메라가 없다고 확인되면 그때만 앨범을 엶
+  const camera = cameraAvailable !== false;
+
   return (
     <VStack align="stretch" gap="x5">
       <Text as="h2" textStyle="t7Bold" color="fg.neutral">
-        사진을 올려 주십시오
+        발견한 동물을 찍어 주세요
       </Text>
+
+      <Section gap="x2">
+        {TIPS.map((tip) => (
+          <Text key={tip} textStyle="t4Regular" color="fg.neutralMuted">
+            · {tip}
+          </Text>
+        ))}
+      </Section>
 
       <PhotoField
         picker={picker}
-        label="대표 사진"
-        hint="발견한 동물의 사진 한 장"
-        disabled={uploading}
-        cameraAvailable={cameraAvailable}
+        label="사진"
+        hint={
+          camera
+            ? "지금 보이는 모습을 한 장 찍어 주세요"
+            : "카메라를 찾지 못해 앨범에서 고를 수 있어요"
+        }
+        cameraAvailable={camera}
+        libraryAvailable={!camera}
       />
-
-      {uploading ? (
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          사진을 올리고 있습니다
-        </Text>
-      ) : null}
-
-      {uploadError ? <Callout tone="critical" description={uploadError} /> : null}
-
-      <Section>
-        <Text as="h3" textStyle="t5Bold" color="fg.neutral">
-          지금 어떤 상황입니까
-        </Text>
-        <Chip.RadioRoot
-          value={careSituation ?? ""}
-          onValueChange={(value) => onCareSituation(value as CareSituation)}
-          aria-label="보호 상황"
-        >
-          <HStack gap="spacingX.betweenChips" wrap>
-            {CARE_OPTIONS.map((option) => (
-              <Chip.RadioItem key={option.value} value={option.value}>
-                <Chip.Label>{option.label}</Chip.Label>
-              </Chip.RadioItem>
-            ))}
-          </HStack>
-        </Chip.RadioRoot>
-        {careSituation === null ? (
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            둘 중 하나를 골라야 다음으로 넘어갑니다
-          </Text>
-        ) : null}
-      </Section>
     </VStack>
   );
 }
