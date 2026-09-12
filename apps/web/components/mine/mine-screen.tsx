@@ -143,7 +143,8 @@ export function MineScreen({
     <Screen bg="bg.layerBasement">
       <AppHeader title="마이페이지" home />
 
-      <VStack align="stretch" gap="x2" pb="x10">
+      {/* 다른 화면의 ScreenBody 처럼 남는 높이를 채워 바탕이 화면 끝까지 이어짐 */}
+      <VStack align="stretch" grow={1} gap="x2" pb="x10">
         <SectionCard gap="x4">
           {user ? (
             <HStack align="center" gap="x3">

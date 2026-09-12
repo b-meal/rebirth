@@ -29,6 +29,14 @@
   --seed-color-palette-carrot-1000: #edf0ec;
 }
 
+/* 주의 면의 다크 값이 탁한 갈색이라 화면에서 겉돌아 노랑기를 덜어 냄
+   경고를 알아보는 것은 노란 글자와 아이콘이 맡고 면은 바탕에 가깝게 둠
+   warning 을 쓰는 네 곳(구조 요청·로그인 준비·관리 주소 만료·임시 저장)이 함께 바뀜 */
+:root[data-seed-color-mode="system"][data-seed-user-color-scheme="dark"],
+:root[data-seed-color-mode="dark-only"] {
+  --seed-color-palette-yellow-100: #26251d;
+}
+
 /* SEED 는 서체를 정하지 않아 앱에서 한 번만 지정 */
 html {
   font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif;

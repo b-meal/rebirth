@@ -39,7 +39,8 @@ export function LegalDocument({
           {effectiveAt ? `${version} · ${KST.format(effectiveAt)} 시행` : version}
         </Text>
 
-        {changeSummary ? <Callout tone="informative" description={changeSummary} /> : null}
+        {/* 이번 개정에서 바뀐 곳을 알리는 메모라 경고가 아님. 파란 면은 과함 */}
+        {changeSummary ? <Callout tone="neutral" description={changeSummary} /> : null}
 
         {/* 긴 글이라 문단 사이를 넉넉히 띄워 눈이 쉴 자리를 둠 */}
         <VStack align="stretch" gap="x5">
