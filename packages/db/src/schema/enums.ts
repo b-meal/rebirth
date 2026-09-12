@@ -38,6 +38,9 @@ export const careSituation = pgEnum('care_situation', [
   'unknown',
 ])
 
+// SNS 로그인 제공자. 값은 @rebirth/types 의 authProvider 와 같아야 함
+export const authProvider = pgEnum('auth_provider', ['google', 'kakao'])
+
 // 문의·권리 요청 분류. WEB-24
 export const supportRequestKind = pgEnum('support_request_kind', [
   'manage_token_lost',

@@ -32,6 +32,11 @@ export const neuterStatus = z.enum(['done', 'not_done', 'unknown'], {
 export const careSituation = z.enum(['roaming', 'in_care', 'unknown'], {
   error: '보호 상황을 선택해 주십시오',
 })
+
+// SNS 로그인 제공자. Supabase Auth 의 provider 문자열과 같은 값
+export const authProvider = z.enum(['google', 'kakao'], {
+  error: '지원하지 않는 로그인 방식입니다',
+})
 // 문의·권리 요청 분류. WEB-24
 export const supportRequestKind = z.enum(
   [
@@ -111,6 +116,7 @@ export type AnimalSize = z.infer<typeof animalSize>
 export type AnimalSex = z.infer<typeof animalSex>
 export type NeuterStatus = z.infer<typeof neuterStatus>
 export type CareSituation = z.infer<typeof careSituation>
+export type AuthProvider = z.infer<typeof authProvider>
 export type FlagReason = z.infer<typeof flagReason>
 export type FlagResolution = z.infer<typeof flagResolution>
 export type LocationSource = z.infer<typeof locationSource>
