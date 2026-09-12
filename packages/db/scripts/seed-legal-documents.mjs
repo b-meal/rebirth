@@ -38,8 +38,8 @@ const DOCUMENTS = [
     file: "legal/privacy-2026-09-01.txt",
     changeSummary:
       "수집 항목, 위치정보 처리 방식, 처리위탁 업체, 보관 기간을 명시했습니다",
-    // 발행일은 실제 발행 시점에 정함. published 인데 비어 있으면 CHECK 제약이 막음
-    effectiveAt: null,
+    // 최초 발행이라 시행일을 버전일과 같게 둠. KST 기준 자정
+    effectiveAt: new Date("2026-09-01T00:00:00+09:00"),
   },
 ];
 
