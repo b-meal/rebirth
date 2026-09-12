@@ -29,9 +29,10 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
 
   return (
     <BottomSheetRoot open={open} onOpenChange={onOpenChange}>
-      <BottomSheetContent title="어떤 이야기인가요">
+      <BottomSheetContent title="주제 선택" showHandle>
         <BottomSheetBody>
-          <VStack align="stretch" gap="x1">
+          {/* 주제는 이름만으로 충분함. 설명을 붙이면 시트가 화면 절반을 먹음 */}
+          <VStack align="stretch">
             {COMMUNITY_CATEGORIES.map((option) => (
               <HStack
                 asChild
@@ -40,7 +41,7 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
                 align="center"
                 gap="x3"
                 px="x3"
-                py="x3_5"
+                py="x3"
               >
                 {/* design-system-allow:raw-element 줄 전체를 누르는 자리라 button 이 필요함 */}
                 <button
@@ -48,14 +49,9 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
                   className="rebirth-row"
                   onClick={() => start(option.id)}
                 >
-                  <VStack align="stretch" gap="x0_5" minWidth="0">
-                    <Text textStyle="t5Bold" color="fg.neutral">
-                      {option.label}
-                    </Text>
-                    <Text textStyle="t3Regular" color="fg.neutralMuted">
-                      {option.hint}
-                    </Text>
-                  </VStack>
+                  <Text textStyle="t4Regular" color="fg.neutral">
+                    {option.label}
+                  </Text>
                   <Icon svg={<IconChevronRightLine />} color="fg.neutralSubtle" />
                 </button>
               </HStack>

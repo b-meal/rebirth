@@ -1,4 +1,3 @@
-// design-system-allow:raw-element 보이지 않는 hidden 필드라 SEED 에 대응 컴포넌트가 없음
 import Link from "next/link";
 import {
   Box,
@@ -14,16 +13,15 @@ import {
   IconPawprintLine,
   IconPersonFill,
 } from "@karrotmarket/react-monochrome-icon";
-import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
 import type { CommunityCategory } from "@rebirth/types";
 
 import { categoryLabel } from "@rebirth/core/community";
 
-import { deletePost } from "@/app/community/actions";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { sinceLabel } from "@/lib/report-label";
+import { DeletePostButton } from "./delete-post-button";
 import { LikeButton } from "./like-button";
 import {
   CommentComposer,
@@ -156,14 +154,7 @@ export function PostDetail({
 
         <HStack justify="space-between" align="center">
           <LikeButton postId={post.id} count={like.count} mine={like.mine} />
-          {isAuthor ? (
-            <form action={deletePost}>
-              <input type="hidden" name="postId" value={post.id} />
-              <ActionButton type="submit" variant="neutralWeak" size="xsmall">
-                삭제
-              </ActionButton>
-            </form>
-          ) : null}
+          {isAuthor ? <DeletePostButton postId={post.id} /> : null}
         </HStack>
 
         <Divider />

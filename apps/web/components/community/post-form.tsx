@@ -82,10 +82,8 @@ export function PostForm({ category }: { category: CategoryDescriptor }) {
               invalid={Boolean(errors.body)}
             >
               {/* autoresize 가 기본이라 줄 수를 고정하지 않음 */}
-              <TextFieldTextarea
-                name="body"
-                placeholder="편하게 적어 주세요"
-              />
+              {/* 고른 주제의 힌트를 그대로 써 무엇을 쓸지 한 번 더 알려 줌 */}
+              <TextFieldTextarea name="body" placeholder={category.hint} />
             </TextField>
 
             <TextField
