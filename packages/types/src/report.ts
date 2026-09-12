@@ -311,6 +311,17 @@ export const createPet = z.object({
 
 export type CreatePet = z.infer<typeof createPet>
 
+/**
+ * 등록한 동물 고치기
+ * 남길 사진 경로를 함께 받음. 빠진 것은 지우고 새로 올린 것은 뒤에 붙임
+ */
+export const updatePet = createPet.extend({
+  id: z.uuid('기록을 찾을 수 없습니다'),
+  keepPhotoPaths: z.array(z.string().trim().min(1)).max(PHOTO_MAX_COUNT).default([]),
+})
+
+export type UpdatePet = z.infer<typeof updatePet>
+
 /* 관심 표시 */
 
 /** 관심 켜고 끄기. 상태를 클라이언트가 보내고 서버가 그대로 맞춤 */
