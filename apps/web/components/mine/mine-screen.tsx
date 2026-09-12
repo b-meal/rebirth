@@ -10,7 +10,6 @@ import {
 } from "@seed-design/react";
 import {
   IconChevronRightLine,
-  IconTrashcanLine,
   IconHeadsetLine,
   IconHospitalcrossShieldLine,
   IconPawprintLine,
@@ -25,6 +24,7 @@ import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { ANIMAL_LABEL, SIZE_LABEL, breedLabel } from "@/lib/report-label";
+import { DeletePetButton } from "./delete-pet-button";
 
 // 마이페이지, 제보는 로그인 없이도 되므로 여기서만 계정을 요구함
 
@@ -124,37 +124,36 @@ function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) 
 
   return (
     <HStack gap="x3" align="center">
-      {pet.photoUrl ? (
-        <ImageFrame ratio={1} width="56px" src={pet.photoUrl} alt="" borderRadius="r3" />
-      ) : (
-        <Box width="56px">
-          <AspectRatio ratio={1} borderRadius="r3" bg="bg.neutralWeak">
-            <Box />
-          </AspectRatio>
-        </Box>
-      )}
+      {/* 삭제 단추가 같은 줄에 있어 줄 전체가 아니라 사진과 글만 링크로 둠 */}
+      <HStack asChild gap="x3" align="center" grow={1} minWidth="0">
+        <Link href={`/mine/pets/${pet.id}`} className="rebirth-row">
+          {pet.photoUrl ? (
+            <ImageFrame ratio={1} width="56px" src={pet.photoUrl} alt="" borderRadius="r3" />
+          ) : (
+            <Box width="56px">
+              <AspectRatio ratio={1} borderRadius="r3" bg="bg.neutralWeak">
+                <Box />
+              </AspectRatio>
+            </Box>
+          )}
 
-      <VStack align="stretch" gap="x0_5" grow={1} minWidth="0">
-        <Text textStyle="t4Bold" color="fg.neutral" maxLines={1}>
-          {pet.name}
-        </Text>
-        <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
-          {detail || "특징을 적지 않았어요"}
-        </Text>
-        {pet.note ? (
-          <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
-            {pet.note}
-          </Text>
-        ) : null}
-      </VStack>
+          <VStack align="stretch" gap="x0_5" grow={1} minWidth="0">
+            <Text textStyle="t4Bold" color="fg.neutral" maxLines={1}>
+              {pet.name}
+            </Text>
+            <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
+              {detail || "특징을 적지 않았어요"}
+            </Text>
+            {pet.note ? (
+              <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
+                {pet.note}
+              </Text>
+            ) : null}
+          </VStack>
+        </Link>
+      </HStack>
 
-      {/* design-system-allow:raw-element form 은 SEED 에 대응 컴포넌트가 없는 표준 요소 */}
-      <form action={removePet}>
-        <input type="hidden" name="id" value={pet.id} />
-        <ActionButton type="submit" variant="ghost" size="xsmall" layout="iconOnly" aria-label={`${pet.name} 삭제`}>
-          <Icon svg={<IconTrashcanLine />} />
-        </ActionButton>
-      </form>
+      <DeletePetButton id={pet.id} name={pet.name} removePet={removePet} />
     </HStack>
   );
 }
@@ -193,9 +192,6 @@ export function MineScreen({
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralMuted">
                   {PROVIDER_LABEL[user.provider] ?? "SNS"} 계정 · {joinedLabel(user.createdAt)}
-                </Text>
-                <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  우리 동물 {pets.length}
                 </Text>
               </VStack>
             </HStack>
