@@ -20,7 +20,6 @@ export default async function ProfilePage() {
     <ProfileForm
       displayName={user.displayName ?? ""}
       avatarUrl={user.avatarUrl}
-      provider={user.provider}
     />
   );
 }

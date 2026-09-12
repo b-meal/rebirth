@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Icon, Text, VStack } from "@seed-design/react";
+import { Icon, VStack } from "@seed-design/react";
 import { IconPersonFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
@@ -15,15 +15,12 @@ import { saveProfile, type ActionState } from "@/app/mine/actions";
 // 프로필 수정. 사진은 제공자에서 온 값이라 여기서 바꾸지 않음
 // 이름은 커뮤니티 글·댓글의 작성자로 나가는 값. 제보는 익명이라 쓰이지 않음
 
-const PROVIDER_LABEL: Record<string, string> = { kakao: "카카오", google: "구글" };
-
 export type ProfileFormProps = {
   displayName: string;
   avatarUrl: string | null;
-  provider: string;
 };
 
-export function ProfileForm({ displayName, avatarUrl, provider }: ProfileFormProps) {
+export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveProfile, {});
 
   return (
@@ -35,16 +32,15 @@ export function ProfileForm({ displayName, avatarUrl, provider }: ProfileFormPro
       <VStack asChild align="stretch" grow={1} minHeight="0">
         <form action={action}>
           <VStack align="stretch" grow={1} px="spacingX.globalGutter" pt="x6" gap="x8">
-            <VStack align="center" gap="x3">
+            {/* 사진은 바꿀 수 있는 자리가 없어 설명을 두지 않음 */}
+            {/* 누를 곳이 없으면 왜 못 바꾸는지 묻지 않음 */}
+            <VStack align="center">
               <Avatar
                 size="80"
                 src={avatarUrl ?? undefined}
                 alt=""
                 fallback={<Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />}
               />
-              <Text textStyle="t3Regular" color="fg.neutralMuted">
-                사진은 {PROVIDER_LABEL[provider] ?? "SNS"} 계정에서 가져와요
-              </Text>
             </VStack>
 
             <VStack align="stretch" gap="x4">
@@ -52,7 +48,7 @@ export function ProfileForm({ displayName, avatarUrl, provider }: ProfileFormPro
                 label="이름"
                 name="displayName"
                 size="medium"
-                description="커뮤니티 글과 댓글에 표시돼요. 제보에는 보이지 않아요"
+                description="커뮤니티 글과 댓글에 보여요"
                 defaultValue={displayName}
                 maxGraphemeCount={20}
               >
