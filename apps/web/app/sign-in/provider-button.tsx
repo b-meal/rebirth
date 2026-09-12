@@ -12,14 +12,17 @@ import { signInWithProvider } from "./actions";
 
 // 카카오는 개발자센터가 배포한 버튼 이미지를 그대로 쓰고 구글은 규격을 맞춰 그림
 
-// 두 버튼 높이를 맞춰 세로로 놓았을 때 어긋나지 않게 함
-const BUTTON_HEIGHT = 48;
+// 카카오 배포 이미지는 600x90 이라 폭을 채우면 높이가 비율로 정해짐
+// 구글 버튼을 같은 비율로 맞춰 두 버튼의 폭과 높이가 함께 어긋나지 않게 함
+const KAKAO_ASPECT = "600 / 90";
+
+// 카카오 배포 이미지가 가진 모서리라 구글도 같은 값을 써야 나란히 놓았을 때 어긋나지 않음
+const BUTTON_RADIUS = 6;
 
 const GOOGLE = {
   background: "#FFFFFF",
   border: "1px solid #747775",
   color: "#1F1F1F",
-  borderRadius: 4,
 } as const;
 
 type Props = {
@@ -43,13 +46,14 @@ function SubmitButton({ providerId }: { providerId: ProviderDescriptor["id"] }) 
   const label = providerId === "kakao" ? "카카오 로그인" : "Google 계정으로 로그인";
 
   return (
-    <Box asChild width="full" height={`${BUTTON_HEIGHT}px`}>
+    <Box asChild width="full">
       <button
         type="submit"
         disabled={pending}
         aria-label={label}
         // 누르는 동안만 흐리게 함, SEED Box 에 투명도 prop 이 없어 style 로 줌
-        style={{ opacity: pending ? 0.6 : 1 }}
+        // 높이는 카카오 이미지 비율이 정하고 구글도 같은 비율을 씀
+        style={{ opacity: pending ? 0.6 : 1, aspectRatio: KAKAO_ASPECT, display: "block" }}
       >
         {providerId === "kakao" ? <KakaoFace /> : <GoogleFace label={label} />}
       </button>
@@ -66,7 +70,14 @@ function KakaoFace() {
       width={600}
       height={90}
       priority
-      style={{ width: "100%", height: `${BUTTON_HEIGHT}px`, objectFit: "contain" }}
+      // 폭을 가득 채우고 높이는 600x90 비율이 정하게 둠
+      // 자르면 로고와 문구가 잘려 카카오 가이드라인에 어긋나므로 비율을 지킴
+      style={{
+        width: "100%",
+        height: "auto",
+        borderRadius: `${BUTTON_RADIUS}px`,
+        display: "block",
+      }}
     />
   );
 }
@@ -83,7 +94,7 @@ function GoogleFace({ label }: { label: string }) {
       style={{
         background: GOOGLE.background,
         border: GOOGLE.border,
-        borderRadius: `${GOOGLE.borderRadius}px`,
+        borderRadius: `${BUTTON_RADIUS}px`,
       }}
     >
       <Image src="/brand/google-logo.png" alt="" width={20} height={20} />
