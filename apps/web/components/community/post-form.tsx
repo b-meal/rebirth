@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Box, HStack, Text, VStack } from "@seed-design/react";
+import { Badge, Box, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import {
@@ -55,15 +55,14 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
   useUnsavedWarning(dirty);
 
   return (
-    <>
+    // 시트 본문은 간격을 주지 않아 여기서 묶음. 안 묶으면 머리 줄이 제목에 붙음
+    <VStack align="stretch" gap="x5">
       {/* 주제와 동네는 한 줄로 둠. 둘 다 이 글이 어디에 걸리는지를 말하는 값
           주제를 바꾸는 일은 앱바의 뒤로가 맡으므로 여기서는 무엇을 고른지만 보여 줌 */}
       <HStack align="center" gap="x2">
-        <Box px="x2" py="x0_5" borderRadius="r1" bg="bg.neutralWeak">
-          <Text textStyle="t1Bold" color="fg.neutralMuted">
-            {category.label}
-          </Text>
-        </Box>
+        <Badge size="large" variant="weak" tone="neutral">
+          {category.label}
+        </Badge>
         {/* 어느 동네에 걸리는지는 알려 주되 고치게 하지는 않음
             동네를 모르면 줄 자체를 비움. 확인 중이라는 말은 곧 사라질 문장이라 자리만 차지함 */}
         {areaName ? (
@@ -78,8 +77,10 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
         <Callout tone="critical" description={state.message ?? errors.areaName} />
       ) : null}
 
+      {/* 칸마다 글자 수가 아래에 붙어 그 높이까지 더해지면 사이가 비어 보임
+          칸과 칸 사이는 좁히고 마지막 버튼만 따로 띄움 */}
       <form action={formAction} onChange={() => setDirty(true)}>
-        <VStack align="stretch" gap="x6">
+        <VStack align="stretch" gap="x3">
           {/* 주제는 앞 화면에서 이미 골랐으므로 값만 싣고 배지로만 보여 줌 */}
           <input type="hidden" name="category" value={category.id} />
 
@@ -113,10 +114,15 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
             </ActionButton>
           ) : null}
 
-          <SubmitButton />
+          {/* 쓰는 일이 끝난 뒤의 동작이라 입력 칸과는 떼어 둠 */}
+          <Box pt="x3">
+            <VStack align="stretch">
+              <SubmitButton />
+            </VStack>
+          </Box>
         </VStack>
       </form>
-    </>
+    </VStack>
   );
 }
 

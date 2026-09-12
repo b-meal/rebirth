@@ -178,14 +178,42 @@ body .seed-bottom-sheet__content.rebirth-sheet--floor {
   min-height: 320px;
 }
 
+/* 주제를 고르면 같은 시트가 그 자리에서 화면 끝까지 자람
+   auto 높이에서는 사이 값이 없어 브라우저가 건너뛰므로 두 단계 모두 숫자로 둠
+   COMMUNITY_CATEGORIES 네 줄이 서는 높이라 주제를 더하면 여기도 함께 올림
+   모자라면 목록이 시트 안에서 스크롤될 뿐 글이 잘리지는 않음 */
+body .seed-bottom-sheet__content.rebirth-sheet--compose {
+  height: 288px;
+}
+
 /* 글을 쓰는 시트는 화면을 다 씀
    키보드가 올라오면 남는 높이가 얼마 없어 반쯤 뜬 시트로는 본문을 볼 수 없음
-   화면 끝까지 올리면 둥근 윗모서리와 손잡이도 뜻을 잃어 함께 지움 */
+   화면 끝까지 올리면 둥근 윗모서리도 뜻을 잃어 함께 폄
+
+   주제를 고르면 같은 시트가 그 자리에서 커짐. SEED 의 열림 애니메이션은
+   transform 만 다뤄 높이가 바뀌는 이 전환은 맡지 않으므로 여기서 함께 움직임
+   여는 곡선과 길이를 그대로 빌려 와 두 움직임이 한 몸처럼 보이게 함 */
+body .seed-bottom-sheet__content.rebirth-sheet--full,
+body .seed-bottom-sheet__content.rebirth-sheet--compose {
+  transition:
+    transform var(--seed-duration-d6) var(--seed-timing-function-enter-expressive),
+    height var(--seed-duration-d6) var(--seed-timing-function-enter-expressive),
+    border-radius var(--seed-duration-d6) var(--seed-timing-function-enter-expressive);
+}
+
 body .seed-bottom-sheet__content.rebirth-sheet--full {
   height: 100dvh;
   max-height: 100dvh;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+
+/* 움직임을 줄이도록 설정한 기기에서는 크기 변화를 끔 */
+@media (prefers-reduced-motion: reduce) {
+  body .seed-bottom-sheet__content.rebirth-sheet--full,
+  body .seed-bottom-sheet__content.rebirth-sheet--compose {
+    transition: none;
+  }
 }
 
 /* 본문이 남는 높이를 먹고 스스로 스크롤해 올리기 버튼이 바닥에 남음 */

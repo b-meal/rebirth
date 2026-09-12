@@ -110,7 +110,7 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
       {/* 동네를 확인하는 동안은 설명을 비워 뒤늦게 글자가 붙지 않게 함
           스니펫이 description 유무로 자리를 정해 여기서 넘길지 말지 가림 */}
       <BottomSheetContent
-        className={picked ? "rebirth-sheet--full" : undefined}
+        className={picked ? "rebirth-sheet--full" : "rebirth-sheet--compose"}
         // 시트 기본 층은 2 라 AppHeader(10) 밑에 깔려 앱바가 시트 머리말을 덮고 탭까지 가로챔
         // 열린 동안은 화면 맨 앞이어야 하므로 앱바 위로 올림
         layerIndex={20}
