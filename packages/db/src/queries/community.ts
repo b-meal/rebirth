@@ -5,13 +5,13 @@ import { and, asc, desc, eq, inArray, isNull, sql as raw } from 'drizzle-orm'
 import type { CommunityCategory } from '@rebirth/types'
 
 import { db } from '../client'
-import { userProfiles } from '../schema/accounts'
 import {
   communityComments,
   communityPostLikes,
   communityPostPhotos,
   communityPosts,
-} from '../schema/community'
+  userProfiles,
+} from '../schema'
 
 // 커뮤니티 글 조회와 기록
 // 작성자 표시는 user_profiles 를 조인해 가져옴. 계정이 지워져도 글은 남아야 하므로 left join
