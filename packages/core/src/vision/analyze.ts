@@ -136,6 +136,11 @@ export function analyzeMockEnabled(): boolean {
   return mockVariant() !== null;
 }
 
+/** 크레딧 없이 실제 모델 응답을 보기 위한 개발 전용 경로. 제출 전에 gemini.ts 와 함께 지움 */
+export function analyzeGeminiEnabled(): boolean {
+  return process.env.ANALYZE_PROVIDER === "gemini";
+}
+
 /** 사진 한 장을 분석해 초안을 돌려줌. 실패는 VisionError 로 던져 호출부가 폴백을 고름 */
 export async function analyzePhoto({
   images,
@@ -164,6 +169,13 @@ export async function analyzePhoto({
       model: MOCK_MODEL,
       analyzedAt: new Date(),
     };
+  }
+
+  if (analyzeGeminiEnabled()) {
+    // ponytail: 무료 티어라 입력이 학습과 사람 검토에 쓰임. 실제 제보 사진을 보내지 않음
+    console.warn("[analyze] ANALYZE_PROVIDER=gemini 라 개발용 Gemini 로 분석합니다");
+    const { analyzeWithGemini } = await import("./gemini");
+    return analyzeWithGemini({ images: used, system: SYSTEM, prompt: PROMPT, timeoutMs });
   }
 
   let response;

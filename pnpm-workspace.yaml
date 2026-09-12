@@ -8,3 +8,6 @@ allowBuilds:
   unrs-resolver: true
   # Storybook 의 Vite 번들러와 drizzle-kit 이 네이티브 바이너리 필요
   esbuild: true
+  # REST 경로만 써서 postinstall 코드 생성이 필요 없음. 개발용 Gemini 분기와 함께 지움
+  '@google/genai': false
+  protobufjs: false
