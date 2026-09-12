@@ -28,6 +28,8 @@ const PUBLIC_PREFIXES = [
   // 지도와 목록 둘러보기
   "/search",
   "/reports",
+  // 계정 화면은 로그인 권유도 겸하므로 열어 두고 안에서 갈라 보여 줌
+  "/mine",
   // 안내와 법적 고지
   "/guide",
   "/privacy",

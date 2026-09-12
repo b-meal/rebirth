@@ -48,7 +48,12 @@ const NAV: NavItem[] = [
     icon: IconPawprintLine,
     activeIcon: IconPawprintFill,
   },
-  { label: "마이페이지", icon: IconPersonLine, activeIcon: IconPersonFill },
+  {
+    label: "마이페이지",
+    href: "/mine",
+    icon: IconPersonLine,
+    activeIcon: IconPersonFill,
+  },
 ];
 
 function isActive(pathname: string, href?: string): boolean {

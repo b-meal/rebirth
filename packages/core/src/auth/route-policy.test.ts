@@ -22,20 +22,22 @@ test("로그인 없이 열리는 경로는 막지 않는다", () => {
     "/reports",
     "/guide/injured",
     "/privacy",
+    // 계정 화면은 로그인 권유를 겸해 비로그인도 열림
+    "/mine",
   ]) {
     assert.equal(isPublicPath(path), true, path);
   }
 });
 
 test("계정이 있어야 뜻이 통하는 화면은 보호한다", () => {
-  for (const path of ["/mine", "/settings", "/notifications"]) {
+  for (const path of ["/settings", "/notifications"]) {
     assert.equal(isPublicPath(path), false, path);
   }
 });
 
 test("루트를 접두사로 다뤄 모든 경로가 열리지 않는다", () => {
   // "/" 가 접두사로 쓰이면 보호 경로까지 통과해 로그인 벽이 통째로 사라짐
-  assert.equal(isPublicPath("/mine"), false);
+  assert.equal(isPublicPath("/settings"), false);
 });
 
 test("다른 출처로 되돌려 보내지 않는다", () => {
