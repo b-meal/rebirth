@@ -107,6 +107,7 @@ SEED 가 제공하지 않고 이 앱에만 필요한 것만 `apps/web/components
 | `bottom-nav.tsx` | SEED 레지스트리에 하단 탭바가 없어 직접 두는 떠 있는 내비게이션 |
 | `screen.tsx` | 화면 루트와 본문 여백, 절 카드를 SEED 토큰으로 한 번만 정의 |
 | `badge.tsx` | 레지스트리에 뱃지가 없어 직접 두는 알약형 표시 |
+| `app-header.tsx` | SEED 앱바가 Stackflow 에 묶여 있어 Next 라우터용으로 두는 헤더 |
 | `error-view.tsx` | 오프라인과 요청 번호를 함께 다루는 오류 화면 |
 | `photo-field.tsx` | 압축 업로드 훅과 SEED ImageFrame 을 잇는 사진 입력 |
 | `photo-picker-input.tsx` | 후면 카메라 즉시 실행에 필요한 네이티브 file 입력 |
@@ -135,6 +136,8 @@ SEED 가 제공하지 않고 이 앱에만 필요한 것만 `apps/web/components
 | 지도 위 원형 버튼 | `ContextualFloatingButton` 의 `variant="layer"` `layout="iconOnly"` |
 | 뱃지 | `TagGroup` 은 점으로 잇는 글자라 면이 없어 `components/ui/badge.tsx` 로 둠 |
 | 관심 하트 | `ReactionButton` 의 `pressed` `onPressedChange` 를 그대로 씀 |
+| 화면 헤더 | 레지스트리 `ui:app-screen` 이 Stackflow 의존이라 `components/ui/app-header.tsx` 로 둠 |
+| 제공자 로그인 버튼 | 카카오·구글 가이드라인 고정색이라 `design-system-allow:color` 로 표시함 |
 | 브랜드색 교체 | 역할 토큰이 아니라 `globals.css` 에서 carrot 팔레트 단계를 덮음 |
 | deprecated 항목 사용 | `/react/llms.txt` 에서 현재 항목 확인 |
 

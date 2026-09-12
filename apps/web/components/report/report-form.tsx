@@ -18,6 +18,7 @@ import { usePhotoPicker } from "@/hooks/use-photo-picker";
 import { usePhotoUpload } from "@/hooks/use-photo-upload";
 import { useReportDraft, type ReportDraft, type ReportStep } from "@/hooks/use-report-draft";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { AppHeader } from "@/components/ui/app-header";
 import { ReportDraftCard } from "./report-draft-card";
 import { ReportFeatureForm } from "./report-feature-form";
 import { ReportLocation, type LocationValue } from "./report-location";
@@ -254,6 +255,7 @@ export function ReportForm() {
 
   return (
     <Screen>
+      <AppHeader title="제보하기" />
       {step === 1 ? (
         <ReportCapture
           picker={picker}

@@ -14,6 +14,7 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { Screen, ScreenBody, SectionCard } from "@/components/ui/screen";
+import { AppHeader } from "@/components/ui/app-header";
 
 // 저장이 끝난 뒤 공유만 다루는 화면. 뒤로가기로 폼에 돌아가지 않게 replace 로 들어옴
 
@@ -109,6 +110,7 @@ export function ReportDone({ id, areaName, shareUrl }: ReportDoneProps) {
 
   return (
     <Screen>
+      <AppHeader title="제보 완료" home />
       <ScreenBody gap="x6" justify="center">
         <VStack align="center" gap="x3">
           <Icon svg={<IconCheckmarkCircleFill />} size="x12" color="fg.brand" />

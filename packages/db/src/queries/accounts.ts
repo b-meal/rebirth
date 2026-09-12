@@ -1,9 +1,9 @@
 import 'server-only'
 
-import { eq, isNull, and } from 'drizzle-orm'
+import { eq, isNull, and, desc } from 'drizzle-orm'
 
 import { db } from '../client'
-import { userProfiles, type UserProfile } from '../schema/accounts'
+import { pets, userProfiles, type UserProfile } from '../schema/accounts'
 import type { AuthProvider } from '@rebirth/types'
 
 // 로그인 계정 조회와 기록. 신원 확인은 Supabase Auth 가 이미 끝낸 뒤에 호출됨
@@ -64,4 +64,43 @@ export async function markUserProfileDeleted(id: string): Promise<void> {
     .update(userProfiles)
     .set({ deletedAt: new Date() })
     .where(eq(userProfiles.id, id))
+}
+
+/* 반려동물 기록 */
+
+/** 내가 등록한 동물. 최근에 넣은 것이 앞에 옴 */
+export function listPets(ownerId: string, limit = 20) {
+  return db
+    .select()
+    .from(pets)
+    .where(eq(pets.ownerId, ownerId))
+    .orderBy(desc(pets.createdAt))
+    .limit(limit)
+}
+
+export async function insertPet(input: typeof pets.$inferInsert) {
+  const [row] = await db.insert(pets).values(input).returning({ id: pets.id })
+  return row
+}
+
+/** 소유자가 맞을 때만 지움. 남의 기록을 지우는 요청은 0건으로 끝남 */
+export async function deletePet(input: { id: string; ownerId: string }) {
+  const removed = await db
+    .delete(pets)
+    .where(and(eq(pets.id, input.id), eq(pets.ownerId, input.ownerId)))
+    .returning({ id: pets.id, photoPath: pets.photoPath })
+  return removed[0]
+}
+
+/** 프로필에서 사용자가 직접 고칠 수 있는 값만 받음 */
+export async function updateUserProfile(input: {
+  id: string
+  displayName: string | null
+}): Promise<UserProfile | undefined> {
+  const [row] = await db
+    .update(userProfiles)
+    .set({ displayName: input.displayName })
+    .where(eq(userProfiles.id, input.id))
+    .returning()
+  return row
 }

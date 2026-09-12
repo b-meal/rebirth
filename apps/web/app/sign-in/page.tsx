@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Text, VStack } from "@seed-design/react";
 import { Callout } from "seed-design/ui/callout";
 
 import { AUTH_PROVIDERS, NEXT_PARAM, safeNextPath } from "@rebirth/core/auth";
 
+import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody } from "@/components/ui/screen";
 import { isAuthConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -42,8 +44,10 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
 
   return (
     <Screen>
+      <AppHeader title="로그인" />
       <ScreenBody justify="center" gap="x8">
-        <VStack align="stretch" gap="x2">
+        <VStack align="center" gap="x3">
+          <Image src="/logo/logo-mark-512.png" alt="" width={72} height={72} priority />
           <Text as="h1" textStyle="screenTitle" color="fg.neutral" align="center">
             다시집
           </Text>

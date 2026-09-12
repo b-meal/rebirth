@@ -13,6 +13,7 @@ import { ResultSection } from "seed-design/ui/result-section";
 
 import { CARE_LABEL, describeAnimal } from "@/lib/report-label";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { AppHeader } from "@/components/ui/app-header";
 
 // WEB-08 최근 제보를 조건으로 좁혀 훑되 품종 필터와 거리 정렬은 두지 않음
 
@@ -132,6 +133,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
 
   return (
     <Screen>
+      <AppHeader title="최근 발견 제보" />
       <ScreenBody gap="x5">
         <Text as="h1" textStyle="t8Bold" color="fg.neutral">
           최근 발견 제보

@@ -2,6 +2,7 @@ import { Divider, Text, VStack } from "@seed-design/react";
 import { Callout } from "seed-design/ui/callout";
 
 import { Screen, ScreenBody } from "@/components/ui/screen";
+import { AppHeader } from "@/components/ui/app-header";
 
 // 화면이 문구를 만들지 않고 발행된 원문만 렌더해 허위 고지를 막는 자리
 
@@ -31,6 +32,7 @@ export function LegalDocument({
 
   return (
     <Screen>
+      <AppHeader title={title} />
       <ScreenBody gap="x5">
         <VStack align="stretch" gap="x1">
           <Text as="h1" textStyle="t8Bold" color="fg.neutral">
@@ -61,6 +63,7 @@ export function LegalDocument({
 export function LegalNotPublished({ label }: { label: string }) {
   return (
     <Screen>
+      <AppHeader title={label} />
       <ScreenBody pt="x12" gap="x4">
         <Text as="h1" textStyle="t8Bold" color="fg.neutral">
           {label}는 아직 발행 전입니다

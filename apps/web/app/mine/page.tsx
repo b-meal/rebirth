@@ -1,87 +1,110 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { HStack, Text, VStack } from "@seed-design/react";
-import { ActionButton } from "seed-design/ui/action-button";
-import { Avatar } from "seed-design/ui/avatar";
 
-import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
+import { createSignedThumbUrls } from "@rebirth/core/storage";
+import { listInterestedReports, listPets, listReportsByReporter } from "@rebirth/db";
 
-import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { sinceLabel } from "@/lib/report-label";
 import { getCurrentUser } from "@/lib/auth/session";
+import { isAuthConfigured } from "@/lib/supabase/config";
+import { MineScreen, type PetCard } from "@/components/mine/mine-screen";
+import type { ReportCardItem } from "@/components/report/report-card";
 import { SignOutButton } from "./sign-out-button";
+import { removePet } from "./actions";
 
-// 계정 화면. 로그인 여부에 따라 권유와 프로필을 갈라 보여 줌
-// 제보는 로그인 없이도 되므로 여기서만 계정을 요구함
+// 계정 화면, 로그인 여부에 따라 권유와 활동 내역을 갈라 보여 줌
 
 export const metadata: Metadata = { title: "마이페이지" };
+
+// 방금 남긴 제보와 관심이 바로 보여야 해 캐시하지 않음
+export const dynamic = "force-dynamic";
+
+type Row = {
+  id: string;
+  animalType: ReportCardItem["animalType"];
+  colors: string[];
+  size: string;
+  careSituation: string;
+  injury: boolean | null;
+  areaName: string | null;
+  occurredAt: Date;
+  photoPath: string | null;
+};
+
+/** 카드에 쓸 사진만 서명해 붙임, 경로는 화면으로 내보내지 않음 */
+async function toCards(rows: Row[]): Promise<ReportCardItem[]> {
+  const paths = rows.flatMap((row) => (row.photoPath ? [row.photoPath] : []));
+  const signed = await createSignedThumbUrls(paths).catch(() => new Map<string, string>());
+
+  return rows.map((row) => ({
+    id: row.id,
+    animalType: row.animalType,
+    colors: row.colors,
+    size: row.size,
+    careSituation: row.careSituation,
+    injury: row.injury,
+    areaName: row.areaName,
+    sinceLabel: sinceLabel(row.occurredAt),
+    photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
+  }));
+}
+
+/** 등록한 동물 카드. 사진 경로는 서명해 붙이고 화면으로 내보내지 않음 */
+async function toPetCards(
+  rows: {
+    id: string;
+    name: string;
+    animalType: string;
+    breedGuess: string | null;
+    size: string;
+    colors: string[];
+    note: string | null;
+    photoPath: string | null;
+  }[],
+): Promise<PetCard[]> {
+  const paths = rows.flatMap((row) => (row.photoPath ? [row.photoPath] : []));
+  const signed = await createSignedThumbUrls(paths).catch(() => new Map<string, string>());
+
+  return rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    animalType: row.animalType,
+    breedGuess: row.breedGuess,
+    size: row.size,
+    colors: row.colors,
+    note: row.note,
+    photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
+  }));
+}
 
 export default async function MinePage() {
   const user = await getCurrentUser();
 
-  return (
-    <Screen>
-      <ScreenBody gap="x6">
-        <Text as="h1" textStyle="screenTitle" color="fg.neutral">
-          마이페이지
-        </Text>
+  const [myReports, interested, pets] = user
+    ? await Promise.all([
+        listReportsByReporter(user.id).then(toCards).catch(() => []),
+        listInterestedReports(user.id).then(toCards).catch(() => []),
+        listPets(user.id).then(toPetCards).catch((): PetCard[] => []),
+      ])
+    : [[], [], []];
 
-        {user ? <Profile user={user} /> : <SignInInvite />}
-      </ScreenBody>
-    </Screen>
+  return (
+    <MineScreen
+      user={
+        user
+          ? {
+              displayName: user.displayName,
+              avatarUrl: user.avatarUrl,
+              provider: user.provider,
+              createdAt: user.createdAt,
+            }
+          : null
+      }
+      myReports={myReports}
+      interested={interested}
+      pets={pets}
+      authReady={isAuthConfigured()}
+      signOut={<SignOutButton />}
+      removePet={removePet}
+    />
   );
 }
-
-/** 로그인한 사람에게 보이는 프로필과 로그아웃 */
-function Profile({ user }: { user: NonNullable<Awaited<ReturnType<typeof getCurrentUser>>> }) {
-  return (
-    <>
-      <HStack align="center" gap="x4">
-        <Avatar
-          size="64"
-          src={user.avatarUrl ?? undefined}
-          fallback={user.displayName?.slice(0, 1) ?? "손"}
-          alt=""
-        />
-        <VStack align="stretch" gap="x0_5" minWidth="0">
-          <Text textStyle="t6Bold" color="fg.neutral">
-            {user.displayName ?? "이름 없음"}
-          </Text>
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {PROVIDER_LABEL[user.provider]}로 로그인했습니다
-          </Text>
-        </VStack>
-      </HStack>
-
-      <Section>
-        <SignOutButton />
-      </Section>
-    </>
-  );
-}
-
-/** 로그인하지 않은 사람에게 보이는 권유. 제보를 막지 않았음을 함께 알림 */
-function SignInInvite() {
-  return (
-    <Section gap="x4">
-      <VStack align="stretch" gap="x2">
-        <Text textStyle="t5Bold" color="fg.neutral">
-          로그인하면 남긴 제보를 모아 볼 수 있습니다
-        </Text>
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          로그인하지 않아도 제보는 그대로 보낼 수 있습니다
-        </Text>
-      </VStack>
-
-      <HStack align="stretch">
-        <ActionButton variant="brandSolid" size="large" flexGrow={1} asChild>
-          <Link href={`${SIGN_IN_PATH}?${NEXT_PARAM}=%2Fmine`}>로그인</Link>
-        </ActionButton>
-      </HStack>
-    </Section>
-  );
-}
-
-const PROVIDER_LABEL = {
-  kakao: "카카오",
-  google: "구글",
-} as const;
