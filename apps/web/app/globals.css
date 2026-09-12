@@ -267,8 +267,10 @@ body .seed-snackbar-region {
   translate: -50%;
   width: 100%;
   max-width: 390px;
-  /* 화면 아래 버튼 띠 위에 뜸. 띠 높이에 한 칸을 더해 맞붙지 않게 함 */
-  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--seed-dimension-x16) + var(--seed-dimension-x3));
+  /* 아래 버튼 띠 위로 얼마나 올릴지는 SnackbarAvoidOverlap 이 띠를 재서 정함
+     bottom 을 박으면 그 계산을 덮어 버려 버튼이 늘어나도 그대로 겹침
+     맞붙지 않게 하는 한 칸만 얹음. 이 값은 offset 과 따로 더해짐 */
+  padding-block: var(--seed-dimension-x3);
 }
 
 /* 날짜 칸은 어디를 눌러도 달력이 열려 칸 전체가 누르는 자리임을 알림

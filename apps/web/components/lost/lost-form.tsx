@@ -14,7 +14,7 @@ import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
-import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
+import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/text-field";
 
 import { useCurrentPosition } from "@/hooks/use-current-position";
@@ -646,27 +646,30 @@ export function LostForm() {
       </ScreenBody>
 
       {/* 다음으로 가는 자리는 늘 화면 아래 같은 곳에 있음
-          스크롤해 찾지 않아도 되고 무엇이 모자란지도 여기서 알려 줌 */}
-      <VStack
-        align="stretch"
-        gap="x2"
-        position="sticky"
-        bottom="0"
-        px="spacingX.globalGutter"
-        pt="x3"
-        bg="bg.layerDefault"
-        className="rebirth-bottom-bar"
-      >
-        <ActionButton
-          variant="brandSolid"
-          size="large"
-          loading={submitting}
-          disabled={!ready}
-          onClick={urlStep === LAST_STEP ? submit : () => goTo((urlStep + 1) as LostStep)}
+          스크롤해 찾지 않아도 되고 무엇이 모자란지도 여기서 알려 줌
+          같은 사진 알림이 이 띠를 덮지 않도록 띠 높이를 재게 함 */}
+      <SnackbarAvoidOverlap>
+        <VStack
+          align="stretch"
+          gap="x2"
+          position="sticky"
+          bottom="0"
+          px="spacingX.globalGutter"
+          pt="x3"
+          bg="bg.layerDefault"
+          className="rebirth-bottom-bar"
         >
-          {urlStep === LAST_STEP ? "신고 등록하기" : "다음"}
-        </ActionButton>
-      </VStack>
+          <ActionButton
+            variant="brandSolid"
+            size="large"
+            loading={submitting}
+            disabled={!ready}
+            onClick={urlStep === LAST_STEP ? submit : () => goTo((urlStep + 1) as LostStep)}
+          >
+            {urlStep === LAST_STEP ? "신고 등록하기" : "다음"}
+          </ActionButton>
+        </VStack>
+      </SnackbarAvoidOverlap>
     </Screen>
   );
 }
