@@ -11,6 +11,14 @@ export {
 } from "./identity";
 
 export {
+  IDLE_LIMIT_DAYS,
+  LAST_SEEN_COOKIE,
+  LAST_SEEN_MAX_AGE_SECONDS,
+  isIdleExpired,
+  shouldRefreshSeenAt,
+} from "./idle-session";
+
+export {
   AUTH_CALLBACK_PATH,
   HOME_PATH,
   NEXT_PARAM,

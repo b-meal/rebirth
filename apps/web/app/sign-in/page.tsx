@@ -22,7 +22,11 @@ const ERROR_MESSAGES: Record<string, string> = {
   exchange_failed: "로그인을 마치지 못했습니다. 다시 시도해 주십시오",
   start_failed: "로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주십시오",
   unsupported_provider: "지원하지 않는 로그인 방식입니다",
+  idle_expired: "오래 쓰지 않아 로그아웃했습니다. 다시 로그인해 주십시오",
 };
+
+/** 사용자가 잘못한 것도 고장도 아닌 안내. 빨간 톤으로 겁주지 않음 */
+const INFORMATIVE_CODES = new Set(["canceled", "idle_expired"]);
 
 export default async function SignInPage({ searchParams }: PageProps<"/sign-in">) {
   const params = await searchParams;
@@ -50,7 +54,8 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
 
         {error ? (
           <Callout
-            tone="critical"
+            // 만료와 취소는 고장이 아니라 안내라 경고 톤을 씀
+            tone={INFORMATIVE_CODES.has(error) ? "warning" : "critical"}
             description={ERROR_MESSAGES[error] ?? "로그인에 실패했습니다. 다시 시도해 주십시오"}
           />
         ) : null}
