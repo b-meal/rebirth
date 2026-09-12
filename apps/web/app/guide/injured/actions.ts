@@ -41,6 +41,6 @@ export async function requestRescue(
     return { reference: row.reference };
   } catch {
     // 원인을 그대로 내보내지 않음. 급한 사람에게는 전화가 더 빠름
-    return { message: "접수하지 못했습니다. 아래 번호로 전화해 주세요" };
+    return { message: "접수하지 못했어요. 급하시면 아래 번호로 전화해 주세요" };
   }
 }

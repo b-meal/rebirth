@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { HStack, Icon, Text, VStack } from "@seed-design/react";
+import { Icon, Text, VStack } from "@seed-design/react";
 import { IconPersonFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
@@ -9,7 +9,7 @@ import { Callout } from "seed-design/ui/callout";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import { AppHeader } from "@/components/ui/app-header";
-import { Screen, SectionCard } from "@/components/ui/screen";
+import { Screen } from "@/components/ui/screen";
 import { saveProfile, type ActionState } from "@/app/mine/actions";
 
 // 프로필 수정. 사진은 제공자에서 온 값이라 여기서 바꾸지 않음
@@ -27,25 +27,26 @@ export function ProfileForm({ displayName, avatarUrl, provider }: ProfileFormPro
   const [state, action, pending] = useActionState<ActionState, FormData>(saveProfile, {});
 
   return (
-    <Screen bg="bg.layerBasement">
+    <Screen>
       <AppHeader title="프로필 수정" />
 
-      <VStack align="stretch" gap="x2" pb="x10">
-        <SectionCard gap="x4">
-          <VStack align="center" gap="x2">
-            <Avatar
-              size="80"
-              src={avatarUrl ?? undefined}
-              alt=""
-              fallback={<Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />}
-            />
-            <Text textStyle="t3Regular" color="fg.neutralMuted">
-              사진은 {PROVIDER_LABEL[provider] ?? "SNS"} 계정에서 가져와요
-            </Text>
-          </VStack>
+      {/* design-system-allow:raw-element form 은 SEED 에 대응 컴포넌트가 없는 표준 요소 */}
+      {/* 저장 버튼이 화면 아래에 붙어 있어야 해 form 이 화면 전체를 감쌈 */}
+      <VStack asChild align="stretch" grow={1} minHeight="0">
+        <form action={action}>
+          <VStack align="stretch" grow={1} px="spacingX.globalGutter" pt="x6" gap="x8">
+            <VStack align="center" gap="x3">
+              <Avatar
+                size="80"
+                src={avatarUrl ?? undefined}
+                alt=""
+                fallback={<Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />}
+              />
+              <Text textStyle="t3Regular" color="fg.neutralMuted">
+                사진은 {PROVIDER_LABEL[provider] ?? "SNS"} 계정에서 가져와요
+              </Text>
+            </VStack>
 
-          {/* design-system-allow:raw-element form 은 SEED 에 대응 컴포넌트가 없는 표준 요소 */}
-          <form action={action}>
             <VStack align="stretch" gap="x4">
               <TextField
                 label="이름"
@@ -60,23 +61,31 @@ export function ProfileForm({ displayName, avatarUrl, provider }: ProfileFormPro
 
               {state.error ? <Callout tone="critical" description={state.error} /> : null}
               {state.ok ? <Callout tone="positive" description="저장했어요" /> : null}
-
-              {/* 돌아가기는 헤더의 뒤로 가기와 같은 일을 해 두지 않음 */}
-              <HStack align="stretch">
-                <ActionButton
-                  type="submit"
-                  variant="brandSolid"
-                  size="large"
-                  flexGrow={1}
-                  loading={pending}
-                  disabled={pending}
-                >
-                  저장하기
-                </ActionButton>
-              </HStack>
             </VStack>
-          </form>
-        </SectionCard>
+          </VStack>
+
+          {/* 돌아가기는 헤더의 뒤로 가기와 같은 일을 해 두지 않음 */}
+          <VStack
+            position="sticky"
+            bottom="0"
+            zIndex={1}
+            align="stretch"
+            px="spacingX.globalGutter"
+            pt="x3"
+            pb="x5"
+            bg="bg.layerDefault"
+          >
+            <ActionButton
+              type="submit"
+              variant="brandSolid"
+              size="large"
+              loading={pending}
+              disabled={pending}
+            >
+              저장하기
+            </ActionButton>
+          </VStack>
+        </form>
       </VStack>
     </Screen>
   );

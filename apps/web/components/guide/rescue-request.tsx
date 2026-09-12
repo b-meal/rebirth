@@ -42,10 +42,10 @@ function Done({ reference }: { reference: string }) {
           <Icon svg={<IconCheckmarkCircleFill />} size="x12" color="fg.positive" />
           <VStack align="center" gap="x2">
             <Text textStyle="t8Bold" color="fg.neutral" align="center">
-              접수했습니다
+              접수했어요
             </Text>
             <Text textStyle="t4Regular" color="fg.neutralMuted" align="center">
-              확인 후 관할 기관에 전달합니다
+              확인하는 대로 관할 기관에 전달할게요
             </Text>
           </VStack>
           <Text textStyle="t3Regular" color="fg.neutralSubtle" userSelect="text">
@@ -86,12 +86,15 @@ export function RescueRequest() {
             다친 동물을 보셨나요
           </Text>
           <Text textStyle="t4Regular" color="fg.neutralMuted">
-            세 가지만 알려 주시면 저희가 기관에 전달합니다
+            세 가지만 알려 주시면 기관에 대신 전달해 드릴게요
           </Text>
         </VStack>
 
         {/* 물림 사고를 막는 한 줄. 이것만은 폼 위에 둠 */}
-        <Callout tone="warning" description="직접 만지지 마세요. 놀란 동물은 사람을 뭅니다" />
+        <Callout
+          tone="warning"
+          description="많이 놀란 상태일 수 있어요. 만지지 말고 조금 떨어져서 지켜봐 주세요"
+        />
 
         {state.message ? <Callout tone="critical" description={state.message} /> : null}
 
@@ -115,7 +118,7 @@ export function RescueRequest() {
 
             <TextField
               label="어떤 상태인가요"
-              description="모르시면 비워 두셔도 됩니다"
+              description="잘 모르겠다면 비워 두셔도 괜찮아요"
               errorMessage={errors.condition}
               invalid={Boolean(errors.condition)}
             >
