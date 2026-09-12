@@ -6,7 +6,8 @@ import type { NextConfig } from "next";
 // 다른 프로젝트 키가 셸에 남아 있어도 저장소 파일이 이기게 직접 읽어 덮음
 try {
   const file = readFileSync("../../.env.local", "utf8");
-  for (const line of file.split("\n")) {
+  // 편집기에 따라 CRLF 로 저장되므로 \r 을 함께 끊어야 값 끝에 남지 않음
+  for (const line of file.split(/\r?\n/)) {
     const match = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);
     if (match) process.env[match[1]] = match[2].trim().replace(/^["'](.*)["']$/, "$1");
   }
