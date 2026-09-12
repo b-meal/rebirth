@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { HStack, Icon, Text, VStack } from "@seed-design/react";
-import { IconChevronLeftLine } from "@karrotmarket/react-monochrome-icon";
+import { HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 import { ResultSection } from "seed-design/ui/result-section";
 import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
@@ -140,27 +139,31 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
     <>
       {/* 앱바 바로 아래에 장수 한 줄만 있어 기본 여백은 넓게 뜸 */}
       <ScreenBody gap="x4" pt="x2">
-        {/* 몇 번째인지와 앞 장으로 되돌아가는 일은 같은 묶음
-            아래 판정 버튼 옆에 두면 맞다 아니다 와 나란한 선택지로 읽힘
-            되돌아가기는 곁다리라 면을 칠하지 않음. 칠하면 판정 버튼과 세기를 다툼
-            첫 장에서는 자리만 비워 둠. 못 누르는 버튼이 떠 있으면 왜인지 묻게 됨 */}
-        <HStack justify="space-between" align="center" minHeight="x7">
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {index + 1} / {ordered.length}
-          </Text>
-          {index > 0 ? (
-            <ActionButton variant="ghost" size="xsmall" onClick={previous}>
-              <Icon svg={<IconChevronLeftLine />} />
-              이전 후보
-            </ActionButton>
-          ) : null}
-        </HStack>
+        {/* 장수 줄은 사진에 딸린 머리글이라 한 묶음으로 붙여 둠
+            바깥 간격을 그대로 두면 다음 덩어리만큼 떨어져 어디에 붙는 줄인지 흐려짐 */}
+        <VStack align="stretch" gap="x2">
+          {/* 몇 번째인지와 앞 장으로 되돌아가는 일은 같은 묶음
+              아래 판정 버튼 옆에 두면 맞다 아니다 와 나란한 선택지로 읽힘
+              되돌아가기는 곁다리라 면을 칠하지 않음. 칠하면 판정 버튼과 세기를 다툼
+              첫 장에서는 자리만 비워 둠. 못 누르는 버튼이 떠 있으면 왜인지 묻게 됨
+              높이는 그 버튼과 같게 두어 첫 장에서도 사진이 같은 자리에 옴 */}
+          <HStack justify="space-between" align="center" minHeight="x6">
+            <Text textStyle="t3Regular" color="fg.neutralMuted">
+              {index + 1} / {ordered.length}
+            </Text>
+            {index > 0 ? (
+              <ActionButton variant="ghost" size="xsmall" onClick={previous}>
+                이전 후보
+              </ActionButton>
+            ) : null}
+          </HStack>
 
-        <CandidatePhoto
-          reportId={current.id}
-          // 다음 두 장을 미리 받아 넘길 때 지연이 없게 함
-          prefetchIds={ordered.slice(index + 1, index + 3).map((c) => c.id)}
-        />
+          <CandidatePhoto
+            reportId={current.id}
+            // 다음 두 장을 미리 받아 넘길 때 지연이 없게 함
+            prefetchIds={ordered.slice(index + 1, index + 3).map((c) => c.id)}
+          />
+        </VStack>
 
         {/* 어디서 언제 봤는지가 가장 먼저 판단에 쓰임. 사진 다음 자리를 줌
             점수는 그 뒤에 옴. 숫자부터 크게 두면 그 값으로 결론이 난 것처럼 읽힘 */}
