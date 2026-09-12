@@ -36,7 +36,6 @@ import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import {
   ANIMAL_LABEL,
-  CARE_LABEL,
   SIZE_LABEL,
   breedLabel,
   describeAnimal,
@@ -44,6 +43,7 @@ import {
 } from "@/lib/report-label";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { Badge } from "@/components/ui/badge";
+import { ReportBadges } from "@/components/report/report-badges";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
 import {
   CommentComposer,
@@ -286,16 +286,13 @@ export function ReportDetail({
 
       <VStack align="stretch" gap="x2" pb="x4">
         <SectionCard gap="x3">
-          <HStack gap="x1_5" wrap>
-            <Badge label={ANIMAL_LABEL[report.animalType] ?? "확인 어려움"} tone="neutral" />
-            {breed ? <Badge label={breed} tone="neutral" /> : null}
-            {size ? <Badge label={size} tone="neutral" /> : null}
-            <Badge
-              label={CARE_LABEL[report.careSituation] ?? "확인 중"}
-              tone={report.careSituation === "in_care" ? "informative" : "brand"}
-            />
-            {report.injury === true ? <Badge label="다친 것으로 보임" tone="critical" /> : null}
-          </HStack>
+          <ReportBadges
+            animalType={report.animalType}
+            breedGuess={report.breedGuess}
+            size={report.size}
+            careSituation={report.careSituation}
+            injury={report.injury}
+          />
 
           <VStack align="stretch" gap="x1">
             <Text as="h1" textStyle="t8Bold" color="fg.neutral">

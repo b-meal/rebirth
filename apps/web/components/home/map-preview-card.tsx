@@ -2,27 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import {
-  AspectRatio,
-  Box,
-  HStack,
-  Icon,
-  ImageFrame,
-  Skeleton,
-  Text,
-  VStack,
-} from "@seed-design/react";
+import { AspectRatio, Box, Icon, ImageFrame, Skeleton, Text, VStack } from "@seed-design/react";
 import { IconXmarkLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 
-import {
-  ANIMAL_LABEL,
-  CARE_LABEL,
-  SIZE_LABEL,
-  breedLabel,
-  describeAnimal,
-} from "@/lib/report-label";
-import { Badge } from "@/components/ui/badge";
+import { CARE_LABEL, describeAnimal } from "@/lib/report-label";
+import { ReportBadges } from "@/components/report/report-badges";
 import type { MapMarker } from "@/components/home/home-screen";
 
 // 핀에서 펼쳐지는 말풍선, 상세로 넘기기 전에 상세와 같은 공개 API 로 요약만 보여 줌
@@ -72,9 +57,6 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
     };
   }, [item.id]);
 
-  const breed = breedLabel(detail?.breedGuess ?? null);
-  const size = SIZE_LABEL[item.size];
-
   return (
     <VStack
       align="stretch"
@@ -104,12 +86,13 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
       </Box>
 
       <VStack align="stretch" gap="x1_5" p="x3">
-        <HStack gap="x1" wrap>
-          <Badge label={ANIMAL_LABEL[item.animalType] ?? "확인 어려움"} tone="neutral" />
-          {breed ? <Badge label={breed} tone="neutral" /> : null}
-          {size ? <Badge label={size} tone="neutral" /> : null}
-          {item.injury === true ? <Badge label="다친 것으로 보임" tone="critical" /> : null}
-        </HStack>
+        <ReportBadges
+          animalType={item.animalType}
+          breedGuess={detail?.breedGuess ?? null}
+          size={item.size}
+          careSituation={item.careSituation}
+          injury={item.injury}
+        />
 
         <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
           {describeAnimal(item)}
