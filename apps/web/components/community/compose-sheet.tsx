@@ -29,7 +29,15 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
 
   return (
     <BottomSheetRoot open={open} onOpenChange={onOpenChange}>
-      <BottomSheetContent title="주제 선택" showHandle>
+      {/* 핸들과 바깥 탭과 Esc 로 닫혀 X 까지 두면 닫는 길이 넷이라 뺌 */}
+      {/* 동네로 거르는 조회가 아직 없어 특정 동을 말하면 사실과 달라짐 */}
+      {/* 저장된 내 동네도 없어 글쓰기 폼에서 직접 받는 값이 전부임 */}
+      <BottomSheetContent
+        title="주제 선택"
+        description="이웃들에게 공개되는 글이에요"
+        showHandle
+        showCloseButton={false}
+      >
         <BottomSheetBody>
           {/* 주제는 이름만으로 충분함. 설명을 붙이면 시트가 화면 절반을 먹음 */}
           <VStack align="stretch">

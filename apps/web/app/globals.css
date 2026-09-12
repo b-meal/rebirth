@@ -172,6 +172,19 @@ body .seed-dialog__content {
   max-width: 390px;
 }
 
+/* 시트 본문은 좌우 여백만 있고 아래가 없어 마지막 줄이 바닥에 닿음
+   아이폰 홈 인디케이터가 화면 위에 떠 있어 안전 영역만큼 더 띄움
+   닫기 버튼이 absolute 라도 DOM 에는 남아 last-child 로는 못 고름
+   footer 가 있으면 그쪽이 아래를 맡으므로 본문 여백은 걷어 냄 */
+body .seed-bottom-sheet__body,
+body .seed-bottom-sheet__footer {
+  padding-bottom: calc(var(--seed-dimension-x4) + env(safe-area-inset-bottom, 0px));
+}
+
+body .seed-bottom-sheet__body:has(~ .seed-bottom-sheet__footer) {
+  padding-bottom: 0;
+}
+
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
 .rebirth-scroll-row {
   overflow-x: auto;
