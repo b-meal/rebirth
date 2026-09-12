@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Box, HStack, Icon, Text, VStack } from "@seed-design/react";
+import { Box, HStack, Text, VStack } from "@seed-design/react";
 import { IconPencilLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
+import { FloatingActionButton } from "seed-design/ui/floating-action-button";
 import { ResultSection } from "seed-design/ui/result-section";
 
 import { COMMUNITY_CATEGORIES } from "@rebirth/core/community";
@@ -84,19 +84,12 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
   const rows = [...items, ...extra];
 
   return (
-    <Screen>
+    // 떠 있는 버튼이 화면 밖이 아니라 이 프레임 기준으로 붙게 함
+    <Screen position="relative">
       <ScreenBody gap="x5">
-        <HStack justify="space-between" align="center">
-          <Text as="h1" textStyle="t8Bold" color="fg.neutral">
-            커뮤니티
-          </Text>
-          <ActionButton asChild variant="neutralSolid" size="small">
-            <Link href="/community/new">
-              <Icon svg={<IconPencilLine />} size="x4" />
-              글쓰기
-            </Link>
-          </ActionButton>
-        </HStack>
+        <Text as="h1" textStyle="t8Bold" color="fg.neutral">
+          커뮤니티
+        </Text>
 
         <Text textStyle="t3Regular" color="fg.neutralMuted">
           제보로 올리기엔 확실하지 않은 이야기도 이웃과 나눠 주십시오
@@ -153,9 +146,27 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
           </Text>
         ) : null}
 
-        {/* 하단 탭이 가리지 않도록 여백을 둠 */}
+        {/* 떠 있는 글쓰기 버튼이 마지막 글을 가리지 않도록 여백을 둠 */}
         <Box height="x16" />
       </ScreenBody>
+
+      {/* 홈의 제보하기와 같은 자리. 읽다가 쓰고 싶어진 순간에 손이 닿는 곳에 둠 */}
+      {/* 스크롤해도 남아야 하고 프레임 밖으로 나가면 안 돼 화면 끝에 붙여 둠 */}
+      {/* bottom 은 토큰 이름을 받지 않아 0 으로 붙이고 띄우는 높이는 안쪽 여백으로 줌 */}
+      <HStack
+        position="sticky"
+        bottom="0"
+        justify="flex-end"
+        px="spacingX.globalGutter"
+        pb="x5"
+        zIndex={2}
+      >
+        <FloatingActionButton
+          icon={<IconPencilLine />}
+          label="글쓰기"
+          onClick={() => router.push("/community/new")}
+        />
+      </HStack>
     </Screen>
   );
 }
