@@ -32,24 +32,11 @@ export type Candidate = {
   occurredAt: string;
 };
 
-const WEIGHTS = { distance: 35, time: 25, color: 20, size: 10, features: 10 } as const;
-
-const BREAKDOWN_LABEL = {
-  distance: "거리",
-  time: "시간",
-  color: "털색",
-  size: "크기",
-  features: "특징",
-} as const;
-
 const CARE_LABEL: Record<Candidate["careSituation"], string> = {
   roaming: "배회 중",
   in_care: "제보자 보호 중",
   unknown: "확인 중",
 };
-
-// 유사도임을 점수 옆에 항상 붙임, 숫자만 보이면 확정으로 읽힘
-const SIMILARITY_NOTE = "유사도이며 동일 개체 확정이 아닙니다";
 
 function formatAbsolute(value: string): string {
   const date = new Date(value);
@@ -109,8 +96,8 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
     return (
       <ResultSection
         size="medium"
-        title="아직 후보가 없습니다"
-        description="같은 지역에 목격 제보가 올라오면 이 화면에 후보로 나옵니다. 조회 주소를 저장해 두고 다시 확인해 주십시오"
+        title="아직 후보가 없어요"
+        description="가까운 곳에 목격 제보가 올라오면 여기에 나와요"
       />
     );
   }
@@ -119,8 +106,7 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
     return (
       <ResultSection
         size="medium"
-        title="후보를 모두 봤습니다"
-        description={`${SIMILARITY_NOTE}. 다시 보고 싶으면 처음부터 훑을 수 있습니다`}
+        title="후보를 모두 봤어요"
         primaryActionProps={{
           children: "처음부터 다시 보기",
           onClick: () => setIndex(0),
@@ -148,56 +134,44 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
         prefetchIds={ordered.slice(index + 1, index + 3).map((c) => c.id)}
       />
 
+      {/* 점수는 왜 그런지와 붙어 있어야 읽힘. 숫자만 크게 두면 확정으로 오해함
+          면책은 화면마다 되풀이하지 않고 목록 머리에서 한 번만 밝힘 */}
       <VStack align="stretch" gap="x1">
-        <HStack gap="x2" align="center" wrap>
-          <Text textStyle="t8Bold" color="fg.neutral">
-            {current.score}점
-          </Text>
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {SIMILARITY_NOTE}
-          </Text>
-        </HStack>
+        <Text textStyle="t6Bold" color="fg.neutral">
+          유사도 {current.score}점
+        </Text>
         <Text textStyle="t4Regular" color="fg.neutralMuted">
           {current.breakdown.reason}
         </Text>
       </VStack>
 
-      {/* 배점 구성을 5개 모두 노출 */}
-      <TagGroupRoot>
-        {(Object.keys(BREAKDOWN_LABEL) as (keyof typeof BREAKDOWN_LABEL)[]).map((key) => (
-          <TagGroupItem
-            key={key}
-            size="t2"
-            tone="neutralSubtle"
-            label={`${BREAKDOWN_LABEL[key]} ${WEIGHTS[key]} 중 ${current.breakdown[key]}`}
-          />
-        ))}
-      </TagGroupRoot>
-
       <Divider />
 
       <VStack align="stretch" gap="x2">
-        <Text textStyle="articleBody" color="fg.neutral">
-          {current.appearance ?? "외형 설명이 없습니다"}
-        </Text>
-        <TagGroupRoot>
-          {features.map((feature) => (
-            <TagGroupItem key={feature} label={feature} tone="neutralSubtle" />
-          ))}
-        </TagGroupRoot>
+        {/* 적힌 것이 없으면 없다고 알리지 않고 줄을 그리지 않음 */}
+        {current.appearance ? (
+          <Text textStyle="articleBody" color="fg.neutral">
+            {current.appearance}
+          </Text>
+        ) : null}
+        {features.length > 0 ? (
+          <TagGroupRoot>
+            {features.map((feature) => (
+              <TagGroupItem key={feature} label={feature} tone="neutralSubtle" />
+            ))}
+          </TagGroupRoot>
+        ) : null}
         <Text textStyle="t3Regular" color="fg.neutralMuted">
           {current.areaName ?? "위치 미확인"} · {formatAbsolute(current.occurredAt)}
         </Text>
       </VStack>
 
-      {picked === current.id ? (
-        <Callout
-          tone="positive"
-          description="이 후보를 표시했습니다. 제보 상세에서 더 자세히 볼 수 있습니다"
-        />
-      ) : null}
+      {/* 아래에 제보 상세 보기 버튼이 나타나 어디로 가는지 이미 말함 */}
+      {picked === current.id ? <Callout tone="positive" description="표시해 두었어요" /> : null}
 
-      {/* 제스처와 같은 일을 하는 버튼을 항상 렌더함 */}
+      {/* 아니에요 도 목록 뒤로만 밀어 다시 볼 수 있으므로 넘기기와 결과가 같음
+          같은 일을 하는 버튼을 둘로 두면 무엇이 다른지 고민하게 됨
+          되돌리기는 잘못 눌렀을 때만 필요해 첫 장이 아닐 때만 내놓음 */}
       <VStack align="stretch" gap="x2">
         <HStack gap="x2">
           <ActionButton
@@ -220,30 +194,17 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
             아니에요
           </ActionButton>
         </HStack>
-        <HStack gap="x2">
-          <ActionButton
-            variant="neutralOutline"
-            size="small"
-            flexGrow={1}
-            disabled={index === 0}
-            onClick={previous}
-          >
-            되돌리기
+        {index > 0 ? (
+          <ActionButton variant="ghost" size="medium" onClick={previous}>
+            이전 후보로
           </ActionButton>
-          <ActionButton variant="neutralOutline" size="small" flexGrow={1} onClick={next}>
-            판정하지 않고 넘기기
-          </ActionButton>
-        </HStack>
+        ) : null}
         {picked === current.id ? (
           <ActionButton variant="neutralOutline" size="large" asChild>
             <a href={`/r/${current.id}`}>제보 상세 보기</a>
           </ActionButton>
         ) : null}
       </VStack>
-
-      <Text textStyle="t3Regular" color="fg.neutralMuted">
-        위아래 방향키로 넘기고 Enter 로 표시할 수 있습니다
-      </Text>
     </ScreenBody>
   );
 }

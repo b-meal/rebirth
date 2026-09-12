@@ -134,25 +134,16 @@ export function LostView() {
     <Screen>
       <AppHeader title="확인할 후보" home />
       <VStack align="stretch">
-        <ScreenBody pb="x3" gap="x2">
+        {/* 내 신고 내용은 본인이 방금 적은 것이라 다시 펼쳐 보여 줄 이유가 없음
+            지금 할 일은 아래 후보를 보는 것이고 머리글은 그것만 말함
+            개체 확정이 아니라는 말은 카드마다 되풀이하지 않고 여기서 한 번만 밝힘 */}
+        <ScreenBody pb="x3" gap="x1">
           <Text as="h1" textStyle="t7Bold" color="fg.neutral">
-            내 신고
-          </Text>
-          <Text textStyle="t4Regular" color="fg.neutralMuted">
-            {[ANIMAL_LABEL[lost.animalType], SIZE_LABEL[lost.size], ...lost.colors]
-              .filter(Boolean)
-              .join(" · ")}
-          </Text>
-          {lost.appearance ? (
-            <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {lost.appearance}
-            </Text>
-          ) : null}
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {lost.areaName ?? "위치 미확인"} 에서 마지막 목격
-          </Text>
-          <Text as="h2" textStyle="t5Bold" color="fg.neutral">
             확인할 후보 {candidates.length}건
+          </Text>
+          <Text textStyle="t3Regular" color="fg.neutralMuted">
+            {[ANIMAL_LABEL[lost.animalType], SIZE_LABEL[lost.size]].join(" · ")} 신고와 닮은
+            순서예요. 유사도이며 동일 개체 확정이 아니에요
           </Text>
         </ScreenBody>
 
