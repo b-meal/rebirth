@@ -62,6 +62,22 @@ const STEP_HINT: Record<LostStep, string | null> = {
 };
 
 /**
+ * 서버가 짚은 칸이 어느 걸음에 있는지
+ * 마지막 걸음에서 등록을 눌렀는데 첫 걸음의 사진이 문제라고만 적으면
+ * 그 칸이 두 화면 뒤에 있어 어디를 고쳐야 하는지 알 수 없음
+ */
+const FIELD_STEP: Record<string, LostStep> = {
+  uploadIds: 1,
+  animalType: 2,
+  appearance: 2,
+  colors: 2,
+  size: 2,
+  collar: 2,
+  locationToken: 3,
+  occurredAt: 3,
+};
+
+/**
  * 장소를 찾는 두 가지 길
  * 나란한 선택지라 크기를 달리하지 않고 같은 모양의 줄로 둠
  * 큰 버튼과 작은 글씨로 두면 한쪽이 덜 중요한 길처럼 보임
@@ -363,8 +379,15 @@ export function LostForm() {
         // 입력값을 유지하고 재시도만 노출
         // 무엇이 잘못됐는지는 필드별 메시지가 알고 있음
         // 입력값을 확인해 주십시오 만 보여 주면 어느 칸이 문제인지 알 수 없음
-        const field = Object.values(result.fieldErrors ?? {})[0];
-        setError(field ?? result.message ?? "신고를 저장하지 못했어요. 다시 시도해 주세요");
+        // 어느 칸이 문제인지와 그 칸이 몇 번째 걸음에 있는지를 함께 알림
+        // 걸음을 옮겨 주지는 않음. 마지막 걸음을 벗어나면 잡아 둔 장소가 지워져
+        // 돌아왔을 때 위치를 다시 잡아야 하고, 그 편이 더 번거로움
+        const [name, message] = Object.entries(result.fieldErrors ?? {})[0] ?? [];
+        const at = name ? FIELD_STEP[name] : undefined;
+        const where = at && at !== LAST_STEP ? ` ${STEP_TITLE[at]} 단계에서 고칠 수 있어요` : "";
+        setError(
+          (message ?? result.message ?? "신고를 저장하지 못했어요. 다시 시도해 주세요") + where,
+        );
         setSubmitting(false);
         return;
       }
