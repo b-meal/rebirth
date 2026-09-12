@@ -38,12 +38,14 @@ export const authProvider = z.enum(['google', 'kakao'], {
   error: '지원하지 않는 로그인 방식입니다',
 })
 // 문의·권리 요청 분류. WEB-24
+// rescue 는 다친 동물을 봤다는 구조 요청. 급해서 일반 문의와 같은 줄에 두면 묻힘
 export const supportRequestKind = z.enum(
   [
     'manage_token_lost',
     'deletion',
     'correction',
     'privacy_exposure',
+    'rescue',
     'general',
   ],
   { error: '문의 유형을 선택해 주십시오' },

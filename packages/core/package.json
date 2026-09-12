@@ -17,6 +17,7 @@
     "./reports/*": "./src/reports/*.ts",
     "./storage": "./src/storage/index.ts",
     "./support": "./src/support/index.ts",
+    "./support/rescue": "./src/support/rescue.ts",
     "./vision": "./src/vision/index.ts"
   },
   "scripts": {

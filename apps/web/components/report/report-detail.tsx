@@ -133,7 +133,6 @@ export function ReportDetail({
   const [photoState, setPhotoState] = useState<"loading" | "ready" | "expired">("loading");
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagSent, setFlagSent] = useState(false);
-  const [rescueOpen, setRescueOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
   // 서명 URL 을 받아옴, 상태 갱신은 응답이 온 뒤에만 해 렌더 연쇄를 만들지 않음
@@ -398,12 +397,13 @@ export function ReportDetail({
           mine={interest.mine}
         />
         <HStack gap="x2" align="center">
+          {/* 안내 시트를 거치지 않고 접수 화면으로 바로 보냄 */}
           <ActionButton
             variant={report.injury === true ? "brandSolid" : "neutralWeak"}
             size="medium"
-            onClick={() => setRescueOpen(true)}
+            asChild
           >
-            구조 요청
+            <Link href="/guide/injured">구조 요청</Link>
           </ActionButton>
           <ActionButton
             variant={report.injury === true ? "neutralWeak" : "brandSolid"}
@@ -421,40 +421,6 @@ export function ReportDetail({
         options={shareOptions}
         cardReady={cardReady}
       />
-
-      <BottomSheetRoot open={rescueOpen} onOpenChange={(open) => setRescueOpen(open)}>
-        <BottomSheetContent title="구조 요청 안내">
-          <BottomSheetBody>
-            <VStack align="stretch" gap="x3">
-              <Text textStyle="t4Regular" color="fg.neutral">
-                구조와 보호는 관할 지자체가 맡습니다. 이 앱이 구조를 대신 접수하지는 않습니다
-              </Text>
-              <VStack align="stretch" gap="x2">
-                {/* 개·고양이 발견 신고를 받아 관할 지자체로 연결하는 대표 번호 */}
-                <FeatureRow label="개 · 고양이" value="1577-0954" />
-                <FeatureRow label="야생동물" value="시도 야생동물구조센터" />
-                <FeatureRow label="지자체 콜센터" value="지역번호 + 120" />
-                <FeatureRow label="관할 보호센터 확인" value="animal.go.kr" />
-              </VStack>
-              <Text textStyle="t3Regular" color="fg.neutralMuted">
-                다친 동물을 옮기면 상태가 나빠질 수 있어 먼저 안내를 확인해 주십시오
-              </Text>
-            </VStack>
-          </BottomSheetBody>
-          <BottomSheetFooter>
-            <ActionButton variant="brandSolid" size="large" asChild>
-              <Link href="/guide/injured">응급 대처 가이드 보기</Link>
-            </ActionButton>
-            <ActionButton
-              variant="neutralOutline"
-              size="large"
-              onClick={() => setRescueOpen(false)}
-            >
-              닫기
-            </ActionButton>
-          </BottomSheetFooter>
-        </BottomSheetContent>
-      </BottomSheetRoot>
 
       <BottomSheetRoot open={flagOpen} onOpenChange={(open) => setFlagOpen(open)}>
         <BottomSheetContent title={flagSent ? "신고를 접수했습니다" : "신고 사유"}>

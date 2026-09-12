@@ -40,7 +40,7 @@ const PROVIDER_LABEL: Record<string, string> = {
 const SIGN_IN_HREF = `${SIGN_IN_PATH}?${NEXT_PARAM}=%2Fmine`;
 
 const LINKS = [
-  { href: "/guide/injured", label: "다친 동물 응급 대처", icon: <IconHospitalcrossShieldLine /> },
+  { href: "/guide/injured", label: "다친 동물 구조 요청", icon: <IconHospitalcrossShieldLine /> },
   { href: "/reports", label: "최근 발견 제보 모아 보기", icon: <IconPawprintLine /> },
   { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
 ] as const;

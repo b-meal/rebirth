@@ -52,11 +52,13 @@ export const communityCategory = pgEnum('community_category', [
 ])
 
 // 문의·권리 요청 분류. WEB-24
+// rescue 는 다친 동물을 봤다는 구조 요청. 값은 @rebirth/types 와 같아야 함
 export const supportRequestKind = pgEnum('support_request_kind', [
   'manage_token_lost',
   'deletion',
   'correction',
   'privacy_exposure',
+  'rescue',
   'general',
 ])
 
