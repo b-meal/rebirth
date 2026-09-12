@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { Icon, Text, VStack } from "@seed-design/react";
 import { IconCheckmarkCircleFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
-import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
+import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { Screen, ScreenBody } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
@@ -90,24 +90,26 @@ export function TokenNotice({ token, onLeave }: TokenNoticeProps) {
       </ScreenBody>
 
       {/* 복사하기 전에는 복사가 유일한 할 일이라 버튼도 하나뿐임
-          복사 버튼은 자리를 지키고 아래로 넘어갈 길이 열림
-          미리 띄우면 저장을 건너뛰고 지나감
-          클립보드가 막힌 기기는 위에 펼친 주소를 옮겨 적었을 테니 같이 열어 줌 */}
-      <VStack align="stretch" gap="x2" px="spacingX.globalGutter" pt="x3" className="rebirth-bottom-bar">
-        <ActionButton
-          variant={copied || blocked ? "neutralWeak" : "brandSolid"}
-          size="large"
-          onClick={copy}
-        >
-          {copied ? "다시 복사하기" : "주소 복사하기"}
-        </ActionButton>
+          복사를 마쳐야 넘어갈 길이 열림. 미리 띄우면 저장을 건너뛰고 지나감
+          클립보드가 막힌 기기는 위에 펼친 주소를 옮겨 적었을 테니 같이 열어 줌
+          복사했다는 알림이 이 바를 덮으면 방금 누른 자리를 가려 위로 밀어 둠 */}
+      <SnackbarAvoidOverlap>
+        <VStack align="stretch" gap="x2" px="spacingX.globalGutter" pt="x3" className="rebirth-bottom-bar">
+          {copied || blocked ? (
+            <ActionButton variant="brandSolid" size="large" onClick={onLeave}>
+              확인할 후보 보기
+            </ActionButton>
+          ) : null}
 
-        {copied || blocked ? (
-          <ActionButton variant="brandSolid" size="large" onClick={onLeave}>
-            확인할 후보 보기
+          <ActionButton
+            variant={copied || blocked ? "neutralWeak" : "brandSolid"}
+            size="large"
+            onClick={copy}
+          >
+            {copied ? "다시 복사하기" : "주소 복사하기"}
           </ActionButton>
-        ) : null}
-      </VStack>
+        </VStack>
+      </SnackbarAvoidOverlap>
     </Screen>
   );
 }
