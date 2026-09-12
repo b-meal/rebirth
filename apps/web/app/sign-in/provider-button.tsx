@@ -2,9 +2,10 @@
 
 // design-system-allow:color,space,radius,raw-element 제공자 브랜드 가이드라인이 정한 고정값
 
-import type { ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { Box, HStack, Text } from "@seed-design/react";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 
 import { NEXT_PARAM, type ProviderDescriptor } from "@rebirth/core/auth";
 
@@ -42,14 +43,38 @@ const LABEL = {
   google: "Google로 계속하기",
 } as const;
 
+type ProviderId = ProviderDescriptor["id"];
+
+/**
+ * 어느 버튼이 시작했는지를 버튼끼리 나눠 봄
+ * useFormStatus 는 자기 form 만 알아서, 한쪽을 누른 뒤 다른 쪽을 또 누르는 것을 못 막음
+ * 제공자 화면으로 넘어가기 전까지 이 화면이 그대로 남아 있어 두 번 눌리기 쉬움
+ */
+const StartedContext = createContext<{
+  started: ProviderId | null;
+  start: (id: ProviderId) => void;
+}>({ started: null, start: () => undefined });
+
+/** 로그인 버튼들을 감싸 한 번에 하나만 시작되게 함 */
+export function ProviderButtonGroup({ children }: { children: ReactNode }) {
+  const [started, setStarted] = useState<ProviderId | null>(null);
+  return (
+    <StartedContext.Provider value={{ started, start: setStarted }}>
+      {children}
+    </StartedContext.Provider>
+  );
+}
+
 type Props = {
   provider: ProviderDescriptor;
   next: string;
 };
 
 export function ProviderButton({ provider, next }: Props) {
+  const { start } = useContext(StartedContext);
+
   return (
-    <form action={signInWithProvider}>
+    <form action={signInWithProvider} onSubmit={() => start(provider.id)}>
       <input type="hidden" name="provider" value={provider.id} />
       <input type="hidden" name={NEXT_PARAM} value={next} />
       <SubmitButton providerId={provider.id} />
@@ -58,16 +83,22 @@ export function ProviderButton({ provider, next }: Props) {
 }
 
 /** useFormStatus 는 form 안에서만 값을 읽으므로 버튼을 따로 둠 */
-function SubmitButton({ providerId }: { providerId: ProviderDescriptor["id"] }) {
+function SubmitButton({ providerId }: { providerId: ProviderId }) {
   const { pending } = useFormStatus();
+  const { started } = useContext(StartedContext);
   const brand = BRAND[providerId];
-  const label = LABEL[providerId];
+
+  // 이 버튼이 시작했는지와, 다른 버튼이 시작해 기다리는 중인지를 나눠 봄
+  const isStarting = pending || started === providerId;
+  const blocked = started !== null && started !== providerId;
 
   return (
     <Box asChild width="full">
       <button
         type="submit"
-        disabled={pending}
+        // 제공자 화면으로 넘어가기 전에 두 번 눌리거나 양쪽이 함께 시작하는 것을 막음
+        disabled={isStarting || blocked}
+        aria-busy={isStarting}
         style={{
           height: `${BUTTON_HEIGHT}px`,
           background: brand.background,
@@ -75,16 +106,26 @@ function SubmitButton({ providerId }: { providerId: ProviderDescriptor["id"] }) 
           borderRadius: `${BUTTON_RADIUS}px`,
           padding: `0 ${EDGE_PADDING}px`,
           // 누르는 동안만 흐리게 함, SEED Box 에 투명도 prop 이 없어 style 로 줌
-          opacity: pending ? 0.6 : 1,
-          cursor: pending ? "default" : "pointer",
+          // 기다리는 쪽은 더 흐리게 해 지금 도는 것이 어느 쪽인지 보이게 함
+          opacity: blocked ? 0.4 : 1,
+          cursor: isStarting || blocked ? "default" : "pointer",
           transition: "opacity 120ms ease",
         }}
       >
         {/* 심벌과 글자를 한 덩어리로 묶어 버튼 한가운데에 놓음 */}
         <HStack align="center" justify="center" gap="x2" width="full" height="full">
-          <Symbol>{providerId === "kakao" ? <KakaoSymbol /> : <GoogleSymbol />}</Symbol>
+          {/* 심벌 자리에 그대로 돌려 글자 위치가 흔들리지 않음 */}
+          <Symbol>
+            {isStarting ? (
+              <ProgressCircle size="inherit" tone="inherit" style={{ color: brand.color }} />
+            ) : providerId === "kakao" ? (
+              <KakaoSymbol />
+            ) : (
+              <GoogleSymbol />
+            )}
+          </Symbol>
           <Text textStyle="t4Bold" style={{ color: brand.color }}>
-            {label}
+            {isStarting ? "연결하는 중" : LABEL[providerId]}
           </Text>
         </HStack>
       </button>

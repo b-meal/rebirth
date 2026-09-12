@@ -10,7 +10,7 @@ import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody } from "@/components/ui/screen";
 import { isAuthConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
-import { ProviderButton } from "./provider-button";
+import { ProviderButton, ProviderButtonGroup } from "./provider-button";
 
 // SNS 로그인 화면. 계정 만들기와 로그인을 구분하지 않음
 // 제공자 목록은 core 의 AUTH_PROVIDERS 하나에서 오므로 이 화면은 제공자를 모름
@@ -65,11 +65,13 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
         ) : null}
 
         {isAuthConfigured() ? (
-          <VStack align="stretch" gap="x3">
-            {AUTH_PROVIDERS.map((provider) => (
-              <ProviderButton key={provider.id} provider={provider} next={next} />
-            ))}
-          </VStack>
+          <ProviderButtonGroup>
+            <VStack align="stretch" gap="x3">
+              {AUTH_PROVIDERS.map((provider) => (
+                <ProviderButton key={provider.id} provider={provider} next={next} />
+              ))}
+            </VStack>
+          </ProviderButtonGroup>
         ) : (
           <Callout
             tone="warning"
