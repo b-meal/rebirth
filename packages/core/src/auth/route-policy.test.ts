@@ -35,6 +35,13 @@ test("계정이 있어야 뜻이 통하는 화면은 보호한다", () => {
   }
 });
 
+test("커뮤니티는 읽기가 열려 있다", () => {
+  // 목록과 상세는 받은 링크로 열려야 함
+  // 글쓰기는 시트라 주소가 없고 저장할 때 서버 액션이 계정을 확인함
+  assert.equal(isPublicPath("/community"), true);
+  assert.equal(isPublicPath("/community/abc"), true);
+});
+
 test("루트를 접두사로 다뤄 모든 경로가 열리지 않는다", () => {
   // "/" 가 접두사로 쓰이면 보호 경로까지 통과해 로그인 벽이 통째로 사라짐
   assert.equal(isPublicPath("/settings"), false);

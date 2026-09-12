@@ -10,7 +10,7 @@ import {
   draftSessions,
   draftUploads,
   idempotencyKeys,
-} from '../schema/drafts'
+} from '../schema'
 
 // 제출 전 임시 자료 조회. 모든 질의가 sessionId 로 좁혀짐
 // 남의 uploadId·locationId 를 자기 제보에 붙이지 못하게 하는 경계

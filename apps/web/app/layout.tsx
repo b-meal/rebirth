@@ -28,6 +28,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   colorScheme: "light dark",
+  // 이것이 없으면 env(safe-area-inset-*) 이 늘 0 이라 홈 인디케이터를 피할 수 없음
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

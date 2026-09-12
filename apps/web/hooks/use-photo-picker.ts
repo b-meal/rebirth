@@ -9,9 +9,20 @@ import {
   type ProcessPhotoOptions,
 } from "@/lib/image";
 
+/**
+ * 고른 원본을 가리키는 열쇠
+ * 이름과 크기와 고친 시각이 모두 같으면 같은 파일로 봄
+ * 내용을 읽어 비교하면 정확하지만 큰 사진에서 고르는 순간이 느려짐
+ */
+function sourceKeyOf(file: File): string {
+  return `${file.name}:${file.size}:${file.lastModified}`;
+}
+
 export type UsePhotoPickerOptions = ProcessPhotoOptions & {
   maxCount?: number;
   onChange?: (photos: PhotoItem[]) => void;
+  /** 이미 고른 사진을 또 골랐을 때. 몇 장이 걸렀는지 넘김 */
+  onDuplicate?: (count: number) => void;
 };
 
 export type PhotoPickerState = {
@@ -32,6 +43,7 @@ export type PhotoPickerState = {
 export function usePhotoPicker({
   maxCount = 5,
   onChange,
+  onDuplicate,
   maxEdge,
   quality,
 }: UsePhotoPickerOptions = {}): PhotoPickerState {
@@ -46,9 +58,11 @@ export function usePhotoPicker({
   }, [photos]);
 
   const onChangeRef = useRef(onChange);
+  const onDuplicateRef = useRef(onDuplicate);
   useEffect(() => {
     onChangeRef.current = onChange;
-  }, [onChange]);
+    onDuplicateRef.current = onDuplicate;
+  }, [onChange, onDuplicate]);
   useEffect(() => {
     onChangeRef.current?.(photos);
   }, [photos]);
@@ -76,10 +90,23 @@ export function usePhotoPicker({
       const accepted: PhotoItem[] = [];
       const failures: string[] = [];
 
+      // 같은 사진을 두 번 고르면 같은 장면이 여러 칸을 차지해 자리만 줄어듦
+      // 재인코딩한 파일은 이름이 바뀌므로 고르기 전 원본으로 봄
+      // 갈아 끼우는 경우에는 앞의 것이 사라지므로 이번에 고른 것끼리만 봄
+      const seen = new Set(replace ? [] : latestPhotos.current.map((photo) => photo.sourceKey));
+      let duplicates = 0;
+
       try {
         for (const file of list.slice(0, room)) {
+          const key = sourceKeyOf(file);
+          if (seen.has(key)) {
+            duplicates += 1;
+            continue;
+          }
+          seen.add(key);
           try {
-            accepted.push(await processPhotoFile(file, { maxEdge, quality }));
+            const photo = await processPhotoFile(file, { maxEdge, quality });
+            accepted.push({ ...photo, sourceKey: key });
           } catch (cause) {
             failures.push(describePhotoError(cause));
           }
@@ -97,6 +124,10 @@ export function usePhotoPicker({
           setPhotos((prev) => [...prev, ...accepted]);
         }
       }
+
+      // 같은 사진은 칸 아래 글자로 두지 않음
+      // 고른 순간 화면 밖에서 벌어진 일이라 눈에 띄게 알리고 스스로 사라져야 함
+      if (duplicates > 0) onDuplicateRef.current?.(duplicates);
 
       const notes: string[] = [];
       if (list.length > room) notes.push(`사진은 최대 ${maxCount}장까지 올릴 수 있습니다`);

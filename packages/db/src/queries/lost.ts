@@ -3,7 +3,7 @@ import 'server-only'
 import { and, desc, eq, gte, lte, ne, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
-import { matchScores, reportPhotos, reports } from '../schema/reports'
+import { matchScores, reportPhotos, reports } from '../schema'
 
 /* 실종 신고와 후보 조회. 연락처를 받지 않고 토큰으로만 접근 */
 

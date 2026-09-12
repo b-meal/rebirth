@@ -46,3 +46,9 @@ export {
   type GeocodeRequest,
   type PlaceSearchRequest,
 } from "./schema";
+
+export {
+  AREA_COOKIE,
+  AREA_COOKIE_MAX_AGE,
+  readAreaCookie,
+} from "./area-cookie";

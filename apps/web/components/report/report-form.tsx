@@ -224,6 +224,7 @@ export function ReportForm() {
         id?: string;
         pending?: boolean;
         message?: string;
+        fieldErrors?: Record<string, string>;
       };
 
       // 앞선 요청이 아직 처리 중, 키를 유지한 채 다시 누르게 함
@@ -235,7 +236,10 @@ export function ReportForm() {
 
       if (!response.ok || !result.id) {
         // 입력값은 그대로 두고 재시도만 노출
-        setSubmitError(result.message ?? "제보가 저장되지 않았어요. 다시 시도해 주세요");
+        // 어느 칸이 문제인지는 필드별 메시지가 알고 있어 그것을 먼저 보여 줌
+        // 되돌릴 걸음은 두지 않음. 오류 줄이 두 번째 걸음에만 있어 옮기면 메시지가 사라짐
+        const message = Object.values(result.fieldErrors ?? {})[0];
+        setSubmitError(message ?? result.message ?? "제보가 저장되지 않았어요. 다시 시도해 주세요");
         setSubmitting(false);
         return;
       }
@@ -320,6 +324,7 @@ export function ReportForm() {
             </Section>
 
             <ReportLocation
+              sessionReady={uploadIds.length > 0}
               value={{
                 areaName: draft.areaName,
                 locationToken: draft.locationToken,
@@ -335,14 +340,15 @@ export function ReportForm() {
             <Box height="x8" />
           </ScreenBody>
 
+          {/* pb 는 유틸이 안전 영역을 더해 다시 잡으므로 여기서 주지 않음 */}
           <VStack
+            className="rebirth-bottom-bar"
             position="sticky"
             bottom="0"
             zIndex={1}
             align="stretch"
             px="spacingX.globalGutter"
             pt="x3"
-            pb="x5"
             bg="bg.layerDefault"
             borderTopWidth="1px"
             borderColor="stroke.neutralMuted"

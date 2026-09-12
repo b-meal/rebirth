@@ -1,25 +1,32 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useState } from "react";
-import { Text } from "@seed-design/react";
+import { Icon, Text, VStack } from "@seed-design/react";
+import { IconCheckmarkCircleFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
-import { Callout } from "seed-design/ui/callout";
-import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
-import { TextField, TextFieldInput } from "seed-design/ui/text-field";
+import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
-import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { Screen, ScreenBody } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
 
 // 조회 토큰을 한 번만 보여줌, 복사를 주요 동작으로 두고 저장소에는 남기지 않음
+// 복사와 이동은 각각 다른 버튼임, 복사 버튼이 화면까지 옮기면 누른 사람이 예상하지 못함
 
 export type TokenNoticeProps = {
   token: string;
+  /** 조회 화면으로 넘어갈 때. 이 화면은 폼 안에서 그려져 폼이 직접 옮김 */
+  onLeave: () => void;
 };
 
-export function TokenNotice({ token }: TokenNoticeProps) {
+/** 한 줄짜리 알림이 머무는 시간. 기본 4초는 읽고 나서도 한참 남아 있음 */
+const SNACKBAR_MS = 2000;
+
+export function TokenNotice({ token, onLeave }: TokenNoticeProps) {
   const snackbar = useSnackbarAdapter();
+  // 복사를 마쳤는지. 마쳐야 넘어가는 버튼이 열림
   const [copied, setCopied] = useState(false);
+  // 클립보드가 막혔는지. 복사에 성공한 것과 다른 사실이라 따로 둠
+  const [blocked, setBlocked] = useState(false);
 
   // 절대 주소로 보여줘야 사용자가 그대로 붙여 쓸 수 있음
   const url =
@@ -30,61 +37,79 @@ export function TokenNotice({ token }: TokenNoticeProps) {
   const copy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(url);
-      snackbar.create({
-        onClose: () => {},
-        render: () => <Snackbar variant="positive" message="조회 주소를 복사했습니다" />,
-      });
     } catch {
-      // 클립보드가 막혀도 입력란에서 직접 복사할 수 있어 이동은 열어 둠
+      // 클립보드가 막히면 눈으로 읽어 옮겨야 하므로 주소를 펼쳐 둠
+      // 복사는 안 됐으므로 copied 는 세우지 않음
+      setBlocked(true);
       snackbar.create({
-        onClose: () => {},
+        timeout: SNACKBAR_MS,
         render: () => (
-          <Snackbar variant="critical" message="자동 복사가 막혔습니다. 위 입력란의 주소를 직접 복사해 주십시오" />
+          <Snackbar
+            variant="critical"
+            message="복사가 막혔어요. 위 주소를 직접 옮겨 주세요"
+            onClick={snackbar.dismiss}
+          />
         ),
       });
+      return;
     }
-    // 복사 성공 여부와 무관하게 이동을 열어 줌
+
     setCopied(true);
+    snackbar.create({
+      timeout: SNACKBAR_MS,
+      render: () => (
+        <Snackbar variant="positive" message="복사했어요" onClick={snackbar.dismiss} />
+      ),
+    });
   }, [url, snackbar]);
 
   return (
     <Screen>
       <AppHeader title="실종 신고 접수" home />
-      <ScreenBody gap="x5">
-        <Text as="h1" textStyle="t8Bold" color="fg.neutral">
-          신고를 등록했습니다
-        </Text>
 
-        <Callout
-          tone="warning"
-          description="이 주소를 잃으면 신고를 다시 찾을 수 없습니다. 반드시 복사해 두십시오"
-        />
+      <ScreenBody gap="x6">
+        {/* 끝났다는 말을 먼저 함. 경고부터 보이면 잘못된 줄 알고 놀람 */}
+        <VStack align="stretch" gap="x2">
+          <Icon svg={<IconCheckmarkCircleFill />} size="x10" color="fg.brand" />
+          <Text as="h1" textStyle="t8Bold" color="fg.neutral">
+            신고를 접수했어요
+          </Text>
+          <Text textStyle="t4Regular" color="fg.neutralMuted">
+            이 주소로만 다시 볼 수 있어요. 꼭 저장해 두세요
+          </Text>
+        </VStack>
 
-        <Section>
-          <TextField label="내 신고 조회 주소" value={url} readOnly>
-            <TextFieldInput readOnly onFocus={(event) => event.target.select()} />
-          </TextField>
-          <ActionButton variant="brandSolid" size="large" onClick={copy}>
-            {copied ? "복사했습니다" : "주소 복사하기"}
-          </ActionButton>
-        </Section>
-
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          연락처를 받지 않으므로 이 주소가 유일한 확인 수단입니다. 메모나 메신저에 보내
-          두시면 안전합니다
-        </Text>
-
-        {/* 복사 전에는 이동을 막음 */}
-        {copied ? (
-          <ActionButton variant="neutralOutline" size="large" asChild>
-            <Link href={`/lost/${token}`}>확인할 후보 보기</Link>
-          </ActionButton>
-        ) : (
-          <ActionButton variant="neutralOutline" size="large" disabled>
-            주소를 복사하면 이동할 수 있습니다
-          </ActionButton>
-        )}
+        {/* 복사가 막힌 기기에서만 눈으로 옮겨 적을 수 있게 전부 펼침 */}
+        {blocked ? (
+          <VStack align="stretch" px="x4" py="x4" borderRadius="r3" bg="bg.neutralWeak">
+            <Text textStyle="t3Regular" color="fg.neutralMuted" style={{ overflowWrap: "anywhere" }}>
+              {url}
+            </Text>
+          </VStack>
+        ) : null}
       </ScreenBody>
+
+      {/* 복사하기 전에는 복사가 유일한 할 일이라 버튼도 하나뿐임
+          복사를 마쳐야 넘어갈 길이 열림. 미리 띄우면 저장을 건너뛰고 지나감
+          클립보드가 막힌 기기는 위에 펼친 주소를 옮겨 적었을 테니 같이 열어 줌
+          복사했다는 알림이 이 바를 덮으면 방금 누른 자리를 가려 위로 밀어 둠 */}
+      <SnackbarAvoidOverlap>
+        <VStack align="stretch" gap="x2" px="spacingX.globalGutter" pt="x3" className="rebirth-bottom-bar">
+          {copied || blocked ? (
+            <ActionButton variant="brandSolid" size="large" onClick={onLeave}>
+              확인할 후보 보기
+            </ActionButton>
+          ) : null}
+
+          <ActionButton
+            variant={copied || blocked ? "neutralWeak" : "brandSolid"}
+            size="large"
+            onClick={copy}
+          >
+            {copied ? "다시 복사하기" : "주소 복사하기"}
+          </ActionButton>
+        </VStack>
+      </SnackbarAvoidOverlap>
     </Screen>
   );
 }

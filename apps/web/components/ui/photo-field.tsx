@@ -1,11 +1,19 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Grid, HStack, Icon, ImageFrame, ImageFrameFloater, Text, VStack } from "@seed-design/react";
+import {
+  Grid,
+  HStack,
+  Icon,
+  ImageFrame,
+  ImageFrameFloater,
+  Text,
+  VStack,
+} from "@seed-design/react";
 import { IconCameraFill, IconPictureFill, IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { DismissibleCallout } from "seed-design/ui/callout";
-import { ContentPlaceholder } from "seed-design/ui/content-placeholder";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 
 import type { PhotoItem } from "@/lib/image";
 import type { PhotoPickerState } from "@/hooks/use-photo-picker";
@@ -18,6 +26,8 @@ export type PhotoFieldProps = {
   label?: string;
   hint?: string;
   disabled?: boolean;
+  /** 서버로 올리는 중인지. 고른 사진 위에 표시를 덮어 그 자리에서 보여 줌 */
+  uploading?: boolean;
   /** 데스크톱처럼 카메라가 없는 환경에서는 촬영 버튼을 감춤 */
   cameraAvailable?: boolean;
   /** 현장 촬영만 받는 화면에서는 앨범 버튼을 감춤 */
@@ -32,6 +42,7 @@ export function PhotoField({
   picker,
   label = "사진",
   hint = "사진을 촬영하거나 앨범에서 선택하세요",
+  uploading = false,
   disabled = false,
   cameraAvailable = true,
   libraryAvailable = true,
@@ -77,7 +88,18 @@ export function PhotoField({
       width={width}
       borderRadius="r3"
       stroke
+      // 사진만 어둡게 눌러 흰 표시가 밝은 사진 위에서도 읽힘
+      // 프레임에 걸면 그 위에 떠 있는 표시와 삭제 단추까지 함께 어두워짐
+      className={uploading ? "rebirth-photo--busy" : undefined}
     >
+      {/* 올리는 중임을 사진 위에 덮어 보여 줌
+          아래에 글로 적으면 눈이 사진에서 떠나야 하고 곧 사라질 한 줄이 자리를 차지함 */}
+      {uploading ? (
+        <ImageFrameFloater placement="middle-center">
+          <ProgressCircle size="24" tone="staticWhite" />
+        </ImageFrameFloater>
+      ) : null}
+
       <ImageFrameFloater placement="top-end" offsetX="x2" offsetY="x2">
         <ActionButton
           variant="neutralSolid"
@@ -106,12 +128,33 @@ export function PhotoField({
         )}
       </HStack>
 
+      {/* 비어 있을 때는 그 자리가 곧 누르는 자리
+          큰 그림을 보여 주고 정작 동작은 아래 작은 버튼에 두면 손이 한 번 더 움직임
+          카메라가 있는 화면은 어느 쪽으로 열지 갈리므로 아래 버튼에 맡김 */}
       {hasPhoto ? null : (
-        <VStack align="center" gap="x2">
-          <ContentPlaceholder type="image" style={{ width: "100%", aspectRatio: "4 / 3" }} />
-          <Text textStyle="t4Regular" color="fg.neutralMuted" align="center">
-            {hint}
-          </Text>
+        <VStack
+          asChild
+          align="center"
+          justify="center"
+          gap="x2"
+          py="x10"
+          borderRadius="r3"
+          borderWidth={1}
+          borderColor="stroke.neutralMuted"
+          bg="bg.neutralWeak"
+        >
+          {/* design-system-allow:raw-element 넓은 면 전체를 누르는 자리라 button 이 필요함 */}
+          <button
+            type="button"
+            className="rebirth-photo-zone"
+            disabled={locked}
+            onClick={() => (cameraAvailable ? cameraRef : libraryRef).current?.open()}
+          >
+            <Icon svg={<IconPictureFill />} size="x8" color="fg.neutralSubtle" />
+            <Text textStyle="t4Regular" color="fg.neutralMuted" align="center">
+              {hint}
+            </Text>
+          </button>
         </VStack>
       )}
 
@@ -123,7 +166,9 @@ export function PhotoField({
         </Grid>
       ) : null}
 
-      <HStack gap="x2">
+      {/* 빈 자리가 이미 앨범을 여는데 갈 곳이 하나뿐이면 아래 버튼은 같은 말을 되풀이함
+          카메라가 있으면 어디로 열지 골라야 하므로 그대로 둠 */}
+      <HStack gap="x2" display={!hasPhoto && !cameraAvailable ? "none" : "flex"}>
         {cameraAvailable ? (
           <ActionButton
             variant="neutralOutline"

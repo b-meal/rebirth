@@ -5,6 +5,9 @@ export type PhotoItem = {
   id: string;
   // 재인코딩된 JPEG. 업로드에 그대로 사용
   file: File;
+  // 고른 원본을 가리키는 열쇠. 같은 사진을 두 번 고르는지 보는 데만 씀
+  // 재인코딩하면 이름이 바뀌어 file 로는 같은 사진인지 알 수 없음
+  sourceKey?: string;
   // 훅이 살아 있는 동안만 유효한 미리보기 URL
   previewUrl: string;
   width: number;

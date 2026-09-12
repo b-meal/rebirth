@@ -6,6 +6,7 @@
   "exports": {
     "./auth": "./src/auth/index.ts",
     "./auth/sync": "./src/auth/sync.ts",
+    "./community": "./src/community/index.ts",
     "./drafts": "./src/drafts/index.ts",
     "./http": "./src/http/index.ts",
     "./location": "./src/location/index.ts",
@@ -16,6 +17,7 @@
     "./reports/*": "./src/reports/*.ts",
     "./storage": "./src/storage/index.ts",
     "./support": "./src/support/index.ts",
+    "./support/rescue": "./src/support/rescue.ts",
     "./vision": "./src/vision/index.ts"
   },
   "scripts": {

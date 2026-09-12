@@ -35,7 +35,12 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { label: "홈", href: "/", icon: IconHouseLine, activeIcon: IconHouseFill },
-  { label: "커뮤니티", icon: IconPerson2Line, activeIcon: IconPerson2Fill },
+  {
+    label: "커뮤니티",
+    href: "/community",
+    icon: IconPerson2Line,
+    activeIcon: IconPerson2Fill,
+  },
   {
     label: "실종신고",
     href: "/lost/new",

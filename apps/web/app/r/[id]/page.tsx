@@ -14,7 +14,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
-import { sinceLabel } from "@/lib/report-label";
+import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
 import { ReportDetail } from "@/components/report/report-detail";
 import type { ReportCardItem } from "@/components/report/report-card";
 import type { ReportComment } from "@/components/report/report-comments";
@@ -49,7 +49,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const where = report.areaName ?? "위치 미확인";
   // layout 의 title.template 이 서비스명을 붙이므로 여기서 넣지 않음
   const title = report.appearance?.split("\n")[0] ?? "발견동물 제보";
-  const description = `${where}에서 목격된 발견동물 제보입니다. 보신 적이 있다면 알려 주십시오`;
+  // 링크 미리보기에서 한눈에 판단할 값만 앞에 둠. 카카오톡은 두 줄 남짓만 보임
+  const facts = [where, CARE_LABEL[report.careSituation], describeAnimal(report)].filter(Boolean);
+  const description = `${facts.join(" · ")} — 이 동물을 본 적 있나요?`;
+  const image = `${SITE}/r/${id}/card`;
 
   return {
     title,
@@ -58,10 +61,12 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       title,
       description,
       type: "article",
+      siteName: "다시집",
+      locale: "ko_KR",
       url: `${SITE}/r/${id}`,
-      images: [{ url: `${SITE}/r/${id}/card`, width: 1080, height: 1350 }],
+      images: [{ url: image, width: 1080, height: 1350, alt: `${where}에서 발견된 동물` }],
     },
-    twitter: { card: "summary_large_image", title, description },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
   };
 }
 

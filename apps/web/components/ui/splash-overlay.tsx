@@ -8,7 +8,8 @@ import { Text, VStack } from "@seed-design/react";
 
 // 진입 순간 브랜드를 한 번 보여 주는 덮개
 // 리다이렉트가 아니라 위에 겹치는 방식이라 아래에서 지도가 먼저 준비됨
-// 탭을 옮길 때마다 다시 뜨면 성가시므로 세션에 한 번만 띄움
+// 브라우저 창 전체가 아니라 AppFrame 안쪽만 덮음
+// 세션에 한 번만 띄우고, 페이지를 벗어나면 표시 기록을 지워 다음 진입에서 다시 보여 줌
 
 /** 로고를 읽을 수 있는 최소 시간. 길면 진입이 느리게 느껴짐 */
 const VISIBLE_MS = 1100;
@@ -16,7 +17,7 @@ const VISIBLE_MS = 1100;
 /** 사라지는 동안의 페이드 길이 */
 const FADE_MS = 320;
 
-/** 이 탭에서 이미 보여 줬는지. 새로고침까지는 유지되고 창을 닫으면 초기화됨 */
+/** 이 탭에서 이미 보여 줬는지. 페이지를 벗어날 때 지움 */
 const SEEN_KEY = "rebirth_splash_seen";
 
 function alreadySeen(): boolean {
@@ -36,19 +37,34 @@ function markSeen(): void {
   }
 }
 
+function clearSeen(): void {
+  try {
+    sessionStorage.removeItem(SEEN_KEY);
+  } catch {
+    // 접근이 막힌 경우 애초에 저장된 값도 없음
+  }
+}
+
 type Phase = "hidden" | "visible" | "leaving";
 
 export function SplashOverlay() {
-  // 덮인 상태로 시작함. 서버 렌더와 같은 결과라 하이드레이션이 어긋나지 않고
-  // 자바스크립트가 늦어도 흰 화면 대신 로고가 보임
-  const [phase, setPhase] = useState<Phase>("visible");
+  // 첫 렌더에서 표시 여부를 정함. 효과에서 걷으면 이미 본 진입에도 로고가 한 프레임 스쳐 감
+  // 서버에는 sessionStorage 가 없어 항상 visible 이고, 이는 최초 진입과 같은 결과라 어긋나지 않음
+  const [phase, setPhase] = useState<Phase>(() =>
+    typeof window === "undefined" || !alreadySeen() ? "visible" : "hidden",
+  );
+
+  // 사이트를 벗어나면 기록을 지워 다음 진입에서 다시 보여 줌
+  // 앱 안에서 화면을 오갈 때는 지우지 않아야 덮개가 다시 뜨지 않음
+  // beforeunload 는 모바일 사파리에서 누락되므로 pagehide 를 씀
+  useEffect(() => {
+    window.addEventListener("pagehide", clearSeen);
+    return () => window.removeEventListener("pagehide", clearSeen);
+  }, []);
 
   useEffect(() => {
-    // 이미 본 탭이면 다음 페인트에서 걷음. 효과 안에서 바로 바꾸면 렌더가 한 번 더 돎
-    if (alreadySeen()) {
-      const raf = requestAnimationFrame(() => setPhase("hidden"));
-      return () => cancelAnimationFrame(raf);
-    }
+    // 첫 렌더에서 이미 걷힌 진입이면 타이머가 필요 없음
+    if (phase === "hidden") return;
 
     markSeen();
     const toLeaving = setTimeout(() => setPhase("leaving"), VISIBLE_MS);
@@ -57,13 +73,16 @@ export function SplashOverlay() {
       clearTimeout(toLeaving);
       clearTimeout(toHidden);
     };
+    // 마운트 때 한 번만 판단함, 이후 전환은 위 타이머가 처리함
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (phase === "hidden") return null;
 
   return (
     <VStack
-      position="fixed"
+      // 브라우저 창이 아니라 앱 프레임 크기에 맞춰 덮도록 absolute 로 둠
+      position="absolute"
       top="0"
       left="0"
       right="0"

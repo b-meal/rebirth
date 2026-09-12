@@ -1,5 +1,5 @@
 import { relations } from 'drizzle-orm'
-import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { index, integer, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
 import { animalSize, animalType, authProvider } from './enums'
 
@@ -52,9 +52,27 @@ export const pets = pgTable(
   (t) => [index('pets_owner_idx').on(t.ownerId, t.createdAt.desc())],
 )
 
+// 한 마리에 붙는 사진들. 제보·커뮤니티와 같은 자식 테이블 방식
+// pets.photoPath 는 목록에 쓰는 대표 한 장이라 그대로 두고 여기에 전부를 둠
+export const petPhotos = pgTable(
+  'pet_photos',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    petId: uuid()
+      .notNull()
+      .references(() => pets.id, { onDelete: 'cascade' }),
+    // Supabase Storage 오브젝트 키. 서명 URL 로만 노출
+    storagePath: text().notNull(),
+    sortOrder: integer().notNull().default(0),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('pet_photos_pet_idx').on(t.petId, t.sortOrder)],
+)
+
 export const userProfilesRelations = relations(userProfiles, () => ({}))
 
 export type UserProfile = typeof userProfiles.$inferSelect
 export type NewUserProfile = typeof userProfiles.$inferInsert
 export type Pet = typeof pets.$inferSelect
 export type NewPet = typeof pets.$inferInsert
+export type PetPhoto = typeof petPhotos.$inferSelect

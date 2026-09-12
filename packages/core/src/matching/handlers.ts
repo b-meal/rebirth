@@ -44,7 +44,10 @@ const NEED_AUTH = "관리 주소로 다시 들어와 주십시오";
 
 /* POST /api/lost  실종 신고 등록. 성공 시 관리 주소를 한 번만 돌려줌 */
 
-export async function createLostHandler(request: Request): Promise<Response> {
+export async function createLostHandler(
+  request: Request,
+  options: { reporterId?: string } = {},
+): Promise<Response> {
   const limitKey = clientKey(request, "createReport");
   const peeked = peekRateLimit(limitKey, RATE_LIMITS.createReport);
   if (!peeked.allowed) return tooManyRequests(peeked.retryAfterSeconds);
@@ -84,6 +87,7 @@ export async function createLostHandler(request: Request): Promise<Response> {
       kind: "lost",
       careSituation: "unknown",
       conditionTags: [],
+      reporterId: options.reporterId,
     });
     if ("error" in saved) {
       await releaseIdempotencyKey(input.idempotencyKey);

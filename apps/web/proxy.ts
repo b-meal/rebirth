@@ -85,5 +85,10 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // 정적 자산과 이미지 최적화 경로에서는 돌지 않음
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|logo/|.*\\.png$).*)"],
+  // api 는 제외함. fetch 에 로그인 화면 HTML 을 돌려주면 호출부가 읽을 수 없고
+  // 라우트가 초안 세션과 관리 토큰으로 스스로 권한을 보므로 낙관적 차단이 필요 없음
+  // maplibre 워커는 public 의 정적 파일이라 로그인과 무관함
+  matcher: [
+    "/((?!api/|_next/static|_next/image|favicon.ico|logo/|maplibre/|.*\\.png$).*)",
+  ],
 };
