@@ -14,22 +14,22 @@ export type CategoryDescriptor = {
 export const COMMUNITY_CATEGORIES: readonly CategoryDescriptor[] = [
   {
     id: 'sighting_talk',
-    label: '목격담',
+    label: '목격',
     hint: '확실하진 않지만 본 것 같은 이야기',
   },
   {
     id: 'reunion',
-    label: '재회 후기',
+    label: '재회',
     hint: '다시 만난 이야기',
   },
   {
     id: 'care_tip',
-    label: '돌봄 정보',
+    label: '돌봄',
     hint: '임시보호와 구조에서 얻은 정보',
   },
   {
     id: 'neighborhood',
-    label: '동네 이야기',
+    label: '동네',
     hint: '이웃과 나누고 싶은 이야기',
   },
 ] as const
@@ -46,5 +46,5 @@ export function findCategory(
 
 /** 배지에 쓰는 이름. 주제를 모르면 빈 문자열이 아니라 기본 주제 이름을 씀 */
 export function categoryLabel(value: CommunityCategory): string {
-  return BY_ID.get(value)?.label ?? '동네 이야기'
+  return BY_ID.get(value)?.label ?? '동네'
 }

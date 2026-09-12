@@ -73,8 +73,19 @@ export function CommunityFeed({
   // 동네로 다시 읽은 목록. null 이면 서버가 그린 목록을 그대로 씀
   const [local, setLocal] = useState<PostCardItem[] | null>(null);
   // 내 동네 글이 몇 번째까지인지. 그 뒤부터 다른 동네라 구분선을 놓음
-  // 서버가 동네를 알고 그렸으면 그 값에서 시작해 첫 화면부터 구분선이 서 있음
   const [nearCount, setNearCount] = useState(serverNearCount);
+
+  // 서버가 새 쪽을 그려 보내면 쌓아 둔 것을 버리고 그 쪽에서 다시 시작함
+  // 주제를 바꿀 때가 이 경우라, 옛 커서와 옛 수가 남아 구분선이 사라지지 않음
+  const serverPage = `${nextCursor ?? ""}|${serverNearCount}|${items.length}`;
+  const [drawn, setDrawn] = useState(serverPage);
+  if (drawn !== serverPage) {
+    setDrawn(serverPage);
+    setExtra([]);
+    setCursor(nextCursor);
+    setLocal(null);
+    setNearCount(serverNearCount);
+  }
 
   const category = params.get("category");
   const { areaName: found, ensure } = useNeighborhood();
@@ -92,11 +103,7 @@ export function CommunityFeed({
     const next = new URLSearchParams(params.toString());
     if (next.get("category") === value) next.delete("category");
     else next.set("category", value);
-    // 주제를 바꾸면 이어 읽던 자리와 동네로 읽은 목록은 뜻을 잃음
-    setExtra([]);
-    setCursor(null);
-    setLocal(null);
-    setNearCount(0);
+    // 쌓아 둔 것은 서버가 새 쪽을 보내는 순간 위에서 한 번에 비움
     startTransition(() => {
       router.replace(next.size > 0 ? `${pathname}?${next}` : pathname, {
         scroll: false,
@@ -170,10 +177,10 @@ export function CommunityFeed({
 
   // 동네로 읽었으면 그 목록이 첫 쪽을 대신함
   const rows = [...(local ?? items), ...extra];
-  // 내 동네 글이 하나라도 있고 뒤에 다른 동네가 이어질 때만 구분선을 놓음
-  // 쿠키로 서버가 이미 동네 순서로 그린 첫 화면에도 서야 해 local 여부는 보지 않음
-  const dividerAt =
-    areaName && nearCount > 0 && rows.length > nearCount ? nearCount : -1;
+  // 동네를 알면 두 제목을 늘 세움. 주제를 눌러 좁혀도 어느 동네 글인지 계속 보임
+  const grouped = Boolean(areaName) && rows.length > 0;
+  // 내 동네 글이 끝나는 자리. 한 건도 없으면 첫 줄부터 다른 동네라 0
+  const dividerAt = grouped && rows.length > nearCount ? nearCount : -1;
 
   return (
     // 떠 있는 버튼이 화면 밖이 아니라 이 프레임 기준으로 붙게 함
@@ -201,8 +208,9 @@ export function CommunityFeed({
         </Box>
 
         {/* 동네 글이 먼저 온다는 것을 목록 위에서 한 줄로 알림
-            구분선만 두면 왜 이 글이 위에 있는지 알 수 없음 */}
-        {dividerAt > 0 ? (
+            구분선만 두면 왜 이 글이 위에 있는지 알 수 없음
+            내 동네 글이 한 건도 없으면 이 제목 아래가 비어 다른 동네 제목만 세움 */}
+        {grouped && nearCount > 0 ? (
           <Text textStyle="t4Bold" color="fg.neutral">
             {areaName} 이야기
           </Text>
@@ -230,9 +238,10 @@ export function CommunityFeed({
           >
             {rows.map((item, index) => (
               <Fragment key={item.id}>
-                {/* 내 동네가 끝나는 자리. 아래부터는 다른 동네 글이라는 것을 알림 */}
+                {/* 내 동네가 끝나는 자리. 아래부터는 다른 동네 글이라는 것을 알림
+                    첫 줄부터 다른 동네면 위에 띄울 내 동네 글이 없어 여백을 주지 않음 */}
                 {index === dividerAt ? (
-                  <Box pt="x3">
+                  <Box pt={index === 0 ? undefined : "x3"}>
                     <Text textStyle="t4Bold" color="fg.neutralMuted">
                       다른 동네 이야기
                     </Text>
