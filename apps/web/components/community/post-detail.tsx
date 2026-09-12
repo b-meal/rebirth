@@ -63,7 +63,8 @@ export function PostDetail({
     <Screen>
       {/* 상세에는 하단 탭이 없어 헤더가 없으면 되돌아갈 길이 사라짐 */}
       <AppHeader title="커뮤니티" />
-      <ScreenBody gap="x5">
+      {/* 머리말과 본문은 한 덩어리라 좁게 붙이고 아래 블록과만 벌림 */}
+      <ScreenBody gap="x6" pt="x4">
         <VStack align="stretch" gap="x3">
           <HStack gap="x2" align="center">
             <Box px="x2" py="x0_5" borderRadius="r1" bg="bg.neutralWeak">
@@ -90,7 +91,7 @@ export function PostDetail({
             {post.title}
           </Text>
 
-          <HStack gap="x2" align="center">
+          <HStack gap="x2" align="center" pt="x1">
             <Avatar
               size="36"
               src={post.authorAvatarUrl ?? undefined}

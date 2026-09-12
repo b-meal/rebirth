@@ -91,11 +91,9 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
     <Screen position="relative">
       {/* 탭으로 들어오는 최상위 화면이라 뒤로 대신 홈으로 보냄 */}
       <AppHeader title="커뮤니티" home />
-      <ScreenBody gap="x5">
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          확실하지 않아도 괜찮아요. 이웃과 나눠 보세요
-        </Text>
-
+      {/* 설명 줄과 건수를 두지 않음. 목록을 보면 아는 것을 글로 다시 적지 않음 */}
+      {/* 주제 줄과 목록은 한 덩어리라 사이를 좁히고 아래 블록과만 벌림 */}
+      <ScreenBody gap="x4" pt="x3">
         <HStack gap="spacingX.betweenChips" wrap>
           {COMMUNITY_CATEGORIES.map((option) => (
             <Chip.Toggle
@@ -108,10 +106,6 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
           ))}
         </HStack>
 
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          {pending ? "불러오는 중" : `${rows.length}건`}
-        </Text>
-
         {rows.length === 0 ? (
           <ResultSection
             size="medium"
@@ -123,7 +117,15 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
             }}
           />
         ) : (
-          <VStack align="stretch" gap="x2">
+          // 주제를 바꾸는 동안 문구 대신 목록을 흐려 전환 중임을 보여 줌
+          <VStack
+            align="stretch"
+            gap="x2"
+            style={{
+              opacity: pending ? 0.4 : 1,
+              transition: "opacity 120ms ease",
+            }}
+          >
             {rows.map((item) => (
               <PostCard key={item.id} item={item} />
             ))}

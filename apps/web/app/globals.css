@@ -157,10 +157,14 @@ a {
   padding-bottom: calc(var(--seed-dimension-x3) + env(safe-area-inset-bottom, 0px));
 }
 
-/* 바텀시트는 뷰포트에 붙어 앱 프레임을 벗어남
-   positioner 가 이미 가운데 정렬이라 내용 폭만 프레임에 맞춤
+/* 바텀시트와 대화상자는 뷰포트에 붙어 앱 프레임을 벗어남
+   SEED 기본이 flex: 1 이라 max-width 만으로는 폭이 줄지 않음
+   레시피와 특성도가 같아 순서에 기대지 않도록 body 를 앞에 두어 한 단계 올림
    AppFrame 의 390px 과 같은 값이고 한쪽만 바꾸면 어긋남 */
-.seed-bottom-sheet__content {
+body .seed-bottom-sheet__content,
+body .seed-dialog__content {
+  flex: 0 1 auto;
+  width: 100%;
   max-width: 390px;
 }
 
