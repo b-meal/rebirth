@@ -36,14 +36,16 @@ export function ReportCapture({
   onNext,
 }: ReportCaptureProps) {
   const inputRef = useRef<PhotoPickerInputHandle>(null);
-  // 조회 중에는 촬영으로 두고, 카메라가 없다고 확인되면 그때만 앨범을 엶
+  // 장치 조회는 버튼 문구에만 씀. 여는 방식은 capture 가 알아서 가름
   const camera = cameraAvailable !== false;
   const { photos, maxCount, isFull, processing, error, addFiles, dismissError } = picker;
 
+  // capture 는 명세상 힌트라 카메라가 없는 기기는 알아서 파일 선택기로 떨어짐
+  // 장치 조회로 가리면 권한 전에 videoinput 을 안 내놓는 브라우저에서 카메라가 안 열림
   const hidden = (
     <PhotoPickerInput
       ref={inputRef}
-      mode={camera ? "camera" : "library"}
+      mode="camera"
       disabled={processing || isFull}
       onFiles={addFiles}
     />
