@@ -12,9 +12,11 @@ import {
 import { ActionButton } from "seed-design/ui/action-button";
 
 import { useReportShare } from "@/components/share/report-share";
+import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody, SectionCard } from "@/components/ui/screen";
 
 // 저장이 끝난 뒤 공유만 다루는 화면. 뒤로가기로 폼에 돌아가지 않게 replace 로 들어옴
+// 그래서 헤더도 뒤로가 아니라 홈으로 두고 흐름을 여기서 끝냄
 // 공유가 이 화면의 주 목적이라 시트로 감추지 않고 선택지를 그대로 펼쳐 둠
 
 // 인스타그램은 스토리에 링크를 자동으로 붙일 수 없어 사용자가 스티커로 붙임
@@ -36,6 +38,7 @@ export function ReportDone({ id, areaName, shareUrl }: ReportDoneProps) {
 
   return (
     <Screen>
+      <AppHeader title="제보 완료" home />
       <ScreenBody gap="x6" justify="center">
         <VStack align="center" gap="x3">
           <Icon svg={<IconCheckmarkCircleFill />} size="x12" color="fg.brand" />
