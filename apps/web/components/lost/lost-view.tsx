@@ -6,6 +6,7 @@ import { Divider, Skeleton, Text, VStack } from "@seed-design/react";
 import { Callout } from "seed-design/ui/callout";
 
 import { Screen, ScreenBody } from "@/components/ui/screen";
+import { AppHeader } from "@/components/ui/app-header";
 import { CandidateDeck, type Candidate } from "./candidate-deck";
 
 // 내 신고 요약과 확인할 후보, 토큰은 클라이언트에서만 읽어 서버 로그에 남지 않음
@@ -75,6 +76,7 @@ export function LostView() {
   if (state.status === "loading") {
     return (
       <Screen>
+      <AppHeader title="확인할 후보" home />
         <ScreenBody gap="x3">
           <Skeleton width="60%" height="x6" radius="8" />
           <Skeleton width="full" height="x16" radius="8" />
@@ -87,6 +89,7 @@ export function LostView() {
   if (state.status === "invalid") {
     return (
       <Screen>
+      <AppHeader title="확인할 후보" home />
         <ScreenBody gap="x3">
           <Text as="h1" textStyle="t7Bold" color="fg.neutral">
             조회 주소가 맞지 않습니다
@@ -103,6 +106,7 @@ export function LostView() {
   if (state.status === "error") {
     return (
       <Screen>
+      <AppHeader title="확인할 후보" home />
         <ScreenBody>
           <Callout
             tone="critical"
@@ -117,6 +121,7 @@ export function LostView() {
 
   return (
     <Screen>
+      <AppHeader title="확인할 후보" home />
       <VStack align="stretch">
         <ScreenBody pb="x3" gap="x2">
           <Text as="h1" textStyle="t7Bold" color="fg.neutral">

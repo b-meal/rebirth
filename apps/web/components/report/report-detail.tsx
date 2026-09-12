@@ -52,6 +52,7 @@ import {
 } from "@/components/report/report-comments";
 import { ReportInterestButton } from "@/components/report/report-interest-button";
 import { ReportLocationMap } from "@/components/report/report-location-map";
+import { rememberView } from "@/components/mine/recent-views";
 
 // 제보 상세, 절마다 카드로 끊고 사진은 비공개 버킷이라 서명 URL 로만 노출
 
@@ -155,6 +156,11 @@ export function ReportDetail({
     setPhotoUrl(outcome.url);
     setPhotoState(outcome.state);
   }, []);
+
+  // 마이페이지의 최근 본 목록에 남김
+  useEffect(() => {
+    rememberView(report.id);
+  }, [report.id]);
 
   useEffect(() => {
     let cancelled = false;

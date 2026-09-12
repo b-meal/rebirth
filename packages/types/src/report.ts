@@ -268,6 +268,46 @@ export const createFlag = z
 
 export type CreateFlag = z.infer<typeof createFlag>
 
+/* 계정과 반려동물 */
+
+export const updateProfile = z.object({
+  displayName: z
+    .string()
+    .trim()
+    .max(20, '이름은 20자까지 넣을 수 있습니다')
+    .optional()
+    .transform((v) => v ?? ''),
+})
+
+export type UpdateProfile = z.infer<typeof updateProfile>
+
+/** 내가 키우는 동물 기록. 실종 신고를 빠르게 채우려고 미리 적어 둠 */
+export const createPet = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, '이름을 적어 주십시오')
+    .max(20, '이름은 20자까지 넣을 수 있습니다'),
+  animalType: animalType.default('unknown'),
+  breedGuess: z
+    .string()
+    .trim()
+    .max(30, '품종 추정은 30자까지 넣을 수 있습니다')
+    .optional()
+    .transform((v) => v ?? ''),
+  size: animalSize.default('unknown'),
+  colors: z.array(z.string().trim().min(1).max(20)).max(5, '털색은 5개까지 고를 수 있습니다').default([]),
+  note: z
+    .string()
+    .trim()
+    .max(100, '메모는 100자까지 넣을 수 있습니다')
+    .optional()
+    .transform((v) => v ?? ''),
+  uploadId: z.uuid('사진 참조가 올바르지 않습니다').optional(),
+})
+
+export type CreatePet = z.infer<typeof createPet>
+
 /* 관심 표시 */
 
 /** 관심 켜고 끄기. 상태를 클라이언트가 보내고 서버가 그대로 맞춤 */

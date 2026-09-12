@@ -9,6 +9,7 @@ import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { AppHeader } from "@/components/ui/app-header";
 
 // 조회 토큰을 한 번만 보여줌, 복사를 주요 동작으로 두고 저장소에는 남기지 않음
 
@@ -48,6 +49,7 @@ export function TokenNotice({ token }: TokenNoticeProps) {
 
   return (
     <Screen>
+      <AppHeader title="실종 신고 접수" home />
       <ScreenBody gap="x5">
         <Text as="h1" textStyle="t8Bold" color="fg.neutral">
           신고를 등록했습니다

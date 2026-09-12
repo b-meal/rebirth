@@ -63,7 +63,10 @@ const DRAFT_EXPIRED =
 
 /* POST /api/reports  초안 세션의 사진·위치 참조를 제보로 확정함 */
 
-export async function createReportHandler(request: Request): Promise<Response> {
+export async function createReportHandler(
+  request: Request,
+  options: { reporterId?: string } = {},
+): Promise<Response> {
   // 검증 실패는 창을 소모하지 않음. 오타를 고치는 사용자가 잠기지 않게
   const limitKey = clientKey(request, "createReport");
   const peeked = peekRateLimit(limitKey, RATE_LIMITS.createReport);
@@ -108,6 +111,7 @@ export async function createReportHandler(request: Request): Promise<Response> {
       kind: input.kind,
       careSituation: input.careSituation,
       conditionTags: input.conditionTags,
+      reporterId: options.reporterId,
     });
     if ("error" in saved) {
       await releaseIdempotencyKey(input.idempotencyKey);
@@ -148,6 +152,8 @@ type SaveInput = {
   kind: "sighting" | "sheltered" | "lost";
   careSituation: CreateReport["careSituation"];
   conditionTags: string[];
+  /** 로그인 상태면 계정 id, 비로그인 제보는 비움 */
+  reporterId?: string;
 };
 
 /**
@@ -160,6 +166,7 @@ async function saveReport({
   kind,
   careSituation,
   conditionTags,
+  reporterId,
 }: SaveInput): Promise<
   | { error: Response }
   | {
@@ -216,6 +223,7 @@ async function saveReport({
       kind,
       // 사진과 필수 입력이 모두 검증됐으므로 바로 공개 상태로 넣음
       visibility: "public",
+      reporterId: reporterId ?? null,
       lifecycle: INITIAL_LIFECYCLE[kind],
       careSituation,
       manageTokenHash: hashToken(manageToken),
@@ -504,6 +512,7 @@ export async function createCommentHandler(
 export async function toggleInterestHandler(
   request: Request,
   context: RouteContext,
+  options: { userId?: string } = {},
 ): Promise<Response> {
   const limitKey = clientKey(request, "interest");
   const limit = checkRateLimit(limitKey, RATE_LIMITS.interest);
@@ -524,6 +533,7 @@ export async function toggleInterestHandler(
     const count = await toggleReportInterest({
       reportId: id,
       sessionId: session.sessionId,
+      userId: options.userId,
       interested: parsed.data.interested,
     });
 

@@ -252,11 +252,14 @@ export const reportInterests = pgTable(
       .references(() => reports.id, { onDelete: 'cascade' }),
     // 초안 세션 id. drafts 가 reports 를 참조해 순환을 피하려 FK 없이 참조
     sessionId: uuid().notNull(),
+    // 로그인 상태로 눌렀으면 계정도 남겨 마이페이지에서 모아 봄
+    userId: uuid(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.reportId, t.sessionId] }),
     index('report_interests_session_idx').on(t.sessionId),
+    index('report_interests_user_idx').on(t.userId, t.createdAt.desc()),
   ],
 )
 

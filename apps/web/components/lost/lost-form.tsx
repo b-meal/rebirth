@@ -19,6 +19,7 @@ import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { PhotoField } from "@/components/ui/photo-field";
 import { PlaceSearchField } from "@/components/ui/place-search-field";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { AppHeader } from "@/components/ui/app-header";
 import { TokenNotice } from "./token-notice";
 
 // 실종 신고 등록, 보호자가 급한 상태라 전화번호와 이름 입력란을 만들지 않음
@@ -190,6 +191,7 @@ export function LostForm() {
 
   return (
     <Screen>
+      <AppHeader title="실종 신고" />
       <ScreenBody gap="x6">
         <VStack align="stretch" gap="x1">
           <Text as="h1" textStyle="t8Bold" color="fg.neutral">

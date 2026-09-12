@@ -10,6 +10,7 @@ import {
   isNotNull,
   isNull,
   lte,
+  ne,
   sql as raw,
 } from 'drizzle-orm'
 
@@ -264,6 +265,59 @@ export async function findFirstPhotoPaths(reportIds: string[]) {
     if (!found.has(row.reportId)) found.set(row.reportId, row.storagePath)
   }
   return found
+}
+
+/* 마이페이지 */
+
+// 카드에 쓸 첫 사진 경로를 함께 읽는 목록 컬럼
+const myReportColumns = {
+  id: reports.id,
+  animalType: reports.animalType,
+  breedGuess: reports.breedGuess,
+  colors: reports.colors,
+  size: reports.size,
+  careSituation: reports.careSituation,
+  injury: reports.injury,
+  areaName: reports.areaName,
+  occurredAt: reports.occurredAt,
+  visibility: reports.visibility,
+  lifecycle: reports.lifecycle,
+  photoPath: raw<string | null>`(
+    select p.storage_path from ${reportPhotos} p
+    where p.report_id = ${reports}.id
+    order by p.sort_order limit 1
+  )`,
+} as const
+
+/** 최근 본 목록처럼 id 를 들고 있는 화면이 카드를 되받을 때 씀 */
+export function listReportCards(ids: string[]) {
+  if (ids.length === 0) return Promise.resolve([])
+  return db
+    .select(myReportColumns)
+    .from(reports)
+    .where(and(inArray(reports.id, ids), eq(reports.visibility, 'public')))
+    .limit(ids.length)
+}
+
+/** 내가 남긴 제보. 로그인 계정으로 저장된 것만 찾음 */
+export function listReportsByReporter(userId: string, limit = 30) {
+  return db
+    .select(myReportColumns)
+    .from(reports)
+    .where(and(eq(reports.reporterId, userId), ne(reports.visibility, 'deleted')))
+    .orderBy(desc(reports.occurredAt))
+    .limit(limit)
+}
+
+/** 내가 관심을 누른 제보. 숨겨진 제보는 목록에서 빠짐 */
+export function listInterestedReports(userId: string, limit = 30) {
+  return db
+    .select(myReportColumns)
+    .from(reportInterests)
+    .innerJoin(reports, eq(reports.id, reportInterests.reportId))
+    .where(and(eq(reportInterests.userId, userId), eq(reports.visibility, 'public')))
+    .orderBy(desc(reportInterests.createdAt))
+    .limit(limit)
 }
 
 /* 실시간 차트 */
@@ -578,13 +632,22 @@ export async function hasReportInterest(input: {
 export async function toggleReportInterest(input: {
   reportId: string
   sessionId: string
+  userId?: string
   interested: boolean
 }) {
   if (input.interested) {
     await db
       .insert(reportInterests)
-      .values({ reportId: input.reportId, sessionId: input.sessionId })
-      .onConflictDoNothing()
+      .values({
+        reportId: input.reportId,
+        sessionId: input.sessionId,
+        userId: input.userId ?? null,
+      })
+      // 이미 눌러 둔 뒤 로그인했으면 계정만 채워 마이페이지에서 보이게 함
+      .onConflictDoUpdate({
+        target: [reportInterests.reportId, reportInterests.sessionId],
+        set: { userId: input.userId ?? null },
+      })
   } else {
     await db
       .delete(reportInterests)

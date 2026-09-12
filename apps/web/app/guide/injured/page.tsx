@@ -4,6 +4,7 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { AppHeader } from "@/components/ui/app-header";
 
 // 제보보다 신고가 먼저인 상황을 위한 화면, 포획과 응급처치 안내는 넣지 않음
 
@@ -29,6 +30,7 @@ const CAT_BRANCHES = [
 export default function InjuredGuidePage() {
   return (
     <Screen>
+      <AppHeader title="응급 대처 가이드" />
       <ScreenBody gap="x6">
         <Text as="h1" textStyle="t8Bold" color="fg.neutral">
           다친 동물을 봤을 때
