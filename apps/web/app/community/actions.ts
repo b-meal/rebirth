@@ -125,12 +125,15 @@ export async function createComment(
   return {};
 }
 
-/** 공감 켜고 끄기. 화면이 눌린 결과를 바로 그리도록 상태를 돌려줌 */
+/**
+ * 공감 켜고 끄기. 화면이 눌린 결과를 바로 그리도록 상태를 돌려줌
+ * 여기서 화면을 새로 내려보내지 않음
+ * 바뀌는 것은 하트 하나인데 상세를 통째로 다시 그리면 사진까지 다시 받아 깜박임
+ * 정확한 수는 이 함수가 돌려주고 버튼이 그 값으로 맞춤
+ */
 export async function toggleLike(postId: string) {
   const userId = await requireUserId(`${FEED_PATH}/${postId}`);
-  const result = await toggleCommunityLike(postId, userId);
-  revalidatePath(`${FEED_PATH}/${postId}`);
-  return result;
+  return toggleCommunityLike(postId, userId);
 }
 
 export async function deletePost(formData: FormData) {

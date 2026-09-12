@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useOptimistic, useRef, useState, useTransition } from "react";
 import { PrefixIcon } from "@seed-design/react";
 import { IconHeartFill, IconHeartLine } from "@karrotmarket/react-monochrome-icon";
 import { ReactionButton } from "seed-design/ui/reaction-button";
@@ -17,44 +17,55 @@ export type LikeButtonProps = {
   mine: boolean;
 };
 
+type Like = { pressed: boolean; total: number };
+
 export function LikeButton({ postId, count, mine }: LikeButtonProps) {
   const snackbar = useSnackbarAdapter();
-  const [pressed, setPressed] = useState(mine);
-  const [total, setTotal] = useState(count);
+  // 서버가 판정한 값. 화면을 새로 내려받지 않으므로 응답으로만 바뀜
+  const [saved, setSaved] = useState<Like>({ pressed: mine, total: count });
+  // 누르는 즉시 보여 줄 값. 하트는 응답을 기다리면 눌린 느낌이 사라짐
+  const [shown, showNext] = useOptimistic(saved, (prev, next: boolean): Like => ({
+    pressed: next,
+    total: Math.max(0, prev.total + (next ? 1 : -1)),
+  }));
+  const [, startTransition] = useTransition();
+  // 연달아 누르면 응답이 뒤섞임. 마지막에 보낸 것만 반영함
+  const latest = useRef(0);
 
-  const toggle = async (next: boolean) => {
-    // 먼저 바꿔 두고 실패하면 되돌림. 하트는 응답을 기다리면 눌린 느낌이 사라짐
-    setPressed(next);
-    setTotal((value) => Math.max(0, value + (next ? 1 : -1)));
+  const toggle = (next: boolean) => {
+    startTransition(async () => {
+      showNext(next);
+      const ticket = ++latest.current;
 
-    try {
-      const result = await toggleLike(postId);
-      // 서버가 판정한 값으로 맞춤. 두 기기에서 동시에 눌러도 어긋나지 않음
-      setPressed(result.liked);
-      setTotal(result.count);
-    } catch {
-      setPressed(!next);
-      setTotal((value) => Math.max(0, value + (next ? -1 : 1)));
-      snackbar.create({
-        onClose: () => {},
-        render: () => (
-          <Snackbar
-            variant="critical"
-            message="공감을 저장하지 못했어요. 잠시 후 다시 눌러 주세요"
-          />
-        ),
-      });
-    }
+      try {
+        const result = await toggleLike(postId);
+        // 서버가 판정한 값으로 맞춤. 두 기기에서 동시에 눌러도 어긋나지 않음
+        if (ticket === latest.current) {
+          setSaved({ pressed: result.liked, total: result.count });
+        }
+      } catch {
+        // saved 를 건드리지 않았으므로 낙관적 값만 걷히면 눌리기 전으로 돌아감
+        snackbar.create({
+          onClose: () => {},
+          render: () => (
+            <Snackbar
+              variant="critical"
+              message="공감을 저장하지 못했어요. 잠시 후 다시 눌러 주세요"
+            />
+          ),
+        });
+      }
+    });
   };
 
   return (
     <ReactionButton
-      pressed={pressed}
-      onPressedChange={(next) => void toggle(next)}
-      aria-label={pressed ? "공감 취소" : "공감하기"}
+      pressed={shown.pressed}
+      onPressedChange={toggle}
+      aria-label={shown.pressed ? "공감 취소" : "공감하기"}
     >
-      <PrefixIcon svg={pressed ? <IconHeartFill /> : <IconHeartLine />} />
-      {total}
+      <PrefixIcon svg={shown.pressed ? <IconHeartFill /> : <IconHeartLine />} />
+      {shown.total}
     </ReactionButton>
   );
 }
