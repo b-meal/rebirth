@@ -120,7 +120,7 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
         description={
           picked || !areaName
             ? undefined
-            : `${areaName} 이웃들에게 공개되는 글이에요`
+            : `${areaName} 이웃들에게 먼저 보여요`
         }
         showHandle={!picked}
         showCloseButton={false}

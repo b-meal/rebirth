@@ -87,7 +87,7 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
             동네를 모르면 줄 자체를 비움. 확인 중이라는 말은 곧 사라질 문장이라 자리만 차지함 */}
         {areaName ? (
           <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {areaName} 이웃들에게 보여요
+            {areaName} 이웃들에게 먼저 보여요
           </Text>
         ) : null}
       </HStack>
