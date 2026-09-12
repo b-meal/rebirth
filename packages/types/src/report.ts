@@ -286,24 +286,27 @@ export const createPet = z.object({
   name: z
     .string()
     .trim()
-    .min(1, '이름을 적어 주십시오')
-    .max(20, '이름은 20자까지 넣을 수 있습니다'),
+    .min(1, '이름을 적어 주세요')
+    .max(20, '이름은 20자까지 쓸 수 있어요'),
   animalType: animalType.default('unknown'),
   breedGuess: z
     .string()
     .trim()
-    .max(30, '품종 추정은 30자까지 넣을 수 있습니다')
+    .max(30, '품종은 30자까지 쓸 수 있어요')
     .optional()
     .transform((v) => v ?? ''),
   size: animalSize.default('unknown'),
-  colors: z.array(z.string().trim().min(1).max(20)).max(5, '털색은 5개까지 고를 수 있습니다').default([]),
+  colors: z.array(z.string().trim().min(1).max(20)).max(5, '털색은 5개까지 고를 수 있어요').default([]),
   note: z
     .string()
     .trim()
-    .max(100, '메모는 100자까지 넣을 수 있습니다')
+    .max(100, '특징은 100자까지 쓸 수 있어요')
     .optional()
     .transform((v) => v ?? ''),
-  uploadId: z.uuid('사진 참조가 올바르지 않습니다').optional(),
+  uploadIds: z
+    .array(z.uuid('사진 참조가 올바르지 않습니다'))
+    .max(PHOTO_MAX_COUNT, `사진은 ${PHOTO_MAX_COUNT}장까지 올릴 수 있어요`)
+    .default([]),
 })
 
 export type CreatePet = z.infer<typeof createPet>

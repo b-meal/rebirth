@@ -2,7 +2,6 @@ import Link from "next/link";
 import {
   AspectRatio,
   Box,
-  Divider,
   HStack,
   Icon,
   ImageFrame,
@@ -260,9 +259,8 @@ export function MineScreen({
 
         {/* 비로그인은 이 카드가 마지막이라 남는 높이를 여기서 먹음 */}
         <SectionCard gap="x1" grow={user ? undefined : 1}>
-          {links.map((link, index) => (
+          {links.map((link) => (
             <VStack key={link.href} align="stretch">
-              {index > 0 ? <Divider /> : null}
               {/* 줄 전체가 누르는 자리라 면 색으로 눌리는 곳을 보여 줌 */}
               {/* 음수 마진 prop 은 토큰 이름을 그대로 내보내 쓰지 않고 안쪽 여백만 줌 */}
               <HStack asChild gap="x3" align="center" py="x3" px="x2">

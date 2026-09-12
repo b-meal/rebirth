@@ -1,13 +1,17 @@
 import Link from "next/link";
-import { Grid, HStack, Text, VStack } from "@seed-design/react";
-import { ActionButton } from "seed-design/ui/action-button";
+import { Grid, HStack, Icon, Text, VStack } from "@seed-design/react";
+import {
+  IconMagnifyingglassLine,
+  IconPawprintLine,
+} from "@karrotmarket/react-monochrome-icon";
+import { ResultSection } from "seed-design/ui/result-section";
 
 import type { Lifecycle, Visibility } from "@rebirth/types";
 
 import { AppHeader } from "@/components/ui/app-header";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
-import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { Screen, ScreenBody } from "@/components/ui/screen";
 
 // 마이페이지 카드에서 넘어오는 전체 목록
 // 공개 목록과 달리 종료·숨김도 함께 보여 줌. 상태를 감추면 내 기록이 사라진 것처럼 보임
@@ -31,17 +35,25 @@ export function MineReportList({ items, kind }: MineReportListProps) {
   return (
     <Screen>
       <AppHeader title={TITLE[kind]} />
-      <ScreenBody gap="x5">
-        {items.length === 0 ? (
+      {items.length === 0 ? (
+        // 빈 화면은 본문 여백 대신 남은 높이를 다 받아 한가운데에 섬
+        <ScreenBody justify="center" gap="x6">
           <EmptyState kind={kind} />
-        ) : (
+          {/* 빈 이유가 두 가지로 읽히면 무엇을 할지 흐려져 첫 문장에 섞지 않고 아래에 둠
+              화면 바닥까지 떨어뜨리면 관계 없는 약관처럼 보여 덩어리에 붙여 둠 */}
+          <Text textStyle="t2Regular" color="fg.neutralSubtle" align="center">
+            로그인 전에 남긴 기록은 발급받은 관리 주소에서 열려요
+          </Text>
+        </ScreenBody>
+      ) : (
+        <ScreenBody gap="x5">
           <Grid columns={2} gap="x4">
             {items.map((item) => (
               <MineCard key={item.id} item={item} />
             ))}
           </Grid>
-        )}
-      </ScreenBody>
+        </ScreenBody>
+      )}
     </Screen>
   );
 }
@@ -75,29 +87,47 @@ function stateBadge(
   return null;
 }
 
-/** 로그인 전에 남긴 제보가 여기 없는 이유를 함께 알림 */
+// 왼쪽 위에 붙여 두면 아래 넓은 여백이 무언가 빠진 자리처럼 보여 가운데에 둠
 function EmptyState({ kind }: { kind: "sighting" | "lost" }) {
   const isLost = kind === "lost";
 
   return (
-    <Section gap="x4">
-      <VStack align="stretch" gap="x2">
-        <Text textStyle="t5Bold" color="fg.neutral">
-          아직 {isLost ? "실종 신고가" : "발견 제보가"} 없습니다
-        </Text>
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          로그인하기 전에 남긴 기록은 계정에 묶이지 않아 이 목록에 없습니다.
-          발급받은 관리 주소로 들어가면 그대로 열립니다
-        </Text>
-      </VStack>
-
-      <HStack align="stretch">
-        <ActionButton variant="brandSolid" size="large" flexGrow={1} asChild>
+    <ResultSection
+      // 안쪽에 grow 가 박혀 있어 남은 높이를 다 먹으면 아래 안내가 바닥까지 밀림
+      style={{ flexGrow: 0 }}
+      asset={
+        <VStack
+          align="center"
+          justify="center"
+          width="x16"
+          height="x16"
+          borderRadius="full"
+          bg="bg.neutralWeak"
+          mb="x5"
+        >
+          <Icon
+            svg={isLost ? <IconMagnifyingglassLine /> : <IconPawprintLine />}
+            size="x8"
+            color="fg.neutralSubtle"
+          />
+        </VStack>
+      }
+      title={isLost ? "아직 신고한 반려동물이 없어요" : "아직 제보한 동물이 없어요"}
+      description={
+        isLost
+          ? "사진과 마지막으로 본 곳을 남기면\n이웃이 함께 찾아요"
+          : "길에서 만난 동물의 사진 한 장이면\n집으로 돌아가는 길이 열려요"
+      }
+      primaryActionProps={{
+        variant: "brandSolid",
+        size: "large",
+        asChild: true,
+        children: (
           <Link href={isLost ? "/lost/new" : "/report"}>
             {isLost ? "실종 신고하기" : "발견 제보하기"}
           </Link>
-        </ActionButton>
-      </HStack>
-    </Section>
+        ),
+      }}
+    />
   );
 }
