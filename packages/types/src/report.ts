@@ -281,6 +281,9 @@ export const updateProfile = z.object({
 
 export type UpdateProfile = z.infer<typeof updateProfile>
 
+/** 우리 동물의 특징. 실종 신고에 그대로 옮겨 붙는 값이라 그쪽과 같은 길이로 둠 */
+export const PET_NOTE_MAX = 300
+
 /** 내가 키우는 동물 기록. 실종 신고를 빠르게 채우려고 미리 적어 둠 */
 export const createPet = z.object({
   name: z
@@ -300,7 +303,7 @@ export const createPet = z.object({
   note: z
     .string()
     .trim()
-    .max(100, '특징은 100자까지 쓸 수 있어요')
+    .max(PET_NOTE_MAX, `특징은 ${PET_NOTE_MAX}자까지 쓸 수 있어요`)
     .optional()
     .transform((v) => v ?? ''),
   uploadIds: z

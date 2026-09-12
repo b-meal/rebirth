@@ -12,13 +12,17 @@ import {
   VStack,
 } from "@seed-design/react";
 import { IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
-import { PHOTO_MAX_COUNT } from "@rebirth/types";
+import { PET_NOTE_MAX, PHOTO_MAX_COUNT } from "@rebirth/types";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
-import { TextField, TextFieldInput } from "seed-design/ui/text-field";
+import {
+  TextField,
+  TextFieldInput,
+  TextFieldTextarea,
+} from "seed-design/ui/text-field";
 
 import { AppHeader } from "@/components/ui/app-header";
 import { PhotoField } from "@/components/ui/photo-field";
@@ -214,15 +218,9 @@ export function PetForm({ pet }: PetFormProps) {
               <TextFieldInput placeholder="보리" />
             </TextField>
 
-            {/* 여기서부터는 비워도 등록됨. 칸마다 적지 않고 묶음 머리에 한 번만 밝힘 */}
-            <HStack justify="space-between" align="center">
-              <Text as="h2" textStyle="t5Bold" color="fg.neutral">
-                생김새
-              </Text>
-              <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                아는 만큼만
-              </Text>
-            </HStack>
+            <Text as="h2" textStyle="t5Bold" color="fg.neutral">
+              생김새
+            </Text>
 
             <Section>
               <Text as="h3" textStyle="t5Bold" color="fg.neutral">
@@ -297,13 +295,14 @@ export function PetForm({ pet }: PetFormProps) {
               label="특징"
               name="note"
               size="medium"
-              maxGraphemeCount={100}
+              maxGraphemeCount={PET_NOTE_MAX}
               value={note}
               onValueChange={(next) => setNote(next.slicedValue)}
               errorMessage={errors.note}
               invalid={Boolean(errors.note)}
             >
-              <TextFieldInput placeholder="빨간 목줄, 사람을 잘 따름" />
+              {/* 실종 신고의 특징과 같은 칸. 한 줄로 두면 길게 적을 때 앞이 안 보임 */}
+              <TextFieldTextarea placeholder="빨간 목줄, 사람을 잘 따름" />
             </TextField>
 
             {/* 저장 자체가 실패한 경우. 칸별 오류는 각 칸 아래에 이미 붙어 있음 */}
