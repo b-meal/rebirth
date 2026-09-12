@@ -120,7 +120,8 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
   const features = [...current.colors, ...current.conditionTags].filter(Boolean);
 
   return (
-    <ScreenBody gap="x4">
+    // 앱바 바로 아래에 장수 한 줄만 있어 기본 여백은 넓게 뜸
+    <ScreenBody gap="x4" pt="x2">
       {/* 되돌아가는 버튼을 두지 않음
           아니에요 는 영구 제외가 아니라 뒤로만 밀어 끝까지 가면 다시 나옴
           잘못 눌러도 잃는 것이 없는데 버튼을 두면 그 사실을 모르고 조심하게 됨 */}
