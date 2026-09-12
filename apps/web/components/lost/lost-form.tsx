@@ -115,6 +115,14 @@ export function LostForm() {
   // 업로드와 위치 참조가 모두 준비돼야 저장할 수 있음
   const canSubmit = upload.uploadId !== null && locationToken !== null && !submitting;
 
+  // 무엇이 모자라 버튼이 꺼져 있는지. 둘 다 없으면 위쪽 칸부터 짚어 줌
+  const missing =
+    upload.uploadId === null
+      ? "사진을 골라 주세요"
+      : locationToken === null
+        ? "마지막으로 본 곳을 정해 주세요"
+        : null;
+
   // 재시도에서도 같은 키를 씀, 이중 탭이 신고를 두 건 만들지 않음
   const idempotencyKey = useRef<string | null>(null);
 
@@ -158,20 +166,20 @@ export function LostForm() {
       };
 
       if (response.status === 202 || result.pending) {
-        setError("저장하고 있습니다. 잠시 후 다시 눌러 주십시오");
+        setError("저장하고 있어요. 잠시 후 다시 눌러 주세요");
         setSubmitting(false);
         return;
       }
 
       if (!response.ok || !result.manageToken) {
         // 입력값을 유지하고 재시도만 노출
-        setError(result.message ?? "신고가 저장되지 않았습니다. 다시 시도해 주십시오");
+        setError(result.message ?? "신고를 저장하지 못했어요. 다시 시도해 주세요");
         setSubmitting(false);
         return;
       }
       setToken(result.manageToken);
     } catch {
-      setError("신고가 저장되지 않았습니다. 입력한 내용은 그대로 있습니다");
+      setError("신고를 저장하지 못했어요. 적은 내용은 그대로 있어요");
       setSubmitting(false);
     }
   }, [
@@ -193,21 +201,18 @@ export function LostForm() {
     <Screen>
       <AppHeader title="실종 신고" />
       <ScreenBody gap="x6">
-        <VStack align="stretch" gap="x1">
-          <Text as="h1" textStyle="t8Bold" color="fg.neutral">
-            반려동물을 잃어버렸어요
-          </Text>
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            연락처는 받지 않습니다. 신고 뒤에 나오는 조회 주소로만 확인합니다
-          </Text>
-        </VStack>
+        {/* 앱바가 이미 실종 신고라 제목을 되풀이하지 않음
+            대신 연락처를 왜 안 받는지만 한 줄로 밝힘. 급한 사람이 가장 먼저 궁금해하는 것 */}
+        <Text textStyle="t3Regular" color="fg.neutralMuted">
+          연락처는 받지 않아요. 신고 뒤에 나오는 주소로만 확인해요
+        </Text>
 
         {error ? <Callout tone="critical" description={error} /> : null}
 
         <PhotoField
           picker={picker}
           label="사진"
-          hint="잃어버린 반려동물의 사진"
+          hint="얼굴이 잘 보이는 사진이 찾는 데 도움이 돼요"
           cameraAvailable={false}
           disabled={upload.status === "uploading"}
         />
@@ -292,9 +297,11 @@ export function LostForm() {
           </HStack>
         </Section>
 
+        {/* 현재 위치 버튼에 브랜드 면을 쓰면 초록 버튼이 둘이라 어느 쪽이 끝인지 헷갈림
+            신고 등록만 브랜드 면을 쥐고 여기는 물러난 면으로 둠 */}
         <Section>
           <Text as="h2" textStyle="t5Bold" color="fg.neutral">
-            마지막 목격 장소
+            마지막으로 본 곳
           </Text>
           {areaName ? (
             <HStack gap="x2" align="center" wrap>
@@ -319,7 +326,7 @@ export function LostForm() {
             <PlaceSearchField
               search={search}
               placeholder="동, 면, 도로명으로 검색"
-              emptyMessage="검색 결과가 없습니다. 동이나 면 이름으로 찾아 주십시오"
+              emptyMessage="찾는 곳이 없어요. 동이나 면 이름으로 찾아 주세요"
               onPick={(candidate) => {
                 // 검색으로 고른 지점도 서버에서 참조로 바꿈
                 void location
@@ -340,11 +347,11 @@ export function LostForm() {
             />
           ) : (
             <VStack align="stretch" gap="x2">
-              <ActionButton variant="brandSolid" size="large" onClick={position.request}>
-                현재 위치 사용
+              <ActionButton variant="neutralWeak" size="large" onClick={position.request}>
+                현재 위치로 찾기
               </ActionButton>
               <ActionButton variant="ghost" size="small" onClick={() => setManual(true)}>
-                직접 선택하기
+                주소로 직접 찾기
               </ActionButton>
             </VStack>
           )}
@@ -359,15 +366,25 @@ export function LostForm() {
           />
         </TextField>
 
-        <ActionButton
-          variant="brandSolid"
-          size="large"
-          loading={submitting}
-          disabled={!canSubmit}
-          onClick={submit}
-        >
-          신고 등록하기
-        </ActionButton>
+        {/* 버튼이 왜 꺼져 있는지 밝힘. 회색 버튼만 두면 무엇이 모자란지 알 수 없음 */}
+        <VStack align="stretch" gap="x2">
+          {missing ? (
+            <HStack justify="center">
+              <Text textStyle="t3Regular" color="fg.neutralMuted">
+                {missing}
+              </Text>
+            </HStack>
+          ) : null}
+          <ActionButton
+            variant="brandSolid"
+            size="large"
+            loading={submitting}
+            disabled={!canSubmit}
+            onClick={submit}
+          >
+            신고 등록하기
+          </ActionButton>
+        </VStack>
       </ScreenBody>
     </Screen>
   );
