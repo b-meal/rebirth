@@ -21,8 +21,8 @@ async function loadMarkers(): Promise<MapMarker[]> {
       (row) => row.coarsePoint !== null,
     );
 
-    // 비공개 버킷이라 서명이 필요하고 카드와 핀이 같은 축소본을 함께 씀
-    const paths = rows.flatMap((row) => (row.photoPath ? [row.photoPath] : []));
+    // 비공개 버킷이라 서명이 필요하고 여러 제보가 같은 사진을 가리켜 경로를 접음
+    const paths = [...new Set(rows.flatMap((row) => (row.photoPath ? [row.photoPath] : [])))];
     const signed = await createSignedThumbUrls(paths).catch(() => new Map<string, string>());
 
     return rows.map((row) => ({
