@@ -86,10 +86,10 @@ function PickRow({
       py="x4"
       borderRadius="r3"
       borderWidth={1}
-      borderColor="stroke.neutralMuted"
+      borderColor="stroke.neutralWeak"
     >
       {/* design-system-allow:raw-element 줄 전체를 누르는 자리라 button 이 필요함 */}
-      <button type="button" className="rebirth-row" onClick={onClick}>
+      <button type="button" className="rebirth-row--outline" onClick={onClick}>
         <Icon svg={icon} size="x6" color="fg.neutralMuted" />
         {/* button 이 가운데 정렬을 물려줘 줄 안의 글은 왼쪽으로 되돌림 */}
         <VStack align="flex-start" gap="x0_5" grow={1} minWidth="0">
@@ -549,7 +549,7 @@ export function LostForm() {
                   height={FINDING_HEIGHT}
                   borderRadius="r3"
                   borderWidth={1}
-                  borderColor="stroke.neutralMuted"
+                  borderColor="stroke.neutralWeak"
                 >
                   <ProgressCircle size="24" tone="neutral" />
                 </HStack>
@@ -565,12 +565,12 @@ export function LostForm() {
                   py="x4"
                   borderRadius="r3"
                   borderWidth={1}
-                  borderColor="stroke.neutralMuted"
+                  borderColor="stroke.neutralWeak"
                 >
                   {/* design-system-allow:raw-element 줄 전체를 누르는 자리라 button 이 필요함 */}
                   <button
                     type="button"
-                    className="rebirth-row"
+                    className="rebirth-row--outline"
                     onClick={() => {
                       // 여기서는 장소만 고쳐 쓰는 것이라 시각은 두고 검색창을 바로 열어 줌
                       resetLastStep({ keepTime: true });

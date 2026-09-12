@@ -113,6 +113,38 @@ a {
   }
 }
 
+/* 테두리만 두른 줄
+   rebirth-row 와 달리 면을 칠하지 않고 테두리만 진해짐
+   같은 화면의 날짜 칸이 그렇게 반응해 나란히 두면 결이 맞음 */
+.rebirth-row--outline {
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+/* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬 */
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-row--outline:not(:disabled):hover {
+    border-color: var(--seed-color-stroke-neutral-solid);
+  }
+}
+
+/* 누르는 순간은 입력 장치와 상관없이 보여 줌 */
+.rebirth-row--outline:active {
+  border-color: var(--seed-color-stroke-neutral-solid);
+}
+
+/* 키보드로 옮겨 다닐 때만 테두리를 보여 마우스 클릭에는 남지 않음 */
+.rebirth-row--outline:focus-visible {
+  outline: var(--seed-dimension-x0_5) solid var(--seed-color-stroke-focus-ring);
+  outline-offset: calc(var(--seed-dimension-x0_5) * -1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rebirth-row--outline {
+    transition: none;
+  }
+}
+
 /* 카드 한 장을 통째로 누르는 자리
    rebirth-row 와 달리 이미 면 색이 있어 테두리로 반응함
    크기를 바꾸면 글자가 다시 그려지며 떨려 보여 면과 선만 씀
