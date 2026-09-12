@@ -75,7 +75,7 @@ export function CandidatePhoto({ reportId, prefetchIds }: CandidatePhotoProps) {
     return (
       <AspectRatio ratio={4 / 3}>
         <VStack align="center" justify="center" height="full" borderRadius="r3" bg="bg.neutralWeak">
-          <ProgressCircle size="24" tone="neutral" />
+          <ProgressCircle size="40" tone="neutral" />
         </VStack>
       </AspectRatio>
     );

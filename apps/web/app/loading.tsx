@@ -15,7 +15,7 @@ export default function Loading() {
     <Screen>
       {/* 글자는 두지 않음. 한두 번 깜박이고 사라질 자리라 읽을 틈이 없음 */}
       <VStack grow={1} align="center" justify="center" aria-busy>
-        <ProgressCircle size="24" tone="neutral" />
+        <ProgressCircle size="40" tone="neutral" />
       </VStack>
     </Screen>
   );

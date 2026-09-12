@@ -176,7 +176,7 @@ export function LostView() {
         {/* 몇 건이 올지 몰라 뼈대를 세워도 들어설 모양과 맞지 않음
             돌아가는 표시 하나만 두고 화면 가운데를 비워 둠 */}
         <VStack align="center" justify="center" grow={1} py="x16">
-          <ProgressCircle size="24" tone="neutral" />
+          <ProgressCircle size="40" tone="neutral" />
         </VStack>
       </Screen>
     );
