@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useRef } from "react";
 import { Icon, VStack } from "@seed-design/react";
 import { IconPersonFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -10,6 +10,7 @@ import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen } from "@/components/ui/screen";
+import { useFocusError } from "@/hooks/use-focus-error";
 import { saveProfile, type ActionState } from "@/app/mine/actions";
 
 // 프로필 수정. 사진은 제공자에서 온 값이라 여기서 바꾸지 않음
@@ -22,6 +23,9 @@ export type ProfileFormProps = {
 
 export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveProfile, {});
+  const errors = state.errors ?? {};
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusError(formRef, state);
 
   return (
     <Screen>
@@ -30,7 +34,7 @@ export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
       {/* design-system-allow:raw-element form 은 SEED 에 대응 컴포넌트가 없는 표준 요소 */}
       {/* 저장 버튼이 화면 아래에 붙어 있어야 해 form 이 화면 전체를 감쌈 */}
       <VStack asChild align="stretch" grow={1} minHeight="0">
-        <form action={action}>
+        <form ref={formRef} action={action}>
           <VStack align="stretch" grow={1} px="spacingX.globalGutter" pt="x6" gap="x8">
             {/* 사진은 바꿀 수 있는 자리가 없어 설명을 두지 않음 */}
             {/* 누를 곳이 없으면 왜 못 바꾸는지 묻지 않음 */}
@@ -51,6 +55,8 @@ export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
                 description="커뮤니티 글과 댓글에 보여요"
                 defaultValue={displayName}
                 maxGraphemeCount={20}
+                errorMessage={errors.displayName}
+                invalid={Boolean(errors.displayName)}
               >
                 <TextFieldInput placeholder="이름을 입력해 주세요" />
               </TextField>
