@@ -23,11 +23,11 @@ async function draftSessionId(): Promise<string | undefined> {
 
 export async function saveProfile(_state: ActionState, form: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
-  if (!user) return { error: "로그인이 필요합니다" };
+  if (!user) return { error: "로그인이 필요해요" };
 
   const parsed = updateProfile.safeParse({ displayName: form.get("displayName") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "이름을 확인해 주십시오" };
+    return { error: parsed.error.issues[0]?.message ?? "이름을 다시 확인해 주세요" };
   }
 
   await updateUserProfile({ id: user.id, displayName: parsed.data.displayName || null });
@@ -37,7 +37,7 @@ export async function saveProfile(_state: ActionState, form: FormData): Promise<
 
 export async function addPet(_state: ActionState, form: FormData): Promise<ActionState> {
   const user = await getCurrentUser();
-  if (!user) return { error: "로그인이 필요합니다" };
+  if (!user) return { error: "로그인이 필요해요" };
 
   const parsed = createPet.safeParse({
     name: form.get("name"),
@@ -49,7 +49,7 @@ export async function addPet(_state: ActionState, form: FormData): Promise<Actio
     uploadId: form.get("uploadId") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "입력을 확인해 주십시오" };
+    return { error: parsed.error.issues[0]?.message ?? "입력한 내용을 다시 확인해 주세요" };
   }
 
   // 사진은 제보와 같은 초안 업로드를 거쳐 오고 경로만 옮겨 붙임

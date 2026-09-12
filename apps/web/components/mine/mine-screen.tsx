@@ -37,8 +37,8 @@ const PROVIDER_LABEL: Record<string, string> = {
 const SIGN_IN_HREF = `${SIGN_IN_PATH}?${NEXT_PARAM}=%2Fmine`;
 
 const LINKS = [
-  { href: "/guide/injured", label: "다친 동물 구조 요청", icon: <IconHospitalcrossShieldLine /> },
-  { href: "/reports", label: "최근 발견 제보 모아 보기", icon: <IconPawprintLine /> },
+  { href: "/guide/injured", label: "다친 동물을 발견했어요", icon: <IconHospitalcrossShieldLine /> },
+  { href: "/reports", label: "최근 발견 제보 보기", icon: <IconPawprintLine /> },
   { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
 ] as const;
 
@@ -71,6 +71,7 @@ export type MineScreenProps = {
 
 function joinedLabel(value: Date | string): string {
   const date = new Date(value);
+  // 아바타 옆 한 줄이라 길어지면 줄바꿈됨. 제공자 이름과 합쳐 22자 안에 둠
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월부터 함께`;
 }
 
@@ -111,7 +112,7 @@ function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) 
           {pet.name}
         </Text>
         <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
-          {detail || "특징 미입력"}
+          {detail || "특징을 적지 않았어요"}
         </Text>
         {pet.note ? (
           <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
@@ -156,7 +157,8 @@ export function MineScreen({
               />
               <VStack align="stretch" gap="x0_5" minWidth="0">
                 <Text textStyle="t6Bold" color="fg.neutral" maxLines={1}>
-                  {user.displayName ?? "이름 없음"}
+                  {/* 이름은 커뮤니티 작성자로 나가는 값이라 비어 있으면 정하도록 권함 */}
+                  {user.displayName ?? "이름을 정해 주세요"}
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralMuted">
                   {PROVIDER_LABEL[user.provider] ?? "SNS"} 계정 · {joinedLabel(user.createdAt)}
@@ -170,10 +172,10 @@ export function MineScreen({
             <VStack align="stretch" gap="x3">
               <VStack align="stretch" gap="x1">
                 <Text textStyle="t5Bold" color="fg.neutral">
-                  로그인하면 남긴 제보와 관심을 모아 볼 수 있습니다
+                  로그인하고 내 활동을 모아 보세요
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralMuted">
-                  로그인하지 않아도 제보와 댓글은 그대로 쓸 수 있습니다
+                  로그인하지 않아도 제보와 댓글은 남길 수 있어요
                 </Text>
               </VStack>
               {authReady ? (
@@ -184,7 +186,7 @@ export function MineScreen({
                 </HStack>
               ) : (
                 <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  SNS 로그인 설정이 아직 끝나지 않았습니다
+                  로그인을 준비하고 있어요
                 </Text>
               )}
             </VStack>
@@ -212,8 +214,8 @@ export function MineScreen({
 
               {pets.length === 0 ? (
                 <EmptyRow
-                  title="등록한 동물이 없습니다"
-                  hint="미리 적어 두면 실종 신고를 쓸 때 그대로 불러올 수 있습니다"
+                  title="아직 등록한 동물이 없어요"
+                  hint="미리 등록해 두면 실종 신고를 빠르게 쓸 수 있어요"
                 />
               ) : (
                 <VStack align="stretch" gap="x3">

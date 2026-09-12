@@ -52,7 +52,7 @@ function Card({ item }: { item: ListItem }) {
       bg="bg.layerDefault"
     >
       {/* 링크로 두어 키보드 이동과 새 탭 열기가 그대로 동작함 */}
-      <Link href={`/r/${item.id}`} className="rebirth-card">
+      <Link href={`/r/${item.id}`}>
         <VStack align="stretch" gap="x1">
           <Text textStyle="t5Bold" color="fg.neutral">
             {describeAnimal(item)}

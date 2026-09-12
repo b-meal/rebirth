@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
 import { HStack, Icon, Text, VStack } from "@seed-design/react";
 import { IconPersonFill } from "@karrotmarket/react-monochrome-icon";
@@ -41,7 +40,7 @@ export function ProfileForm({ displayName, avatarUrl, provider }: ProfileFormPro
               fallback={<Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />}
             />
             <Text textStyle="t3Regular" color="fg.neutralMuted">
-              사진은 {PROVIDER_LABEL[provider] ?? "SNS"} 계정에서 가져옵니다
+              사진은 {PROVIDER_LABEL[provider] ?? "SNS"} 계정에서 가져와요
             </Text>
           </VStack>
 
@@ -60,12 +59,10 @@ export function ProfileForm({ displayName, avatarUrl, provider }: ProfileFormPro
               </TextField>
 
               {state.error ? <Callout tone="critical" description={state.error} /> : null}
-              {state.ok ? <Callout tone="positive" description="저장했습니다" /> : null}
+              {state.ok ? <Callout tone="positive" description="저장했어요" /> : null}
 
-              <HStack gap="x2" align="stretch">
-                <ActionButton variant="neutralWeak" size="large" flexGrow={1} asChild>
-                  <Link href="/mine">돌아가기</Link>
-                </ActionButton>
+              {/* 돌아가기는 헤더의 뒤로 가기와 같은 일을 해 두지 않음 */}
+              <HStack align="stretch">
                 <ActionButton
                   type="submit"
                   variant="brandSolid"
@@ -74,7 +71,7 @@ export function ProfileForm({ displayName, avatarUrl, provider }: ProfileFormPro
                   loading={pending}
                   disabled={pending}
                 >
-                  저장
+                  저장하기
                 </ActionButton>
               </HStack>
             </VStack>

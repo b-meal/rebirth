@@ -21,7 +21,7 @@ export type ReportCardItem = {
 export function ReportCard({ item }: { item: ReportCardItem }) {
   return (
     <VStack asChild align="stretch" gap="x1" minWidth="0">
-      <Link href={`/r/${item.id}`} className="rebirth-tile">
+      <Link href={`/r/${item.id}`}>
         {item.photoUrl ? (
           <ImageFrame
             ratio={1}
