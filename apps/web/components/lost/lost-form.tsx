@@ -12,6 +12,7 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/text-field";
 
@@ -105,6 +106,13 @@ function PickRow({
 
 /** 한 줄짜리 알림이 머무는 시간. 기본 4초는 읽고 나서도 한참 남아 있음 */
 const SNACKBAR_MS = 2000;
+
+/**
+ * 위치를 찾는 동안 비워 두는 높이
+ * 찾고 나면 그 자리에 동네 한 줄이 들어서므로 그 줄의 높이와 같게 둠
+ * 고르는 줄 두 개 높이로 잡으면 결과가 온 순간 화면이 크게 줄어듦
+ */
+const FINDING_HEIGHT = "54px";
 
 function readStepFromUrl(): LostStep {
   if (typeof window === "undefined") return 1;
@@ -280,14 +288,17 @@ export function LostForm() {
         ? locationToken !== null && !submitting
         : true;
 
-  // 버튼 위에 띄울 말
-  // 1걸음의 사진은 머리글이 이미 시킨 일이라 같은 말을 아래에 또 적지 않음
-  // 올리는 중임은 사진 칸 위에서 직접 보여 줘 눈이 그 자리를 떠나지 않게 함
-  const blocked = submitting
-    ? "신고를 저장하고 있어요"
-    : step === LAST_STEP && locationToken === null
-      ? "마지막으로 본 곳을 정해 주세요"
-      : null;
+  /**
+   * 위치를 찾는 중인지. 누른 뒤 결과가 올 때까지 아무 반응이 없으면 멈춘 줄 앎
+   * 좌표를 받고 그것을 행정동으로 바꾸고 서버 참조를 받는 세 걸음이라
+   * 사이사이 상태가 잠깐 idle 로 비어 한 걸음이라도 진행 중이면 찾는 중으로 봄
+   */
+  const findingPlace =
+    wantsGps &&
+    locationToken === null &&
+    (position.status === "requesting" ||
+      location.status === "resolving" ||
+      (position.point !== null && geocode.result === null && geocode.error === null));
 
   // 재시도에서도 같은 키를 씀, 이중 탭이 신고를 두 건 만들지 않음
   const idempotencyKey = useRef<string | null>(null);
@@ -500,7 +511,14 @@ export function LostForm() {
           <>
             {/* 머리글이 이미 어디서 봤는지 묻고 있어 같은 말을 이름표로 또 달지 않음 */}
             <Section gap="x2">
-              {areaName ? (
+              {/* 위치는 좌표를 받고 행정동으로 바꾸느라 몇 초 걸림
+                  고르는 줄을 그대로 두면 안 눌린 줄 알고 다시 누름 */}
+              {findingPlace ? (
+                // 뒤에 들어설 줄 두 개와 같은 높이로 잡아 결과가 와도 화면이 덜컥이지 않음
+                <HStack align="center" justify="center" height={FINDING_HEIGHT}>
+                  <ProgressCircle size="24" tone="neutral" />
+                </HStack>
+              ) : areaName ? (
                 // 고른 뒤에는 줄 전체가 다시 고르는 자리. 값과 바꾸기를 따로 두지 않음
                 <HStack
                   asChild
@@ -615,15 +633,6 @@ export function LostForm() {
         >
           {step === LAST_STEP ? "신고 등록하기" : "다음"}
         </ActionButton>
-        {/* 버튼 위에 두면 본문과 버튼 사이를 갈라 화면이 한 겹 더 나뉨
-            버튼을 눌러 보고 안 되는 이유를 찾는 자리라 버튼 아래에 둠 */}
-        {blocked ? (
-          <HStack justify="center">
-            <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {blocked}
-            </Text>
-          </HStack>
-        ) : null}
       </VStack>
     </Screen>
   );

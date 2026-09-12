@@ -146,7 +146,7 @@ export function PhotoField({
           {/* design-system-allow:raw-element 넓은 면 전체를 누르는 자리라 button 이 필요함 */}
           <button
             type="button"
-            className="rebirth-row"
+            className="rebirth-photo-zone"
             disabled={locked}
             onClick={() => (cameraAvailable ? cameraRef : libraryRef).current?.open()}
           >
