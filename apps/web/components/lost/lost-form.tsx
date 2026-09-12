@@ -49,15 +49,16 @@ const STEP_TITLE: Record<LostStep, string> = {
 const STEP_HEADING: Record<LostStep, string> = {
   1: "잃어버린 반려동물 사진을 올려 주세요",
   2: "어떻게 생겼나요?",
-  3: "어디서 마지막으로 봤나요?",
+  // 장소와 시각을 함께 물어 아래 두 칸이 모두 이 물음의 답이 됨
+  3: "언제 어디서 마지막으로 봤나요?",
 };
 
 // 머리글만으로 할 일이 분명한 걸음은 설명을 두지 않음
-// 마지막 걸음에서만 연락처를 왜 안 받는지 밝힘. 등록을 누르기 직전에 알아야 하는 것
+// 연락처를 왜 안 받는지는 지금 답할 것과 상관없고 완료 화면이 같은 말을 함
 const STEP_HINT: Record<LostStep, string | null> = {
   1: null,
   2: "특징만 적어 주시면 나머지는 기억나는 만큼만 골라도 돼요",
-  3: "연락처는 받지 않아요. 신고 뒤에 나오는 주소로만 확인해요",
+  3: null,
 };
 
 /**
@@ -629,10 +630,13 @@ export function LostForm() {
               )}
             </Section>
 
-            <TextField label="마지막 목격 시각">
+            {/* 값이 곧 언제인지를 말해 줘 위에 이름표를 또 달지 않음
+                읽어 주는 이름은 aria-label 로만 남김 */}
+            <TextField>
               {/* 기본은 오른쪽 끝 아이콘을 정확히 눌러야 열림
                   칸 아무 데나 눌러도 열리게 해 좁은 화면에서 헛손질하지 않게 함 */}
               <TextFieldInput
+                aria-label="마지막 목격 시각"
                 type="datetime-local"
                 className="rebirth-datetime"
                 value={occurredAt || toLocalInput(new Date())}
