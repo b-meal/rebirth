@@ -55,6 +55,8 @@ export const communityPosts = pgTable(
     index('community_posts_category_idx').on(t.category, t.createdAt.desc()),
     // 마이페이지의 내가 쓴 글
     index('community_posts_author_idx').on(t.authorId, t.createdAt.desc()),
+    // 내 동네 피드. 동으로 좁힌 뒤 최신순으로 읽음
+    index('community_posts_area_idx').on(t.areaName, t.createdAt.desc()),
   ],
 )
 

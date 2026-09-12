@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, desc, eq, inArray, isNull, sql as raw } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull, ne, sql as raw } from 'drizzle-orm'
 
 import type { CommunityCategory } from '@rebirth/types'
 
@@ -59,6 +59,14 @@ export const COMMUNITY_PAGE_SIZE = 20
 export type CommunityFeedOptions = {
   category?: CommunityCategory
   authorId?: string
+  /** 동 이름이 같은 글만. 동네를 모르면 넘기지 않아 전체를 읽음 */
+  areaName?: string
+  /**
+   * areaName 을 뒤집어 그 동네를 뺀 나머지를 읽음
+   * 내 동네 글과 다른 동네 글을 한 화면에 위아래로 둘 때 씀
+   * 동을 적지 않은 글은 어느 쪽에도 끼지 않아 제외에서도 빠짐
+   */
+  excludeArea?: boolean
   cursor?: CommunityCursor
   limit?: number
 }
@@ -67,6 +75,8 @@ export type CommunityFeedOptions = {
 export function listCommunityPosts({
   category,
   authorId,
+  areaName,
+  excludeArea = false,
   cursor,
   limit = COMMUNITY_PAGE_SIZE,
 }: CommunityFeedOptions = {}) {
@@ -79,6 +89,11 @@ export function listCommunityPosts({
         visible,
         category ? eq(communityPosts.category, category) : undefined,
         authorId ? eq(communityPosts.authorId, authorId) : undefined,
+        areaName
+          ? excludeArea
+            ? ne(communityPosts.areaName, areaName)
+            : eq(communityPosts.areaName, areaName)
+          : undefined,
         cursor
           ? raw`(${communityPosts.createdAt}, ${communityPosts.id}) < (${cursor.createdAt}, ${cursor.id})`
           : undefined,

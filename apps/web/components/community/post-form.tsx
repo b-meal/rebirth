@@ -47,11 +47,6 @@ export function PostForm({ category }: { category: CategoryDescriptor }) {
     ensure();
   }, [ensure]);
 
-  // 위치가 늦게 들어와도 채우려면 필드를 다시 마운트해야 함
-  // 사용자가 한 번이라도 고쳤으면 그 값이 이겨 덮어쓰지 않음
-  const [touched, setTouched] = useState(false);
-  const filled = touched ? null : areaName;
-
   // 쓰던 글이 있으면 새로고침과 탭 닫기를 되묻게 함
   useUnsavedWarning(dirty);
 
@@ -65,13 +60,19 @@ export function PostForm({ category }: { category: CategoryDescriptor }) {
               {category.label}
             </Text>
           </Box>
+          {/* 어느 동네에 걸리는지는 알려 주되 고치게 하지는 않음 */}
           <Text textStyle="t3Regular" color="fg.neutralMuted">
-            이웃이 함께 보는 글이에요
+            {areaName
+              ? `${areaName} 이웃들에게 보여요`
+              : loading
+                ? "동네를 확인하고 있어요"
+                : "이웃이 함께 보는 글이에요"}
           </Text>
         </VStack>
 
-        {state.message ? (
-          <Callout tone="critical" description={state.message} />
+        {/* 동네는 입력 칸이 없어 오류를 붙일 자리도 없음. 여기로 모아 보여 줌 */}
+        {state.message || errors.areaName ? (
+          <Callout tone="critical" description={state.message ?? errors.areaName} />
         ) : null}
 
         <form action={formAction} onChange={() => setDirty(true)}>
@@ -99,26 +100,13 @@ export function PostForm({ category }: { category: CategoryDescriptor }) {
               <TextFieldTextarea name="body" placeholder={category.hint} />
             </TextField>
 
-            <TextField
-              label="동네"
-              description="동 이름만 남아요. 정확한 위치는 저장하지 않아요"
-              errorMessage={errors.areaName}
-              invalid={Boolean(errors.areaName)}
-            >
-              {/* 위치가 늦게 오므로 값이 바뀌면 key 로 다시 마운트해 채움 */}
-              {/* 확인 중에는 곧 채워질 자리임을 안내해 빈 칸으로 두지 않음 */}
-              <TextFieldInput
-                key={filled ?? "empty"}
-                name="areaName"
-                defaultValue={filled ?? ""}
-                placeholder={loading ? "동네를 확인하고 있어요" : "예: 중곡동"}
-                onChange={() => setTouched(true)}
-              />
-            </TextField>
+            {/* design-system-allow:raw-element 보이지 않는 hidden 필드라 SEED 에 대응 컴포넌트가 없음 */}
+            {/* 동네는 손으로 고치지 않음. 읽는 쪽이 내 위치로 거르므로 적어 낸 동과 어긋나면 글이 어디에도 안 보임 */}
+            <input type="hidden" name="areaName" value={areaName ?? ""} />
 
             {blocked ? (
               <ActionButton variant="neutralWeak" size="medium" onClick={retry}>
-                위치 켜서 동네 채우기
+                위치 켜서 동네 붙이기
               </ActionButton>
             ) : null}
 
