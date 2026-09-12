@@ -22,7 +22,7 @@ import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { sinceLabel } from "@/lib/report-label";
 import { DeletePostButton } from "./delete-post-button";
 import { LikeButton } from "./like-button";
-import { PostPhotos } from "./post-photos";
+import { PhotoCarousel } from "@/components/ui/photo-carousel";
 import {
   CommentComposer,
   PostComments,
@@ -120,7 +120,7 @@ export function PostDetail({
           {post.body}
         </Text>
 
-        <PostPhotos urls={photoUrls} />
+        <PhotoCarousel urls={photoUrls} />
 
         {post.reportId ? (
           <Box
