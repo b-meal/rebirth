@@ -405,3 +405,23 @@ body .seed-snackbar__root {
   margin-inline: calc(var(--seed-dimension-spacing-x-global-gutter) * -1);
   padding-inline: var(--seed-dimension-spacing-x-global-gutter);
 }
+
+/* 눌러서 크게 보는 사진
+   손가락 화면에는 커서가 없어 마우스가 있는 기기에서만 바꿈 */
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-zoomable {
+    cursor: zoom-in;
+  }
+}
+
+/* 마우스로 보는 화면에만 두는 것
+   손가락으로는 밀면 되는 자리에 단추를 겹치면 사진만 가림 */
+.rebirth-pointer-only {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-pointer-only {
+    display: block;
+  }
+}
