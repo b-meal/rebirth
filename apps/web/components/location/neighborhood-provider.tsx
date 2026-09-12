@@ -19,8 +19,6 @@ import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 export type NeighborhoodState = {
   /** 예: 양재2동. 아직 모르면 null */
   areaName: string | null;
-  /** 위치를 확인하는 중인지. 첫 진입에서 문구가 깜빡이지 않도록 씀 */
-  loading: boolean;
   /** 권한을 주지 않아 동네를 모르는 상태인지. 다시 켤 버튼을 띄우는 조건 */
   blocked: boolean;
   /** 동네 이름이 필요한 화면에서 부름. 부르기 전에는 위치를 묻지 않음 */
@@ -36,14 +34,17 @@ export function NeighborhoodProvider({ children }: { children: ReactNode }) {
   const [wanted, setWanted] = useState(false);
 
   const position = useCurrentPosition({ immediate: wanted });
-  const geocode = useReverseGeocode(position.point);
+  // 지도처럼 좌표가 계속 바뀌지 않고 한 번만 잡으면 되므로 기다리지 않음
+  const geocode = useReverseGeocode(position.point, { debounceMs: 0 });
 
   const ensure = useCallback(() => setWanted(true), []);
 
+  // position 객체는 매 렌더 새 참조라 request 함수만 꺼내 씀
+  const { request } = position;
   const retry = useCallback(() => {
     setWanted(true);
-    position.request();
-  }, [position]);
+    request();
+  }, [request]);
 
   const value = useMemo<NeighborhoodState>(() => {
     const failed =
@@ -54,12 +55,11 @@ export function NeighborhoodProvider({ children }: { children: ReactNode }) {
 
     return {
       areaName: geocode.result?.areaName ?? null,
-      loading: position.status === "requesting" || geocode.loading,
       blocked: failed,
       ensure,
       retry,
     };
-  }, [position.status, geocode.result, geocode.loading, geocode.error, ensure, retry]);
+  }, [position.status, geocode.result, geocode.error, ensure, retry]);
 
   return (
     <NeighborhoodContext.Provider value={value}>{children}</NeighborhoodContext.Provider>

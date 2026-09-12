@@ -23,13 +23,13 @@ export type ComposeSheetProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-/** 제목 아래 한 줄. 동네를 알면 이름을 넣고 모르면 범위만 말함 */
+/** 제목 아래 한 줄. 동네 이름만 늦게 들어오고 나머지 글자는 고정임 */
 function NeighborhoodLine() {
-  const { areaName, loading } = useNeighborhood();
+  const { areaName } = useNeighborhood();
 
-  // 확인하는 동안 범위를 먼저 말해 두면 이름이 들어올 때 줄이 흔들리지 않음
-  if (loading || !areaName) return <>이웃들에게 공개되는 글이에요</>;
-  return <>{areaName} 근처 이웃들에게 보여져요</>;
+  // 문장을 통째로 바꾸면 길이가 달라져 깜빡여 보임
+  // 앞자리만 비워 두고 이름이 오면 그 자리에만 글자가 붙음
+  return <>{areaName ? `${areaName} ` : ""}이웃들에게 공개되는 글이에요</>;
 }
 
 /** 위치를 거부했을 때만 나오는 한 번 더 기회 */

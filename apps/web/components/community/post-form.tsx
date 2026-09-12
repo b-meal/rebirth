@@ -101,11 +101,7 @@ export function PostForm({ category }: { category: CategoryDescriptor }) {
 
             <TextField
               label="동네"
-              description={
-                blocked
-                  ? "위치를 켜면 자동으로 채워져요"
-                  : "동 이름만 남아요. 정확한 위치는 저장하지 않아요"
-              }
+              description="동 이름만 남아요. 정확한 위치는 저장하지 않아요"
               errorMessage={errors.areaName}
               invalid={Boolean(errors.areaName)}
             >
