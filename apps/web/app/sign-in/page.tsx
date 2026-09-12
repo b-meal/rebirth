@@ -19,12 +19,12 @@ export const metadata: Metadata = { title: "로그인" };
 
 // 실패 이유별 문구. 제공자 응답 본문을 그대로 옮기지 않음
 const ERROR_MESSAGES: Record<string, string> = {
-  canceled: "로그인을 취소했습니다. 다시 시도해 주십시오",
-  no_code: "로그인 응답이 올바르지 않습니다. 다시 시도해 주십시오",
-  exchange_failed: "로그인을 마치지 못했습니다. 다시 시도해 주십시오",
-  start_failed: "로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주십시오",
-  unsupported_provider: "지원하지 않는 로그인 방식입니다",
-  idle_expired: "오래 쓰지 않아 로그아웃했습니다. 다시 로그인해 주십시오",
+  canceled: "로그인을 취소했어요",
+  no_code: "로그인을 끝내지 못했어요. 다시 시도해 주세요",
+  exchange_failed: "로그인을 끝내지 못했어요. 다시 시도해 주세요",
+  start_failed: "지금은 연결이 어려워요. 잠시 후 다시 시도해 주세요",
+  unsupported_provider: "지원하지 않는 로그인 방식이에요",
+  idle_expired: "오랫동안 사용하지 않아 자동으로 로그아웃했어요",
 };
 
 /** 사용자가 잘못한 것도 고장도 아닌 안내. 빨간 톤으로 겁주지 않음 */
@@ -52,7 +52,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
             다시집
           </Text>
           <Text textStyle="t5Regular" color="fg.neutralMuted" align="center">
-            로그인하면 내가 남긴 제보를 한곳에서 볼 수 있습니다
+            내가 남긴 제보를 한곳에서 볼 수 있어요
           </Text>
         </VStack>
 
@@ -73,13 +73,13 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
         ) : (
           <Callout
             tone="warning"
-            title="로그인을 준비하고 있습니다"
-            description="SNS 로그인 설정이 아직 끝나지 않았습니다"
+            title="로그인을 준비하고 있어요"
+            description="조금만 기다려 주세요. 로그인 없이도 제보는 남길 수 있어요"
           />
         )}
 
         <Text textStyle="t2Regular" color="fg.neutralSubtle" align="center">
-          로그인하면 서비스 이용약관과 개인정보 처리방침에 동의한 것으로 봅니다
+          로그인하면 이용약관과 개인정보 처리방침에 동의하게 돼요
         </Text>
       </ScreenBody>
     </Screen>
