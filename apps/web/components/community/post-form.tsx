@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Badge, Box, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -16,11 +16,10 @@ import { BODY_MAX, TITLE_MAX, type CategoryDescriptor } from "@rebirth/core/comm
 import { createPost, type PostFormState } from "@/app/community/actions";
 import { useNeighborhood } from "@/components/location/neighborhood-provider";
 import { AppHeader } from "@/components/ui/app-header";
-import { PhotoField } from "@/components/ui/photo-field";
 import { Screen, ScreenBody } from "@/components/ui/screen";
-import { usePhotoPicker } from "@/hooks/use-photo-picker";
-import { usePhotoUploads } from "@/hooks/use-photo-uploads";
+import { useFocusError } from "@/hooks/use-focus-error";
 import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
+import { PostPhotoField } from "./post-photo-field";
 
 // 글쓰기. 주제는 앞의 바텀시트에서 고르고 여기서는 제목과 내용만 물음
 // 한 화면에 한 가지만 묻는 편이 모바일 키보드 위에서 읽기 쉬움
@@ -56,15 +55,17 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
   );
   const [dirty, setDirty] = useState(false);
   const errors = state.errors ?? {};
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusError(formRef, state);
 
   const { areaName, blocked, ensure, retry } = useNeighborhood();
 
   // 사진은 고르는 즉시 올려 두고 저장에는 참조만 실음
-  const uploads = usePhotoUploads();
-  const picker = usePhotoPicker({
-    maxCount: PHOTO_MAX,
-    onChange: uploads.sync,
-  });
+  const [uploadIds, setUploadIds] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  // 사진 칸이 effect 에서 부르므로 매 렌더 새 함수를 넘기면 서로 다시 부름
+  const handleUploadIds = useCallback((ids: string[]) => setUploadIds(ids), []);
+  const handleUploading = useCallback((value: boolean) => setUploading(value), []);
 
   // 시트를 거치지 않고 주소로 바로 들어올 수 있어 여기서도 물음
   useEffect(() => {
@@ -99,7 +100,7 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
 
       {/* 칸마다 글자 수가 아래에 붙어 그 높이까지 더해지면 사이가 비어 보임
           칸과 칸 사이는 좁히고 마지막 버튼만 따로 띄움 */}
-      <form action={formAction} onChange={() => setDirty(true)}>
+      <form ref={formRef} action={formAction} onChange={() => setDirty(true)}>
         <VStack align="stretch" gap="x3">
           {/* 주제는 앞 화면에서 이미 골랐으므로 값만 싣고 배지로만 보여 줌 */}
           <input type="hidden" name="category" value={category.id} />
@@ -124,20 +125,15 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
             <TextFieldTextarea name="body" placeholder={category.hint} />
           </TextField>
 
-          <PhotoField
-            picker={picker}
-            label="사진"
-            hint="보여 주고 싶은 사진을 골라 주세요"
-            cameraAvailable={false}
-            disabled={uploads.uploading}
+          <PostPhotoField
+            maxFiles={PHOTO_MAX}
+            onUploadIdsChange={handleUploadIds}
+            onUploadingChange={handleUploading}
           />
-          {uploads.message ? (
-            <Callout tone="critical" description={uploads.message} />
-          ) : null}
 
           {/* design-system-allow:raw-element 보이지 않는 hidden 필드라 SEED 에 대응 컴포넌트가 없음 */}
           {/* 올린 사진은 참조만 실어 보냄. 원본을 다시 붙이면 재시도가 재업로드가 됨 */}
-          {uploads.uploadIds.map((id) => (
+          {uploadIds.map((id) => (
             <input key={id} type="hidden" name="uploadIds" value={id} />
           ))}
 
@@ -153,7 +149,7 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
           {/* 쓰는 일이 끝난 뒤의 동작이라 입력 칸과는 떼어 둠 */}
           <Box pt="x3">
             <VStack align="stretch">
-              <SubmitButton uploading={uploads.uploading} />
+              <SubmitButton uploading={uploading} />
             </VStack>
           </Box>
         </VStack>
