@@ -145,17 +145,23 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
           {/* 몇 번째인지와 앞 장으로 되돌아가는 일은 같은 묶음
               아래 판정 버튼 옆에 두면 맞다 아니다 와 나란한 선택지로 읽힘
               되돌아가기는 곁다리라 면을 칠하지 않음. 칠하면 판정 버튼과 세기를 다툼
-              첫 장에서는 자리만 비워 둠. 못 누르는 버튼이 떠 있으면 왜인지 묻게 됨
-              높이는 그 버튼과 같게 두어 첫 장에서도 사진이 같은 자리에 옴 */}
-          <HStack justify="space-between" align="center" minHeight="x6">
+              첫 장에서는 같은 버튼을 감춰 자리만 지킴
+              빼 버리면 둘째 장에서 줄이 늘어나며 사진이 밀리고, 회색으로 두면 왜 못 누르는지 묻게 됨 */}
+          <HStack justify="space-between" align="center">
             <Text textStyle="t3Regular" color="fg.neutralMuted">
               {index + 1} / {ordered.length}
             </Text>
-            {index > 0 ? (
-              <ActionButton variant="ghost" size="xsmall" onClick={previous}>
-                이전 후보
-              </ActionButton>
-            ) : null}
+            <ActionButton
+              variant="ghost"
+              size="xsmall"
+              onClick={previous}
+              // 감춘 동안에는 누를 수도 읽힐 수도 없어야 함
+              tabIndex={index === 0 ? -1 : undefined}
+              aria-hidden={index === 0}
+              style={index === 0 ? { visibility: "hidden" } : undefined}
+            >
+              이전 후보
+            </ActionButton>
           </HStack>
 
           <CandidatePhoto
