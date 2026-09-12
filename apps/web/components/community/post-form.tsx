@@ -40,7 +40,7 @@ export function PostForm({ category }: { category: CategoryDescriptor }) {
   const [dirty, setDirty] = useState(false);
   const errors = state.errors ?? {};
 
-  const { areaName, blocked, ensure, retry } = useNeighborhood();
+  const { areaName, loading, blocked, ensure, retry } = useNeighborhood();
 
   // 시트를 거치지 않고 주소로 바로 들어올 수 있어 여기서도 물음
   useEffect(() => {
@@ -106,11 +106,12 @@ export function PostForm({ category }: { category: CategoryDescriptor }) {
               invalid={Boolean(errors.areaName)}
             >
               {/* 위치가 늦게 오므로 값이 바뀌면 key 로 다시 마운트해 채움 */}
+              {/* 확인 중에는 곧 채워질 자리임을 안내해 빈 칸으로 두지 않음 */}
               <TextFieldInput
                 key={filled ?? "empty"}
                 name="areaName"
                 defaultValue={filled ?? ""}
-                placeholder="예: 중곡동"
+                placeholder={loading ? "동네를 확인하고 있어요" : "예: 중곡동"}
                 onChange={() => setTouched(true)}
               />
             </TextField>

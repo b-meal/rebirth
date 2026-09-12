@@ -19,6 +19,8 @@ import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 export type NeighborhoodState = {
   /** 예: 양재2동. 아직 모르면 null */
   areaName: string | null;
+  /** 물어보기로 한 뒤 결과도 실패도 아직 없는 동안 */
+  loading: boolean;
   /** 권한을 주지 않아 동네를 모르는 상태인지. 다시 켤 버튼을 띄우는 조건 */
   blocked: boolean;
   /** 동네 이름이 필요한 화면에서 부름. 부르기 전에는 위치를 묻지 않음 */
@@ -53,13 +55,18 @@ export function NeighborhoodProvider({ children }: { children: ReactNode }) {
       position.status === "unavailable" ||
       geocode.error !== null;
 
+    // 훅의 status 는 첫 렌더의 immediate 로 정해져 나중에 켜도 idle 로 남음
+    // 그래서 상태 이름 대신 결과나 실패가 도착했는지로 판단함
+    const settled = failed || geocode.result !== null;
+
     return {
       areaName: geocode.result?.areaName ?? null,
+      loading: wanted && !settled,
       blocked: failed,
       ensure,
       retry,
     };
-  }, [position.status, geocode.result, geocode.error, ensure, retry]);
+  }, [wanted, position.status, geocode.result, geocode.error, ensure, retry]);
 
   return (
     <NeighborhoodContext.Provider value={value}>{children}</NeighborhoodContext.Provider>

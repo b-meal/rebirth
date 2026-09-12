@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { HStack, Icon, Text, VStack } from "@seed-design/react";
+import { Box, HStack, Icon, Text, VStack } from "@seed-design/react";
 import { IconChevronRightLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import {
@@ -10,6 +10,7 @@ import {
   BottomSheetContent,
   BottomSheetRoot,
 } from "seed-design/ui/bottom-sheet";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 
 import { COMMUNITY_CATEGORIES } from "@rebirth/core/community";
 
@@ -23,26 +24,23 @@ export type ComposeSheetProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-/** 제목 아래 한 줄. 동네 이름만 늦게 들어오고 나머지 글자는 고정임 */
-function NeighborhoodLine() {
-  const { areaName } = useNeighborhood();
-
-  // 문장을 통째로 바꾸면 길이가 달라져 깜빡여 보임
-  // 앞자리만 비워 두고 이름이 오면 그 자리에만 글자가 붙음
-  return <>{areaName ? `${areaName} ` : ""}이웃들에게 공개되는 글이에요</>;
+/** 동네를 확인하는 동안 시트 가운데에 띄움. 남은 공간을 채워 가운데에 섬 */
+function SheetLoading() {
+  return (
+    <Box display="flex" justifyContent="center" alignItems="center" flexGrow={1}>
+      <ProgressCircle size="24" tone="neutral" />
+    </Box>
+  );
 }
 
 /** 위치를 거부했을 때만 나오는 한 번 더 기회 */
-function RetryLocation() {
-  const { blocked, retry } = useNeighborhood();
-  if (!blocked) return null;
-
+function RetryLocation({ onRetry }: { onRetry: () => void }) {
   return (
     <HStack justify="space-between" align="center" gap="x3" px="x3" py="x2">
       <Text textStyle="t2Regular" color="fg.neutralSubtle">
         위치를 켜면 내 동네를 보여줘요
       </Text>
-      <ActionButton variant="neutralWeak" size="xsmall" onClick={retry}>
+      <ActionButton variant="neutralWeak" size="xsmall" onClick={onRetry}>
         위치 켜기
       </ActionButton>
     </HStack>
@@ -51,8 +49,7 @@ function RetryLocation() {
 
 export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
   const router = useRouter();
-  // 객체째 구독하면 동네 이름이 들어올 때마다 effect 가 다시 돌아 함수만 꺼냄
-  const { ensure } = useNeighborhood();
+  const { areaName, loading, blocked, ensure, retry } = useNeighborhood();
 
   // 시트를 열 때 물음. 커뮤니티를 쓰지 않는 사용자에게는 권한 팝업이 뜨지 않음
   useEffect(() => {
@@ -67,16 +64,21 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
   return (
     <BottomSheetRoot open={open} onOpenChange={onOpenChange}>
       {/* 핸들과 바깥 탭과 Esc 로 닫혀 X 까지 두면 닫는 길이 넷이라 뺌 */}
+      {/* 동네를 확인하는 동안은 설명을 비워 뒤늦게 글자가 붙지 않게 함
+          스니펫이 description 유무로 자리를 정해 여기서 넘길지 말지 가림 */}
       <BottomSheetContent
         title="주제 선택"
-        description={<NeighborhoodLine />}
+        description={
+          areaName ? `${areaName} 이웃들에게 공개되는 글이에요` : undefined
+        }
         showHandle
         showCloseButton={false}
       >
         <BottomSheetBody>
           {/* 주제는 이름만으로 충분함. 설명을 붙이면 시트가 화면 절반을 먹음 */}
-          <VStack align="stretch">
-            <RetryLocation />
+          {loading ? <SheetLoading /> : null}
+          <VStack align="stretch" display={loading ? "none" : "flex"}>
+            {blocked ? <RetryLocation onRetry={retry} /> : null}
             {COMMUNITY_CATEGORIES.map((option) => (
               <HStack
                 asChild

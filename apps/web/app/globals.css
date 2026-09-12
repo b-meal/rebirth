@@ -169,6 +169,10 @@ body .seed-bottom-sheet__content {
   flex: 0 1 auto;
   width: 100%;
   max-width: 390px;
+  /* 내용이 적으면 손이 닿기 어려울 만큼 납작해지고
+     불러오는 동안과 다 불러온 뒤의 높이가 달라 시트가 늘어나 보임
+     바닥선을 정해 두면 두 상태가 같은 크기로 서 있음 */
+  min-height: 320px;
 }
 
 /* 대화상자는 시트와 달리 가운데 뜬 카드라 프레임 폭까지 넓히지 않음
@@ -192,6 +196,12 @@ body .seed-dialog__content {
 body .seed-bottom-sheet__body,
 body .seed-bottom-sheet__footer {
   padding-bottom: calc(var(--seed-dimension-x4) + env(safe-area-inset-bottom, 0px));
+}
+
+/* 바닥선 때문에 생긴 여백이 시트 아래에 남지 않도록 본문이 채움
+   본문이 늘어나야 불러오는 동안의 표시가 가운데에 섬 */
+body .seed-bottom-sheet__body {
+  flex: 1;
 }
 
 body .seed-bottom-sheet__body:has(~ .seed-bottom-sheet__footer) {
