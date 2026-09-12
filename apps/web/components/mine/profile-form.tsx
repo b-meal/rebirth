@@ -61,15 +61,18 @@ export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
           </VStack>
 
           {/* 돌아가기는 헤더의 뒤로 가기와 같은 일을 해 두지 않음 */}
+          {/* pb 는 유틸이 안전 영역을 더해 다시 잡으므로 여기서 주지 않음 */}
           <VStack
+            className="rebirth-bottom-bar"
             position="sticky"
             bottom="0"
             zIndex={1}
             align="stretch"
             px="spacingX.globalGutter"
             pt="x3"
-            pb="x5"
             bg="bg.layerDefault"
+            borderTopWidth="1px"
+            borderColor="stroke.neutralMuted"
           >
             <ActionButton
               type="submit"

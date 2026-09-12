@@ -35,8 +35,6 @@ export function AppHeader({ title, home = false, action }: AppHeaderProps) {
       top="0"
       zIndex={10}
       bg="bg.layerDefault"
-      borderBottomWidth={1}
-      borderColor="stroke.neutralMuted"
     >
       <Box width={SLOT_WIDTH}>
         {home ? (

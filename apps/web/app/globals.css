@@ -151,6 +151,18 @@ a {
   }
 }
 
+/* 화면 아래에 붙는 버튼 띠
+   아이폰은 아래 홈 인디케이터가 화면 위에 떠 있어 버튼이 그 밑에 깔림
+   기기가 알려 주는 안전 영역만큼 더 띄우고, 없는 기기에서는 0 이라 그대로임 */
+.rebirth-bottom-bar {
+  padding-bottom: calc(var(--seed-dimension-x5) + env(safe-area-inset-bottom, 0px));
+}
+
+/* 위아래 여백이 같은 띠는 자기 값을 지키고 안전 영역만 더함 */
+.rebirth-bottom-bar--tight {
+  padding-bottom: calc(var(--seed-dimension-x3) + env(safe-area-inset-bottom, 0px));
+}
+
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
 .rebirth-scroll-row {
   overflow-x: auto;

@@ -379,14 +379,16 @@ export function ReportDetail({
       </VStack>
 
       {/* 아래 고정 자리는 다음 행동을 담음, 부상 제보는 구조 요청을 주 버튼으로 올림 */}
+      {/* 아래 여백은 유틸이 안전 영역을 더해 잡으므로 위쪽만 줌 */}
       <HStack
+        className="rebirth-bottom-bar--tight"
         position="sticky"
         bottom="0"
         gap="x2"
         align="center"
         justify="space-between"
         px="spacingX.globalGutter"
-        py="x3"
+        pt="x3"
         borderTopWidth={1}
         borderColor="stroke.neutralMuted"
         bg="bg.layerFloating"
