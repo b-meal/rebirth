@@ -430,9 +430,11 @@ export function ReportDetail({
                 구조와 보호는 관할 지자체가 맡습니다. 이 앱이 구조를 대신 접수하지는 않습니다
               </Text>
               <VStack align="stretch" gap="x2">
+                {/* 개·고양이 발견 신고를 받아 관할 지자체로 연결하는 대표 번호 */}
+                <FeatureRow label="개 · 고양이" value="1577-0954" />
+                <FeatureRow label="야생동물" value="시도 야생동물구조센터" />
                 <FeatureRow label="지자체 콜센터" value="지역번호 + 120" />
                 <FeatureRow label="관할 보호센터 확인" value="animal.go.kr" />
-                <FeatureRow label="야생동물" value="시도 야생동물구조센터" />
               </VStack>
               <Text textStyle="t3Regular" color="fg.neutralMuted">
                 다친 동물을 옮기면 상태가 나빠질 수 있어 먼저 안내를 확인해 주십시오
