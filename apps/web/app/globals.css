@@ -216,10 +216,13 @@ body .seed-bottom-sheet__content.rebirth-sheet--full {
   }
 }
 
-/* 본문이 남는 높이를 먹고 스스로 스크롤해 올리기 버튼이 바닥에 남음 */
+/* 본문이 남는 높이를 먹고 스스로 스크롤해 올리기 버튼이 바닥에 남음
+   시트 본문은 좌우 여백만 있고 위가 없어 첫 줄이 앱바에 바로 붙음
+   좌우와 같은 값을 위에도 줘 앱바와 본문이 한 칸 떨어짐 */
 body .seed-bottom-sheet__content.rebirth-sheet--full .seed-bottom-sheet__body {
   flex: 1;
   overflow-y: auto;
+  padding-top: var(--seed-dimension-spacing-x-global-gutter);
 }
 
 /* 대화상자는 시트와 달리 가운데 뜬 카드라 프레임 폭까지 넓히지 않음
