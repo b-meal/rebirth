@@ -148,6 +148,20 @@
       "when": 1789212260155,
       "tag": "0020_add_community_area_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789225478666,
+      "tag": "0021_add_pet_photos",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1789225478667,
+      "tag": "0022_lock_down_pet_photos_rls",
+      "breakpoints": true
     }
   ]
 }
