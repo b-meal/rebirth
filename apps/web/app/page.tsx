@@ -1,52 +1,53 @@
-import Image from "next/image";
-import { Text, VStack } from "@seed-design/react";
+import { createSignedThumbUrls } from "@rebirth/core/storage";
+import { listMapReports } from "@rebirth/db";
+import { LIST_PERIOD_DAYS } from "@rebirth/types";
 
-import { HOME_PATH, SIGN_IN_PATH } from "@rebirth/core/auth";
+import { sinceLabel } from "@/lib/report-label";
+import { HomeScreen, type MapMarker } from "@/components/home/home-screen";
+import { SplashOverlay } from "@/components/ui/splash-overlay";
 
-import { Screen, ScreenBody } from "@/components/ui/screen";
-import { isAuthConfigured } from "@/lib/supabase/config";
-import { createClient } from "@/lib/supabase/server";
-import { SplashRedirect } from "./splash-redirect";
+// 마커는 격자 좌표만 서버에서 읽어 넘김, 정확 좌표는 공개 응답과 이 화면에 넣지 않음
 
-// 진입 화면. 로그인 여부를 서버에서 판정해 목적지를 정함
-// 판정을 클라이언트로 넘기면 로그인한 사람에게도 로그인 화면이 한 번 스쳐 보임
-// 브랜드를 잠깐 보여 주는 자리이므로 즉시 redirect 하지 않고 화면을 그린 뒤 넘김
+// 새 제보가 바로 지도에 올라와야 해 캐시하지 않음
+export const dynamic = "force-dynamic";
 
-/** 로고를 읽을 수 있는 최소 시간. 너무 길면 진입이 느리게 느껴짐 */
-const SPLASH_MS = 1200;
+// 지도에 올릴 조회 기간, 목록의 확장 기간과 같은 30일
+const MAP_DAYS = LIST_PERIOD_DAYS[1];
 
-export default async function SplashPage() {
-  const destination = await resolveDestination();
+async function loadMarkers(): Promise<MapMarker[]> {
+  try {
+    const since = new Date(Date.now() - MAP_DAYS * 86_400_000);
+    const rows = (await listMapReports({ fromOccurredAt: since })).filter(
+      (row) => row.coarsePoint !== null,
+    );
 
-  return (
-    <Screen>
-      <ScreenBody justify="center" align="center" gap="x4">
-        <Image
-          src="/logo/logo-mark-512.png"
-          alt=""
-          width={96}
-          height={96}
-          priority
-        />
-        <VStack align="center" gap="x1">
-          <Text as="h1" textStyle="screenTitle" color="fg.neutral">
-            다시집
-          </Text>
-          <Text textStyle="t4Regular" color="fg.neutralMuted" align="center">
-            길에서 만난 동물이 집으로 돌아가는 길
-          </Text>
-        </VStack>
-      </ScreenBody>
+    // 비공개 버킷이라 서명이 필요하고 카드와 핀이 같은 축소본을 함께 씀
+    const paths = rows.flatMap((row) => (row.photoPath ? [row.photoPath] : []));
+    const signed = await createSignedThumbUrls(paths).catch(() => new Map<string, string>());
 
-      <SplashRedirect to={destination} delayMs={SPLASH_MS} />
-    </Screen>
-  );
+    return rows.map((row) => ({
+      id: row.id,
+      animalType: row.animalType,
+      colors: row.colors,
+      size: row.size,
+      careSituation: row.careSituation,
+      injury: row.injury,
+      areaName: row.areaName,
+      sinceLabel: sinceLabel(row.occurredAt),
+      photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
+      point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
+    }));
+  } catch {
+    return [];
+  }
 }
 
-/** 로그인했으면 홈, 아니면 로그인 화면 */
-async function resolveDestination(): Promise<string> {
-  if (!isAuthConfigured()) return HOME_PATH;
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  return data?.claims ? HOME_PATH : SIGN_IN_PATH;
+export default async function HomePage() {
+  return (
+    <>
+      <HomeScreen markers={await loadMarkers()} />
+      {/* 덮개가 걷히는 동안 아래에서 지도가 먼저 준비됨 */}
+      <SplashOverlay />
+    </>
+  );
 }

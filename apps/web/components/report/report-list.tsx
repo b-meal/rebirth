@@ -11,6 +11,7 @@ import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { ResultSection } from "seed-design/ui/result-section";
 
+import { CARE_LABEL, describeAnimal } from "@/lib/report-label";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 
 // WEB-08 최근 제보를 조건으로 좁혀 훑되 품종 필터와 거리 정렬은 두지 않음
@@ -33,32 +34,11 @@ const TYPE_OPTIONS: { value: AnimalType; label: string }[] = [
   { value: "other", label: "그 외" },
 ];
 
-const SIZE_LABEL: Record<string, string> = {
-  small: "소형",
-  medium: "중형",
-  large: "대형",
-  unknown: "",
-};
-
-const CARE_LABEL: Record<string, string> = {
-  roaming: "배회 중",
-  in_care: "제보자가 보호 중",
-  unknown: "확인되지 않음",
-};
-
 const KST = new Intl.DateTimeFormat("ko-KR", {
   timeZone: "Asia/Seoul",
   dateStyle: "long",
   timeStyle: "short",
 });
-
-// 품종은 단정하지 않고 털색과 크기로만 부름
-function describe(item: ListItem) {
-  const color = item.colors.join(" ");
-  if (item.animalType === "dog") return `${color} ${SIZE_LABEL[item.size] ?? ""}견`.trim();
-  if (item.animalType === "cat") return `${color} 고양이`.trim();
-  return `${color} 동물`.trim();
-}
 
 function Card({ item }: { item: ListItem }) {
   return (
@@ -74,7 +54,7 @@ function Card({ item }: { item: ListItem }) {
       <Link href={`/r/${item.id}`}>
         <VStack align="stretch" gap="x1">
           <Text textStyle="t5Bold" color="fg.neutral">
-            {describe(item)}
+            {describeAnimal(item)}
           </Text>
           <Text textStyle="t3Regular" color="fg.neutralMuted">
             {item.areaName ?? "지역 미확인"}

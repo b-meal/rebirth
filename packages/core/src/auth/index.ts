@@ -15,7 +15,6 @@ export {
   HOME_PATH,
   NEXT_PARAM,
   SIGN_IN_PATH,
-  SPLASH_PATH,
   isPublicPath,
   safeNextPath,
 } from "./route-policy";

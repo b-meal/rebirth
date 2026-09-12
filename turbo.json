@@ -9,7 +9,6 @@
     "SUPABASE_SERVICE_ROLE_KEY",
     "DATABASE_URL",
     "KAKAO_REST_API_KEY",
-    "NEXT_PUBLIC_KAKAO_JS_KEY",
     "NEXT_PUBLIC_SITE_URL"
   ],
   "globalDependencies": [

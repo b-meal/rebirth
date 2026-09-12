@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // SEED CLI 가 내려받는 원본 스니펫이라 우리 규칙의 검사 대상 제외
     "seed-design/**",
+    // 빌드 전에 복사해 두는 지도 워커 사본이라 검사 대상 제외
+    "public/maplibre/**",
   ]),
 ]);
 

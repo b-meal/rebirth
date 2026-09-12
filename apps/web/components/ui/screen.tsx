@@ -27,3 +27,18 @@ export function ScreenBody({ gap = "spacingY.componentDefault", ...props }: VSta
 export function Section({ gap = "x3", ...props }: VStackProps) {
   return <VStack as="section" align="stretch" gap={gap} {...props} />;
 }
+
+/** 카드로 끊어 읽는 절, 바탕이 basement 인 화면에서만 면이 구분됨 */
+export function SectionCard({ gap = "x3", ...props }: VStackProps) {
+  return (
+    <VStack
+      as="section"
+      align="stretch"
+      gap={gap}
+      px="spacingX.globalGutter"
+      py="x4"
+      bg="bg.layerDefault"
+      {...props}
+    />
+  );
+}

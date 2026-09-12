@@ -1,3 +1,34 @@
+/* 브랜드색 원천 교체, 일부 레시피가 carrot 팔레트를 직접 읽어 역할 토큰만으로는 부족 */
+:root,
+:root[data-seed-color-mode="system"][data-seed-user-color-scheme="light"],
+:root[data-seed-color-mode="light-only"] {
+  --seed-color-palette-carrot-100: #f1f7ef;
+  --seed-color-palette-carrot-200: #e7f3e3;
+  --seed-color-palette-carrot-300: #d5ebce;
+  --seed-color-palette-carrot-400: #bcdfb0;
+  --seed-color-palette-carrot-500: #9bd187;
+  --seed-color-palette-carrot-600: #76c457;
+  --seed-color-palette-carrot-700: #5ea740;
+  --seed-color-palette-carrot-800: #48862d;
+  --seed-color-palette-carrot-900: #335f20;
+  --seed-color-palette-carrot-1000: #172f0c;
+}
+
+/* 다크 모드는 SEED 와 같이 단계 순서가 뒤집힘, 600 대신 700 이 브랜드 면 */
+:root[data-seed-color-mode="system"][data-seed-user-color-scheme="dark"],
+:root[data-seed-color-mode="dark-only"] {
+  --seed-color-palette-carrot-100: #232a21;
+  --seed-color-palette-carrot-200: #293a23;
+  --seed-color-palette-carrot-300: #345129;
+  --seed-color-palette-carrot-400: #3d6b2a;
+  --seed-color-palette-carrot-500: #4f8c35;
+  --seed-color-palette-carrot-600: #63ac45;
+  --seed-color-palette-carrot-700: #76c457;
+  --seed-color-palette-carrot-800: #a1d58f;
+  --seed-color-palette-carrot-900: #d0e0ca;
+  --seed-color-palette-carrot-1000: #edf0ec;
+}
+
 /* SEED 는 서체를 정하지 않아 앱에서 한 번만 지정 */
 html {
   font-family: "Pretendard Variable", Pretendard, system-ui, sans-serif;
@@ -26,6 +57,18 @@ a {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+/* 지도 말풍선은 SEED 카드로 그려서 SDK 기본 면과 꼬리를 지움 */
+.rebirth-map-popup .maplibregl-popup-content {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.rebirth-map-popup .maplibregl-popup-tip {
+  display: none;
 }
 
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */

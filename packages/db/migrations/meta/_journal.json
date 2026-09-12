@@ -57,6 +57,48 @@
       "when": 1788958565071,
       "tag": "0007_lock_down_new_tables_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789023730291,
+      "tag": "0008_add_report_comments",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789023731291,
+      "tag": "0009_lock_down_comments_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789025038224,
+      "tag": "0010_add_breed_guess",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789025462542,
+      "tag": "0011_add_report_interests",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789025463542,
+      "tag": "0012_lock_down_interests_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789025464542,
+      "tag": "0013_add_user_profiles",
+      "breakpoints": true
     }
   ]
 }

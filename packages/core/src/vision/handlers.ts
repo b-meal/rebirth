@@ -27,20 +27,23 @@ import {
   type RouteContext,
 } from "../http";
 import { downloadPhoto } from "../storage";
-import { VisionError, analyzePhoto } from "./analyze";
+import { ANALYZE_MAX_IMAGES, VisionError, analyzePhoto } from "./analyze";
 import { ANALYZE_FAILED_MESSAGE, adviseFromResult } from "./guidance";
 
 // AI 초안. 이미 올린 사진을 uploadId 로 지목해 분석함
 // 브라우저가 사진을 두 번 올리지 않고, 세션 밖 사진은 분석 대상이 되지 않음
 
-const NO_SESSION = "사진을 다시 올려 주십시오. 작성 중이던 정보가 만료됐습니다";
-const NO_UPLOAD = "분석할 사진을 찾을 수 없습니다. 사진을 다시 올려 주십시오";
+const NO_SESSION = "사진을 다시 올려 주세요. 작성 중이던 정보가 만료됐어요";
+const NO_UPLOAD = "분석할 사진을 찾을 수 없어요. 사진을 다시 올려 주세요";
 
 // 모델이 받지 못하는 형식. 저장은 되지만 분석은 건너뛰고 직접 입력으로 돌림
 const MODEL_MEDIA_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
 const requestAnalysis = z.object({
-  uploadId: z.uuid("사진 참조가 올바르지 않습니다"),
+  uploadIds: z
+    .array(z.uuid("사진 참조가 올바르지 않아요"))
+    .min(1, "분석할 사진이 필요해요")
+    .max(ANALYZE_MAX_IMAGES, "사진은 두 장까지 분석해요"),
 });
 
 /* POST /api/draft/analyze  올린 사진의 초안을 만듦 */
@@ -57,45 +60,50 @@ export async function analyzeHandler(request: Request): Promise<Response> {
   if (!sessionId) return unauthorized(NO_SESSION);
 
   try {
-    const [upload] = await findUsableUploads({
+    const rows = await findUsableUploads({
       sessionId,
-      ids: [parsed.data.uploadId],
+      ids: parsed.data.uploadIds,
     });
-    if (!upload?.storagePath) return notFound(NO_UPLOAD);
+    // 조회는 순서를 보장하지 않아 요청 순서로 다시 세움. 첫 장이 대표 사진
+    const ordered = parsed.data.uploadIds
+      .map((id) => rows.find((row) => row.id === id))
+      .filter((row): row is (typeof rows)[number] => Boolean(row?.storagePath));
+    if (ordered.length === 0) return notFound(NO_UPLOAD);
 
-    // 같은 사진의 같은 revision 은 다시 분석하지 않고 기존 작업을 돌려줌
-    const existing = await findAnalysisJobByUpload({
-      sessionId,
-      uploadId: upload.id,
-      revision: upload.revision,
-    });
-    if (existing) return okPrivate(toJobBody(existing));
-
-    if (
-      !MODEL_MEDIA_TYPES.includes(
-        upload.contentType as (typeof MODEL_MEDIA_TYPES)[number],
-      )
-    ) {
-      // HEIC 는 저장은 되지만 모델에 넣지 못함. 실패가 아니라 직접 입력 안내
+    // HEIC 는 저장은 되지만 모델에 넣지 못함. 넣을 수 있는 것만 골라 분석함
+    const usable = ordered.filter((row) =>
+      MODEL_MEDIA_TYPES.includes(row.contentType as (typeof MODEL_MEDIA_TYPES)[number]),
+    );
+    if (usable.length === 0) {
+      // 실패가 아니라 직접 입력 안내
       return serviceUnavailable(
-        "이 형식은 AI 초안을 만들 수 없습니다. 직접 입력해 주십시오",
+        "이 형식은 AI 초안을 만들 수 없어요. 직접 입력해 주세요",
       );
     }
+
+    // 작업 행은 실제로 분석한 첫 장 기준. 같은 사진의 같은 revision 은 다시 분석하지 않음
+    const anchor = usable[0];
+    const existing = await findAnalysisJobByUpload({
+      sessionId,
+      uploadId: anchor.id,
+      revision: anchor.revision,
+    });
+    if (existing) return okPrivate(toJobBody(existing));
 
     const limit = checkRateLimit(limitKey, RATE_LIMITS.analyze);
     if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
 
     const job = await insertAnalysisJob({
       sessionId,
-      uploadId: upload.id,
-      revision: upload.revision,
+      uploadId: anchor.id,
+      revision: anchor.revision,
     });
     // onConflictDoNothing 이라 경쟁 요청이 이미 만들었을 수 있음
     if (!job) {
       const raced = await findAnalysisJobByUpload({
         sessionId,
-        uploadId: upload.id,
-        revision: upload.revision,
+        uploadId: anchor.id,
+        revision: anchor.revision,
       });
       if (raced) return okPrivate(toJobBody(raced));
       return serverError("analyze.job", new Error("작업 행을 만들지 못했습니다"));
@@ -103,11 +111,16 @@ export async function analyzeHandler(request: Request): Promise<Response> {
 
     const startedAt = Date.now();
     try {
-      const file = await downloadPhoto(upload.storagePath);
-      const outcome = await analyzePhoto({
-        base64: Buffer.from(file.body).toString("base64"),
-        mediaType: upload.contentType ?? file.contentType,
-      });
+      const files = await Promise.all(
+        usable.map(async (row) => {
+          const file = await downloadPhoto(row.storagePath as string);
+          return {
+            base64: Buffer.from(file.body).toString("base64"),
+            mediaType: row.contentType ?? file.contentType,
+          };
+        }),
+      );
+      const outcome = await analyzePhoto({ images: files });
       const advice = adviseFromResult(outcome.result);
 
       await finishAnalysisJob({
@@ -121,8 +134,8 @@ export async function analyzeHandler(request: Request): Promise<Response> {
       return okPrivate({
         jobId: job.id,
         status: "succeeded",
-        uploadId: upload.id,
-        revision: upload.revision,
+        uploadId: anchor.id,
+        revision: anchor.revision,
         // confidence 는 화면에 쓰지 않고 지표 저장용으로만 내려보냄
         draft: outcome.result,
         advice: advice.state,
@@ -146,8 +159,8 @@ export async function analyzeHandler(request: Request): Promise<Response> {
           {
             jobId: job.id,
             status: "failed",
-            uploadId: upload.id,
-            revision: upload.revision,
+            uploadId: anchor.id,
+            revision: anchor.revision,
             advice: "failed",
             message: ANALYZE_FAILED_MESSAGE,
             reason: error.kind,
@@ -169,14 +182,14 @@ export async function getAnalysisJobHandler(
   context: RouteContext,
 ): Promise<Response> {
   const { id } = await context.params;
-  if (!isUuid(id)) return badRequest("작업 참조가 올바르지 않습니다");
+  if (!isUuid(id)) return badRequest("작업 참조가 올바르지 않아요");
 
   const sessionId = await findDraftSession(request);
   if (!sessionId) return unauthorized(NO_SESSION);
 
   try {
     const job = await findAnalysisJob({ sessionId, id });
-    if (!job) return notFound("분석 작업을 찾을 수 없습니다");
+    if (!job) return notFound("분석 작업을 찾을 수 없어요");
     return okPrivate(toJobBody(job));
   } catch (error) {
     return serverError("analyze.get", error);

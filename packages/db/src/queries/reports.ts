@@ -7,13 +7,23 @@ import {
   eq,
   gte,
   inArray,
+  isNotNull,
   isNull,
   lte,
   sql as raw,
 } from 'drizzle-orm'
 
+import { COMMENT_PAGE_SIZE } from '@rebirth/types'
+
 import { db } from '../client'
-import { reportFlags, reportPhotos, reports } from '../schema/reports'
+import { draftSessions } from '../schema/drafts'
+import {
+  reportComments,
+  reportFlags,
+  reportInterests,
+  reportPhotos,
+  reports,
+} from '../schema/reports'
 
 // 공개 응답에 나갈 컬럼
 // exactPoint·coarsePoint·manageTokenHash·reporterId·aiRaw 는 여기 넣지 않음
@@ -25,6 +35,7 @@ export const publicReportColumns = {
   lifecycle: reports.lifecycle,
   careSituation: reports.careSituation,
   animalType: reports.animalType,
+  breedGuess: reports.breedGuess,
   appearance: reports.appearance,
   colors: reports.colors,
   size: reports.size,
@@ -110,6 +121,8 @@ export function findPublicReport(id: string) {
 
 export type PublicListOptions = {
   kind?: (typeof reports.kind.enumValues)[number]
+  // 자유 검색어. 외형·지역명·털색을 부분 일치로 봄
+  q?: string
   // 행정구역 코드. 상위 코드를 주면 하위를 접두 일치로 포함함
   areaCode?: string
   animalType?: (typeof reports.animalType.enumValues)[number]
@@ -135,6 +148,7 @@ const PUBLIC_LIST_LIMIT = 20
 /** 공개 목록. 좌표가 아니라 행정구역 코드로 좁힘. WEB-08 */
 export function listPublicReports({
   kind,
+  q,
   areaCode,
   animalType,
   size,
@@ -152,6 +166,16 @@ export function listPublicReports({
       and(
         eq(reports.visibility, 'public'),
         kind ? eq(reports.kind, kind) : undefined,
+        // 대소문자와 자모 분해는 다루지 않음. 한글 부분 일치면 충분함
+        q
+          ? raw`(${reports.appearance} ilike ${'%' + q + '%'}
+              or ${reports.areaName} ilike ${'%' + q + '%'}
+              or ${reports.breedGuess} ilike ${'%' + q + '%'}
+              or exists (
+                select 1 from unnest(${reports.colors}) as color
+                where color ilike ${'%' + q + '%'}
+              ))`
+          : undefined,
         includeClosed
           ? undefined
           : raw`${reports.lifecycle} in ('active', 'searching')`,
@@ -169,6 +193,146 @@ export function listPublicReports({
       ),
     )
     .orderBy(desc(reports.occurredAt), desc(reports.id))
+    .limit(limit)
+}
+
+/** 홈 지도 마커 상한. 한 화면에 그릴 수 있는 수를 넘기지 않음 */
+const MAP_LIMIT = 100
+
+export type MapListOptions = {
+  fromOccurredAt?: Date
+  limit?: number
+}
+
+/**
+ * 홈 지도 마커. 격자 스냅 좌표만 고르고 exactPoint 는 선택하지 않음
+ * 공개 응답은 POL-09 대로 좌표를 내주지 않으므로 서버 컴포넌트에서만 부름
+ */
+export function listMapReports({
+  fromOccurredAt,
+  limit = MAP_LIMIT,
+}: MapListOptions = {}) {
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      size: reports.size,
+      colors: reports.colors,
+      careSituation: reports.careSituation,
+      injury: reports.injury,
+      areaName: reports.areaName,
+      occurredAt: reports.occurredAt,
+      coarsePoint: reports.coarsePoint,
+      coarseGridM: reports.coarseGridM,
+      // 카드에 쓸 첫 사진 경로. 서명 URL 은 호출자가 한 번에 만듦
+      photoPath: raw<string | null>`(
+        select p.storage_path from ${reportPhotos} p
+        where p.report_id = ${reports}.id
+        order by p.sort_order limit 1
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.kind, 'sighting'),
+        eq(reports.visibility, 'public'),
+        eq(reports.lifecycle, 'active'),
+        // 지역만 고른 제보는 격자 좌표가 없어 마커로 찍지 않음
+        isNotNull(reports.coarsePoint),
+        fromOccurredAt ? gte(reports.occurredAt, fromOccurredAt) : undefined,
+      ),
+    )
+    .orderBy(desc(reports.occurredAt), desc(reports.id))
+    .limit(limit)
+}
+
+/** 카드용 첫 사진 경로. 경로는 공개 응답에 넣지 않고 서명에만 씀 */
+export async function findFirstPhotoPaths(reportIds: string[]) {
+  const found = new Map<string, string>()
+  if (reportIds.length === 0) return found
+
+  const rows = await db
+    .select({
+      reportId: reportPhotos.reportId,
+      storagePath: reportPhotos.storagePath,
+    })
+    .from(reportPhotos)
+    .where(inArray(reportPhotos.reportId, reportIds))
+    .orderBy(reportPhotos.reportId, reportPhotos.sortOrder)
+
+  for (const row of rows) {
+    if (!found.has(row.reportId)) found.set(row.reportId, row.storagePath)
+  }
+  return found
+}
+
+/* 실시간 차트 */
+
+export type TrendingSort = 'interest' | 'help'
+
+export type TrendingOptions = {
+  sort?: TrendingSort
+  days?: number
+  limit?: number
+}
+
+/**
+ * 검색 화면의 실시간 차트. 관심·댓글 수를 함께 세고 좌표는 고르지 않음
+ * help 는 부상 제보와 오래 배회 중인 제보를 먼저 올려 도움이 급한 순서로 봄
+ */
+export function listTrendingReports({
+  sort = 'interest',
+  days = 7,
+  limit = 10,
+}: TrendingOptions = {}) {
+  const interestCount = raw<number>`(
+    select count(*)::int from ${reportInterests} i where i.report_id = ${reports}.id
+  )`
+  const commentCount = raw<number>`(
+    select count(*)::int from ${reportComments} c where c.report_id = ${reports}.id
+  )`
+
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      breedGuess: reports.breedGuess,
+      colors: reports.colors,
+      size: reports.size,
+      careSituation: reports.careSituation,
+      injury: reports.injury,
+      areaName: reports.areaName,
+      occurredAt: reports.occurredAt,
+      interestCount,
+      commentCount,
+      photoPath: raw<string | null>`(
+        select p.storage_path from ${reportPhotos} p
+        where p.report_id = ${reports}.id
+        order by p.sort_order limit 1
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.kind, 'sighting'),
+        eq(reports.visibility, 'public'),
+        eq(reports.lifecycle, 'active'),
+        gte(reports.occurredAt, new Date(Date.now() - days * 86_400_000)),
+      ),
+    )
+    .orderBy(
+      ...(sort === 'help'
+        ? [
+            raw`(${reports.injury} is true) desc`,
+            raw`${interestCount} asc`,
+            reports.occurredAt,
+          ]
+        : [
+            raw`${interestCount} desc`,
+            raw`${commentCount} desc`,
+            desc(reports.occurredAt),
+          ]),
+    )
     .limit(limit)
 }
 
@@ -306,6 +470,147 @@ export async function resolveFlags(input: {
 
     return { ...row, closedFlags: closed.length }
   })
+}
+
+/* 댓글 */
+
+// 세션 id 는 어떤 응답에도 넣지 않음. 표시명은 제보 안에서만 유효한 번호로만 나감
+const commentColumns = {
+  id: reportComments.id,
+  authorSeq: reportComments.authorSeq,
+  body: reportComments.body,
+  createdAt: reportComments.createdAt,
+} as const
+
+export type ReportCommentRow = {
+  [K in keyof typeof commentColumns]: (typeof reportComments.$inferSelect)[K]
+}
+
+/** 상세 화면의 댓글. 대화 순서대로 읽히게 오래된 것부터 */
+export function listReportComments(reportId: string, limit = COMMENT_PAGE_SIZE) {
+  return db
+    .select(commentColumns)
+    .from(reportComments)
+    .where(eq(reportComments.reportId, reportId))
+    .orderBy(reportComments.createdAt)
+    .limit(limit)
+}
+
+/**
+ * 댓글 저장. 같은 세션이 이 제보에서 이미 받은 번호가 있으면 그 번호를 다시 씀
+ * 번호는 제보 안에서만 의미가 있어 다른 제보의 댓글과 같은 사람으로 묶이지 않음
+ */
+export async function insertReportComment(input: {
+  reportId: string
+  sessionId: string
+  body: string
+}) {
+  return db.transaction(async (tx) => {
+    // 같은 제보에 동시 작성이 겹치면 번호가 중복돼 두 사람이 한 이름으로 보임
+    await tx.execute(raw`select pg_advisory_xact_lock(hashtext(${input.reportId}))`)
+
+    const [mine] = await tx
+      .select({ authorSeq: reportComments.authorSeq })
+      .from(reportComments)
+      .where(
+        and(
+          eq(reportComments.reportId, input.reportId),
+          eq(reportComments.sessionId, input.sessionId),
+        ),
+      )
+      .limit(1)
+
+    const [next] = await tx
+      .select({
+        seq: raw<number>`coalesce(max(${reportComments.authorSeq}), 0) + 1`,
+      })
+      .from(reportComments)
+      .where(eq(reportComments.reportId, input.reportId))
+
+    const [row] = await tx
+      .insert(reportComments)
+      .values({
+        reportId: input.reportId,
+        sessionId: input.sessionId,
+        authorSeq: mine?.authorSeq ?? next?.seq ?? 1,
+        body: input.body,
+      })
+      .returning(commentColumns)
+
+    return row
+  })
+}
+
+/* 관심 표시 */
+
+/** 이 제보의 관심 수. 누가 눌렀는지는 세지 않고 합계만 씀 */
+export async function countReportInterests(reportId: string) {
+  const [row] = await db
+    .select({ count: raw<number>`count(*)::int` })
+    .from(reportInterests)
+    .where(eq(reportInterests.reportId, reportId))
+  return row?.count ?? 0
+}
+
+/**
+ * 서버 렌더가 하트 상태를 알아야 해 쿠키 해시로 바로 조회함
+ * 세션을 새로 만들지 않아 단순 열람이 세션 수를 늘리지 않음
+ */
+export async function hasReportInterest(input: {
+  reportId: string
+  tokenHash: string
+}) {
+  const [row] = await db
+    .select({ reportId: reportInterests.reportId })
+    .from(reportInterests)
+    .innerJoin(draftSessions, eq(draftSessions.id, reportInterests.sessionId))
+    .where(
+      and(
+        eq(reportInterests.reportId, input.reportId),
+        eq(draftSessions.tokenHash, input.tokenHash),
+      ),
+    )
+    .limit(1)
+  return row !== undefined
+}
+
+/** 관심 켜고 끄기. 같은 세션이 두 번 눌러도 행이 하나만 남음 */
+export async function toggleReportInterest(input: {
+  reportId: string
+  sessionId: string
+  interested: boolean
+}) {
+  if (input.interested) {
+    await db
+      .insert(reportInterests)
+      .values({ reportId: input.reportId, sessionId: input.sessionId })
+      .onConflictDoNothing()
+  } else {
+    await db
+      .delete(reportInterests)
+      .where(
+        and(
+          eq(reportInterests.reportId, input.reportId),
+          eq(reportInterests.sessionId, input.sessionId),
+        ),
+      )
+  }
+  return countReportInterests(input.reportId)
+}
+
+/**
+ * 상세 화면 지도에 쓸 격자 좌표. 공개 API 는 좌표를 내주지 않아 여기서만 읽음. POL-09
+ */
+export async function findReportCoarsePoint(id: string) {
+  const [row] = await db
+    .select({
+      coarsePoint: reports.coarsePoint,
+      coarseGridM: reports.coarseGridM,
+    })
+    .from(reports)
+    .where(and(eq(reports.id, id), eq(reports.visibility, 'public')))
+    .limit(1)
+  return row
 }
 
 /* 어드민 조회. 좌표는 내주지 않고 AI 초안과 수정 필드는 포함 */

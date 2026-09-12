@@ -75,6 +75,7 @@ curl -sL https://seed-design.io/__registry__/react/ui/index.json
 | 화면 제목 | `screenTitle` |
 | 화면 안 큰 제목 | `t8Bold` |
 | 절 제목 | `t7Bold` `t6Bold` |
+| 카드로 끊은 절 제목 | `t4Bold`, 화면 제목보다 작게 둠 |
 | 항목 제목 | `t5Bold` |
 | 본문 | `t5Regular` `t4Regular` |
 | 긴 글 본문 | `articleBody` |
@@ -103,7 +104,9 @@ SEED 가 제공하지 않고 이 앱에만 필요한 것만 `apps/web/components
 | 파일 | 이유 |
 |---|---|
 | `app-frame.tsx` | 데스크톱에서 390px 프레임에 가두는 앱 껍데기 |
-| `screen.tsx` | 화면 루트와 본문 여백을 SEED 토큰으로 한 번만 정의 |
+| `bottom-nav.tsx` | SEED 레지스트리에 하단 탭바가 없어 직접 두는 떠 있는 내비게이션 |
+| `screen.tsx` | 화면 루트와 본문 여백, 절 카드를 SEED 토큰으로 한 번만 정의 |
+| `badge.tsx` | 레지스트리에 뱃지가 없어 직접 두는 알약형 표시 |
 | `error-view.tsx` | 오프라인과 요청 번호를 함께 다루는 오류 화면 |
 | `photo-field.tsx` | 압축 업로드 훅과 SEED ImageFrame 을 잇는 사진 입력 |
 | `photo-picker-input.tsx` | 후면 카메라 즉시 실행에 필요한 네이티브 file 입력 |
@@ -120,6 +123,19 @@ SEED 가 제공하지 않고 이 앱에만 필요한 것만 `apps/web/components
 | Tailwind 유틸리티 클래스 | SEED 컴포넌트 props 와 `Box` 스타일 prop |
 | 원시 `<button>` `<input>` `<select>` `<textarea>` | `ActionButton` `TextField` `Select` `Checkbox` `Switch` |
 | `apps/web/seed-design/**` 직접 수정 | CLI 로 갱신하고 필요하면 감싸는 컴포넌트를 밖에 만들기 |
+
+## SEED 에 없는 것
+
+레지스트리 59개 항목에 하단 탭바가 없습니다. 앱 하단 내비게이션은 앱 껍데기로 `components/ui/bottom-nav.tsx` 에 두고, 면과 글자는 모두 토큰으로 부릅니다.
+
+| 필요 | 처리 |
+|---|---|
+| 반투명 면 | `bg.neutralWeakAlpha` 역할 토큰, `palette.staticWhiteAlpha*` 는 고정색이라 쓰지 않음 |
+| 배경 흐림 | SEED 스타일 prop 에 `backdrop-filter` 가 없어 해당 파일에서 CSS 로 직접 지정 |
+| 지도 위 원형 버튼 | `ContextualFloatingButton` 의 `variant="layer"` `layout="iconOnly"` |
+| 뱃지 | `TagGroup` 은 점으로 잇는 글자라 면이 없어 `components/ui/badge.tsx` 로 둠 |
+| 관심 하트 | `ReactionButton` 의 `pressed` `onPressedChange` 를 그대로 씀 |
+| 브랜드색 교체 | 역할 토큰이 아니라 `globals.css` 에서 carrot 팔레트 단계를 덮음 |
 | deprecated 항목 사용 | `/react/llms.txt` 에서 현재 항목 확인 |
 
 값 자체가 내용이라 예외가 필요하면 파일 맨 위에 사유와 함께 표시합니다.

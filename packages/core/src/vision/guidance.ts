@@ -20,9 +20,9 @@ export type AnalyzeAdvice =
   | { state: "low-quality"; message: string };
 
 const NOT_ANIMAL =
-  "동물이 보이지 않습니다. 동물이 담긴 사진으로 다시 찍어 주십시오";
+  "동물이 보이지 않아요. 동물이 담긴 사진으로 다시 찍어 주세요";
 const LOW_QUALITY =
-  "사진이 어두워 자동 정리가 어렵습니다. 그대로 진행하거나 다시 찍을 수 있습니다";
+  "사진이 어두워 자동 정리가 어려워요. 그대로 진행하거나 다시 찍을 수 있어요";
 
 export function adviseFromResult(result: AnalyzeResult): AnalyzeAdvice {
   if (result.animalType === "unknown") {
@@ -36,4 +36,4 @@ export function adviseFromResult(result: AnalyzeResult): AnalyzeAdvice {
 
 // 분석이 실패했을 때 화면이 쓸 문구. 빈 폼을 열어 직접 입력하게 함
 export const ANALYZE_FAILED_MESSAGE =
-  "자동 정리가 안 됐습니다. 내용을 직접 적어 제보할 수 있습니다";
+  "자동 정리가 안 됐어요. 내용을 직접 적어 제보할 수 있어요";

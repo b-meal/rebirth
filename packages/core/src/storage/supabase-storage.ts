@@ -148,6 +148,89 @@ export async function createSignedUrl(
   };
 }
 
+/** 목록 카드와 지도 핀이 쓰는 축소 크기. 원본은 장변 1568px 이라 그대로 쓰면 과함 */
+export const THUMB_SIZE = 400;
+const THUMB_QUALITY = 70;
+
+/** 한 경로를 축소해 서명함. 정사각 크롭이라 카드와 원형 핀에 그대로 들어감 */
+async function createSignedThumbUrl(
+  path: string,
+  expiresIn: number,
+): Promise<string> {
+  const response = await call(`/object/sign/${PHOTO_BUCKET}/${path}`, {
+    method: "POST",
+    body: JSON.stringify({
+      expiresIn,
+      transform: {
+        width: THUMB_SIZE,
+        height: THUMB_SIZE,
+        resize: "cover",
+        quality: THUMB_QUALITY,
+      },
+    }),
+    headers: { "content-type": "application/json" },
+  });
+
+  const body = (await response.json()) as { signedURL?: string };
+  if (!body.signedURL) {
+    throw new StorageError("http", "서명 URL 응답에 signedURL 이 없습니다");
+  }
+  const { base } = config();
+  return `${base}${body.signedURL.startsWith("/") ? "" : "/"}${body.signedURL}`;
+}
+
+/**
+ * 축소 사진 서명 URL 묶음. 일괄 서명 경로가 transform 을 무시해 경로마다 따로 서명함
+ */
+export async function createSignedThumbUrls(
+  paths: string[],
+  expiresIn: number = SIGNED_URL_TTL_SECONDS,
+): Promise<Map<string, string>> {
+  if (paths.length === 0) return new Map();
+
+  const signed = await Promise.all(
+    paths.map(async (path) => {
+      try {
+        return [path, await createSignedThumbUrl(path, expiresIn)] as const;
+      } catch {
+        // 한 장이 실패해도 나머지 카드는 사진을 보여 줌
+        return null;
+      }
+    }),
+  );
+
+  return new Map(signed.filter((row): row is [string, string] => row !== null));
+}
+
+/** 여러 경로를 한 번에 서명함. 목록 화면이 사진 수만큼 요청을 보내지 않게 함 */
+export async function createSignedUrls(
+  paths: string[],
+  expiresIn: number = SIGNED_URL_TTL_SECONDS,
+): Promise<Map<string, string>> {
+  if (paths.length === 0) return new Map();
+
+  const response = await call(`/object/sign/${PHOTO_BUCKET}`, {
+    method: "POST",
+    body: JSON.stringify({ expiresIn, paths }),
+    headers: { "content-type": "application/json" },
+  });
+
+  const rows = (await response.json()) as {
+    path?: string;
+    signedURL?: string;
+    error?: string | null;
+  }[];
+
+  const { base } = config();
+  const signed = new Map<string, string>();
+  for (const row of rows) {
+    // 일부 경로만 실패해도 나머지는 그대로 씀
+    if (!row.path || !row.signedURL || row.error) continue;
+    signed.set(row.path, `${base}${row.signedURL.startsWith("/") ? "" : "/"}${row.signedURL}`);
+  }
+  return signed;
+}
+
 /** 제보 삭제 시 사진도 함께 지움. 실패해도 호출자가 제보 삭제를 되돌리지 않음 */
 export async function removePhotos(paths: string[]): Promise<void> {
   if (paths.length === 0) return;

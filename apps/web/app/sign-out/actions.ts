@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 
-import { SPLASH_PATH } from "@rebirth/core/auth";
+import { HOME_PATH } from "@rebirth/core/auth";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -11,5 +11,5 @@ import { createClient } from "@/lib/supabase/server";
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect(SPLASH_PATH);
+  redirect(HOME_PATH);
 }
