@@ -79,7 +79,6 @@ export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
               >
                 {/* 이 화면에 적을 칸이 이것 하나뿐이라 들어오자마자 손이 닿게 함
                     키보드가 올라와도 가릴 것이 없음 */}
-                {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
                 <TextFieldInput autoFocus placeholder="이름을 입력해 주세요" />
               </TextField>
 
