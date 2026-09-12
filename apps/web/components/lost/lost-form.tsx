@@ -1,14 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { HStack, Text, VStack } from "@seed-design/react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { HStack, Icon, Text, VStack } from "@seed-design/react";
+import {
+  IconChevronRightLine,
+  IconMagnifyingglassLine,
+  IconLocationpinLine,
+} from "@karrotmarket/react-monochrome-icon";
 import { CONSENT_DOCUMENT_VERSION, PHOTO_MAX_COUNT } from "@rebirth/types";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
-import { TagGroupItem, TagGroupRoot } from "seed-design/ui/tag-group";
 import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/text-field";
 
 import { useCurrentPosition } from "@/hooks/use-current-position";
@@ -53,6 +57,54 @@ const STEP_HINT: Record<LostStep, string | null> = {
   2: "기억나는 만큼만 골라도 돼요",
   3: "연락처는 받지 않아요. 신고 뒤에 나오는 주소로만 확인해요",
 };
+
+/**
+ * 장소를 찾는 두 가지 길
+ * 나란한 선택지라 크기를 달리하지 않고 같은 모양의 줄로 둠
+ * 큰 버튼과 작은 글씨로 두면 한쪽이 덜 중요한 길처럼 보임
+ */
+function PickRow({
+  icon,
+  label,
+  hint,
+  onClick,
+}: {
+  icon: ReactNode;
+  label: string;
+  hint: string;
+  onClick: () => void;
+}) {
+  return (
+    <HStack
+      asChild
+      align="center"
+      gap="x3"
+      px="x4"
+      py="x4"
+      borderRadius="r3"
+      borderWidth={1}
+      borderColor="stroke.neutralMuted"
+    >
+      {/* design-system-allow:raw-element 줄 전체를 누르는 자리라 button 이 필요함 */}
+      <button type="button" className="rebirth-row" onClick={onClick}>
+        <Icon svg={icon} size="x6" color="fg.neutralMuted" />
+        {/* button 이 가운데 정렬을 물려줘 줄 안의 글은 왼쪽으로 되돌림 */}
+        <VStack align="flex-start" gap="x0_5" grow={1} minWidth="0">
+          <Text textStyle="t4Bold" color="fg.neutral">
+            {label}
+          </Text>
+          <Text textStyle="t3Regular" color="fg.neutralMuted">
+            {hint}
+          </Text>
+        </VStack>
+        <Icon svg={<IconChevronRightLine />} size="x4" color="fg.neutralSubtle" />
+      </button>
+    </HStack>
+  );
+}
+
+/** 한 줄짜리 알림이 머무는 시간. 기본 4초는 읽고 나서도 한참 남아 있음 */
+const SNACKBAR_MS = 2000;
 
 function readStepFromUrl(): LostStep {
   if (typeof window === "undefined") return 1;
@@ -115,11 +167,14 @@ export function LostForm() {
     maxCount: PHOTO_MAX_COUNT,
     onChange: upload.sync,
     // 같은 사진을 또 고르면 아무 일도 안 일어난 것처럼 보여 스낵바로 알림
+    // 한 줄 알림이라 기본 4초는 길게 느껴짐. 눌러서 바로 지울 수도 있게 함
     onDuplicate: (count) =>
       snackbar.create({
+        timeout: SNACKBAR_MS,
         render: () => (
           <Snackbar
             variant="default"
+            onClick={snackbar.dismiss}
             message={
               count === 1 ? "이미 고른 사진이에요" : `이미 고른 사진 ${count}장은 넣지 않았어요`
             }
@@ -227,13 +282,12 @@ export function LostForm() {
 
   // 버튼 위에 띄울 말
   // 1걸음의 사진은 머리글이 이미 시킨 일이라 같은 말을 아래에 또 적지 않음
-  const blocked = upload.uploading
-    ? "사진을 올리고 있어요"
-    : submitting
-      ? "신고를 저장하고 있어요"
-      : step === LAST_STEP && locationToken === null
-        ? "마지막으로 본 곳을 정해 주세요"
-        : null;
+  // 올리는 중임은 사진 칸 위에서 직접 보여 줘 눈이 그 자리를 떠나지 않게 함
+  const blocked = submitting
+    ? "신고를 저장하고 있어요"
+    : step === LAST_STEP && locationToken === null
+      ? "마지막으로 본 곳을 정해 주세요"
+      : null;
 
   // 재시도에서도 같은 키를 씀, 이중 탭이 신고를 두 건 만들지 않음
   const idempotencyKey = useRef<string | null>(null);
@@ -350,6 +404,7 @@ export function LostForm() {
               label="사진"
               hint="얼굴이 잘 보이는 사진일수록 찾기 쉬워요"
               cameraAvailable={false}
+              uploading={upload.uploading}
               disabled={upload.uploading}
             />
             {upload.message ? <Callout tone="critical" description={upload.message} /> : null}
@@ -443,26 +498,40 @@ export function LostForm() {
 
         {step === 3 ? (
           <>
-            <Section>
-              <Text as="h2" textStyle="t5Bold" color="fg.neutral">
-                마지막으로 본 곳
-              </Text>
+            {/* 머리글이 이미 어디서 봤는지 묻고 있어 같은 말을 이름표로 또 달지 않음 */}
+            <Section gap="x2">
               {areaName ? (
-                <HStack gap="x2" align="center" wrap>
-                  <TagGroupRoot>
-                    <TagGroupItem label={areaName} tone="brand" />
-                  </TagGroupRoot>
-                  <ActionButton
-                    variant="neutralOutline"
-                    size="xsmall"
+                // 고른 뒤에는 줄 전체가 다시 고르는 자리. 값과 바꾸기를 따로 두지 않음
+                <HStack
+                  asChild
+                  justify="space-between"
+                  align="center"
+                  gap="x3"
+                  px="x4"
+                  py="x4"
+                  borderRadius="r3"
+                  bg="bg.neutralWeak"
+                >
+                  {/* design-system-allow:raw-element 줄 전체를 누르는 자리라 button 이 필요함 */}
+                  <button
+                    type="button"
+                    className="rebirth-row"
                     onClick={() => {
                       // 여기서는 장소만 고쳐 쓰는 것이라 시각은 두고 검색창을 바로 열어 줌
                       resetLastStep({ keepTime: true });
                       setManual(true);
                     }}
                   >
-                    다시 고르기
-                  </ActionButton>
+                    <HStack gap="x2" align="center" minWidth="0">
+                      <Icon svg={<IconLocationpinLine />} size="x5" color="fg.brand" />
+                      <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
+                        {areaName}
+                      </Text>
+                    </HStack>
+                    <Text textStyle="t3Regular" color="fg.neutralSubtle">
+                      바꾸기
+                    </Text>
+                  </button>
                 </HStack>
               ) : showManual ? (
                 <PlaceSearchField
@@ -489,31 +558,36 @@ export function LostForm() {
                 />
               ) : (
                 <VStack align="stretch" gap="x2">
-                  {/* 아래 띠의 버튼만 브랜드 면을 쥠. 초록이 둘이면 어느 쪽이 끝인지 헷갈림 */}
-                  <ActionButton
-                    variant="neutralWeak"
-                    size="large"
+                  <PickRow
+                    icon={<IconLocationpinLine />}
+                    label="현재 위치로 찾기"
+                    hint="지금 있는 곳 주변으로 찾아요"
                     onClick={() => {
                       // 이미 잡아 둔 좌표가 있으면 다시 묻지 않고 그것으로 바로 채움
                       setWantsGps(true);
                       position.request();
                     }}
-                  >
-                    현재 위치로 찾기
-                  </ActionButton>
-                  <ActionButton variant="ghost" size="small" onClick={() => setManual(true)}>
-                    주소로 직접 찾기
-                  </ActionButton>
+                  />
+                  <PickRow
+                    icon={<IconMagnifyingglassLine />}
+                    label="주소로 직접 찾기"
+                    hint="동이나 면 이름으로 찾아요"
+                    onClick={() => setManual(true)}
+                  />
                 </VStack>
               )}
             </Section>
 
             <TextField label="마지막 목격 시각">
+              {/* 기본은 오른쪽 끝 아이콘을 정확히 눌러야 열림
+                  칸 아무 데나 눌러도 열리게 해 좁은 화면에서 헛손질하지 않게 함 */}
               <TextFieldInput
                 type="datetime-local"
+                className="rebirth-datetime"
                 value={occurredAt || toLocalInput(new Date())}
                 max={toLocalInput(new Date())}
                 onChange={(event) => setOccurredAt(event.target.value)}
+                onClick={(event) => event.currentTarget.showPicker?.()}
               />
             </TextField>
           </>
@@ -530,17 +604,8 @@ export function LostForm() {
         px="spacingX.globalGutter"
         pt="x3"
         bg="bg.layerDefault"
-        borderTopWidth={1}
-        borderColor="stroke.neutralMuted"
         className="rebirth-bottom-bar"
       >
-        {blocked ? (
-          <HStack justify="center">
-            <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {blocked}
-            </Text>
-          </HStack>
-        ) : null}
         <ActionButton
           variant="brandSolid"
           size="large"
@@ -550,6 +615,15 @@ export function LostForm() {
         >
           {step === LAST_STEP ? "신고 등록하기" : "다음"}
         </ActionButton>
+        {/* 버튼 위에 두면 본문과 버튼 사이를 갈라 화면이 한 겹 더 나뉨
+            버튼을 눌러 보고 안 되는 이유를 찾는 자리라 버튼 아래에 둠 */}
+        {blocked ? (
+          <HStack justify="center">
+            <Text textStyle="t3Regular" color="fg.neutralMuted">
+              {blocked}
+            </Text>
+          </HStack>
+        ) : null}
       </VStack>
     </Screen>
   );

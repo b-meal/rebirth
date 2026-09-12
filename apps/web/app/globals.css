@@ -258,6 +258,67 @@ body .seed-bottom-sheet__body:has(~ .seed-bottom-sheet__footer) {
   padding-bottom: 0;
 }
 
+/* 스낵바는 뷰포트 양 끝에 붙어 앱 프레임을 벗어남
+   AppFrame 의 390px 과 같은 값이고 한쪽만 바꾸면 어긋남
+   안쪽 너비도 함께 묶지 않으면 464px 짜리 알림이 프레임 밖으로 삐져나감 */
+body .seed-snackbar-region {
+  left: 50%;
+  right: auto;
+  translate: -50%;
+  width: 100%;
+  max-width: 390px;
+  /* 화면 아래 버튼 띠 위에 뜸. 띠 높이에 한 칸을 더해 맞붙지 않게 함 */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--seed-dimension-x16) + var(--seed-dimension-x3));
+}
+
+/* 날짜 칸은 어디를 눌러도 달력이 열려 칸 전체가 누르는 자리임을 알림
+   기본 커서는 글자 입력 막대라 눌러도 되는지 알 수 없음 */
+.rebirth-datetime,
+.rebirth-datetime::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+/* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬
+   SEED 는 칸 테두리를 border 가 아니라 안쪽 그림자로 그림
+   그림자는 덧쌓이지 않고 통째로 갈리므로 지우지 않고 같은 자리를 진한 색으로 다시 그림
+   테두리를 쥔 것은 input 이 아니라 그것을 감싼 root 라 거기에 걺 */
+.seed-text-input__root:has(.rebirth-datetime) {
+  transition: box-shadow 120ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .seed-text-input__root:has(.rebirth-datetime):hover {
+    box-shadow: inset 0 0 0 1px var(--seed-color-stroke-neutral-solid);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seed-text-input__root:has(.rebirth-datetime) {
+    transition: none;
+  }
+}
+
+/* 올리는 중인 사진은 어둡게 눌러 그 위의 흰 표시가 읽히게 함
+   프레임 전체에 걸면 떠 있는 표시와 삭제 단추까지 함께 어두워져 img 에만 걺 */
+.rebirth-photo--busy img {
+  filter: brightness(0.5);
+}
+
+/* 눌러서 지울 수 있는 알림이라 손 모양으로 알림 */
+body .seed-snackbar__root {
+  cursor: pointer;
+}
+
+/* 알림은 글자만큼만 차지하는 알약으로 둠
+   폭을 가득 채우면 화면을 가로지르는 띠가 되어 한 줄 알리는 일에 비해 크게 보임
+   기본이 width 100% 라 줄이고, 좌우 여백과 모서리도 알약에 맞게 키움 */
+body .seed-snackbar__root {
+  width: auto;
+  max-width: 100%;
+  padding-inline: var(--seed-dimension-x4);
+  border-radius: var(--seed-radius-full);
+}
+
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
 .rebirth-scroll-row {
   overflow-x: auto;
