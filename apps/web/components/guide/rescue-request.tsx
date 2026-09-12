@@ -91,8 +91,10 @@ export function RescueRequest() {
         </VStack>
 
         {/* 물림 사고를 막는 한 줄. 이것만은 폼 위에 둠 */}
+        {/* 아래 오류 알림이 critical 이라 같은 붉은 면을 쓰면 둘을 구분하지 못함 */}
+        {/* 늘 떠 있는 안내라 informative 로 두고 아이콘으로 주의를 줌 */}
         <Callout
-          tone="warning"
+          tone="informative"
           description="많이 놀란 상태일 수 있어요. 만지지 말고 조금 떨어져서 지켜봐 주세요"
         />
 
