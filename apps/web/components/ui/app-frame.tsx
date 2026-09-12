@@ -20,6 +20,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
   return (
     <Flex justify="center" minHeight="100dvh" bg="bg.layerBasement">
       <Box
+        position="relative"
         minWidth="0"
         width={{ base: "full", md: FRAME_WIDTH }}
         maxWidth={FRAME_WIDTH}
