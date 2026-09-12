@@ -267,3 +267,12 @@ body .seed-bottom-sheet__body:has(~ .seed-bottom-sheet__footer) {
 .rebirth-scroll-row::-webkit-scrollbar {
   display: none;
 }
+
+/* 본문 좌우 여백을 뚫고 화면 끝까지 나가는 가로 나열
+   가로로 넘기는 줄은 첫 장이 화면 끝에서 시작해야 더 있다는 것이 보임
+   음수 마진을 prop 으로 주면 토큰 이름이 그대로 나가 값이 되지 않아 여기서 함
+   안쪽 여백으로 같은 값을 되돌려 첫 장과 마지막 장이 본문과 같은 선에 섬 */
+.rebirth-bleed {
+  margin-inline: calc(var(--seed-dimension-spacing-x-global-gutter) * -1);
+  padding-inline: var(--seed-dimension-spacing-x-global-gutter);
+}

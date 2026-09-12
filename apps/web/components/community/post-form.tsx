@@ -16,17 +16,30 @@ import { BODY_MAX, TITLE_MAX, type CategoryDescriptor } from "@rebirth/core/comm
 import { createPost, type PostFormState } from "@/app/community/actions";
 import { useNeighborhood } from "@/components/location/neighborhood-provider";
 import { AppHeader } from "@/components/ui/app-header";
+import { PhotoField } from "@/components/ui/photo-field";
 import { Screen, ScreenBody } from "@/components/ui/screen";
+import { usePhotoPicker } from "@/hooks/use-photo-picker";
+import { usePhotoUploads } from "@/hooks/use-photo-uploads";
 import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
 
 // 글쓰기. 주제는 앞의 바텀시트에서 고르고 여기서는 제목과 내용만 물음
 // 한 화면에 한 가지만 묻는 편이 모바일 키보드 위에서 읽기 쉬움
 
+/** 한 글에 붙일 수 있는 사진 수. 넘기며 보기에 부담 없는 만큼만 받음 */
+const PHOTO_MAX = 5;
+
 /** 폼 안에서만 제출 상태를 읽을 수 있어 버튼을 따로 둠 */
-function SubmitButton() {
+function SubmitButton({ uploading }: { uploading: boolean }) {
   const { pending } = useFormStatus();
+  // 올리는 중에 저장하면 아직 참조가 없는 사진이 빠진 채 글만 남음
   return (
-    <ActionButton type="submit" variant="brandSolid" size="large" loading={pending}>
+    <ActionButton
+      type="submit"
+      variant="brandSolid"
+      size="large"
+      loading={pending}
+      disabled={uploading}
+    >
       올리기
     </ActionButton>
   );
@@ -45,6 +58,13 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
   const errors = state.errors ?? {};
 
   const { areaName, blocked, ensure, retry } = useNeighborhood();
+
+  // 사진은 고르는 즉시 올려 두고 저장에는 참조만 실음
+  const uploads = usePhotoUploads();
+  const picker = usePhotoPicker({
+    maxCount: PHOTO_MAX,
+    onChange: uploads.sync,
+  });
 
   // 시트를 거치지 않고 주소로 바로 들어올 수 있어 여기서도 물음
   useEffect(() => {
@@ -104,7 +124,23 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
             <TextFieldTextarea name="body" placeholder={category.hint} />
           </TextField>
 
+          <PhotoField
+            picker={picker}
+            label="사진"
+            hint="보여 주고 싶은 사진을 골라 주세요"
+            cameraAvailable={false}
+            disabled={uploads.uploading}
+          />
+          {uploads.message ? (
+            <Callout tone="critical" description={uploads.message} />
+          ) : null}
+
           {/* design-system-allow:raw-element 보이지 않는 hidden 필드라 SEED 에 대응 컴포넌트가 없음 */}
+          {/* 올린 사진은 참조만 실어 보냄. 원본을 다시 붙이면 재시도가 재업로드가 됨 */}
+          {uploads.uploadIds.map((id) => (
+            <input key={id} type="hidden" name="uploadIds" value={id} />
+          ))}
+
           {/* 동네는 손으로 고치지 않음. 읽는 쪽이 내 위치로 거르므로 적어 낸 동과 어긋나면 글이 어디에도 안 보임 */}
           <input type="hidden" name="areaName" value={areaName ?? ""} />
 
@@ -117,7 +153,7 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
           {/* 쓰는 일이 끝난 뒤의 동작이라 입력 칸과는 떼어 둠 */}
           <Box pt="x3">
             <VStack align="stretch">
-              <SubmitButton />
+              <SubmitButton uploading={uploads.uploading} />
             </VStack>
           </Box>
         </VStack>

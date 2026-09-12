@@ -4,7 +4,6 @@ import {
   Divider,
   HStack,
   Icon,
-  ImageFrame,
   Text,
   VStack,
 } from "@seed-design/react";
@@ -23,6 +22,7 @@ import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { sinceLabel } from "@/lib/report-label";
 import { DeletePostButton } from "./delete-post-button";
 import { LikeButton } from "./like-button";
+import { PostPhotos } from "./post-photos";
 import {
   CommentComposer,
   PostComments,
@@ -120,13 +120,7 @@ export function PostDetail({
           {post.body}
         </Text>
 
-        {photoUrls.length > 0 ? (
-          <VStack align="stretch" gap="x2">
-            {photoUrls.map((url) => (
-              <ImageFrame key={url} ratio={4 / 3} src={url} alt="" borderRadius="r2" />
-            ))}
-          </VStack>
-        ) : null}
+        <PostPhotos urls={photoUrls} />
 
         {post.reportId ? (
           <Box
