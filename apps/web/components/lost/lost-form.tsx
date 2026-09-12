@@ -55,7 +55,7 @@ const STEP_HEADING: Record<LostStep, string> = {
 // 마지막 걸음에서만 연락처를 왜 안 받는지 밝힘. 등록을 누르기 직전에 알아야 하는 것
 const STEP_HINT: Record<LostStep, string | null> = {
   1: null,
-  2: "기억나는 만큼만 골라도 돼요",
+  2: "특징만 적어 주시면 나머지는 기억나는 만큼만 골라도 돼요",
   3: "연락처는 받지 않아요. 신고 뒤에 나오는 주소로만 확인해요",
 };
 
@@ -280,13 +280,17 @@ export function LostForm() {
   const positionFailed = position.status === "denied" || position.status === "unavailable";
   const showManual = manual || positionFailed || geocode.error !== null;
 
-  // 이 걸음에서 다음으로 갈 수 있는지. 생김새는 기본값이 있어 막지 않음
+  /**
+   * 이 걸음에서 다음으로 갈 수 있는지
+   * 종류와 크기는 기본값이 있어 막지 않지만 특징은 서버가 반드시 요구함
+   * 여기서 막지 않으면 마지막에 등록을 눌러서야 두 걸음 앞의 빈칸을 알게 됨
+   */
   const ready =
     step === 1
       ? upload.uploadIds.length > 0
-      : step === LAST_STEP
-        ? locationToken !== null && !submitting
-        : true;
+      : step === 2
+        ? appearance.trim().length > 0
+        : locationToken !== null && !submitting;
 
   /**
    * 위치를 찾는 중인지. 누른 뒤 결과가 올 때까지 아무 반응이 없으면 멈춘 줄 앎
@@ -340,6 +344,7 @@ export function LostForm() {
         manageToken?: string;
         pending?: boolean;
         message?: string;
+        fieldErrors?: Record<string, string>;
       };
 
       if (response.status === 202 || result.pending) {
@@ -350,7 +355,10 @@ export function LostForm() {
 
       if (!response.ok || !result.manageToken) {
         // 입력값을 유지하고 재시도만 노출
-        setError(result.message ?? "신고를 저장하지 못했어요. 다시 시도해 주세요");
+        // 무엇이 잘못됐는지는 필드별 메시지가 알고 있음
+        // 입력값을 확인해 주십시오 만 보여 주면 어느 칸이 문제인지 알 수 없음
+        const field = Object.values(result.fieldErrors ?? {})[0];
+        setError(field ?? result.message ?? "신고를 저장하지 못했어요. 다시 시도해 주세요");
         setSubmitting(false);
         return;
       }
@@ -514,8 +522,16 @@ export function LostForm() {
               {/* 위치는 좌표를 받고 행정동으로 바꾸느라 몇 초 걸림
                   고르는 줄을 그대로 두면 안 눌린 줄 알고 다시 누름 */}
               {findingPlace ? (
-                // 뒤에 들어설 줄 두 개와 같은 높이로 잡아 결과가 와도 화면이 덜컥이지 않음
-                <HStack align="center" justify="center" height={FINDING_HEIGHT}>
+                // 동네가 들어설 줄을 미리 세워 두고 그 안에서만 돌림
+                // 상자째 나타났다 사라지면 자리가 생겼다 없어져 화면이 덜컥임
+                <HStack
+                  align="center"
+                  justify="center"
+                  px="x4"
+                  height={FINDING_HEIGHT}
+                  borderRadius="r3"
+                  bg="bg.neutralWeak"
+                >
                   <ProgressCircle size="24" tone="neutral" />
                 </HStack>
               ) : areaName ? (
