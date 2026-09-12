@@ -8,7 +8,6 @@ import { HStack, Icon, Text, VStack } from "@seed-design/react";
 import { IconPersonFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
-import { Callout } from "seed-design/ui/callout";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import { COMMENT_MAX } from "@rebirth/core/community";
@@ -44,7 +43,12 @@ function CommentRow({ comment }: { comment: PostCommentItem }) {
             {sinceLabel(comment.createdAt)}
           </Text>
         </HStack>
-        <Text textStyle="t4Regular" color="fg.neutral" whiteSpace="pre-wrap">
+        <Text
+          textStyle="t4Regular"
+          color="fg.neutral"
+          whiteSpace="pre-wrap"
+          style={{ overflowWrap: "anywhere" }}
+        >
           {comment.body}
         </Text>
       </VStack>
@@ -57,10 +61,10 @@ export function PostComments({ comments }: { comments: PostCommentItem[] }) {
     return (
       <VStack align="stretch" gap="x1">
         <Text textStyle="t4Regular" color="fg.neutralMuted">
-          아직 댓글이 없습니다
+          아직 댓글이 없어요
         </Text>
         <Text textStyle="t3Regular" color="fg.neutralSubtle">
-          먼저 이야기를 건네 주십시오
+          먼저 말을 건네 보세요
         </Text>
       </VStack>
     );
@@ -107,7 +111,7 @@ export function CommentComposer({ postId, signedIn }: CommentComposerProps) {
     return (
       <VStack align="stretch" gap="x2">
         <Text textStyle="t3Regular" color="fg.neutralMuted">
-          로그인하면 댓글을 남길 수 있습니다
+          로그인하면 댓글을 남길 수 있어요
         </Text>
         <ActionButton asChild variant="neutralOutline" size="medium">
           <Link href={`/sign-in?next=${encodeURIComponent(`/community/${postId}`)}`}>
@@ -119,28 +123,28 @@ export function CommentComposer({ postId, signedIn }: CommentComposerProps) {
   }
 
   return (
-    <VStack align="stretch" gap="x2">
-      {state.message ? <Callout tone="critical" description={state.message} /> : null}
-      <form ref={formRef} action={formAction}>
-        <input type="hidden" name="postId" value={postId} />
-        <HStack gap="x2" align="center">
-          <VStack align="stretch" grow={1} minWidth="0">
-            <TextField
-              aria-label="댓글"
-              size="medium"
-              maxGraphemeCount={COMMENT_MAX}
-              hideCharacterCount
-            >
-              <TextFieldInput
-                name="body"
-                placeholder="이웃에게 하고 싶은 말을 남겨 주십시오"
-                aria-label="댓글 입력"
-              />
-            </TextField>
-          </VStack>
-          <SubmitButton />
-        </HStack>
-      </form>
-    </VStack>
+    <form ref={formRef} action={formAction}>
+      <input type="hidden" name="postId" value={postId} />
+      {/* 오류를 입력칸에 붙임. 위에 따로 띄우면 어느 칸이 문제인지 눈이 한 번 더 움직임 */}
+      <HStack gap="x2" align="flex-start">
+        <VStack align="stretch" grow={1} minWidth="0">
+          <TextField
+            aria-label="댓글"
+            size="medium"
+            maxGraphemeCount={COMMENT_MAX}
+            hideCharacterCount
+            errorMessage={state.message}
+            invalid={Boolean(state.message)}
+          >
+            <TextFieldInput
+              name="body"
+              placeholder="따뜻한 말 한마디 남겨 주세요"
+              aria-label="댓글 입력"
+            />
+          </TextField>
+        </VStack>
+        <SubmitButton />
+      </HStack>
+    </form>
   );
 }

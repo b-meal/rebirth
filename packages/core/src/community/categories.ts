@@ -15,22 +15,22 @@ export const COMMUNITY_CATEGORIES: readonly CategoryDescriptor[] = [
   {
     id: 'sighting_talk',
     label: '목격담',
-    hint: '제보로 올리기엔 확실하지 않은 목격 이야기를 나눠 주십시오',
+    hint: '확실하진 않지만 본 것 같은 이야기',
   },
   {
     id: 'reunion',
     label: '재회 후기',
-    hint: '다시 만난 이야기를 들려주십시오',
+    hint: '다시 만난 이야기',
   },
   {
     id: 'care_tip',
     label: '돌봄 정보',
-    hint: '임시보호와 구조에서 얻은 정보를 나눠 주십시오',
+    hint: '임시보호와 구조에서 얻은 정보',
   },
   {
     id: 'neighborhood',
     label: '동네 이야기',
-    hint: '이웃과 나누고 싶은 이야기를 남겨 주십시오',
+    hint: '이웃과 나누고 싶은 이야기',
   },
 ] as const
 

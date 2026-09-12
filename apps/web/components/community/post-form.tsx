@@ -1,28 +1,25 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { HStack, Text, VStack } from "@seed-design/react";
+import { Box, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
-import { Chip } from "seed-design/ui/chip";
 import {
   TextField,
   TextFieldInput,
   TextFieldTextarea,
 } from "seed-design/ui/text-field";
 
-import {
-  BODY_MAX,
-  COMMUNITY_CATEGORIES,
-  TITLE_MAX,
-} from "@rebirth/core/community";
+import { BODY_MAX, TITLE_MAX, type CategoryDescriptor } from "@rebirth/core/community";
 
 import { createPost, type PostFormState } from "@/app/community/actions";
-import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { AppHeader } from "@/components/ui/app-header";
+import { Screen, ScreenBody } from "@/components/ui/screen";
+import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
 
-// 글쓰기. 주제를 고르고 제목과 내용을 쓰는 세 칸이 전부
-// 주제 목록은 core 에서 오므로 이 화면은 주제를 모름
+// 글쓰기. 주제는 앞의 바텀시트에서 고르고 여기서는 제목과 내용만 물음
+// 한 화면에 한 가지만 묻는 편이 모바일 키보드 위에서 읽기 쉬움
 
 /** 폼 안에서만 제출 상태를 읽을 수 있어 버튼을 따로 둠 */
 function SubmitButton() {
@@ -34,22 +31,29 @@ function SubmitButton() {
   );
 }
 
-export function PostForm() {
+export function PostForm({ category }: { category: CategoryDescriptor }) {
   const [state, formAction] = useActionState<PostFormState, FormData>(
     createPost,
     {},
   );
+  const [dirty, setDirty] = useState(false);
   const errors = state.errors ?? {};
+
+  // 쓰던 글이 있으면 새로고침과 탭 닫기를 되묻게 함
+  useUnsavedWarning(dirty);
 
   return (
     <Screen>
+      <AppHeader title="글쓰기" />
       <ScreenBody gap="x6">
-        <VStack align="stretch" gap="x1">
-          <Text as="h1" textStyle="t8Bold" color="fg.neutral">
-            글쓰기
-          </Text>
+        <VStack align="stretch" gap="x2">
+          <Box alignSelf="flex-start" px="x2" py="x0_5" borderRadius="r1" bg="bg.neutralWeak">
+            <Text textStyle="t1Bold" color="fg.neutralMuted">
+              {category.label}
+            </Text>
+          </Box>
           <Text textStyle="t3Regular" color="fg.neutralMuted">
-            이웃이 함께 볼 수 있는 글입니다
+            이웃이 함께 보는 글이에요
           </Text>
         </VStack>
 
@@ -57,27 +61,10 @@ export function PostForm() {
           <Callout tone="critical" description={state.message} />
         ) : null}
 
-        <form action={formAction}>
+        <form action={formAction} onChange={() => setDirty(true)}>
           <VStack align="stretch" gap="x6">
-            <Section gap="x2">
-              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                주제
-              </Text>
-              <Chip.RadioRoot name="category" defaultValue={COMMUNITY_CATEGORIES[0]?.id}>
-                <HStack gap="spacingX.betweenChips" wrap>
-                  {COMMUNITY_CATEGORIES.map((option) => (
-                    <Chip.RadioItem key={option.id} value={option.id}>
-                      <Chip.Label>{option.label}</Chip.Label>
-                    </Chip.RadioItem>
-                  ))}
-                </HStack>
-              </Chip.RadioRoot>
-              {errors.category ? (
-                <Text textStyle="t2Regular" color="fg.critical">
-                  {errors.category}
-                </Text>
-              ) : null}
-            </Section>
+            {/* 주제는 앞 화면에서 이미 골랐으므로 값만 싣고 배지로만 보여 줌 */}
+            <input type="hidden" name="category" value={category.id} />
 
             <TextField
               label="제목"
@@ -85,7 +72,7 @@ export function PostForm() {
               errorMessage={errors.title}
               invalid={Boolean(errors.title)}
             >
-              <TextFieldInput name="title" placeholder="제목을 입력해 주십시오" />
+              <TextFieldInput name="title" placeholder="어떤 이야기인가요" />
             </TextField>
 
             <TextField
@@ -97,13 +84,13 @@ export function PostForm() {
               {/* autoresize 가 기본이라 줄 수를 고정하지 않음 */}
               <TextFieldTextarea
                 name="body"
-                placeholder="이웃과 나누고 싶은 이야기를 써 주십시오"
+                placeholder="편하게 적어 주세요"
               />
             </TextField>
 
             <TextField
               label="동네"
-              description="동 이름만 남습니다. 정확한 위치는 저장하지 않습니다"
+              description="동 이름만 남아요. 정확한 위치는 저장하지 않아요"
               errorMessage={errors.areaName}
               invalid={Boolean(errors.areaName)}
             >

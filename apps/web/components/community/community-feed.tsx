@@ -12,7 +12,9 @@ import { ResultSection } from "seed-design/ui/result-section";
 
 import { COMMUNITY_CATEGORIES } from "@rebirth/core/community";
 
+import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody } from "@/components/ui/screen";
+import { ComposeSheet } from "./compose-sheet";
 import { PostCard, type PostCardItem } from "./post-card";
 
 // 커뮤니티 피드. 주제 탭으로 좁히고 커서로 이어 읽음
@@ -33,6 +35,7 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
   const [cursor, setCursor] = useState(nextCursor);
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [composeOpen, setComposeOpen] = useState(false);
 
   const category = params.get("category");
 
@@ -75,7 +78,7 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
       setCursor(data.nextCursor);
     } catch {
       // 자동으로 다시 부르지 않고 사용자가 누를 때만 재시도함
-      setLoadError("더 불러오지 못했습니다. 다시 시도해 주십시오");
+      setLoadError("더 불러오지 못했어요. 다시 눌러 주세요");
     } finally {
       setLoadingMore(false);
     }
@@ -86,13 +89,11 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
   return (
     // 떠 있는 버튼이 화면 밖이 아니라 이 프레임 기준으로 붙게 함
     <Screen position="relative">
+      {/* 탭으로 들어오는 최상위 화면이라 뒤로 대신 홈으로 보냄 */}
+      <AppHeader title="커뮤니티" home />
       <ScreenBody gap="x5">
-        <Text as="h1" textStyle="t8Bold" color="fg.neutral">
-          커뮤니티
-        </Text>
-
         <Text textStyle="t3Regular" color="fg.neutralMuted">
-          제보로 올리기엔 확실하지 않은 이야기도 이웃과 나눠 주십시오
+          확실하지 않아도 괜찮아요. 이웃과 나눠 보세요
         </Text>
 
         <HStack gap="spacingX.betweenChips" wrap>
@@ -114,11 +115,11 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
         {rows.length === 0 ? (
           <ResultSection
             size="medium"
-            title="아직 글이 없습니다"
-            description="첫 글을 남겨 이웃과 이야기를 시작해 주십시오"
+            title="아직 글이 없어요"
+            description="첫 이야기를 남겨 보세요"
             primaryActionProps={{
               children: "글쓰기",
-              onClick: () => router.push("/community/new"),
+              onClick: () => setComposeOpen(true),
             }}
           />
         ) : (
@@ -142,7 +143,7 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
           </ActionButton>
         ) : rows.length > 0 ? (
           <Text textStyle="t2Regular" color="fg.neutralSubtle" align="center">
-            마지막 글까지 모두 보셨습니다
+            마지막 글까지 모두 보셨어요
           </Text>
         ) : null}
 
@@ -164,9 +165,11 @@ export function CommunityFeed({ items, nextCursor }: CommunityFeedProps) {
         <FloatingActionButton
           icon={<IconPencilLine />}
           label="글쓰기"
-          onClick={() => router.push("/community/new")}
+          onClick={() => setComposeOpen(true)}
         />
       </HStack>
+
+      <ComposeSheet open={composeOpen} onOpenChange={setComposeOpen} />
     </Screen>
   );
 }

@@ -22,7 +22,7 @@ const _sameAsTypes: Same<(typeof CATEGORY_VALUES)[number], CommunityCategory> =
 void _sameAsTypes
 
 const communityCategory = z.enum(CATEGORY_VALUES, {
-  error: '주제를 선택해 주십시오',
+  error: '주제를 골라 주세요',
 })
 
 export const TITLE_MAX = 60
@@ -38,18 +38,18 @@ export const communityPostInput = z.object({
   title: trimmed.pipe(
     z
       .string()
-      .min(2, { error: '제목을 두 글자 이상 써 주십시오' })
-      .max(TITLE_MAX, { error: `제목은 ${TITLE_MAX}자까지 쓸 수 있습니다` }),
+      .min(2, { error: '제목을 두 글자 이상 써 주세요' })
+      .max(TITLE_MAX, { error: `제목은 ${TITLE_MAX}자까지 쓸 수 있어요` }),
   ),
   body: trimmed.pipe(
     z
       .string()
-      .min(5, { error: '내용을 다섯 글자 이상 써 주십시오' })
-      .max(BODY_MAX, { error: `내용은 ${BODY_MAX}자까지 쓸 수 있습니다` }),
+      .min(5, { error: '내용을 다섯 글자 이상 써 주세요' })
+      .max(BODY_MAX, { error: `내용은 ${BODY_MAX}자까지 쓸 수 있어요` }),
   ),
   // 동 이름만 받음. 정확 좌표는 커뮤니티 글에 넣지 않음
   areaName: trimmed
-    .pipe(z.string().max(40, { error: '동네 이름이 너무 깁니다' }))
+    .pipe(z.string().max(40, { error: '동네 이름이 너무 길어요' }))
     .optional()
     .transform((v) => (v ? v : null)),
 })
@@ -60,8 +60,8 @@ export const communityCommentInput = z.object({
   body: trimmed.pipe(
     z
       .string()
-      .min(1, { error: '댓글을 입력해 주십시오' })
-      .max(COMMENT_MAX, { error: `댓글은 ${COMMENT_MAX}자까지 쓸 수 있습니다` }),
+      .min(1, { error: '댓글을 입력해 주세요' })
+      .max(COMMENT_MAX, { error: `댓글은 ${COMMENT_MAX}자까지 쓸 수 있어요` }),
   ),
 })
 

@@ -53,10 +53,13 @@ export function PostCard({ item }: { item: PostCardItem }) {
       borderWidth={1}
       borderColor="stroke.neutralMuted"
       bg="bg.layerDefault"
+      // 내용이 길어도 카드가 넓어지지 않게 함. 이게 없으면 자식의 줄 수 제한이 듣지 않음
+      minWidth="0"
     >
       {/* 링크로 두어 키보드 이동과 새 탭 열기가 그대로 동작함 */}
-      <Link href={`/community/${item.id}`}>
-        <VStack align="stretch" gap="x2">
+      {/* 카드 전체가 누르는 자리라 마우스와 키보드에 반응을 줌 */}
+      <Link href={`/community/${item.id}`} className="rebirth-card">
+        <VStack align="stretch" gap="x2" minWidth="0">
           <HStack gap="x2" align="center">
             <Box px="x2" py="x0_5" borderRadius="r1" bg="bg.neutralWeak">
               <Text textStyle="t1Bold" color="fg.neutralMuted">
@@ -70,11 +73,12 @@ export function PostCard({ item }: { item: PostCardItem }) {
             ) : null}
           </HStack>
 
-          <VStack align="stretch" gap="x1">
-            <Text textStyle="t5Bold" color="fg.neutral">
+          {/* 띄어쓰기 없는 긴 글이 카드를 밀어내지 않게 줄 수로 끊음 */}
+          <VStack align="stretch" gap="x1" minWidth="0">
+            <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
               {item.title}
             </Text>
-            <Text textStyle="t3Regular" color="fg.neutralMuted">
+            <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={2}>
               {preview(item.body)}
             </Text>
           </VStack>

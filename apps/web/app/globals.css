@@ -111,6 +111,46 @@ a {
   }
 }
 
+/* 카드 한 장을 통째로 누르는 자리
+   rebirth-row 와 달리 이미 면 색이 있어 테두리와 들림으로 반응함 */
+.rebirth-card {
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    transform 120ms ease;
+}
+
+/* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬 */
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-card:hover {
+    border-color: var(--seed-color-stroke-neutral);
+    box-shadow: var(--seed-shadow-s2);
+  }
+}
+
+/* 누르는 순간은 입력 장치와 상관없이 보여 줌 */
+.rebirth-card:active {
+  transform: scale(0.995);
+  box-shadow: none;
+}
+
+/* 키보드로 옮겨 다닐 때만 테두리를 보여 마우스 클릭에는 남지 않음 */
+.rebirth-card:focus-visible {
+  outline: var(--seed-dimension-x0_5) solid var(--seed-color-stroke-focus-ring);
+  outline-offset: var(--seed-dimension-x0_5);
+}
+
+/* 움직임을 줄이도록 설정한 기기에서는 전환과 눌림을 끔 */
+@media (prefers-reduced-motion: reduce) {
+  .rebirth-card {
+    transition: none;
+  }
+
+  .rebirth-card:active {
+    transform: none;
+  }
+}
+
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
 .rebirth-scroll-row {
   overflow-x: auto;

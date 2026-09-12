@@ -40,7 +40,7 @@ export function LikeButton({ postId, count, mine }: LikeButtonProps) {
         render: () => (
           <Snackbar
             variant="critical"
-            message="공감을 저장하지 못했습니다. 잠시 후 다시 눌러 주십시오"
+            message="공감을 저장하지 못했어요. 잠시 후 다시 눌러 주세요"
           />
         ),
       });

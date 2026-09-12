@@ -21,6 +21,7 @@ import type { CommunityCategory } from "@rebirth/types";
 import { categoryLabel } from "@rebirth/core/community";
 
 import { deletePost } from "@/app/community/actions";
+import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { sinceLabel } from "@/lib/report-label";
 import { LikeButton } from "./like-button";
@@ -62,6 +63,8 @@ export function PostDetail({
 }: PostDetailProps) {
   return (
     <Screen>
+      {/* 상세에는 하단 탭이 없어 헤더가 없으면 되돌아갈 길이 사라짐 */}
+      <AppHeader title="커뮤니티" />
       <ScreenBody gap="x5">
         <VStack align="stretch" gap="x3">
           <HStack gap="x2" align="center">
@@ -80,7 +83,12 @@ export function PostDetail({
             ) : null}
           </HStack>
 
-          <Text as="h1" textStyle="t7Bold" color="fg.neutral">
+          <Text
+            as="h1"
+            textStyle="t7Bold"
+            color="fg.neutral"
+            style={{ overflowWrap: "anywhere" }}
+          >
             {post.title}
           </Text>
 
@@ -102,7 +110,14 @@ export function PostDetail({
           </HStack>
         </VStack>
 
-        <Text textStyle="t4Regular" color="fg.neutral" whiteSpace="pre-wrap">
+        {/* pre-wrap 은 줄바꿈 문자만 살릴 뿐 띄어쓰기 없는 긴 글을 끊지 못함 */}
+        {/* overflowWrap 이 SEED prop 에 없어 이 값만 style 로 둠 */}
+        <Text
+          textStyle="t4Regular"
+          color="fg.neutral"
+          whiteSpace="pre-wrap"
+          style={{ overflowWrap: "anywhere" }}
+        >
           {post.body}
         </Text>
 
@@ -131,7 +146,7 @@ export function PostDetail({
                     이 글과 이어진 발견 제보
                   </Text>
                   <Text textStyle="t2Regular" color="fg.neutralMuted">
-                    제보 상세를 확인할 수 있습니다
+                    제보 내용을 확인해 보세요
                   </Text>
                 </VStack>
               </HStack>
