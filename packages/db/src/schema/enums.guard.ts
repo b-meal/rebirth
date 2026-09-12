@@ -10,6 +10,7 @@ import type {
   authProvider,
   careSituation,
   closeReason,
+  communityCategory,
   flagReason,
   flagResolution,
   lifecycle,
@@ -36,6 +37,7 @@ const _locationSource: Same<Values<typeof locationSource>, t.LocationSource> = t
 const _areaCodeSystem: Same<Values<typeof areaCodeSystem>, t.AreaCodeSystem> = true
 const _closeReason: Same<Values<typeof closeReason>, t.CloseReason> = true
 const _authProvider: Same<Values<typeof authProvider>, t.AuthProvider> = true
+const _community: Same<Values<typeof communityCategory>, t.CommunityCategory> = true
 
 void [
   _kind,
@@ -52,4 +54,5 @@ void [
   _areaCodeSystem,
   _closeReason,
   _authProvider,
+  _community,
 ]
