@@ -231,8 +231,10 @@ export function MineScreen({
           {LINKS.map((link, index) => (
             <VStack key={link.href} align="stretch">
               {index > 0 ? <Divider /> : null}
-              <HStack asChild gap="x3" align="center" py="x3">
-                <Link href={link.href}>
+              {/* 줄 전체가 누르는 자리라 면 색으로 눌리는 곳을 보여 줌 */}
+              {/* 음수 마진 prop 은 토큰 이름을 그대로 내보내 쓰지 않고 안쪽 여백만 줌 */}
+              <HStack asChild gap="x3" align="center" py="x3" px="x2">
+                <Link href={link.href} className="rebirth-row">
                   <Icon svg={link.icon} size="x5" color="fg.neutralMuted" />
                   <Text textStyle="t4Regular" color="fg.neutral" maxLines={1}>
                     {link.label}

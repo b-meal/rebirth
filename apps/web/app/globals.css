@@ -71,6 +71,89 @@ a {
   display: none;
 }
 
+/* 목록 한 줄을 통째로 누르는 자리
+   SEED 에 줄 단위 컴포넌트가 없어 앱 유틸로 둠. 면 색은 역할 토큰만 씀 */
+.rebirth-row {
+  border-radius: var(--seed-radius-r2);
+  transition: background-color 120ms ease;
+}
+
+/* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬 */
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-row:hover {
+    background: var(--seed-color-bg-neutral-weak);
+  }
+}
+
+/* 누르는 순간은 입력 장치와 상관없이 보여 줌 */
+.rebirth-row:active {
+  background: var(--seed-color-bg-neutral-weak-pressed);
+}
+
+/* 키보드로 옮겨 다닐 때만 테두리를 보여 마우스 클릭에는 남지 않음 */
+.rebirth-row:focus-visible {
+  outline: var(--seed-dimension-x0_5) solid var(--seed-color-stroke-focus-ring);
+  outline-offset: calc(var(--seed-dimension-x0_5) * -1);
+}
+
+/* 카드 한 장을 통째로 누르는 자리
+   줄과 달리 카드가 자기 면을 이미 가져 색을 덮지 않고 살짝 띄워 반응을 보여 줌 */
+.rebirth-card {
+  transition:
+    border-color 120ms ease,
+    transform 120ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-card:hover {
+    border-color: var(--seed-color-stroke-neutral-solid);
+  }
+}
+
+.rebirth-card:active {
+  transform: scale(0.99);
+}
+
+.rebirth-card:focus-visible {
+  outline: var(--seed-dimension-x0_5) solid var(--seed-color-stroke-focus-ring);
+  outline-offset: var(--seed-dimension-x0_5);
+}
+
+/* 사진 타일은 테두리가 없어 눌림만 보여 줌 */
+.rebirth-tile {
+  transition: opacity 120ms ease, transform 120ms ease;
+  border-radius: var(--seed-radius-r3);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-tile:hover {
+    opacity: 0.92;
+  }
+}
+
+.rebirth-tile:active {
+  transform: scale(0.98);
+}
+
+.rebirth-tile:focus-visible {
+  outline: var(--seed-dimension-x0_5) solid var(--seed-color-stroke-focus-ring);
+  outline-offset: var(--seed-dimension-x0_5);
+}
+
+/* 움직임을 줄이도록 설정한 기기에서는 확대·축소를 끔 */
+@media (prefers-reduced-motion: reduce) {
+  .rebirth-row,
+  .rebirth-card,
+  .rebirth-tile {
+    transition: none;
+  }
+
+  .rebirth-card:active,
+  .rebirth-tile:active {
+    transform: none;
+  }
+}
+
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
 .rebirth-scroll-row {
   overflow-x: auto;
