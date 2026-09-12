@@ -189,7 +189,7 @@ export function listPublicReports({
         fromOccurredAt ? gte(reports.occurredAt, fromOccurredAt) : undefined,
         toOccurredAt ? lte(reports.occurredAt, toOccurredAt) : undefined,
         cursor
-          ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt}, ${cursor.id})`
+          ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt.toISOString()}::timestamptz, ${cursor.id})`
           : undefined,
       ),
     )
@@ -335,7 +335,7 @@ export function listReporterReportPage(
         ne(reports.visibility, 'deleted'),
         kind ? eq(reports.kind, kind) : undefined,
         cursor
-          ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt}, ${cursor.id})`
+          ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt.toISOString()}::timestamptz, ${cursor.id})`
           : undefined,
       ),
     )
