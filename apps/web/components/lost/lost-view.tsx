@@ -2,8 +2,8 @@
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Divider, Skeleton, Text, VStack } from "@seed-design/react";
-import { Callout } from "seed-design/ui/callout";
+import { AspectRatio, Divider, Skeleton, Text, VStack } from "@seed-design/react";
+import { ResultSection } from "seed-design/ui/result-section";
 
 import { Screen, ScreenBody } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
@@ -87,12 +87,28 @@ export function LostView() {
   if (state.status === "loading") {
     return (
       <Screen>
-      <AppHeader title="확인할 후보" home />
-        <ScreenBody gap="x3">
-          <Skeleton width="60%" height="x6" radius="8" />
-          <Skeleton width="full" height="x16" radius="8" />
-          <Skeleton width="full" height="280px" radius="16" />
-        </ScreenBody>
+        <AppHeader title="확인할 후보" home />
+        {/* 들어설 화면과 같은 자리에 같은 크기로 둠
+            다른 모양으로 두면 값이 오는 순간 화면이 다시 짜여 덜컥임 */}
+        <VStack align="stretch">
+          <ScreenBody pb="x3" gap="x1">
+            <Skeleton width="55%" height="x7" radius="8" />
+            <Skeleton width="90%" height="x4" radius="8" />
+          </ScreenBody>
+
+          <Divider />
+
+          <ScreenBody gap="x4">
+            <Skeleton width="20%" height="x4" radius="8" />
+            <AspectRatio ratio={4 / 3}>
+              <Skeleton width="full" height="full" radius="16" />
+            </AspectRatio>
+            <VStack align="stretch" gap="x1">
+              <Skeleton width="35%" height="x6" radius="8" />
+              <Skeleton width="80%" height="x4" radius="8" />
+            </VStack>
+          </ScreenBody>
+        </VStack>
       </Screen>
     );
   }
@@ -100,15 +116,13 @@ export function LostView() {
   if (state.status === "invalid") {
     return (
       <Screen>
-      <AppHeader title="확인할 후보" home />
-        <ScreenBody gap="x3">
-          <Text as="h1" textStyle="t7Bold" color="fg.neutral">
-            조회 주소가 맞지 않습니다
-          </Text>
-          <Text textStyle="t5Regular" color="fg.neutralMuted">
-            받은 링크를 다시 확인해 주십시오. 연락처를 받지 않으므로 주소를 잃으면 신고를
-            다시 찾을 수 없습니다
-          </Text>
+        <AppHeader title="확인할 후보" home />
+        <ScreenBody>
+          <ResultSection
+            size="medium"
+            title="주소가 맞지 않아요"
+            description="저장해 둔 조회 주소를 다시 확인해 주세요"
+          />
         </ScreenBody>
       </Screen>
     );
@@ -117,11 +131,18 @@ export function LostView() {
   if (state.status === "error") {
     return (
       <Screen>
-      <AppHeader title="확인할 후보" home />
+        <AppHeader title="확인할 후보" home />
         <ScreenBody>
-          <Callout
-            tone="critical"
-            description="후보를 불러오지 못했습니다. 잠시 후에 다시 시도해 주십시오"
+          <ResultSection
+            size="medium"
+            title="후보를 불러오지 못했어요"
+            primaryActionProps={{
+              children: "다시 시도하기",
+              onClick: () => {
+                setState({ status: "loading" });
+                void load().then(setState);
+              },
+            }}
           />
         </ScreenBody>
       </Screen>

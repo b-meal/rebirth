@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ImageFrame, Skeleton } from "@seed-design/react";
-import { Callout } from "seed-design/ui/callout";
+import { AspectRatio, ImageFrame, Skeleton, Text, VStack } from "@seed-design/react";
 
 // 후보 사진, 넘길 때 지연이 없도록 다음 두 장을 미리 받아 두는 서명 URL 캐시
 
@@ -57,11 +56,27 @@ export function CandidatePhoto({ reportId, prefetchIds }: CandidatePhotoProps) {
     }
   }, [prefetchIds]);
 
+  // 사진이 없어도 아래 설명과 위치로 판단할 수 있어 자리만 지키고 조용히 알림
   if (failed) {
-    return <Callout tone="informative" description="사진을 불러오지 못했습니다" />;
+    return (
+      <AspectRatio ratio={4 / 3}>
+        <VStack align="center" justify="center" height="full" borderRadius="r3" bg="bg.neutralWeak">
+          <Text textStyle="t3Regular" color="fg.neutralMuted">
+            사진을 불러오지 못했어요
+          </Text>
+        </VStack>
+      </AspectRatio>
+    );
   }
 
-  if (!url) return <Skeleton width="full" height="280px" radius="16" />;
+  // 들어설 사진과 같은 비율로 둠. 고정 높이로 두면 사진이 오는 순간 아래가 밀림
+  if (!url) {
+    return (
+      <AspectRatio ratio={4 / 3}>
+        <Skeleton width="full" height="full" radius="16" />
+      </AspectRatio>
+    );
+  }
 
   return (
     <ImageFrame

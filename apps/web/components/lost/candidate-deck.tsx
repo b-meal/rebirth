@@ -119,14 +119,9 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
 
   return (
     <ScreenBody gap="x4">
-      <HStack justify="space-between" align="center">
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          {index + 1} / {ordered.length}
-        </Text>
-        <TagGroupRoot>
-          <TagGroupItem label={CARE_LABEL[current.careSituation]} size="t2" tone="neutral" />
-        </TagGroupRoot>
-      </HStack>
+      <Text textStyle="t3Regular" color="fg.neutralMuted">
+        {index + 1} / {ordered.length}
+      </Text>
 
       <CandidatePhoto
         reportId={current.id}
@@ -161,8 +156,11 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
             ))}
           </TagGroupRoot>
         ) : null}
+        {/* 어디서 언제 봤고 지금 어떤 상태인지는 한 줄로 묶여야 함께 읽힘
+            사진 위에 따로 띄우면 어느 정보에 붙는 값인지 흐려짐 */}
         <Text textStyle="t3Regular" color="fg.neutralMuted">
-          {current.areaName ?? "위치 미확인"} · {formatAbsolute(current.occurredAt)}
+          {current.areaName ?? "위치 미확인"} · {formatAbsolute(current.occurredAt)} ·{" "}
+          {CARE_LABEL[current.careSituation]}
         </Text>
       </VStack>
 
