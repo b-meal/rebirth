@@ -343,6 +343,15 @@ export function listReporterReportPage(
     .limit(limit)
 }
 
+/** 내가 남긴 제보 수. 마이페이지 한 줄에 붙는 숫자라 합계만 씀 */
+export async function countReporterReports(userId: string) {
+  const [row] = await db
+    .select({ count: raw<number>`count(*)::int` })
+    .from(reports)
+    .where(and(eq(reports.reporterId, userId), ne(reports.visibility, 'deleted')))
+  return row?.count ?? 0
+}
+
 /** 내가 관심을 누른 제보. 숨겨진 제보는 목록에서 빠짐 */
 export function listInterestedReports(userId: string, limit = 30) {
   return db

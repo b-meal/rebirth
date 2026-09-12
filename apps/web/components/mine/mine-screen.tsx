@@ -36,11 +36,34 @@ const PROVIDER_LABEL: Record<string, string> = {
 // 계정 없이도 쓰는 기능이라 로그인 화면으로 보낼 곳을 미리 정해 둠
 const SIGN_IN_HREF = `${SIGN_IN_PATH}?${NEXT_PARAM}=%2Fmine`;
 
-const LINKS = [
-  { href: "/guide/injured", label: "다친 동물을 발견했어요", icon: <IconHospitalcrossShieldLine /> },
-  { href: "/reports", label: "최근 발견 제보 보기", icon: <IconPawprintLine /> },
-  { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
-] as const;
+type MineLink = {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  /** 오른쪽 화살표 앞에 붙는 숫자, 셀 것이 없는 줄은 비움 */
+  count?: number;
+};
+
+/**
+ * 내 제보는 로그인한 사람에게만 열려 있어 목록을 그때 만듦
+ * 최근 발견 제보는 하단 탭의 발견제보와 같은 곳이라 여기 두지 않음
+ */
+function buildLinks(signedIn: boolean, reportCount: number): MineLink[] {
+  return [
+    ...(signedIn
+      ? [
+          {
+            href: "/mine/reports",
+            label: "내 제보",
+            icon: <IconPawprintLine />,
+            count: reportCount,
+          },
+        ]
+      : []),
+    { href: "/guide/injured", label: "다친 동물을 발견했어요", icon: <IconHospitalcrossShieldLine /> },
+    { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
+  ];
+}
 
 export type MineUser = {
   displayName: string | null;
@@ -63,6 +86,8 @@ export type PetCard = {
 export type MineScreenProps = {
   user: MineUser | null;
   pets: PetCard[];
+  /** 내 제보 줄에 붙는 건수. 종료와 숨김도 포함해 기록이 사라져 보이지 않게 함 */
+  reportCount: number;
   /** 로그인 설정이 끝나지 않은 환경에서는 로그인 버튼을 감춤 */
   authReady: boolean;
   signOut: React.ReactNode;
@@ -135,10 +160,13 @@ function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) 
 export function MineScreen({
   user,
   pets,
+  reportCount,
   authReady,
   signOut,
   removePet,
 }: MineScreenProps) {
+  const links = buildLinks(Boolean(user), reportCount);
+
   return (
     <Screen bg="bg.layerBasement">
       <AppHeader title="마이페이지" home />
@@ -232,7 +260,7 @@ export function MineScreen({
 
         {/* 비로그인은 이 카드가 마지막이라 남는 높이를 여기서 먹음 */}
         <SectionCard gap="x1" grow={user ? undefined : 1}>
-          {LINKS.map((link, index) => (
+          {links.map((link, index) => (
             <VStack key={link.href} align="stretch">
               {index > 0 ? <Divider /> : null}
               {/* 줄 전체가 누르는 자리라 면 색으로 눌리는 곳을 보여 줌 */}
@@ -243,7 +271,12 @@ export function MineScreen({
                   <Text textStyle="t4Regular" color="fg.neutral" maxLines={1}>
                     {link.label}
                   </Text>
-                  <HStack marginLeft="auto">
+                  <HStack marginLeft="auto" gap="x1" align="center">
+                    {link.count ? (
+                      <Text textStyle="t4Regular" color="fg.neutralMuted">
+                        {link.count}
+                      </Text>
+                    ) : null}
                     <Icon svg={<IconChevronRightLine />} size="x4" color="fg.neutralSubtle" />
                   </HStack>
                 </Link>
