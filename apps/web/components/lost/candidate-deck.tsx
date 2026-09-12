@@ -66,8 +66,10 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
   ];
   const current = ordered[index];
 
+  // 마지막 장에서 더 넘기지 않음
+  // 아니에요 는 목록 뒤로만 미는 것이라 볼 후보가 남아 있는데도 빈 화면이 되면 막다른 길임
   const next = useCallback(() => {
-    setIndex((prev) => Math.min(prev + 1, ordered.length));
+    setIndex((prev) => Math.min(prev + 1, Math.max(ordered.length - 1, 0)));
   }, [ordered.length]);
 
   const previous = useCallback(() => {
@@ -119,21 +121,21 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
     );
   }
 
+  // 넘기는 쪽이 마지막 장에서 멈추므로 여기까지 오지 않음
+  // 목록이 줄어 자리가 비는 드문 경우를 위한 안전망. 첫 장으로 되돌림
   if (!current) {
     return (
       <ResultSection
         size="medium"
-        title="후보를 모두 봤어요"
-        primaryActionProps={{
-          children: "처음부터 다시 보기",
-          onClick: () => setIndex(0),
-        }}
+        title="후보를 다시 불러올게요"
+        primaryActionProps={{ children: "처음부터 보기", onClick: () => setIndex(0) }}
       />
     );
   }
 
   // 털색은 아래 특징 문장이 대개 먼저 말해 빼고, 상태는 문장에 없는 값이라 남김
   const conditions = current.conditionTags.filter(Boolean);
+  const last = index === ordered.length - 1;
 
   return (
     <>
@@ -223,6 +225,14 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
           bg="bg.layerDefault"
           className="rebirth-bottom-bar"
         >
+          {/* 마지막 장에서는 넘길 곳이 없어 왜 못 누르는지 한 줄로 밝힘
+              이 말이 없으면 회색이 된 버튼을 보고 고장인 줄 앎 */}
+          {last && picked !== current.id ? (
+            <Text textStyle="t3Regular" color="fg.neutralMuted" align="center">
+              마지막 후보예요
+            </Text>
+          ) : null}
+
           {picked === current.id ? (
             <ActionButton variant="brandSolid" size="large" asChild>
               <a href={`/r/${current.id}`}>제보 상세 보기</a>
@@ -241,6 +251,8 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
                 variant="neutralOutline"
                 size="large"
                 flexGrow={1}
+                // 넘길 다음 장이 없음. 눌러도 같은 자리에 머물러 눌리는 것처럼 두지 않음
+                disabled={last}
                 onClick={() => {
                   pushBack();
                   next();
