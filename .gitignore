@@ -60,3 +60,6 @@ test-results/
 playwright-report/
 .femc/
 apps/web/public/maplibre/
+
+# 시드 스크립트 장소 캐시
+packages/db/scripts/.places-cache.json

@@ -198,7 +198,7 @@ export function listPublicReports({
 }
 
 /** 홈 지도 마커 상한. 한 화면에 그릴 수 있는 수를 넘기지 않음 */
-const MAP_LIMIT = 100
+const MAP_LIMIT = 500
 
 export type MapListOptions = {
   fromOccurredAt?: Date
