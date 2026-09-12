@@ -32,7 +32,6 @@ import {
   BottomSheetRoot,
 } from "seed-design/ui/bottom-sheet";
 import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-button";
-import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import {
   ANIMAL_LABEL,
@@ -52,6 +51,7 @@ import {
 } from "@/components/report/report-comments";
 import { ReportInterestButton } from "@/components/report/report-interest-button";
 import { ReportLocationMap } from "@/components/report/report-location-map";
+import { ReportShareSheet, useReportShare } from "@/components/share/report-share";
 import { rememberView } from "@/components/mine/recent-views";
 
 // 제보 상세, 절마다 카드로 끊고 사진은 비공개 버킷이라 서명 URL 로만 노출
@@ -129,12 +129,12 @@ export function ReportDetail({
   interest,
 }: ReportDetailProps) {
   const router = useRouter();
-  const snackbar = useSnackbarAdapter();
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [photoState, setPhotoState] = useState<"loading" | "ready" | "expired">("loading");
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagSent, setFlagSent] = useState(false);
   const [rescueOpen, setRescueOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   // 서명 URL 을 받아옴, 상태 갱신은 응답이 온 뒤에만 해 렌더 연쇄를 만들지 않음
   const loadPhoto = useCallback(async () => {
@@ -172,40 +172,11 @@ export function ReportDetail({
     };
   }, [loadPhoto, apply]);
 
-  const share = useCallback(async () => {
-    const text = `${report.areaName ?? "위치 미확인"}에서 목격된 발견동물 제보입니다`;
-    // 공유 횟수는 지표용이라 실패해도 화면을 막지 않음
-    void fetch(`/api/reports/${report.id}/share`, { method: "POST" });
-
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try {
-        await navigator.share({ title: "다시집 제보", text, url: shareUrl });
-        return;
-      } catch {
-        // 사용자가 취소하면 아무것도 하지 않음
-        return;
-      }
-    }
-    // 미지원 브라우저는 링크 복사로 대체
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      snackbar.create({
-        onClose: () => {},
-        render: () => <Snackbar variant="positive" message="링크를 복사했습니다" />,
-      });
-    } catch {
-      // 클립보드도 막히면 주소창에서 복사하도록 알림
-      snackbar.create({
-        onClose: () => {},
-        render: () => (
-          <Snackbar
-            variant="critical"
-            message="링크를 복사하지 못했습니다. 주소창의 주소를 복사해 주십시오"
-          />
-        ),
-      });
-    }
-  }, [report.id, report.areaName, shareUrl, snackbar]);
+  const { options: shareOptions, cardReady } = useReportShare({
+    reportId: report.id,
+    shareUrl,
+    areaName: report.areaName,
+  });
 
   const sendFlag = useCallback(
     async (reason: FlagReason) => {
@@ -282,7 +253,7 @@ export function ReportDetail({
               variant="layer"
               layout="iconOnly"
               aria-label="공유하기"
-              onClick={() => void share()}
+              onClick={() => setShareOpen(true)}
             >
               <Icon svg={<IconAndroidshareLine />} />
             </ContextualFloatingButton>
@@ -443,6 +414,13 @@ export function ReportDetail({
           </ActionButton>
         </HStack>
       </HStack>
+
+      <ReportShareSheet
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        options={shareOptions}
+        cardReady={cardReady}
+      />
 
       <BottomSheetRoot open={rescueOpen} onOpenChange={(open) => setRescueOpen(open)}>
         <BottomSheetContent title="구조 요청 안내">

@@ -39,10 +39,16 @@ export type LocationValue = {
 
 export type ReportLocationProps = {
   value: LocationValue;
+  /**
+   * 초안 세션이 만들어진 뒤에만 참조를 발급함
+   * 업로드와 위치 확정이 동시에 나가면 둘 다 세션을 새로 만들고 나중 쿠키가 이겨
+   * 앞의 업로드가 다른 세션에 남아 사라짐. 업로드를 먼저 끝내 한쪽만 세션을 만들게 함
+   */
+  sessionReady: boolean;
   onChange: (next: Partial<LocationValue>) => void;
 };
 
-export function ReportLocation({ value, onChange }: ReportLocationProps) {
+export function ReportLocation({ value, sessionReady, onChange }: ReportLocationProps) {
   const position = useCurrentPosition({ immediate: true });
   const geocode = useReverseGeocode(position.point);
   const locationToken = useLocationToken();
@@ -50,6 +56,7 @@ export function ReportLocation({ value, onChange }: ReportLocationProps) {
 
   // 확인된 지역을 서버 참조로 바꿈. 좌표는 여기서 서버로만 나감
   useEffect(() => {
+    if (!sessionReady) return;
     if (!geocode.result || !position.point) return;
     if (locationToken.status !== "idle") return;
 
@@ -78,7 +85,7 @@ export function ReportLocation({ value, onChange }: ReportLocationProps) {
           usableForDistance: result.usableForDistance,
         });
       });
-  }, [geocode.result, position.point, position.accuracyMeters, locationToken, onChange]);
+  }, [sessionReady, geocode.result, position.point, position.accuracyMeters, locationToken, onChange]);
 
   const blocked =
     position.status === "denied" ||
