@@ -1,5 +1,6 @@
 export { db, sql } from './client'
 export * from './schema'
+export * from './queries/accounts'
 export * from './queries/reports'
 export * from './queries/lost'
 export * from './queries/drafts'

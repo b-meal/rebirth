@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./auth": "./src/auth/index.ts",
+    "./auth/sync": "./src/auth/sync.ts",
     "./drafts": "./src/drafts/index.ts",
     "./http": "./src/http/index.ts",
     "./location": "./src/location/index.ts",

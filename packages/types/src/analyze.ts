@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { animalSize, animalType } from './enums'
 
 /**
- * POST /api/analyze 응답. Anthropic structured output 으로 강제하는 모양이라
+ * POST /api/draft/analyze 응답. Anthropic structured output 으로 강제하는 모양이라
  * 필드를 바꾸면 도구 정의와 reports.ai_raw 도 같이 바꿔야 함
  */
 export const analyzeResult = z.object({

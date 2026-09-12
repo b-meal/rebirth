@@ -7,6 +7,7 @@ import type {
   animalSize,
   animalType,
   areaCodeSystem,
+  authProvider,
   careSituation,
   closeReason,
   flagReason,
@@ -34,6 +35,7 @@ const _flagResolution: Same<Values<typeof flagResolution>, t.FlagResolution> = t
 const _locationSource: Same<Values<typeof locationSource>, t.LocationSource> = true
 const _areaCodeSystem: Same<Values<typeof areaCodeSystem>, t.AreaCodeSystem> = true
 const _closeReason: Same<Values<typeof closeReason>, t.CloseReason> = true
+const _authProvider: Same<Values<typeof authProvider>, t.AuthProvider> = true
 
 void [
   _kind,
@@ -49,4 +51,5 @@ void [
   _locationSource,
   _areaCodeSystem,
   _closeReason,
+  _authProvider,
 ]
