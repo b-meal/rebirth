@@ -143,8 +143,8 @@ export function MineScreen({
     <Screen bg="bg.layerBasement">
       <AppHeader title="마이페이지" home />
 
-      {/* 다른 화면의 ScreenBody 처럼 남는 높이를 채워 바탕이 화면 끝까지 이어짐 */}
-      <VStack align="stretch" grow={1} gap="x2" pb="x10">
+      {/* 아래 여백을 두면 마지막 카드 밑에 바탕색 띠가 남아 여백 없이 붙임 */}
+      <VStack align="stretch" grow={1} gap="x2">
         <SectionCard gap="x4">
           {user ? (
             <HStack align="center" gap="x3">
@@ -230,7 +230,8 @@ export function MineScreen({
           </>
         ) : null}
 
-        <SectionCard gap="x1">
+        {/* 비로그인은 이 카드가 마지막이라 남는 높이를 여기서 먹음 */}
+        <SectionCard gap="x1" grow={user ? undefined : 1}>
           {LINKS.map((link, index) => (
             <VStack key={link.href} align="stretch">
               {index > 0 ? <Divider /> : null}
@@ -251,7 +252,12 @@ export function MineScreen({
           ))}
         </SectionCard>
 
-        {user ? <SectionCard gap="x2">{signOut}</SectionCard> : null}
+        {/* 마지막 카드가 남는 높이를 먹어 아래에 바탕색이 드러나지 않음 */}
+        {user ? (
+          <SectionCard gap="x2" grow={1}>
+            {signOut}
+          </SectionCard>
+        ) : null}
       </VStack>
     </Screen>
   );
