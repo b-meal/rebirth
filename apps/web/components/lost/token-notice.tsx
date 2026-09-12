@@ -23,8 +23,10 @@ const SNACKBAR_MS = 2000;
 
 export function TokenNotice({ token, onLeave }: TokenNoticeProps) {
   const snackbar = useSnackbarAdapter();
-  // 복사를 마쳤는지. 아직이면 넘어가는 버튼을 눌러도 되는지 되물음
+  // 복사를 마쳤는지. 마쳐야 넘어가는 버튼이 열림
   const [copied, setCopied] = useState(false);
+  // 클립보드가 막혔는지. 복사에 성공한 것과 다른 사실이라 따로 둠
+  const [blocked, setBlocked] = useState(false);
 
   // 절대 주소로 보여줘야 사용자가 그대로 붙여 쓸 수 있음
   const url =
@@ -37,7 +39,8 @@ export function TokenNotice({ token, onLeave }: TokenNoticeProps) {
       await navigator.clipboard.writeText(url);
     } catch {
       // 클립보드가 막히면 눈으로 읽어 옮겨야 하므로 주소를 펼쳐 둠
-      setCopied(true);
+      // 복사는 안 됐으므로 copied 는 세우지 않음
+      setBlocked(true);
       snackbar.create({
         timeout: SNACKBAR_MS,
         render: () => (
@@ -76,16 +79,8 @@ export function TokenNotice({ token, onLeave }: TokenNoticeProps) {
           </Text>
         </VStack>
 
-        {/* 주소는 사람이 읽거나 외울 값이 아니라 한 줄로 눌러 담김
-            버튼 모양이라 여기를 눌러도 복사됨 */}
-        <VStack align="stretch">
-          <ActionButton variant="neutralWeak" size="large" onClick={copy}>
-            {copied ? "다시 복사하기" : "주소 복사하기"}
-          </ActionButton>
-        </VStack>
-
         {/* 복사가 막힌 기기에서만 눈으로 옮겨 적을 수 있게 전부 펼침 */}
-        {copied ? (
+        {blocked ? (
           <VStack align="stretch" px="x4" py="x4" borderRadius="r3" bg="bg.neutralWeak">
             <Text textStyle="t3Regular" color="fg.neutralMuted" style={{ overflowWrap: "anywhere" }}>
               {url}
@@ -94,11 +89,24 @@ export function TokenNotice({ token, onLeave }: TokenNoticeProps) {
         ) : null}
       </ScreenBody>
 
-      {/* 넘어가는 일은 넘어가는 버튼이 함. 복사 버튼이 겸하면 누른 사람이 놀람 */}
-      <VStack align="stretch" px="spacingX.globalGutter" pt="x3" className="rebirth-bottom-bar">
-        <ActionButton variant="brandSolid" size="large" onClick={onLeave}>
-          확인할 후보 보기
+      {/* 복사하기 전에는 복사가 유일한 할 일이라 버튼도 하나뿐임
+          복사 버튼은 자리를 지키고 아래로 넘어갈 길이 열림
+          미리 띄우면 저장을 건너뛰고 지나감
+          클립보드가 막힌 기기는 위에 펼친 주소를 옮겨 적었을 테니 같이 열어 줌 */}
+      <VStack align="stretch" gap="x2" px="spacingX.globalGutter" pt="x3" className="rebirth-bottom-bar">
+        <ActionButton
+          variant={copied || blocked ? "neutralWeak" : "brandSolid"}
+          size="large"
+          onClick={copy}
+        >
+          {copied ? "다시 복사하기" : "주소 복사하기"}
         </ActionButton>
+
+        {copied || blocked ? (
+          <ActionButton variant="brandSolid" size="large" onClick={onLeave}>
+            확인할 후보 보기
+          </ActionButton>
+        ) : null}
       </VStack>
     </Screen>
   );

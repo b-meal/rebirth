@@ -179,12 +179,13 @@ export function LostForm() {
     onChange: upload.sync,
     // 같은 사진을 또 고르면 아무 일도 안 일어난 것처럼 보여 스낵바로 알림
     // 한 줄 알림이라 기본 4초는 길게 느껴짐. 눌러서 바로 지울 수도 있게 함
+    // 글만 있으면 무슨 결의 알림인지 늦게 읽힘. 걸러 냈다는 뜻이라 critical 로 아이콘을 붙임
     onDuplicate: (count) =>
       snackbar.create({
         timeout: SNACKBAR_MS,
         render: () => (
           <Snackbar
-            variant="default"
+            variant="critical"
             onClick={snackbar.dismiss}
             message={
               count === 1 ? "이미 고른 사진이에요" : `이미 고른 사진 ${count}장은 넣지 않았어요`
