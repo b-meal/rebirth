@@ -425,7 +425,11 @@ export function ReportDetail({
       />
 
       <BottomSheetRoot open={flagOpen} onOpenChange={(open) => setFlagOpen(open)}>
-        <BottomSheetContent title={flagSent ? "신고를 접수했습니다" : "신고 사유"}>
+        {/* 접수 뒤에는 한 문장만 남아 시트가 손대기 어려울 만큼 납작해짐 */}
+        <BottomSheetContent
+          title={flagSent ? "신고를 접수했습니다" : "신고 사유"}
+          className={flagSent ? "rebirth-sheet--floor" : undefined}
+        >
           <BottomSheetBody>
             {flagSent ? (
               <Text textStyle="t5Regular" color="fg.neutral">
