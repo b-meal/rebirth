@@ -274,7 +274,7 @@ export const updateProfile = z.object({
   displayName: z
     .string()
     .trim()
-    .max(20, '이름은 20자까지 넣을 수 있습니다')
+    .max(20, '이름은 20자까지 쓸 수 있어요')
     .optional()
     .transform((v) => v ?? ''),
 })

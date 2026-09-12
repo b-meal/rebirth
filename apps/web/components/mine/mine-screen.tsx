@@ -3,7 +3,6 @@ import {
   AspectRatio,
   Box,
   Divider,
-  Grid,
   HStack,
   Icon,
   ImageFrame,
@@ -26,8 +25,6 @@ import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { ANIMAL_LABEL, SIZE_LABEL, breedLabel } from "@/lib/report-label";
-import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
-import { RecentReports } from "@/components/mine/recent-reports";
 
 // 마이페이지, 제보는 로그인 없이도 되므로 여기서만 계정을 요구함
 
@@ -39,11 +36,34 @@ const PROVIDER_LABEL: Record<string, string> = {
 // 계정 없이도 쓰는 기능이라 로그인 화면으로 보낼 곳을 미리 정해 둠
 const SIGN_IN_HREF = `${SIGN_IN_PATH}?${NEXT_PARAM}=%2Fmine`;
 
-const LINKS = [
-  { href: "/guide/injured", label: "다친 동물 응급 대처", icon: <IconHospitalcrossShieldLine /> },
-  { href: "/reports", label: "최근 발견 제보 모아 보기", icon: <IconPawprintLine /> },
-  { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
-] as const;
+type MineLink = {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  /** 오른쪽 화살표 앞에 붙는 숫자, 셀 것이 없는 줄은 비움 */
+  count?: number;
+};
+
+/**
+ * 내 제보는 로그인한 사람에게만 열려 있어 목록을 그때 만듦
+ * 최근 발견 제보는 하단 탭의 발견제보와 같은 곳이라 여기 두지 않음
+ */
+function buildLinks(signedIn: boolean, reportCount: number): MineLink[] {
+  return [
+    ...(signedIn
+      ? [
+          {
+            href: "/mine/reports",
+            label: "내 제보",
+            icon: <IconPawprintLine />,
+            count: reportCount,
+          },
+        ]
+      : []),
+    { href: "/guide/injured", label: "다친 동물을 발견했어요", icon: <IconHospitalcrossShieldLine /> },
+    { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
+  ];
+}
 
 export type MineUser = {
   displayName: string | null;
@@ -65,9 +85,9 @@ export type PetCard = {
 
 export type MineScreenProps = {
   user: MineUser | null;
-  myReports: ReportCardItem[];
-  interested: ReportCardItem[];
   pets: PetCard[];
+  /** 내 제보 줄에 붙는 건수. 종료와 숨김도 포함해 기록이 사라져 보이지 않게 함 */
+  reportCount: number;
   /** 로그인 설정이 끝나지 않은 환경에서는 로그인 버튼을 감춤 */
   authReady: boolean;
   signOut: React.ReactNode;
@@ -76,38 +96,8 @@ export type MineScreenProps = {
 
 function joinedLabel(value: Date | string): string {
   const date = new Date(value);
+  // 아바타 옆 한 줄이라 길어지면 줄바꿈됨. 제공자 이름과 합쳐 22자 안에 둠
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월부터 함께`;
-}
-
-/** 제목과 더 보기 링크를 함께 둔 절 머리 */
-function CardHead({ title, count, href }: { title: string; count: number; href?: string }) {
-  const head = (
-    <>
-      <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-        {title}
-      </Text>
-      <HStack gap="x1" align="center">
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          {count}건
-        </Text>
-        {href ? <Icon svg={<IconChevronRightLine />} size="x4" color="fg.neutralSubtle" /> : null}
-      </HStack>
-    </>
-  );
-
-  if (!href) {
-    return (
-      <HStack justify="space-between" align="center">
-        {head}
-      </HStack>
-    );
-  }
-
-  return (
-    <HStack asChild justify="space-between" align="center">
-      <Link href={href}>{head}</Link>
-    </HStack>
-  );
 }
 
 function EmptyRow({ title, hint }: { title: string; hint: string }) {
@@ -147,7 +137,7 @@ function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) 
           {pet.name}
         </Text>
         <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
-          {detail || "특징 미입력"}
+          {detail || "특징을 적지 않았어요"}
         </Text>
         {pet.note ? (
           <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
@@ -169,18 +159,20 @@ function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) 
 
 export function MineScreen({
   user,
-  myReports,
-  interested,
   pets,
+  reportCount,
   authReady,
   signOut,
   removePet,
 }: MineScreenProps) {
+  const links = buildLinks(Boolean(user), reportCount);
+
   return (
     <Screen bg="bg.layerBasement">
       <AppHeader title="마이페이지" home />
 
-      <VStack align="stretch" gap="x2" pb="x10">
+      {/* 아래 여백을 두면 마지막 카드 밑에 바탕색 띠가 남아 여백 없이 붙임 */}
+      <VStack align="stretch" grow={1} gap="x2">
         <SectionCard gap="x4">
           {user ? (
             <HStack align="center" gap="x3">
@@ -194,13 +186,14 @@ export function MineScreen({
               />
               <VStack align="stretch" gap="x0_5" minWidth="0">
                 <Text textStyle="t6Bold" color="fg.neutral" maxLines={1}>
-                  {user.displayName ?? "이름 없음"}
+                  {/* 이름은 커뮤니티 작성자로 나가는 값이라 비어 있으면 정하도록 권함 */}
+                  {user.displayName ?? "이름을 정해 주세요"}
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralMuted">
                   {PROVIDER_LABEL[user.provider] ?? "SNS"} 계정 · {joinedLabel(user.createdAt)}
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  제보 {myReports.length} · 관심 {interested.length} · 우리 동물 {pets.length}
+                  우리 동물 {pets.length}
                 </Text>
               </VStack>
             </HStack>
@@ -208,10 +201,10 @@ export function MineScreen({
             <VStack align="stretch" gap="x3">
               <VStack align="stretch" gap="x1">
                 <Text textStyle="t5Bold" color="fg.neutral">
-                  로그인하면 남긴 제보와 관심을 모아 볼 수 있습니다
+                  로그인하고 내 활동을 모아 보세요
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralMuted">
-                  로그인하지 않아도 제보와 댓글은 그대로 쓸 수 있습니다
+                  로그인하지 않아도 제보와 댓글은 남길 수 있어요
                 </Text>
               </VStack>
               {authReady ? (
@@ -222,7 +215,7 @@ export function MineScreen({
                 </HStack>
               ) : (
                 <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  SNS 로그인 설정이 아직 끝나지 않았습니다
+                  로그인을 준비하고 있어요
                 </Text>
               )}
             </VStack>
@@ -250,8 +243,8 @@ export function MineScreen({
 
               {pets.length === 0 ? (
                 <EmptyRow
-                  title="등록한 동물이 없습니다"
-                  hint="미리 적어 두면 실종 신고를 쓸 때 그대로 불러올 수 있습니다"
+                  title="아직 등록한 동물이 없어요"
+                  hint="미리 등록해 두면 실종 신고를 빠르게 쓸 수 있어요"
                 />
               ) : (
                 <VStack align="stretch" gap="x3">
@@ -262,58 +255,28 @@ export function MineScreen({
               )}
             </SectionCard>
 
-            <SectionCard gap="x3">
-              <CardHead title="내가 남긴 제보" count={myReports.length} />
-              {myReports.length === 0 ? (
-                <EmptyRow
-                  title="아직 남긴 제보가 없습니다"
-                  hint="길에서 만난 동물을 사진 한 장으로 제보할 수 있습니다"
-                />
-              ) : (
-                <Grid columns={2} gap="x4">
-                  {myReports.map((item) => (
-                    <ReportCard key={item.id} item={item} />
-                  ))}
-                </Grid>
-              )}
-            </SectionCard>
-
-            <SectionCard gap="x3">
-              <CardHead title="관심 있는 제보" count={interested.length} />
-              {interested.length === 0 ? (
-                <EmptyRow
-                  title="관심을 눌러 둔 제보가 없습니다"
-                  hint="제보 상세의 하트를 누르면 여기에 모입니다"
-                />
-              ) : (
-                <Grid columns={2} gap="x4">
-                  {interested.map((item) => (
-                    <ReportCard key={item.id} item={item} />
-                  ))}
-                </Grid>
-              )}
-            </SectionCard>
-
-            <SectionCard gap="x3">
-              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                최근 본 제보
-              </Text>
-              <RecentReports />
-            </SectionCard>
           </>
         ) : null}
 
-        <SectionCard gap="x1">
-          {LINKS.map((link, index) => (
+        {/* 비로그인은 이 카드가 마지막이라 남는 높이를 여기서 먹음 */}
+        <SectionCard gap="x1" grow={user ? undefined : 1}>
+          {links.map((link, index) => (
             <VStack key={link.href} align="stretch">
               {index > 0 ? <Divider /> : null}
-              <HStack asChild gap="x3" align="center" py="x3">
-                <Link href={link.href}>
+              {/* 줄 전체가 누르는 자리라 면 색으로 눌리는 곳을 보여 줌 */}
+              {/* 음수 마진 prop 은 토큰 이름을 그대로 내보내 쓰지 않고 안쪽 여백만 줌 */}
+              <HStack asChild gap="x3" align="center" py="x3" px="x2">
+                <Link href={link.href} className="rebirth-row">
                   <Icon svg={link.icon} size="x5" color="fg.neutralMuted" />
                   <Text textStyle="t4Regular" color="fg.neutral" maxLines={1}>
                     {link.label}
                   </Text>
-                  <HStack marginLeft="auto">
+                  <HStack marginLeft="auto" gap="x1" align="center">
+                    {link.count ? (
+                      <Text textStyle="t4Regular" color="fg.neutralMuted">
+                        {link.count}
+                      </Text>
+                    ) : null}
                     <Icon svg={<IconChevronRightLine />} size="x4" color="fg.neutralSubtle" />
                   </HStack>
                 </Link>
@@ -322,7 +285,12 @@ export function MineScreen({
           ))}
         </SectionCard>
 
-        {user ? <SectionCard gap="x2">{signOut}</SectionCard> : null}
+        {/* 마지막 카드가 남는 높이를 먹어 아래에 바탕색이 드러나지 않음 */}
+        {user ? (
+          <SectionCard gap="x2" grow={1}>
+            {signOut}
+          </SectionCard>
+        ) : null}
       </VStack>
     </Screen>
   );

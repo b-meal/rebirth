@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect } from "react";
 import { HStack, Text, VStack } from "@seed-design/react";
@@ -58,7 +57,7 @@ export function PetForm() {
       <VStack align="stretch" gap="x2" pb="x10">
         <SectionCard gap="x5">
           <Text textStyle="t3Regular" color="fg.neutralMuted">
-            미리 적어 두면 실종 신고를 쓸 때 그대로 불러올 수 있습니다
+            미리 등록해 두면 실종 신고를 빠르게 쓸 수 있어요
           </Text>
 
           {/* design-system-allow:raw-element form 은 SEED 에 대응 컴포넌트가 없는 표준 요소 */}
@@ -128,7 +127,7 @@ export function PetForm() {
                 label="품종 추정"
                 name="breedGuess"
                 size="medium"
-                description="확정이 아니라 계열 추정으로만 표시됩니다"
+                description="확정이 아니라 계열 추정으로만 보여요"
                 maxGraphemeCount={30}
               >
                 <TextFieldInput placeholder="말티즈" />
@@ -145,10 +144,8 @@ export function PetForm() {
 
               {state.error ? <Callout tone="critical" description={state.error} /> : null}
 
-              <HStack gap="x2" align="stretch">
-                <ActionButton variant="neutralWeak" size="large" flexGrow={1} asChild>
-                  <Link href="/mine">돌아가기</Link>
-                </ActionButton>
+              {/* 돌아가기는 헤더의 뒤로 가기와 같은 일을 해 두지 않음 */}
+              <HStack align="stretch">
                 <ActionButton
                   type="submit"
                   variant="brandSolid"
@@ -157,7 +154,7 @@ export function PetForm() {
                   loading={pending}
                   disabled={pending || upload.status === "uploading"}
                 >
-                  등록
+                  등록하기
                 </ActionButton>
               </HStack>
             </VStack>

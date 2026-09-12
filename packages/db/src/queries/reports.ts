@@ -14,17 +14,17 @@ import {
   sql as raw,
 } from 'drizzle-orm'
 
-import { COMMENT_PAGE_SIZE } from '@rebirth/types'
+import { COMMENT_PAGE_SIZE, type ReportKind } from '@rebirth/types'
 
 import { db } from '../client'
-import { draftSessions } from '../schema/drafts'
 import {
+  draftSessions,
   reportComments,
   reportFlags,
   reportInterests,
   reportPhotos,
   reports,
-} from '../schema/reports'
+} from '../schema'
 
 // 공개 응답에 나갈 컬럼
 // exactPoint·coarsePoint·manageTokenHash·reporterId·aiRaw 는 여기 넣지 않음
@@ -307,6 +307,49 @@ export function listReportsByReporter(userId: string, limit = 30) {
     .where(and(eq(reports.reporterId, userId), ne(reports.visibility, 'deleted')))
     .orderBy(desc(reports.occurredAt))
     .limit(limit)
+}
+
+/** 전체 목록 한 장. 마이페이지 카드는 listReportsByReporter 로 앞 몇 건만 봄 */
+const MINE_PAGE_LIMIT = 20
+
+export type ReporterPageOptions = {
+  kind?: ReportKind
+  cursor?: PublicListCursor
+  limit?: number
+}
+
+/**
+ * 내가 남긴 제보를 종류로 갈라 커서로 넘겨 봄
+ * 카드용 질의와 달리 종료·숨김도 함께 보여 줌. 내 기록이 사라진 것처럼 보이지 않게 함
+ */
+export function listReporterReportPage(
+  userId: string,
+  { kind, cursor, limit = MINE_PAGE_LIMIT }: ReporterPageOptions = {},
+) {
+  return db
+    .select(myReportColumns)
+    .from(reports)
+    .where(
+      and(
+        eq(reports.reporterId, userId),
+        ne(reports.visibility, 'deleted'),
+        kind ? eq(reports.kind, kind) : undefined,
+        cursor
+          ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt}, ${cursor.id})`
+          : undefined,
+      ),
+    )
+    .orderBy(desc(reports.occurredAt), desc(reports.id))
+    .limit(limit)
+}
+
+/** 내가 남긴 제보 수. 마이페이지 한 줄에 붙는 숫자라 합계만 씀 */
+export async function countReporterReports(userId: string) {
+  const [row] = await db
+    .select({ count: raw<number>`count(*)::int` })
+    .from(reports)
+    .where(and(eq(reports.reporterId, userId), ne(reports.visibility, 'deleted')))
+  return row?.count ?? 0
 }
 
 /** 내가 관심을 누른 제보. 숨겨진 제보는 목록에서 빠짐 */

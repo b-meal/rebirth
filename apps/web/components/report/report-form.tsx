@@ -336,14 +336,15 @@ export function ReportForm() {
             <Box height="x8" />
           </ScreenBody>
 
+          {/* pb 는 유틸이 안전 영역을 더해 다시 잡으므로 여기서 주지 않음 */}
           <VStack
+            className="rebirth-bottom-bar"
             position="sticky"
             bottom="0"
             zIndex={1}
             align="stretch"
             px="spacingX.globalGutter"
             pt="x3"
-            pb="x5"
             bg="bg.layerDefault"
             borderTopWidth="1px"
             borderColor="stroke.neutralMuted"

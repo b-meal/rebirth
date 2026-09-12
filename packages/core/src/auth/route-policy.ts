@@ -28,6 +28,8 @@ const PUBLIC_PREFIXES = [
   // 지도와 목록 둘러보기
   "/search",
   "/reports",
+  // 커뮤니티. 글쓰기는 시트라 주소가 없고 저장할 때 서버 액션이 계정을 확인함
+  "/community",
   // 계정 화면은 로그인 권유도 겸하므로 열어 두고 안에서 갈라 보여 줌
   "/mine",
   // 안내와 법적 고지
@@ -45,8 +47,17 @@ function matches(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+/**
+ * 공개 구역 안에 난 예외
+ * 접두사 목록만으로는 "열린 구역 안의 닫힌 화면"을 표현할 수 없어 따로 둠
+ * 커뮤니티 글쓰기가 여기 있었으나 시트로 바뀌어 화면 주소가 없어짐
+ * 그런 화면은 이제 서버 액션이 첫 줄에서 스스로 막음
+ */
+const PROTECTED_PATHS: readonly string[] = []
+
 /** 로그인 없이 열리는 경로인지. 목록에 없으면 보호 대상 */
 export function isPublicPath(pathname: string): boolean {
+  if (PROTECTED_PATHS.some((path) => matches(pathname, path))) return false;
   return PUBLIC_PREFIXES.some((prefix) => matches(pathname, prefix));
 }
 

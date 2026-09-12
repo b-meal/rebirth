@@ -1,4 +1,4 @@
-import { Divider, Text, VStack } from "@seed-design/react";
+import { Text, VStack } from "@seed-design/react";
 import { Callout } from "seed-design/ui/callout";
 
 import { Screen, ScreenBody } from "@/components/ui/screen";
@@ -33,21 +33,17 @@ export function LegalDocument({
   return (
     <Screen>
       <AppHeader title={title} />
-      <ScreenBody gap="x5">
-        <VStack align="stretch" gap="x1">
-          <Text as="h1" textStyle="t8Bold" color="fg.neutral">
-            {title}
-          </Text>
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {effectiveAt ? `${version} · ${KST.format(effectiveAt)} 시행` : version}
-          </Text>
-        </VStack>
+      <ScreenBody gap="x6">
+        {/* 제목은 헤더가 이미 말하고 있어 시행일만 남김 */}
+        <Text textStyle="t3Regular" color="fg.neutralMuted">
+          {effectiveAt ? `${version} · ${KST.format(effectiveAt)} 시행` : version}
+        </Text>
 
-        {changeSummary ? <Callout tone="informative" description={changeSummary} /> : null}
+        {/* 이번 개정에서 바뀐 곳을 알리는 메모라 경고가 아님. 파란 면은 과함 */}
+        {changeSummary ? <Callout tone="neutral" description={changeSummary} /> : null}
 
-        <Divider />
-
-        <VStack align="stretch" gap="x3">
+        {/* 긴 글이라 문단 사이를 넉넉히 띄워 눈이 쉴 자리를 둠 */}
+        <VStack align="stretch" gap="x5">
           {paragraphs.map((paragraph, index) => (
             <Text key={index} textStyle="articleBody" color="fg.neutral" whiteSpace="pre-wrap">
               {paragraph}
@@ -66,11 +62,12 @@ export function LegalNotPublished({ label }: { label: string }) {
       <AppHeader title={label} />
       <ScreenBody pt="x12" gap="x4">
         <Text as="h1" textStyle="t8Bold" color="fg.neutral">
-          {label}는 아직 발행 전입니다
+          아직 준비하고 있어요
         </Text>
         <Text textStyle="t5Regular" color="fg.neutralMuted">
-          운영 주체와 문의 창구가 확정되면 발행합니다. 확정 전에는 내용을 임의로 안내하지
-          않습니다
+          {/* 문서 이름에 조사를 붙이면 받침에 따라 틀려 이름을 문장 밖에 둠 */}
+          운영 주체와 문의 창구가 정해지면 올릴게요. 그 전까지는 정해지지 않은 내용을 임의로
+          안내하지 않아요
         </Text>
       </ScreenBody>
     </Screen>

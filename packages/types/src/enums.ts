@@ -38,12 +38,14 @@ export const authProvider = z.enum(['google', 'kakao'], {
   error: '지원하지 않는 로그인 방식입니다',
 })
 // 문의·권리 요청 분류. WEB-24
+// rescue 는 다친 동물을 봤다는 구조 요청. 급해서 일반 문의와 같은 줄에 두면 묻힘
 export const supportRequestKind = z.enum(
   [
     'manage_token_lost',
     'deletion',
     'correction',
     'privacy_exposure',
+    'rescue',
     'general',
   ],
   { error: '문의 유형을 선택해 주십시오' },
@@ -108,6 +110,12 @@ export const flagResolution = z.enum(
   { error: '판정값이 올바르지 않습니다' },
 )
 
+// 커뮤니티 글 분류. 제보로 올리기 애매한 이야기를 담는 자리
+export const communityCategory = z.enum(
+  ['sighting_talk', 'reunion', 'care_tip', 'neighborhood'],
+  { error: '주제를 선택해 주십시오' },
+)
+
 export type ReportKind = z.infer<typeof reportKind>
 export type Visibility = z.infer<typeof visibility>
 export type Lifecycle = z.infer<typeof lifecycle>
@@ -122,6 +130,7 @@ export type FlagResolution = z.infer<typeof flagResolution>
 export type LocationSource = z.infer<typeof locationSource>
 export type AreaCodeSystem = z.infer<typeof areaCodeSystem>
 export type CloseReason = z.infer<typeof closeReason>
+export type CommunityCategory = z.infer<typeof communityCategory>
 export type SupportRequestKind = z.infer<typeof supportRequestKind>
 export type SupportStatus = z.infer<typeof supportStatus>
 export type LegalDocType = z.infer<typeof legalDocType>

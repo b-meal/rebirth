@@ -8,7 +8,7 @@ import {
   legalDocuments,
   supportReplies,
   supportRequests,
-} from '../schema/support'
+} from '../schema'
 
 // 문의·권리 요청과 법적 고지 조회
 

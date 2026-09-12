@@ -108,6 +108,7 @@ export const SUPPORT_KIND_LABEL: Record<SupportRequestKind, string> = {
   deletion: '내 기록을 삭제해 주십시오',
   correction: '잘못된 내용을 고쳐 주십시오',
   privacy_exposure: '개인정보가 노출됐습니다',
+  rescue: '다친 동물을 봤습니다',
   general: '그 외 문의',
 }
 

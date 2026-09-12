@@ -8,8 +8,9 @@ import {
   consentRecords,
   manageGrants,
   manageSessions,
-} from '../schema/manage'
-import { reportPhotos, reports } from '../schema/reports'
+  reportPhotos,
+  reports,
+} from '../schema'
 
 // 익명 관리 권한. 공개 ID 는 열람 식별자일 뿐이고 권한은 세션에서만 나옴
 
