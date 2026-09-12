@@ -15,6 +15,7 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { FloatingActionButton } from "seed-design/ui/floating-action-button";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
 
 import { COMMUNITY_CATEGORIES } from "@rebirth/core/community";
@@ -22,6 +23,7 @@ import { COMMUNITY_CATEGORIES } from "@rebirth/core/community";
 import { useNeighborhood } from "@/components/location/neighborhood-provider";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody } from "@/components/ui/screen";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { ComposeSheet } from "./compose-sheet";
 import { PostCard, type PostCardItem } from "./post-card";
 
@@ -159,6 +161,13 @@ export function CommunityFeed({
     }
   }, [cursor, params, areaName]);
 
+  // 끝에 닿기 전에 다음 쪽을 미리 불러 둠. 실패한 뒤에는 손으로 누를 때만 다시 부름
+  const sentinel = useInfiniteScroll({
+    hasMore: Boolean(cursor) && !loadError,
+    loading: loadingMore,
+    onLoad: loadMore,
+  });
+
   // 동네로 읽었으면 그 목록이 첫 쪽을 대신함
   const rows = [...(local ?? items), ...extra];
   // 내 동네 글이 하나라도 있고 뒤에 다른 동네가 이어질 때만 구분선을 놓음
@@ -235,17 +244,30 @@ export function CommunityFeed({
           </VStack>
         )}
 
-        {loadError ? <Callout tone="critical" description={loadError} /> : null}
+        {/* 실패했을 때만 손으로 다시 부름. 자동으로 되풀이하면 같은 오류를 계속 부름 */}
+        {loadError ? (
+          <VStack align="stretch" gap="x3">
+            <Callout tone="critical" description={loadError} />
+            <ActionButton
+              variant="neutralOutline"
+              size="large"
+              loading={loadingMore}
+              onClick={loadMore}
+            >
+              다시 시도
+            </ActionButton>
+          </VStack>
+        ) : null}
 
-        {cursor ? (
-          <ActionButton
-            variant="neutralOutline"
-            size="large"
-            loading={loadingMore}
-            onClick={loadMore}
-          >
-            더 보기
-          </ActionButton>
+        {/* 목록 끝에 닿기 전에 다음 쪽을 미리 부르는 표식
+            보이지 않지만 자리를 차지해야 관찰자가 걸림 */}
+        {cursor && !loadError ? <Box ref={sentinel} height="x1" /> : null}
+
+        {/* 불러오는 동안만 표시를 둠. 미리 불러 두면 대개 보이지 않고 지나감 */}
+        {loadingMore && !loadError ? (
+          <HStack justify="center" py="x4">
+            <ProgressCircle size="24" tone="neutral" />
+          </HStack>
         ) : null}
 
         {/* 떠 있는 글쓰기 버튼이 마지막 글을 가리지 않도록 여백을 둠 */}
