@@ -80,8 +80,10 @@ a {
 }
 
 /* 목록 한 줄을 통째로 누르는 자리
-   SEED 에 줄 단위 컴포넌트가 없어 앱 유틸로 둠. 면 색은 역할 토큰만 씀 */
+   SEED 에 줄 단위 컴포넌트가 없어 앱 유틸로 둠. 면 색은 역할 토큰만 씀
+   SEED 컴포넌트는 레시피가 커서를 정하지만 이 줄은 맨 button 이라 직접 둠 */
 .rebirth-row {
+  cursor: pointer;
   border-radius: var(--seed-radius-r2);
   transition: background-color 120ms ease;
 }
@@ -113,8 +115,10 @@ a {
 
 /* 카드 한 장을 통째로 누르는 자리
    rebirth-row 와 달리 이미 면 색이 있어 테두리로 반응함
-   크기를 바꾸면 글자가 다시 그려지며 떨려 보여 면과 선만 씀 */
+   크기를 바꾸면 글자가 다시 그려지며 떨려 보여 면과 선만 씀
+   Link 로 감싸도 href 없는 경우가 있어 커서를 명시함 */
 .rebirth-card {
+  cursor: pointer;
   transition:
     border-color 120ms ease,
     background-color 120ms ease;

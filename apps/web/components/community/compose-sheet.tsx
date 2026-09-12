@@ -52,7 +52,8 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
                   <Text textStyle="t4Regular" color="fg.neutral">
                     {option.label}
                   </Text>
-                  <Icon svg={<IconChevronRightLine />} color="fg.neutralSubtle" />
+                  {/* 기본 x6 은 글자보다 커서 셰브런이 주인공처럼 보임 */}
+                  <Icon svg={<IconChevronRightLine />} size="x4" color="fg.neutralSubtle" />
                 </button>
               </HStack>
             ))}
