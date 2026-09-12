@@ -50,7 +50,18 @@ export function LostView() {
   const load = useCallback(async (): Promise<State> => {
     if (!token) return { status: "invalid" };
     try {
-      const response = await fetch(`/api/lost/${token}`);
+      // 주소에 담긴 것은 관리 토큰이라 그대로 조회할 수 없음
+      // 먼저 교환해 신고 id 와 관리 세션 쿠키를 받고 그 id 로 후보를 읽음
+      const exchanged = await fetch("/api/manage/exchange", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+      if (exchanged.status === 404) return { status: "invalid" };
+      if (!exchanged.ok) return { status: "error" };
+      const { id } = (await exchanged.json()) as { id: string };
+
+      const response = await fetch(`/api/lost/${id}/candidates`);
       if (response.status === 404) return { status: "invalid" };
       if (!response.ok) return { status: "error" };
       const body = (await response.json()) as {

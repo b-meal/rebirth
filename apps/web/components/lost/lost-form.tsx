@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { HStack, Icon, Text, VStack } from "@seed-design/react";
 import {
   IconChevronRightLine,
@@ -114,10 +115,10 @@ const SNACKBAR_MS = 2000;
  */
 const FINDING_HEIGHT = "54px";
 
-function readStepFromUrl(): LostStep {
-  if (typeof window === "undefined") return 1;
-  const raw = Number(new URLSearchParams(window.location.search).get("step"));
-  return raw >= 1 && raw <= LAST_STEP ? (raw as LostStep) : 1;
+/** 주소가 들고 있는 걸음. 값이 없거나 범위를 벗어나면 첫 걸음 */
+function readStep(raw: string | null): LostStep {
+  const value = Number(raw);
+  return value >= 1 && value <= LAST_STEP ? (value as LostStep) : 1;
 }
 
 const ANIMAL_OPTIONS = [
@@ -149,7 +150,9 @@ function toLocalInput(date: Date): string {
 }
 
 export function LostForm() {
-  const [step, setStep] = useState<LostStep>(1);
+  const router = useRouter();
+  const pathname = usePathname();
+  const params = useSearchParams();
   const [animalType, setAnimalType] = useState<"dog" | "cat" | "other">("dog");
   const [size, setSize] = useState<"small" | "medium" | "large">("small");
   const [colors, setColors] = useState<string[]>([]);
@@ -227,11 +230,10 @@ export function LostForm() {
 
   // 사진은 File 이라 복원되지 않으므로 새로고침은 늘 첫 걸음에서 다시 시작함
   useEffect(() => {
-    const url = new URL(window.location.href);
-    if (url.searchParams.has("step")) {
-      url.searchParams.delete("step");
-      window.history.replaceState({ step: 1 }, "", url);
-    }
+    if (readStep(new URLSearchParams(window.location.search).get("step")) === 1) return;
+    router.replace(pathname);
+    // 처음 붙을 때 한 번만 봄. 걸음을 옮길 때마다 되돌리면 안 됨
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -254,28 +256,30 @@ export function LostForm() {
     [location],
   );
 
-  // 앱바의 뒤로와 기기 뒤로가 화면을 벗어나지 않고 한 걸음만 되돌림
-  // 마지막 걸음에서 빠져나오면 거기 적은 것은 지움
-  const leaving = useRef(step);
-  useEffect(() => {
-    const onPop = () => {
-      const next = readStepFromUrl();
-      if (leaving.current === LAST_STEP && next !== LAST_STEP) resetLastStep();
-      leaving.current = next;
-      setStep(next);
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, [resetLastStep]);
+  /**
+   * 걸음은 주소가 들고 있고 화면은 그것을 따라감
+   * history 를 직접 다루면 앱바의 뒤로는 Next 라우터로 움직여 popstate 가 오지 않아
+   * 주소만 바뀌고 화면이 그대로 남음. 라우터가 알려 주는 주소만 믿음
+   */
+  const urlStep = readStep(params.get("step"));
 
-  const goTo = useCallback((next: LostStep) => {
-    leaving.current = next;
-    setStep(next);
-    const url = new URL(window.location.href);
-    url.searchParams.set("step", String(next));
-    window.history.pushState({ step: next }, "", url);
+  // 마지막 걸음에서 빠져나오면 거기 적은 것은 지움
+  const leaving = useRef(urlStep);
+  useEffect(() => {
+    if (leaving.current === urlStep) return;
+    if (leaving.current === LAST_STEP && urlStep !== LAST_STEP) resetLastStep();
+    leaving.current = urlStep;
     window.scrollTo({ top: 0 });
-  }, []);
+  }, [urlStep, resetLastStep]);
+
+  const goTo = useCallback(
+    (next: LostStep) => {
+      const query = new URLSearchParams(params.toString());
+      query.set("step", String(next));
+      router.push(`${pathname}?${query}`);
+    },
+    [params, pathname, router],
+  );
 
   const positionFailed = position.status === "denied" || position.status === "unavailable";
   const showManual = manual || positionFailed || geocode.error !== null;
@@ -286,9 +290,9 @@ export function LostForm() {
    * 여기서 막지 않으면 마지막에 등록을 눌러서야 두 걸음 앞의 빈칸을 알게 됨
    */
   const ready =
-    step === 1
+    urlStep === 1
       ? upload.uploadIds.length > 0
-      : step === 2
+      : urlStep === 2
         ? appearance.trim().length > 0
         : locationToken !== null && !submitting;
 
@@ -380,12 +384,24 @@ export function LostForm() {
   ]);
 
   // 토큰이 발급되면 화면을 덮어 복사를 유도함
-  if (token) return <TokenNotice token={token} />;
+  // 이 화면은 /lost/new 안에서 그려지므로 주소만 바꾸면 폼이 그대로 남음
+  // 토큰을 비워 이 덮개를 걷고 같은 자리에서 조회 화면으로 옮김
+  if (token) {
+    return (
+      <TokenNotice
+        token={token}
+        onLeave={() => {
+          setToken(null);
+          router.replace(`/lost/${token}`);
+        }}
+      />
+    );
+  }
 
   return (
     <Screen>
       {/* 앱바의 뒤로가 단계를 하나씩 되돌림. 첫 걸음에서는 화면을 벗어남 */}
-      <AppHeader title={STEP_TITLE[step]} />
+      <AppHeader title={STEP_TITLE[urlStep]} />
 
       {/* 지금 어디쯤인지 앱바 밑에 띠로 둠. 세 걸음뿐이라 숫자는 적지 않음 */}
       <HStack gap="x1" px="spacingX.globalGutter" pb="x2">
@@ -395,7 +411,7 @@ export function LostForm() {
             height="x1"
             grow={1}
             borderRadius="full"
-            bg={value <= step ? "bg.brandSolid" : "bg.neutralWeak"}
+            bg={value <= urlStep ? "bg.brandSolid" : "bg.neutralWeak"}
           />
         ))}
       </HStack>
@@ -404,18 +420,18 @@ export function LostForm() {
         {/* 이 걸음에서 무엇을 묻는지 먼저 말함. 화면마다 한 가지만 물음 */}
         <VStack align="stretch" gap="x1">
           <Text as="h1" textStyle="t7Bold" color="fg.neutral">
-            {STEP_HEADING[step]}
+            {STEP_HEADING[urlStep]}
           </Text>
-          {STEP_HINT[step] ? (
+          {STEP_HINT[urlStep] ? (
             <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {STEP_HINT[step]}
+              {STEP_HINT[urlStep]}
             </Text>
           ) : null}
         </VStack>
 
         {error ? <Callout tone="critical" description={error} /> : null}
 
-        {step === 1 ? (
+        {urlStep === 1 ? (
           <>
             {/* 머리글이 이미 사진을 올려 달라고 해 이름은 장수 세는 자리로만 둠 */}
             <PhotoField
@@ -430,7 +446,7 @@ export function LostForm() {
           </>
         ) : null}
 
-        {step === 2 ? (
+        {urlStep === 2 ? (
           <>
             <Section>
               <Text as="h2" textStyle="t5Bold" color="fg.neutral">
@@ -515,7 +531,7 @@ export function LostForm() {
           </>
         ) : null}
 
-        {step === 3 ? (
+        {urlStep === 3 ? (
           <>
             {/* 머리글이 이미 어디서 봤는지 묻고 있어 같은 말을 이름표로 또 달지 않음 */}
             <Section gap="x2">
@@ -645,9 +661,9 @@ export function LostForm() {
           size="large"
           loading={submitting}
           disabled={!ready}
-          onClick={step === LAST_STEP ? submit : () => goTo((step + 1) as LostStep)}
+          onClick={urlStep === LAST_STEP ? submit : () => goTo((urlStep + 1) as LostStep)}
         >
-          {step === LAST_STEP ? "신고 등록하기" : "다음"}
+          {urlStep === LAST_STEP ? "신고 등록하기" : "다음"}
         </ActionButton>
       </VStack>
     </Screen>

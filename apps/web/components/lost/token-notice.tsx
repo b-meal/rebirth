@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { HStack, Icon, Text, VStack } from "@seed-design/react";
+import { Icon, Text, VStack } from "@seed-design/react";
 import { IconCheckmarkCircleFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
@@ -15,14 +15,17 @@ import { AppHeader } from "@/components/ui/app-header";
 
 export type TokenNoticeProps = {
   token: string;
+  /** 복사를 마치고 조회 화면으로 넘어갈 때. 이 화면은 폼 안에서 그려져 폼이 직접 옮김 */
+  onLeave: () => void;
 };
 
 /** 한 줄짜리 알림이 머무는 시간. 기본 4초는 읽고 나서도 한참 남아 있음 */
 const SNACKBAR_MS = 2000;
 
-export function TokenNotice({ token }: TokenNoticeProps) {
+export function TokenNotice({ token, onLeave }: TokenNoticeProps) {
   const snackbar = useSnackbarAdapter();
-  const [copied, setCopied] = useState(false);
+  // 복사가 막힌 경우에만 직접 옮길 길을 남김
+  const [blocked, setBlocked] = useState(false);
 
   // 절대 주소로 보여줘야 사용자가 그대로 붙여 쓸 수 있음
   const url =
@@ -30,17 +33,16 @@ export function TokenNotice({ token }: TokenNoticeProps) {
       ? `/lost/${token}`
       : `${window.location.origin}/lost/${token}`;
 
+  // 토큰 앞뒤만 남겨 줄인 모양. 복사되는 값은 늘 전체 주소임
+  const masked = `${url.slice(0, url.length - token.length + 6)}…${token.slice(-4)}`;
+
   const copy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(url);
-      snackbar.create({
-        timeout: SNACKBAR_MS,
-        render: () => (
-          <Snackbar variant="positive" message="주소를 복사했어요" onClick={snackbar.dismiss} />
-        ),
-      });
     } catch {
-      // 클립보드가 막혀도 주소를 눈으로 읽어 옮길 수 있어 이동은 열어 둠
+      // 클립보드가 막히면 눈으로 읽어 옮겨야 하므로 이 화면에 그대로 둠
+      // 여기서 넘어가 버리면 적어 둘 기회를 뺏음
+      setBlocked(true);
       snackbar.create({
         timeout: SNACKBAR_MS,
         render: () => (
@@ -51,10 +53,19 @@ export function TokenNotice({ token }: TokenNoticeProps) {
           />
         ),
       });
+      return;
     }
-    // 복사 성공 여부와 무관하게 이동을 열어 줌
-    setCopied(true);
-  }, [url, snackbar]);
+
+    // 복사가 끝났으면 할 일이 없는 화면이라 바로 넘어감
+    // 주소는 넘어간 화면의 주소창에 그대로 남아 있어 잃어버리지 않음
+    snackbar.create({
+      timeout: SNACKBAR_MS,
+      render: () => (
+        <Snackbar variant="positive" message="주소를 복사했어요" onClick={snackbar.dismiss} />
+      ),
+    });
+    onLeave();
+  }, [url, snackbar, onLeave]);
 
   return (
     <Screen>
@@ -74,42 +85,31 @@ export function TokenNotice({ token }: TokenNoticeProps) {
           </Text>
         </VStack>
 
-        {/* 주소는 고칠 수 없는 값이라 입력 칸이 아니라 읽는 자리로 둠 */}
-        <VStack
-          align="stretch"
-          gap="x3"
-          px="x4"
-          py="x4"
-          borderRadius="r3"
-          bg="bg.neutralWeak"
-        >
+        {/* 토큰은 사람이 읽거나 외울 값이 아니라 앞뒤만 보여 주소가 있다는 것만 알림
+            전부 펼치면 두 줄을 먹고 그만큼 중요해 보이지만 읽을 일은 없음
+            복사가 막힌 기기에서는 눈으로 옮겨 적어야 해 그때만 전부 펼침 */}
+        <VStack align="stretch" gap="x2" px="x4" py="x4" borderRadius="r3" bg="bg.neutralWeak">
           <Text textStyle="t3Regular" color="fg.neutralMuted">
             내 신고 조회 주소
           </Text>
-          {/* 긴 주소가 한 줄을 넘어가도 끊어 보여 줌 */}
           <Text textStyle="t4Regular" color="fg.neutral" style={{ overflowWrap: "anywhere" }}>
-            {url}
+            {blocked ? url : masked}
           </Text>
         </VStack>
       </ScreenBody>
 
-      {/* 가장 먼저 할 일은 복사. 복사해야 다음으로 넘어갈 수 있음 */}
+      {/* 복사하면 그대로 후보 화면으로 넘어감. 여기서 할 일이 더 없음 */}
       <VStack align="stretch" gap="x2" px="spacingX.globalGutter" pt="x3" className="rebirth-bottom-bar">
         <ActionButton variant="brandSolid" size="large" onClick={copy}>
-          {copied ? "복사했어요" : "주소 복사하기"}
+          주소 복사하기
         </ActionButton>
 
-        {copied ? (
+        {/* 복사가 막힌 기기에서만 스스로 옮겨 적고 넘어갈 길을 둠 */}
+        {blocked ? (
           <ActionButton variant="ghost" size="large" asChild>
-            <Link href={`/lost/${token}`}>확인할 후보 보기</Link>
+            <Link href={`/lost/${token}`}>주소를 옮겨 적었어요</Link>
           </ActionButton>
-        ) : (
-          <HStack justify="center" py="x2">
-            <Text textStyle="t3Regular" color="fg.neutralSubtle">
-              복사하면 후보를 볼 수 있어요
-            </Text>
-          </HStack>
-        )}
+        ) : null}
       </VStack>
     </Screen>
   );
