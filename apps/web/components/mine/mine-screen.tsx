@@ -3,7 +3,6 @@ import {
   AspectRatio,
   Box,
   Divider,
-  Grid,
   HStack,
   Icon,
   ImageFrame,
@@ -26,8 +25,6 @@ import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { ANIMAL_LABEL, SIZE_LABEL, breedLabel } from "@/lib/report-label";
-import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
-import { RecentReports } from "@/components/mine/recent-reports";
 
 // 마이페이지, 제보는 로그인 없이도 되므로 여기서만 계정을 요구함
 
@@ -65,8 +62,6 @@ export type PetCard = {
 
 export type MineScreenProps = {
   user: MineUser | null;
-  myReports: ReportCardItem[];
-  interested: ReportCardItem[];
   pets: PetCard[];
   /** 로그인 설정이 끝나지 않은 환경에서는 로그인 버튼을 감춤 */
   authReady: boolean;
@@ -77,37 +72,6 @@ export type MineScreenProps = {
 function joinedLabel(value: Date | string): string {
   const date = new Date(value);
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월부터 함께`;
-}
-
-/** 제목과 더 보기 링크를 함께 둔 절 머리 */
-function CardHead({ title, count, href }: { title: string; count: number; href?: string }) {
-  const head = (
-    <>
-      <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-        {title}
-      </Text>
-      <HStack gap="x1" align="center">
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          {count}건
-        </Text>
-        {href ? <Icon svg={<IconChevronRightLine />} size="x4" color="fg.neutralSubtle" /> : null}
-      </HStack>
-    </>
-  );
-
-  if (!href) {
-    return (
-      <HStack justify="space-between" align="center">
-        {head}
-      </HStack>
-    );
-  }
-
-  return (
-    <HStack asChild justify="space-between" align="center">
-      <Link href={href}>{head}</Link>
-    </HStack>
-  );
 }
 
 function EmptyRow({ title, hint }: { title: string; hint: string }) {
@@ -169,8 +133,6 @@ function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) 
 
 export function MineScreen({
   user,
-  myReports,
-  interested,
   pets,
   authReady,
   signOut,
@@ -200,7 +162,7 @@ export function MineScreen({
                   {PROVIDER_LABEL[user.provider] ?? "SNS"} 계정 · {joinedLabel(user.createdAt)}
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  제보 {myReports.length} · 관심 {interested.length} · 우리 동물 {pets.length}
+                  우리 동물 {pets.length}
                 </Text>
               </VStack>
             </HStack>
@@ -262,49 +224,6 @@ export function MineScreen({
               )}
             </SectionCard>
 
-            <SectionCard gap="x3">
-              {/* 종료·숨김까지 담은 전체 목록은 따로 봄. 빈 상태에서는 보낼 곳이 없음 */}
-              <CardHead
-                title="내가 남긴 제보"
-                count={myReports.length}
-                href={myReports.length > 0 ? "/mine/reports" : undefined}
-              />
-              {myReports.length === 0 ? (
-                <EmptyRow
-                  title="아직 남긴 제보가 없습니다"
-                  hint="길에서 만난 동물을 사진 한 장으로 제보할 수 있습니다"
-                />
-              ) : (
-                <Grid columns={2} gap="x4">
-                  {myReports.map((item) => (
-                    <ReportCard key={item.id} item={item} />
-                  ))}
-                </Grid>
-              )}
-            </SectionCard>
-
-            <SectionCard gap="x3">
-              <CardHead title="관심 있는 제보" count={interested.length} />
-              {interested.length === 0 ? (
-                <EmptyRow
-                  title="관심을 눌러 둔 제보가 없습니다"
-                  hint="제보 상세의 하트를 누르면 여기에 모입니다"
-                />
-              ) : (
-                <Grid columns={2} gap="x4">
-                  {interested.map((item) => (
-                    <ReportCard key={item.id} item={item} />
-                  ))}
-                </Grid>
-              )}
-            </SectionCard>
-
-            <SectionCard gap="x3">
-              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                최근 본 제보
-              </Text>
-              <RecentReports />
-            </SectionCard>
           </>
         ) : null}
 

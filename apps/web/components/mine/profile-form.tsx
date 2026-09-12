@@ -14,6 +14,7 @@ import { Screen, SectionCard } from "@/components/ui/screen";
 import { saveProfile, type ActionState } from "@/app/mine/actions";
 
 // 프로필 수정. 사진은 제공자에서 온 값이라 여기서 바꾸지 않음
+// 이름은 커뮤니티 글·댓글의 작성자로 나가는 값. 제보는 익명이라 쓰이지 않음
 
 const PROVIDER_LABEL: Record<string, string> = { kakao: "카카오", google: "구글" };
 
@@ -51,11 +52,11 @@ export function ProfileForm({ displayName, avatarUrl, provider }: ProfileFormPro
                 label="이름"
                 name="displayName"
                 size="medium"
-                description="제보와 댓글에는 이 이름이 보이지 않습니다"
+                description="커뮤니티 글과 댓글에 표시돼요. 제보에는 보이지 않아요"
                 defaultValue={displayName}
                 maxGraphemeCount={20}
               >
-                <TextFieldInput placeholder="이름을 적어 주십시오" />
+                <TextFieldInput placeholder="이름을 입력해 주세요" />
               </TextField>
 
               {state.error ? <Callout tone="critical" description={state.error} /> : null}
