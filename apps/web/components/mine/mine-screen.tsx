@@ -11,6 +11,7 @@ import {
 import {
   IconChevronRightLine,
   IconTrashcanLine,
+  IconHeadsetLine,
   IconHospitalcrossShieldLine,
   IconPawprintLine,
   IconPersonFill,
@@ -60,6 +61,8 @@ function buildLinks(signedIn: boolean, reportCount: number): MineLink[] {
         ]
       : []),
     { href: "/guide/injured", label: "다친 동물을 발견했어요", icon: <IconHospitalcrossShieldLine /> },
+    // 계정이 없어도 물을 일이 생겨 로그인과 상관없이 둠
+    { href: "/support", label: "문의하기", icon: <IconHeadsetLine /> },
     { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
   ];
 }
