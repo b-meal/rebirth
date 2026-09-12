@@ -3,7 +3,7 @@ import 'server-only'
 import { eq, isNull, and, desc } from 'drizzle-orm'
 
 import { db } from '../client'
-import { pets, userProfiles, type UserProfile } from '../schema/accounts'
+import { pets, userProfiles, type UserProfile } from '../schema'
 import type { AuthProvider } from '@rebirth/types'
 
 // 로그인 계정 조회와 기록. 신원 확인은 Supabase Auth 가 이미 끝낸 뒤에 호출됨

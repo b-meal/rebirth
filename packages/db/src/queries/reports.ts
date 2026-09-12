@@ -17,14 +17,14 @@ import {
 import { COMMENT_PAGE_SIZE } from '@rebirth/types'
 
 import { db } from '../client'
-import { draftSessions } from '../schema/drafts'
 import {
+  draftSessions,
   reportComments,
   reportFlags,
   reportInterests,
   reportPhotos,
   reports,
-} from '../schema/reports'
+} from '../schema'
 
 // 공개 응답에 나갈 컬럼
 // exactPoint·coarsePoint·manageTokenHash·reporterId·aiRaw 는 여기 넣지 않음
