@@ -161,15 +161,28 @@ a {
   padding-bottom: calc(var(--seed-dimension-x3) + env(safe-area-inset-bottom, 0px));
 }
 
-/* 바텀시트와 대화상자는 뷰포트에 붙어 앱 프레임을 벗어남
+/* 바텀시트는 뷰포트에 붙어 앱 프레임을 벗어남
    SEED 기본이 flex: 1 이라 max-width 만으로는 폭이 줄지 않음
    레시피와 특성도가 같아 순서에 기대지 않도록 body 를 앞에 두어 한 단계 올림
    AppFrame 의 390px 과 같은 값이고 한쪽만 바꾸면 어긋남 */
-body .seed-bottom-sheet__content,
-body .seed-dialog__content {
+body .seed-bottom-sheet__content {
   flex: 0 1 auto;
   width: 100%;
   max-width: 390px;
+}
+
+/* 대화상자는 시트와 달리 가운데 뜬 카드라 프레임 폭까지 넓히지 않음
+   flex 만 풀면 글자 길이에 따라 폭이 들쭉날쭉해 width 로 채우고
+   SEED 가 정한 272px 이 상한을 잡게 둠 */
+body .seed-dialog__content {
+  flex: 0 1 auto;
+  width: 100%;
+}
+
+/* 대화상자 푸터는 간격이 없어 자식이 둘이면 맞붙음
+   호버로 면이 드러나면 한 덩어리로 보여 누르는 자리를 떼어 놓음 */
+.seed-dialog__footer {
+  gap: var(--seed-dimension-x2);
 }
 
 /* 시트 본문은 좌우 여백만 있고 아래가 없어 마지막 줄이 바닥에 닿음
