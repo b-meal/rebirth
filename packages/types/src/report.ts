@@ -281,32 +281,49 @@ export const updateProfile = z.object({
 
 export type UpdateProfile = z.infer<typeof updateProfile>
 
+/** 우리 동물의 특징. 실종 신고에 그대로 옮겨 붙는 값이라 그쪽과 같은 길이로 둠 */
+export const PET_NOTE_MAX = 300
+
 /** 내가 키우는 동물 기록. 실종 신고를 빠르게 채우려고 미리 적어 둠 */
 export const createPet = z.object({
   name: z
     .string()
     .trim()
-    .min(1, '이름을 적어 주십시오')
-    .max(20, '이름은 20자까지 넣을 수 있습니다'),
+    .min(1, '이름을 적어 주세요')
+    .max(20, '이름은 20자까지 쓸 수 있어요'),
   animalType: animalType.default('unknown'),
   breedGuess: z
     .string()
     .trim()
-    .max(30, '품종 추정은 30자까지 넣을 수 있습니다')
+    .max(30, '품종은 30자까지 쓸 수 있어요')
     .optional()
     .transform((v) => v ?? ''),
   size: animalSize.default('unknown'),
-  colors: z.array(z.string().trim().min(1).max(20)).max(5, '털색은 5개까지 고를 수 있습니다').default([]),
+  colors: z.array(z.string().trim().min(1).max(20)).max(5, '털색은 5개까지 고를 수 있어요').default([]),
   note: z
     .string()
     .trim()
-    .max(100, '메모는 100자까지 넣을 수 있습니다')
+    .max(PET_NOTE_MAX, `특징은 ${PET_NOTE_MAX}자까지 쓸 수 있어요`)
     .optional()
     .transform((v) => v ?? ''),
-  uploadId: z.uuid('사진 참조가 올바르지 않습니다').optional(),
+  uploadIds: z
+    .array(z.uuid('사진 참조가 올바르지 않습니다'))
+    .max(PHOTO_MAX_COUNT, `사진은 ${PHOTO_MAX_COUNT}장까지 올릴 수 있어요`)
+    .default([]),
 })
 
 export type CreatePet = z.infer<typeof createPet>
+
+/**
+ * 등록한 동물 고치기
+ * 남길 사진 경로를 함께 받음. 빠진 것은 지우고 새로 올린 것은 뒤에 붙임
+ */
+export const updatePet = createPet.extend({
+  id: z.uuid('기록을 찾을 수 없습니다'),
+  keepPhotoPaths: z.array(z.string().trim().min(1)).max(PHOTO_MAX_COUNT).default([]),
+})
+
+export type UpdatePet = z.infer<typeof updatePet>
 
 /* 관심 표시 */
 

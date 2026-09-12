@@ -95,7 +95,7 @@ export function listCommunityPosts({
             : eq(communityPosts.areaName, areaName)
           : undefined,
         cursor
-          ? raw`(${communityPosts.createdAt}, ${communityPosts.id}) < (${cursor.createdAt}, ${cursor.id})`
+          ? raw`(${communityPosts.createdAt}, ${communityPosts.id}) < (${cursor.createdAt.toISOString()}::timestamptz, ${cursor.id})`
           : undefined,
       ),
     )

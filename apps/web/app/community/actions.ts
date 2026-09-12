@@ -10,12 +10,15 @@ import {
 } from "@rebirth/core/community";
 import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
 import {
+  findUsableUploads,
   insertCommunityComment,
   insertCommunityPost,
   softDeleteCommunityComment,
   softDeleteCommunityPost,
   toggleCommunityLike,
 } from "@rebirth/db";
+import { findDraftSession } from "@rebirth/core/http";
+import { headers } from "next/headers";
 
 import { getCurrentUser } from "@/lib/auth/session";
 
@@ -39,6 +42,31 @@ export type PostFormState = {
   message?: string;
 };
 
+/** 서버 액션은 Request 를 받지 않아 쿠키를 헤더에서 되살려 초안 세션을 찾음 */
+async function draftSessionId(): Promise<string | undefined> {
+  const cookie = (await headers()).get("cookie") ?? "";
+  return findDraftSession(new Request("http://local", { headers: { cookie } }));
+}
+
+/**
+ * 올려 둔 사진 참조를 저장 경로로 바꿈
+ * 질의는 제 순서로 돌려주므로 고른 차례대로 다시 세움. 첫 장이 카드의 대표 사진이 됨
+ * 남의 세션 것이나 이미 쓴 참조는 질의에서 빠져 조용히 사라짐
+ */
+async function resolveUploadPaths(uploadIds: string[]): Promise<string[]> {
+  if (uploadIds.length === 0) return [];
+
+  const sessionId = await draftSessionId();
+  if (!sessionId) return [];
+
+  const rows = await findUsableUploads({ sessionId, ids: uploadIds });
+  const byId = new Map(rows.map((row) => [row.id, row.storagePath]));
+  return uploadIds.flatMap((id) => {
+    const path = byId.get(id);
+    return path ? [path] : [];
+  });
+}
+
 export async function createPost(
   _prev: PostFormState,
   formData: FormData,
@@ -55,9 +83,13 @@ export async function createPost(
 
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
+  // 사진은 제보와 같은 초안 업로드를 거쳐 오고 경로만 옮겨 붙임
+  // 고른 순서를 지켜야 첫 장이 목록 카드의 대표 사진이 됨
+  const photoPaths = await resolveUploadPaths(formData.getAll("uploadIds").map(String));
+
   let id: string;
   try {
-    id = await insertCommunityPost({ authorId, ...parsed.data });
+    id = await insertCommunityPost({ authorId, ...parsed.data, photoPaths });
   } catch {
     // 원인을 그대로 내보내지 않음. 화면에 DB 오류가 새면 안 됨
     return { message: "글을 저장하지 못했습니다. 잠시 후 다시 시도해 주십시오" };
@@ -93,12 +125,15 @@ export async function createComment(
   return {};
 }
 
-/** 공감 켜고 끄기. 화면이 눌린 결과를 바로 그리도록 상태를 돌려줌 */
+/**
+ * 공감 켜고 끄기. 화면이 눌린 결과를 바로 그리도록 상태를 돌려줌
+ * 여기서 화면을 새로 내려보내지 않음
+ * 바뀌는 것은 하트 하나인데 상세를 통째로 다시 그리면 사진까지 다시 받아 깜박임
+ * 정확한 수는 이 함수가 돌려주고 버튼이 그 값으로 맞춤
+ */
 export async function toggleLike(postId: string) {
   const userId = await requireUserId(`${FEED_PATH}/${postId}`);
-  const result = await toggleCommunityLike(postId, userId);
-  revalidatePath(`${FEED_PATH}/${postId}`);
-  return result;
+  return toggleCommunityLike(postId, userId);
 }
 
 export async function deletePost(formData: FormData) {

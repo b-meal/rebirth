@@ -113,6 +113,38 @@ a {
   }
 }
 
+/* 테두리만 두른 줄
+   rebirth-row 와 달리 면을 칠하지 않고 테두리만 진해짐
+   같은 화면의 날짜 칸이 그렇게 반응해 나란히 두면 결이 맞음 */
+.rebirth-row--outline {
+  cursor: pointer;
+  transition: border-color 120ms ease;
+}
+
+/* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬 */
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-row--outline:not(:disabled):hover {
+    border-color: var(--seed-color-stroke-neutral-solid);
+  }
+}
+
+/* 누르는 순간은 입력 장치와 상관없이 보여 줌 */
+.rebirth-row--outline:active {
+  border-color: var(--seed-color-stroke-neutral-solid);
+}
+
+/* 키보드로 옮겨 다닐 때만 테두리를 보여 마우스 클릭에는 남지 않음 */
+.rebirth-row--outline:focus-visible {
+  outline: var(--seed-dimension-x0_5) solid var(--seed-color-stroke-focus-ring);
+  outline-offset: calc(var(--seed-dimension-x0_5) * -1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rebirth-row--outline {
+    transition: none;
+  }
+}
+
 /* 카드 한 장을 통째로 누르는 자리
    rebirth-row 와 달리 이미 면 색이 있어 테두리로 반응함
    크기를 바꾸면 글자가 다시 그려지며 떨려 보여 면과 선만 씀
@@ -258,6 +290,103 @@ body .seed-bottom-sheet__body:has(~ .seed-bottom-sheet__footer) {
   padding-bottom: 0;
 }
 
+/* 스낵바는 뷰포트 양 끝에 붙어 앱 프레임을 벗어남
+   AppFrame 의 390px 과 같은 값이고 한쪽만 바꾸면 어긋남
+   안쪽 너비도 함께 묶지 않으면 464px 짜리 알림이 프레임 밖으로 삐져나감 */
+body .seed-snackbar-region {
+  left: 50%;
+  right: auto;
+  translate: -50%;
+  width: 100%;
+  max-width: 390px;
+  /* 아래 버튼 띠 위로 얼마나 올릴지는 SnackbarAvoidOverlap 이 띠를 재서 정함
+     bottom 을 박으면 그 계산을 덮어 버려 버튼이 늘어나도 그대로 겹침
+     맞붙지 않게 하는 한 칸만 얹음. 이 값은 offset 과 따로 더해짐 */
+  padding-block: var(--seed-dimension-x3);
+}
+
+/* 날짜 칸은 어디를 눌러도 달력이 열려 칸 전체가 누르는 자리임을 알림
+   기본 커서는 글자 입력 막대라 눌러도 되는지 알 수 없음 */
+.rebirth-datetime,
+.rebirth-datetime::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+}
+
+/* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬
+   SEED 는 칸 테두리를 border 가 아니라 안쪽 그림자로 그림
+   그림자는 덧쌓이지 않고 통째로 갈리므로 지우지 않고 같은 자리를 진한 색으로 다시 그림
+   테두리를 쥔 것은 input 이 아니라 그것을 감싼 root 라 거기에 걺 */
+.seed-text-input__root:has(.rebirth-datetime) {
+  transition: box-shadow 120ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .seed-text-input__root:has(.rebirth-datetime):hover {
+    box-shadow: inset 0 0 0 1px var(--seed-color-stroke-neutral-solid);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seed-text-input__root:has(.rebirth-datetime) {
+    transition: none;
+  }
+}
+
+/* 사진을 고르는 빈 자리
+   rebirth-row 를 쓰면 호버 색이 이 자리의 면 색과 같아 아무 일도 일어나지 않아 보임
+   면은 그대로 두고 테두리를 진하게 해 누를 수 있는 자리임을 알림 */
+.rebirth-photo-zone {
+  cursor: pointer;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+/* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬 */
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-photo-zone:not(:disabled):hover {
+    border-color: var(--seed-color-stroke-neutral-solid);
+  }
+}
+
+/* 누르는 순간은 입력 장치와 상관없이 보여 줌 */
+.rebirth-photo-zone:not(:disabled):active {
+  background: var(--seed-color-bg-neutral-weak-pressed);
+}
+
+/* 키보드로 옮겨 다닐 때만 테두리를 보여 마우스 클릭에는 남지 않음 */
+.rebirth-photo-zone:focus-visible {
+  outline: var(--seed-dimension-x0_5) solid var(--seed-color-stroke-focus-ring);
+  outline-offset: calc(var(--seed-dimension-x0_5) * -1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rebirth-photo-zone {
+    transition: none;
+  }
+}
+
+/* 올리는 중인 사진은 어둡게 눌러 그 위의 흰 표시가 읽히게 함
+   프레임 전체에 걸면 떠 있는 표시와 삭제 단추까지 함께 어두워져 img 에만 걺 */
+.rebirth-photo--busy img {
+  filter: brightness(0.5);
+}
+
+/* 눌러서 지울 수 있는 알림이라 손 모양으로 알림 */
+body .seed-snackbar__root {
+  cursor: pointer;
+}
+
+/* 알림은 글자만큼만 차지하는 알약으로 둠
+   폭을 가득 채우면 화면을 가로지르는 띠가 되어 한 줄 알리는 일에 비해 크게 보임
+   기본이 width 100% 라 줄이고, 좌우 여백과 모서리도 알약에 맞게 키움 */
+body .seed-snackbar__root {
+  width: auto;
+  max-width: 100%;
+  padding-inline: var(--seed-dimension-x4);
+  border-radius: var(--seed-radius-full);
+}
+
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
 .rebirth-scroll-row {
   overflow-x: auto;
@@ -266,4 +395,33 @@ body .seed-bottom-sheet__body:has(~ .seed-bottom-sheet__footer) {
 
 .rebirth-scroll-row::-webkit-scrollbar {
   display: none;
+}
+
+/* 본문 좌우 여백을 뚫고 화면 끝까지 나가는 가로 나열
+   가로로 넘기는 줄은 첫 장이 화면 끝에서 시작해야 더 있다는 것이 보임
+   음수 마진을 prop 으로 주면 토큰 이름이 그대로 나가 값이 되지 않아 여기서 함
+   안쪽 여백으로 같은 값을 되돌려 첫 장과 마지막 장이 본문과 같은 선에 섬 */
+.rebirth-bleed {
+  margin-inline: calc(var(--seed-dimension-spacing-x-global-gutter) * -1);
+  padding-inline: var(--seed-dimension-spacing-x-global-gutter);
+}
+
+/* 눌러서 크게 보는 사진
+   손가락 화면에는 커서가 없어 마우스가 있는 기기에서만 바꿈 */
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-zoomable {
+    cursor: zoom-in;
+  }
+}
+
+/* 마우스로 보는 화면에만 두는 것
+   손가락으로는 밀면 되는 자리에 단추를 겹치면 사진만 가림 */
+.rebirth-pointer-only {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-pointer-only {
+    display: block;
+  }
 }

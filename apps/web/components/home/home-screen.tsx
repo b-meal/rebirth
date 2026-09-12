@@ -24,7 +24,7 @@ import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
 import { Callout } from "seed-design/ui/callout";
 import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-button";
 import { FloatingActionButton } from "seed-design/ui/floating-action-button";
-import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
+import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { describeAnimal } from "@/lib/report-label";
 import { useCurrentPosition } from "@/hooks/use-current-position";
@@ -116,11 +116,32 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
   );
 }
 
+// 약속이 풀리기 전에는 빈 목록을 돌려줘 지도가 기다리지 않고 먼저 뜨게 함
+// use 를 쓰면 화면 전체가 멈춰 덮개 뒤에서 지도가 준비되지 않음
+function useStreamed(promise: Promise<MapMarker[]>): MapMarker[] {
+  const [value, setValue] = useState<MapMarker[]>([]);
+  useEffect(() => {
+    let alive = true;
+    promise.then((next) => {
+      if (alive) setValue(next);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [promise]);
+  return value;
+}
+
 export type HomeScreenProps = {
-  markers: MapMarker[];
+  // 화면을 먼저 띄우고 마커만 나중에 받도록 Promise 로 받음
+  // 지도와 시트는 곧바로 그리고, 핀만 도착한 뒤에 얹힘
+  markers: Promise<MapMarker[]>;
 };
 
-export function HomeScreen({ markers }: HomeScreenProps) {
+export function HomeScreen({ markers: markersPromise }: HomeScreenProps) {
+  // 이 훅은 서버가 마커를 흘려보낼 때까지 기다리지만, 덮개 아래에서 지도는 이미 떠 있음
+  const markers = useStreamed(markersPromise);
+
   const router = useRouter();
   const snackbar = useSnackbarAdapter();
   const position = useCurrentPosition({ immediate: true });
@@ -473,9 +494,12 @@ export function HomeScreen({ markers }: HomeScreenProps) {
         </VStack>
       </VStack>
 
-      <Box position="absolute" bottom="0" left="0" right="0" zIndex={4} px="x4" pb="x4">
-        <BottomNav onUnavailable={(label) => notice(`${label}는 아직 준비 중입니다`)} />
-      </Box>
+      {/* 준비 중임을 알리는 스낵바가 탭을 덮지 않도록 탭 높이를 재게 함 */}
+      <SnackbarAvoidOverlap>
+        <Box position="absolute" bottom="0" left="0" right="0" zIndex={4} px="x4" pb="x4">
+          <BottomNav onUnavailable={(label) => notice(`${label}는 아직 준비 중입니다`)} />
+        </Box>
+      </SnackbarAvoidOverlap>
     </Box>
   );
 }

@@ -189,7 +189,7 @@ export function listPublicReports({
         fromOccurredAt ? gte(reports.occurredAt, fromOccurredAt) : undefined,
         toOccurredAt ? lte(reports.occurredAt, toOccurredAt) : undefined,
         cursor
-          ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt}, ${cursor.id})`
+          ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt.toISOString()}::timestamptz, ${cursor.id})`
           : undefined,
       ),
     )
@@ -335,7 +335,7 @@ export function listReporterReportPage(
         ne(reports.visibility, 'deleted'),
         kind ? eq(reports.kind, kind) : undefined,
         cursor
-          ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt}, ${cursor.id})`
+          ? raw`(${reports.occurredAt}, ${reports.id}) < (${cursor.occurredAt.toISOString()}::timestamptz, ${cursor.id})`
           : undefined,
       ),
     )
@@ -350,6 +350,27 @@ export async function countReporterReports(userId: string) {
     .from(reports)
     .where(and(eq(reports.reporterId, userId), ne(reports.visibility, 'deleted')))
   return row?.count ?? 0
+}
+
+/**
+ * 발견 제보와 실종 신고를 나눠 셈
+ * 목록이 종류별로 갈려 있어 합계만 주면 한쪽이 비었을 때 숫자와 화면이 어긋남
+ */
+export async function countReporterReportsByKind(
+  userId: string,
+): Promise<{ sighting: number; lost: number }> {
+  const rows = await db
+    .select({ kind: reports.kind, count: raw<number>`count(*)::int` })
+    .from(reports)
+    .where(and(eq(reports.reporterId, userId), ne(reports.visibility, 'deleted')))
+    .groupBy(reports.kind)
+
+  const counts = { sighting: 0, lost: 0 }
+  for (const row of rows) {
+    if (row.kind === 'sighting') counts.sighting = row.count
+    if (row.kind === 'lost') counts.lost = row.count
+  }
+  return counts
 }
 
 /** 내가 관심을 누른 제보. 숨겨진 제보는 목록에서 빠짐 */

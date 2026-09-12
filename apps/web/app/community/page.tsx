@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
 import { findCategory } from "@rebirth/core/community";
-import { COMMUNITY_PAGE_SIZE, listCommunityPosts } from "@rebirth/db";
+import { AREA_COOKIE, readAreaCookie } from "@rebirth/core/location";
 
 import { CommunityFeed } from "@/components/community/community-feed";
 import type { PostCardItem } from "@/components/community/post-card";
 import { toFeedItems } from "./feed-item";
+import { encodeFeedCursor, readFeedPage } from "./feed-page";
 
 // 이웃끼리 이야기를 나누는 자리. 읽기는 로그인 없이 열고 쓰기만 계정을 요구함
 
@@ -23,21 +25,20 @@ export default async function CommunityPage({
   const params = await searchParams;
   const category = findCategory(readParam(params.category))?.id;
 
-  // 한 건 더 읽어 다음 쪽이 있는지 판단함. 제보 목록과 같은 규약
-  const rows = await listCommunityPosts({
-    category,
-    limit: COMMUNITY_PAGE_SIZE + 1,
-  });
+  // 지난번에 알아낸 동네. 있으면 처음부터 내 동네 글이 먼저 그려져 목록이 한 번 바뀌지 않음
+  const areaName = readAreaCookie((await cookies()).get(AREA_COOKIE)?.value);
 
-  const hasMore = rows.length > COMMUNITY_PAGE_SIZE;
-  const page = hasMore ? rows.slice(0, COMMUNITY_PAGE_SIZE) : rows;
-  const last = page.at(-1);
+  const page = await readFeedPage({ category, areaName });
+  const items: PostCardItem[] = await toFeedItems(page.rows);
 
-  const items: PostCardItem[] = await toFeedItems(page);
-  const nextCursor =
-    hasMore && last ? `${last.createdAt.toISOString()}_${last.id}` : null;
-
-  return <CommunityFeed items={items} nextCursor={nextCursor} />;
+  return (
+    <CommunityFeed
+      items={items}
+      nextCursor={encodeFeedCursor(page.nextCursor)}
+      areaName={areaName ?? null}
+      nearCount={page.nearCount}
+    />
+  );
 }
 
 /** 같은 이름이 여러 번 오면 배열이라 첫 값만 씀 */

@@ -63,9 +63,6 @@ export function PostComments({ comments }: { comments: PostCommentItem[] }) {
         <Text textStyle="t4Regular" color="fg.neutralMuted">
           아직 댓글이 없어요
         </Text>
-        <Text textStyle="t3Regular" color="fg.neutralSubtle">
-          먼저 말을 건네 보세요
-        </Text>
       </VStack>
     );
   }
