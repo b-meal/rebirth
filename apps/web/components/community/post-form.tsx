@@ -2,8 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
-import { Box, HStack, Icon, Text, VStack } from "@seed-design/react";
-import { IconChevronDownLine } from "@karrotmarket/react-monochrome-icon";
+import { Box, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import {
@@ -37,13 +36,7 @@ function SubmitButton() {
  * 입력 칸 묶음. 전체 화면과 모달이 같은 폼을 나눠 씀
  * 껍데기만 다르고 검증과 저장은 한 곳이라 두 길이 어긋나지 않음
  */
-export type PostFormFieldsProps = {
-  category: CategoryDescriptor;
-  /** 주제를 다시 고르게 함. 모달처럼 앞 단계로 돌아갈 길이 있을 때만 넘김 */
-  onChangeCategory?: () => void;
-};
-
-export function PostFormFields({ category, onChangeCategory }: PostFormFieldsProps) {
+export function PostFormFields({ category }: { category: CategoryDescriptor }) {
   const [state, formAction] = useActionState<PostFormState, FormData>(
     createPost,
     {},
@@ -51,7 +44,7 @@ export function PostFormFields({ category, onChangeCategory }: PostFormFieldsPro
   const [dirty, setDirty] = useState(false);
   const errors = state.errors ?? {};
 
-  const { areaName, loading, blocked, ensure, retry } = useNeighborhood();
+  const { areaName, blocked, ensure, retry } = useNeighborhood();
 
   // 시트를 거치지 않고 주소로 바로 들어올 수 있어 여기서도 물음
   useEffect(() => {
@@ -63,44 +56,22 @@ export function PostFormFields({ category, onChangeCategory }: PostFormFieldsPro
 
   return (
     <>
-      <VStack align="stretch" gap="x2">
-        {onChangeCategory ? (
-          // 배지가 곧 주제를 바꾸는 자리. 같은 말을 버튼으로 한 번 더 두지 않음
-          <HStack
-            asChild
-            alignSelf="flex-start"
-            align="center"
-            gap="x0_5"
-            px="x2"
-            py="x0_5"
-            borderRadius="r1"
-            bg="bg.neutralWeak"
-          >
-            {/* design-system-allow:raw-element 배지 모양 그대로 눌러야 해 button 이 필요함 */}
-            <button type="button" className="rebirth-row" onClick={onChangeCategory}>
-              <Text textStyle="t1Bold" color="fg.neutralMuted">
-                {category.label}
-              </Text>
-              {/* 누를 수 있는 자리임을 셰브런으로 알림. 글자로 덧붙이면 배지가 길어짐 */}
-              <Icon svg={<IconChevronDownLine />} size="x3" color="fg.neutralSubtle" />
-            </button>
-          </HStack>
-        ) : (
-          <Box alignSelf="flex-start" px="x2" py="x0_5" borderRadius="r1" bg="bg.neutralWeak">
-            <Text textStyle="t1Bold" color="fg.neutralMuted">
-              {category.label}
-            </Text>
-          </Box>
-        )}
-        {/* 어느 동네에 걸리는지는 알려 주되 고치게 하지는 않음 */}
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          {areaName
-            ? `${areaName} 이웃들에게 보여요`
-            : loading
-              ? "동네를 확인하고 있어요"
-              : "이웃이 함께 보는 글이에요"}
-        </Text>
-      </VStack>
+      {/* 주제와 동네는 한 줄로 둠. 둘 다 이 글이 어디에 걸리는지를 말하는 값
+          주제를 바꾸는 일은 앱바의 뒤로가 맡으므로 여기서는 무엇을 고른지만 보여 줌 */}
+      <HStack align="center" gap="x2">
+        <Box px="x2" py="x0_5" borderRadius="r1" bg="bg.neutralWeak">
+          <Text textStyle="t1Bold" color="fg.neutralMuted">
+            {category.label}
+          </Text>
+        </Box>
+        {/* 어느 동네에 걸리는지는 알려 주되 고치게 하지는 않음
+            동네를 모르면 줄 자체를 비움. 확인 중이라는 말은 곧 사라질 문장이라 자리만 차지함 */}
+        {areaName ? (
+          <Text textStyle="t3Regular" color="fg.neutralMuted">
+            {areaName} 이웃들에게 보여요
+          </Text>
+        ) : null}
+      </HStack>
 
       {/* 동네는 입력 칸이 없어 오류를 붙일 자리도 없음. 여기로 모아 보여 줌 */}
       {state.message || errors.areaName ? (

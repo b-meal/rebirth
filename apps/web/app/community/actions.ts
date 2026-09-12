@@ -43,7 +43,8 @@ export async function createPost(
   _prev: PostFormState,
   formData: FormData,
 ): Promise<PostFormState> {
-  const authorId = await requireUserId("/community/new");
+  // 글쓰기는 시트라 돌아갈 주소가 없음. 목록으로 보내고 거기서 다시 열게 함
+  const authorId = await requireUserId(FEED_PATH);
 
   const parsed = communityPostInput.safeParse({
     category: formData.get("category"),

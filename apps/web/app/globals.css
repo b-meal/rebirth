@@ -169,10 +169,29 @@ body .seed-bottom-sheet__content {
   flex: 0 1 auto;
   width: 100%;
   max-width: 390px;
-  /* 내용이 적으면 손이 닿기 어려울 만큼 납작해지고
-     불러오는 동안과 다 불러온 뒤의 높이가 달라 시트가 늘어나 보임
-     바닥선을 정해 두면 두 상태가 같은 크기로 서 있음 */
+}
+
+/* 내용이 한두 줄뿐이라 손이 닿기 어려울 만큼 납작해지는 시트만 바닥선을 둠
+   모든 시트에 걸면 내용이 바닥선에 못 미치는 시트는 마지막 줄 아래가 빔
+   쓰는 쪽에서 rebirth-sheet--floor 를 얹음 */
+body .seed-bottom-sheet__content.rebirth-sheet--floor {
   min-height: 320px;
+}
+
+/* 글을 쓰는 시트는 화면을 다 씀
+   키보드가 올라오면 남는 높이가 얼마 없어 반쯤 뜬 시트로는 본문을 볼 수 없음
+   화면 끝까지 올리면 둥근 윗모서리와 손잡이도 뜻을 잃어 함께 지움 */
+body .seed-bottom-sheet__content.rebirth-sheet--full {
+  height: 100dvh;
+  max-height: 100dvh;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* 본문이 남는 높이를 먹고 스스로 스크롤해 올리기 버튼이 바닥에 남음 */
+body .seed-bottom-sheet__content.rebirth-sheet--full .seed-bottom-sheet__body {
+  flex: 1;
+  overflow-y: auto;
 }
 
 /* 대화상자는 시트와 달리 가운데 뜬 카드라 프레임 폭까지 넓히지 않음
@@ -198,8 +217,8 @@ body .seed-bottom-sheet__footer {
   padding-bottom: calc(var(--seed-dimension-x4) + env(safe-area-inset-bottom, 0px));
 }
 
-/* 바닥선 때문에 생긴 여백이 시트 아래에 남지 않도록 본문이 채움
-   본문이 늘어나야 불러오는 동안의 표시가 가운데에 섬 */
+/* 바닥선을 둔 시트에서 남는 높이를 본문이 받아 아래에 빈 띠가 남지 않게 함
+   바닥선이 없으면 늘어날 자리가 없어 그대로 내용 높이로 섬 */
 body .seed-bottom-sheet__body {
   flex: 1;
 }

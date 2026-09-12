@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Box, HStack, Icon, Text, VStack } from "@seed-design/react";
-import { IconChevronRightLine } from "@karrotmarket/react-monochrome-icon";
+import { IconChevronLeftLine, IconChevronRightLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import {
   BottomSheetBody,
@@ -23,6 +23,45 @@ export type ComposeSheetProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
+
+/**
+ * 글쓰기 단계의 앱바. 화면을 다 쓰는 자리라 제 앱바를 들고 있어야 함
+ * AppHeader 는 Next 라우터로 뒤로 가지만 여기는 주소가 아니라 단계를 되돌려야 해 따로 둠
+ * 좌우 자리를 같은 폭으로 잡아 제목이 가운데에 놓이는 것은 AppHeader 와 같음
+ */
+function ComposeHeader({ onBack }: { onBack: () => void }) {
+  return (
+    <HStack
+      as="header"
+      align="center"
+      justify="space-between"
+      gap="x2"
+      px="x2"
+      py="x1_5"
+      // 시트 면과 같은 색이라야 앱바가 따로 얹힌 띠로 보이지 않음
+      bg="bg.layerFloating"
+    >
+      <Box width="x10">
+        <ActionButton
+          variant="ghost"
+          size="medium"
+          layout="iconOnly"
+          aria-label="뒤로"
+          onClick={onBack}
+        >
+          <Icon svg={<IconChevronLeftLine />} />
+        </ActionButton>
+      </Box>
+
+      <Text as="h1" textStyle="t5Bold" color="fg.neutral" maxLines={1}>
+        글쓰기
+      </Text>
+
+      {/* 오른쪽은 비워 두고 폭만 맞춰 제목을 가운데에 둠 */}
+      <Box width="x10" />
+    </HStack>
+  );
+}
 
 /** 동네를 확인하는 동안 시트 가운데에 띄움. 남은 공간을 채워 가운데에 섬 */
 function SheetLoading() {
@@ -66,24 +105,34 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
 
   return (
     <BottomSheetRoot open={open} onOpenChange={change}>
-      {/* 핸들과 바깥 탭과 Esc 로 닫혀 X 까지 두면 닫는 길이 넷이라 뺌 */}
+      {/* 주제 고르기는 핸들과 바깥 탭과 Esc 로 닫혀 X 까지 두면 닫는 길이 넷이라 뺌
+          글쓰기는 화면을 다 써 끌 손잡이도 바깥도 없으므로 X 로만 닫음 */}
       {/* 동네를 확인하는 동안은 설명을 비워 뒤늦게 글자가 붙지 않게 함
           스니펫이 description 유무로 자리를 정해 여기서 넘길지 말지 가림 */}
       <BottomSheetContent
-        title={picked ? "글쓰기" : "주제 선택"}
+        className={picked ? "rebirth-sheet--full" : undefined}
+        // 시트 기본 층은 2 라 AppHeader(10) 밑에 깔려 앱바가 시트 머리말을 덮고 탭까지 가로챔
+        // 열린 동안은 화면 맨 앞이어야 하므로 앱바 위로 올림
+        layerIndex={20}
+        // 글쓰기는 제 앱바를 들고 있어 시트 머리말을 쓰지 않음. 이름은 읽는 기계에만 남김
+        title={picked ? undefined : "주제 선택"}
+        aria-label={picked ? "글쓰기" : undefined}
         description={
           picked || !areaName
             ? undefined
             : `${areaName} 이웃들에게 공개되는 글이에요`
         }
-        showHandle
+        showHandle={!picked}
         showCloseButton={false}
       >
         {picked ? (
-          <BottomSheetBody>
-            {/* 시트라 헤더에 뒤로가기를 둘 자리가 없어 주제 배지가 그 일을 겸함 */}
-            <PostFormFields category={picked} onChangeCategory={() => setPicked(null)} />
-          </BottomSheetBody>
+          <>
+            {/* 닫지 않고 단계만 되돌려 주제 고르는 시트가 그대로 떠 있음 */}
+            <ComposeHeader onBack={() => setPicked(null)} />
+            <BottomSheetBody>
+              <PostFormFields category={picked} />
+            </BottomSheetBody>
+          </>
         ) : (
         <BottomSheetBody>
           {/* 주제는 이름만으로 충분함. 설명을 붙이면 시트가 화면 절반을 먹음 */}
