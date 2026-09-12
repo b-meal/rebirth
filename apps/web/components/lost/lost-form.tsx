@@ -548,12 +548,14 @@ export function LostForm() {
                   px="x4"
                   height={FINDING_HEIGHT}
                   borderRadius="r3"
-                  bg="bg.neutralWeak"
+                  borderWidth={1}
+                  borderColor="stroke.neutralMuted"
                 >
                   <ProgressCircle size="24" tone="neutral" />
                 </HStack>
               ) : areaName ? (
                 // 고른 뒤에는 줄 전체가 다시 고르는 자리. 값과 바꾸기를 따로 두지 않음
+                // 고르는 줄과 같은 테두리로 둠. 면이 바뀌면 같은 자리가 다른 칸처럼 보임
                 <HStack
                   asChild
                   justify="space-between"
@@ -562,7 +564,8 @@ export function LostForm() {
                   px="x4"
                   py="x4"
                   borderRadius="r3"
-                  bg="bg.neutralWeak"
+                  borderWidth={1}
+                  borderColor="stroke.neutralMuted"
                 >
                   {/* design-system-allow:raw-element 줄 전체를 누르는 자리라 button 이 필요함 */}
                   <button
@@ -575,7 +578,9 @@ export function LostForm() {
                     }}
                   >
                     <HStack gap="x2" align="center" minWidth="0">
-                      <Icon svg={<IconLocationpinLine />} size="x5" color="fg.brand" />
+                      {/* 아직 고쳐 쓸 수 있는 값이라 강조색을 쓰지 않음
+                          이 화면에서 가장 센 자리는 아래 등록 버튼 하나뿐임 */}
+                      <Icon svg={<IconLocationpinLine />} size="x5" color="fg.neutralMuted" />
                       <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
                         {areaName}
                       </Text>
