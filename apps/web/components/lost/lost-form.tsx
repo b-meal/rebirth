@@ -7,6 +7,7 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
+import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 import { TagGroupItem, TagGroupRoot } from "seed-design/ui/tag-group";
 import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/text-field";
 
@@ -38,8 +39,9 @@ const STEP_TITLE: Record<LostStep, string> = {
   3: "마지막 흔적",
 };
 
+// 아이는 사람 아이로도 읽혀 무엇을 잃어버렸는지 흐려짐. 반려동물이라고 밝힘
 const STEP_HEADING: Record<LostStep, string> = {
-  1: "잃어버린 아이 사진을 올려 주세요",
+  1: "잃어버린 반려동물 사진을 올려 주세요",
   2: "어떻게 생겼나요?",
   3: "어디서 마지막으로 봤나요?",
 };
@@ -99,6 +101,8 @@ export function LostForm() {
   const [usableForDistance, setUsableForDistance] = useState(false);
   const [occurredAt, setOccurredAt] = useState("");
   const [manual, setManual] = useState(false);
+  // 잡아 둔 좌표로 동네를 채워도 되는지. 비운 뒤에는 눌러서 다시 켬
+  const [wantsGps, setWantsGps] = useState(true);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,9 +110,22 @@ export function LostForm() {
 
   // 여러 장을 각자 올림. use-photo-upload 는 새로 올릴 때 앞의 것을 끊어 한 장만 남음
   const upload = usePhotoUploads();
+  const snackbar = useSnackbarAdapter();
   const picker = usePhotoPicker({
     maxCount: PHOTO_MAX_COUNT,
     onChange: upload.sync,
+    // 같은 사진을 또 고르면 아무 일도 안 일어난 것처럼 보여 스낵바로 알림
+    onDuplicate: (count) =>
+      snackbar.create({
+        render: () => (
+          <Snackbar
+            variant="default"
+            message={
+              count === 1 ? "이미 고른 사진이에요" : `이미 고른 사진 ${count}장은 넣지 않았어요`
+            }
+          />
+        ),
+      }),
   });
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
@@ -121,6 +138,9 @@ export function LostForm() {
   const accuracyMeters = position.accuracyMeters;
   useEffect(() => {
     if (!region || !currentPoint || location.status !== "idle") return;
+    // 비운 뒤에는 다시 채우지 않음. 좌표와 행정동이 그대로 남아 있어
+    // 지우자마자 같은 값으로 되살아나 비운 것이 없던 일이 됨
+    if (!wantsGps) return;
     void location
       .resolve({
         source: "gps",
@@ -140,7 +160,7 @@ export function LostForm() {
         setLocationToken(result.locationToken);
         setUsableForDistance(result.usableForDistance);
       });
-  }, [region, currentPoint, accuracyMeters, location]);
+  }, [region, currentPoint, accuracyMeters, location, wantsGps]);
 
   // 사진은 File 이라 복원되지 않으므로 새로고침은 늘 첫 걸음에서 다시 시작함
   useEffect(() => {
@@ -151,14 +171,42 @@ export function LostForm() {
     }
   }, []);
 
+  /**
+   * 마지막 걸음에 적은 것을 비움
+   * 장소는 서버가 발급한 참조라 다시 들어왔을 때 남아 있으면
+   * 화면에는 옛 동네가 붙어 있는데 그 사이 자리를 옮겼을 수도 있음
+   * 위치를 새로 묻는 편이 잘못된 곳으로 신고되는 것보다 나음
+   */
+  const resetLastStep = useCallback(
+    ({ keepTime = false } = {}) => {
+      setAreaName(null);
+      setLocationToken(null);
+      setUsableForDistance(false);
+      setManual(false);
+      setWantsGps(false);
+      location.clear();
+      // 장소만 고쳐 쓰는 자리에서는 적어 둔 시각까지 지우지 않음
+      if (!keepTime) setOccurredAt("");
+    },
+    [location],
+  );
+
   // 앱바의 뒤로와 기기 뒤로가 화면을 벗어나지 않고 한 걸음만 되돌림
+  // 마지막 걸음에서 빠져나오면 거기 적은 것은 지움
+  const leaving = useRef(step);
   useEffect(() => {
-    const onPop = () => setStep(readStepFromUrl());
+    const onPop = () => {
+      const next = readStepFromUrl();
+      if (leaving.current === LAST_STEP && next !== LAST_STEP) resetLastStep();
+      leaving.current = next;
+      setStep(next);
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, []);
+  }, [resetLastStep]);
 
   const goTo = useCallback((next: LostStep) => {
+    leaving.current = next;
     setStep(next);
     const url = new URL(window.location.href);
     url.searchParams.set("step", String(next));
@@ -408,10 +456,8 @@ export function LostForm() {
                     variant="neutralOutline"
                     size="xsmall"
                     onClick={() => {
-                      setAreaName(null);
-                      setLocationToken(null);
-                      setUsableForDistance(false);
-                      location.clear();
+                      // 여기서는 장소만 고쳐 쓰는 것이라 시각은 두고 검색창을 바로 열어 줌
+                      resetLastStep({ keepTime: true });
                       setManual(true);
                     }}
                   >
@@ -444,7 +490,15 @@ export function LostForm() {
               ) : (
                 <VStack align="stretch" gap="x2">
                   {/* 아래 띠의 버튼만 브랜드 면을 쥠. 초록이 둘이면 어느 쪽이 끝인지 헷갈림 */}
-                  <ActionButton variant="neutralWeak" size="large" onClick={position.request}>
+                  <ActionButton
+                    variant="neutralWeak"
+                    size="large"
+                    onClick={() => {
+                      // 이미 잡아 둔 좌표가 있으면 다시 묻지 않고 그것으로 바로 채움
+                      setWantsGps(true);
+                      position.request();
+                    }}
+                  >
                     현재 위치로 찾기
                   </ActionButton>
                   <ActionButton variant="ghost" size="small" onClick={() => setManual(true)}>
