@@ -263,7 +263,12 @@ export function MineScreen({
             </SectionCard>
 
             <SectionCard gap="x3">
-              <CardHead title="내가 남긴 제보" count={myReports.length} />
+              {/* 종료·숨김까지 담은 전체 목록은 따로 봄. 빈 상태에서는 보낼 곳이 없음 */}
+              <CardHead
+                title="내가 남긴 제보"
+                count={myReports.length}
+                href={myReports.length > 0 ? "/mine/reports" : undefined}
+              />
               {myReports.length === 0 ? (
                 <EmptyRow
                   title="아직 남긴 제보가 없습니다"
