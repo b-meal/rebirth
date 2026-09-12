@@ -320,6 +320,7 @@ export function ReportForm() {
             </Section>
 
             <ReportLocation
+              sessionReady={uploadIds.length > 0}
               value={{
                 areaName: draft.areaName,
                 locationToken: draft.locationToken,
