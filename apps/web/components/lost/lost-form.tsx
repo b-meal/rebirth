@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HStack, Text, VStack } from "@seed-design/react";
-import { CONSENT_DOCUMENT_VERSION } from "@rebirth/types";
+import { CONSENT_DOCUMENT_VERSION, PHOTO_MAX_COUNT } from "@rebirth/types";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
@@ -13,7 +13,7 @@ import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/tex
 import { useCurrentPosition } from "@/hooks/use-current-position";
 import { useLocationToken } from "@/hooks/use-location-token";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
-import { usePhotoUpload } from "@/hooks/use-photo-upload";
+import { usePhotoUploads } from "@/hooks/use-photo-uploads";
 import { usePlaceSearch } from "@/hooks/use-place-search";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { PhotoField } from "@/components/ui/photo-field";
@@ -44,10 +44,12 @@ const STEP_HEADING: Record<LostStep, string> = {
   3: "어디서 마지막으로 봤나요?",
 };
 
-const STEP_HINT: Record<LostStep, string> = {
-  1: "연락처는 받지 않아요. 신고 뒤에 나오는 주소로만 확인해요",
+// 머리글만으로 할 일이 분명한 걸음은 설명을 두지 않음
+// 마지막 걸음에서만 연락처를 왜 안 받는지 밝힘. 등록을 누르기 직전에 알아야 하는 것
+const STEP_HINT: Record<LostStep, string | null> = {
+  1: null,
   2: "기억나는 만큼만 골라도 돼요",
-  3: "그 주변 이웃들에게 먼저 알려요",
+  3: "연락처는 받지 않아요. 신고 뒤에 나오는 주소로만 확인해요",
 };
 
 function readStepFromUrl(): LostStep {
@@ -102,13 +104,11 @@ export function LostForm() {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
-  const upload = usePhotoUpload();
+  // 여러 장을 각자 올림. use-photo-upload 는 새로 올릴 때 앞의 것을 끊어 한 장만 남음
+  const upload = usePhotoUploads();
   const picker = usePhotoPicker({
-    maxCount: 1,
-    onChange: (photos) => {
-      const next = photos[0];
-      if (next) void upload.upload(next.file);
-    },
+    maxCount: PHOTO_MAX_COUNT,
+    onChange: upload.sync,
   });
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
@@ -169,24 +169,29 @@ export function LostForm() {
   const positionFailed = position.status === "denied" || position.status === "unavailable";
   const showManual = manual || positionFailed || geocode.error !== null;
 
-  // 이 걸음에서 무엇이 모자라 다음으로 못 가는지. 없으면 버튼이 켜짐
-  // 생김새는 기본값이 이미 있어 막지 않음. 고르지 않아도 넘어갈 수 있음
-  const blocked =
-    step === 1 && upload.uploadId === null
-      ? upload.status === "uploading"
-        ? "사진을 올리고 있어요"
-        : "사진을 골라 주세요"
+  // 이 걸음에서 다음으로 갈 수 있는지. 생김새는 기본값이 있어 막지 않음
+  const ready =
+    step === 1
+      ? upload.uploadIds.length > 0
+      : step === LAST_STEP
+        ? locationToken !== null && !submitting
+        : true;
+
+  // 버튼 위에 띄울 말
+  // 1걸음의 사진은 머리글이 이미 시킨 일이라 같은 말을 아래에 또 적지 않음
+  const blocked = upload.uploading
+    ? "사진을 올리고 있어요"
+    : submitting
+      ? "신고를 저장하고 있어요"
       : step === LAST_STEP && locationToken === null
         ? "마지막으로 본 곳을 정해 주세요"
-        : submitting
-          ? "신고를 저장하고 있어요"
-          : null;
+        : null;
 
   // 재시도에서도 같은 키를 씀, 이중 탭이 신고를 두 건 만들지 않음
   const idempotencyKey = useRef<string | null>(null);
 
   const submit = useCallback(async () => {
-    if (!upload.uploadId || !locationToken) return;
+    if (upload.uploadIds.length === 0 || !locationToken) return;
     setSubmitting(true);
     setError(null);
 
@@ -198,7 +203,7 @@ export function LostForm() {
       colors,
       size,
       collar,
-      uploadIds: [upload.uploadId],
+      uploadIds: upload.uploadIds,
       locationToken,
       occurredAt: occurredAt ? new Date(occurredAt).toISOString() : new Date().toISOString(),
       idempotencyKey: idempotencyKey.current,
@@ -242,7 +247,7 @@ export function LostForm() {
       setSubmitting(false);
     }
   }, [
-    upload.uploadId,
+    upload.uploadIds,
     locationToken,
     usableForDistance,
     animalType,
@@ -280,21 +285,24 @@ export function LostForm() {
           <Text as="h1" textStyle="t7Bold" color="fg.neutral">
             {STEP_HEADING[step]}
           </Text>
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {STEP_HINT[step]}
-          </Text>
+          {STEP_HINT[step] ? (
+            <Text textStyle="t3Regular" color="fg.neutralMuted">
+              {STEP_HINT[step]}
+            </Text>
+          ) : null}
         </VStack>
 
         {error ? <Callout tone="critical" description={error} /> : null}
 
         {step === 1 ? (
           <>
+            {/* 머리글이 이미 사진을 올려 달라고 해 이름은 장수 세는 자리로만 둠 */}
             <PhotoField
               picker={picker}
               label="사진"
-              hint="얼굴이 잘 보이는 사진이 찾는 데 도움이 돼요"
+              hint="얼굴이 잘 보이는 사진일수록 찾기 쉬워요"
               cameraAvailable={false}
-              disabled={upload.status === "uploading"}
+              disabled={upload.uploading}
             />
             {upload.message ? <Callout tone="critical" description={upload.message} /> : null}
           </>
@@ -483,7 +491,7 @@ export function LostForm() {
           variant="brandSolid"
           size="large"
           loading={submitting}
-          disabled={blocked !== null}
+          disabled={!ready}
           onClick={step === LAST_STEP ? submit : () => goTo((step + 1) as LostStep)}
         >
           {step === LAST_STEP ? "신고 등록하기" : "다음"}

@@ -30,8 +30,17 @@ export function usePhotoUploads(): PhotoUploadsState {
 
   // 같은 장을 두 번 올리지 않도록 이미 손댄 id 를 들고 있음
   const started = useRef<Set<string>>(new Set());
+
+  // 개발 모드의 이중 마운트에서는 정리가 먼저 돌아 false 로 굳음
+  // 그러면 그 뒤 도착한 응답을 전부 버려 올리는 중 표시가 풀리지 않음
+  // 붙을 때마다 다시 켜서 두 번째 마운트가 결과를 받게 함
   const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   const sync = useCallback((photos: PhotoItem[]) => {
     setOrder(photos.map((photo) => photo.id));
