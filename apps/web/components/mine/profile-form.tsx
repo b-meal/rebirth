@@ -77,7 +77,10 @@ export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
                 errorMessage={errors.displayName}
                 invalid={Boolean(errors.displayName)}
               >
-                <TextFieldInput placeholder="이름을 입력해 주세요" />
+                {/* 이 화면에 적을 칸이 이것 하나뿐이라 들어오자마자 손이 닿게 함
+                    키보드가 올라와도 가릴 것이 없음 */}
+                {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
+                <TextFieldInput autoFocus placeholder="이름을 입력해 주세요" />
               </TextField>
 
               {/* 저장에 실패하면 무언가 해야 하므로 화면에 남김
