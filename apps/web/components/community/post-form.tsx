@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 import { Box, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -14,6 +14,7 @@ import {
 import { BODY_MAX, TITLE_MAX, type CategoryDescriptor } from "@rebirth/core/community";
 
 import { createPost, type PostFormState } from "@/app/community/actions";
+import { useNeighborhood } from "@/components/location/neighborhood-provider";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody } from "@/components/ui/screen";
 import { useUnsavedWarning } from "@/hooks/use-unsaved-warning";
@@ -38,6 +39,18 @@ export function PostForm({ category }: { category: CategoryDescriptor }) {
   );
   const [dirty, setDirty] = useState(false);
   const errors = state.errors ?? {};
+
+  const { areaName, blocked, ensure, retry } = useNeighborhood();
+
+  // 시트를 거치지 않고 주소로 바로 들어올 수 있어 여기서도 물음
+  useEffect(() => {
+    ensure();
+  }, [ensure]);
+
+  // 위치가 늦게 들어와도 채우려면 필드를 다시 마운트해야 함
+  // 사용자가 한 번이라도 고쳤으면 그 값이 이겨 덮어쓰지 않음
+  const [touched, setTouched] = useState(false);
+  const filled = touched ? null : areaName;
 
   // 쓰던 글이 있으면 새로고침과 탭 닫기를 되묻게 함
   useUnsavedWarning(dirty);
@@ -88,12 +101,29 @@ export function PostForm({ category }: { category: CategoryDescriptor }) {
 
             <TextField
               label="동네"
-              description="동 이름만 남아요. 정확한 위치는 저장하지 않아요"
+              description={
+                blocked
+                  ? "위치를 켜면 자동으로 채워져요"
+                  : "동 이름만 남아요. 정확한 위치는 저장하지 않아요"
+              }
               errorMessage={errors.areaName}
               invalid={Boolean(errors.areaName)}
             >
-              <TextFieldInput name="areaName" placeholder="예: 중곡동" />
+              {/* 위치가 늦게 오므로 값이 바뀌면 key 로 다시 마운트해 채움 */}
+              <TextFieldInput
+                key={filled ?? "empty"}
+                name="areaName"
+                defaultValue={filled ?? ""}
+                placeholder="예: 중곡동"
+                onChange={() => setTouched(true)}
+              />
             </TextField>
+
+            {blocked ? (
+              <ActionButton variant="neutralWeak" size="medium" onClick={retry}>
+                위치 켜서 동네 채우기
+              </ActionButton>
+            ) : null}
 
             <SubmitButton />
           </VStack>
