@@ -46,9 +46,11 @@ function formatAbsolute(value: string): string {
 
 export type CandidateDeckProps = {
   candidates: Candidate[];
+  /** 내 신고를 한마디로 줄인 말. 무엇과 견준 점수인지 밝히는 데 씀 */
+  lostLabel: string;
 };
 
-export function CandidateDeck({ candidates }: CandidateDeckProps) {
+export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
   const [index, setIndex] = useState(0);
   // 아니에요 는 영구 제외가 아니라 목록 뒤로만 밀어 다시 볼 수 있게 함
   const [pushedBack, setPushedBack] = useState<string[]>([]);
@@ -119,6 +121,9 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
 
   return (
     <ScreenBody gap="x4">
+      {/* 되돌아가는 버튼을 두지 않음
+          아니에요 는 영구 제외가 아니라 뒤로만 밀어 끝까지 가면 다시 나옴
+          잘못 눌러도 잃는 것이 없는데 버튼을 두면 그 사실을 모르고 조심하게 됨 */}
       <Text textStyle="t3Regular" color="fg.neutralMuted">
         {index + 1} / {ordered.length}
       </Text>
@@ -130,11 +135,16 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
       />
 
       {/* 점수는 왜 그런지와 붙어 있어야 읽힘. 숫자만 크게 두면 확정으로 오해함
-          면책은 화면마다 되풀이하지 않고 목록 머리에서 한 번만 밝힘 */}
+          확정이 아니라는 말도 그 숫자 옆에 있어야 함. 화면 맨 위에 두면 스크롤에 밀려 사라짐 */}
       <VStack align="stretch" gap="x1">
-        <Text textStyle="t6Bold" color="fg.neutral">
-          유사도 {current.score}점
-        </Text>
+        <HStack gap="x1_5" align="center" wrap>
+          <Text textStyle="t6Bold" color="fg.neutral">
+            {lostLabel} 신고와 유사도 {current.score}점
+          </Text>
+          <Text textStyle="t2Regular" color="fg.neutralSubtle">
+            동일 개체 확정 아님
+          </Text>
+        </HStack>
         <Text textStyle="t4Regular" color="fg.neutralMuted">
           {current.breakdown.reason}
         </Text>
@@ -169,7 +179,7 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
 
       {/* 아니에요 도 목록 뒤로만 밀어 다시 볼 수 있으므로 넘기기와 결과가 같음
           같은 일을 하는 버튼을 둘로 두면 무엇이 다른지 고민하게 됨
-          되돌리기는 잘못 눌렀을 때만 필요해 첫 장이 아닐 때만 내놓음 */}
+          이 자리는 판정만 맡음. 앞뒤로 넘나드는 일은 카드 머리의 장수 옆에 둠 */}
       <VStack align="stretch" gap="x2">
         <HStack gap="x2">
           <ActionButton
@@ -192,11 +202,6 @@ export function CandidateDeck({ candidates }: CandidateDeckProps) {
             아니에요
           </ActionButton>
         </HStack>
-        {index > 0 ? (
-          <ActionButton variant="ghost" size="medium" onClick={previous}>
-            이전 후보로
-          </ActionButton>
-        ) : null}
         {picked === current.id ? (
           <ActionButton variant="neutralOutline" size="large" asChild>
             <a href={`/r/${current.id}`}>제보 상세 보기</a>

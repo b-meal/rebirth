@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AspectRatio, ImageFrame, Skeleton, Text, VStack } from "@seed-design/react";
+import { AspectRatio, ImageFrame, Text, VStack } from "@seed-design/react";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 
 // 후보 사진, 넘길 때 지연이 없도록 다음 두 장을 미리 받아 두는 서명 URL 캐시
 
@@ -73,7 +74,9 @@ export function CandidatePhoto({ reportId, prefetchIds }: CandidatePhotoProps) {
   if (!url) {
     return (
       <AspectRatio ratio={4 / 3}>
-        <Skeleton width="full" height="full" radius="16" />
+        <VStack align="center" justify="center" height="full" borderRadius="r3" bg="bg.neutralWeak">
+          <ProgressCircle size="24" tone="neutral" />
+        </VStack>
       </AspectRatio>
     );
   }

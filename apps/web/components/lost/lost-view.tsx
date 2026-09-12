@@ -2,14 +2,15 @@
 
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AspectRatio, Divider, Skeleton, Text, VStack } from "@seed-design/react";
+import { VStack } from "@seed-design/react";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
 
 import { Screen, ScreenBody } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
 import { CandidateDeck, type Candidate } from "./candidate-deck";
 
-// 내 신고 요약과 확인할 후보, 토큰은 클라이언트에서만 읽어 서버 로그에 남지 않음
+// 확인할 후보, 토큰은 클라이언트에서만 읽어 서버 로그에 남지 않음
 
 type LostSummary = {
   id: string;
@@ -127,26 +128,10 @@ export function LostView() {
     return (
       <Screen>
         <AppHeader title="확인할 후보" home />
-        {/* 들어설 화면과 같은 자리에 같은 크기로 둠
-            다른 모양으로 두면 값이 오는 순간 화면이 다시 짜여 덜컥임 */}
-        <VStack align="stretch">
-          <ScreenBody pb="x3" gap="x1">
-            <Skeleton width="55%" height="x7" radius="8" />
-            <Skeleton width="90%" height="x4" radius="8" />
-          </ScreenBody>
-
-          <Divider />
-
-          <ScreenBody gap="x4">
-            <Skeleton width="20%" height="x4" radius="8" />
-            <AspectRatio ratio={4 / 3}>
-              <Skeleton width="full" height="full" radius="16" />
-            </AspectRatio>
-            <VStack align="stretch" gap="x1">
-              <Skeleton width="35%" height="x6" radius="8" />
-              <Skeleton width="80%" height="x4" radius="8" />
-            </VStack>
-          </ScreenBody>
+        {/* 몇 건이 올지 몰라 뼈대를 세워도 들어설 모양과 맞지 않음
+            돌아가는 표시 하나만 두고 화면 가운데를 비워 둠 */}
+        <VStack align="center" justify="center" grow={1} py="x16">
+          <ProgressCircle size="40" tone="neutral" />
         </VStack>
       </Screen>
     );
@@ -208,25 +193,13 @@ export function LostView() {
 
   return (
     <Screen>
-      <AppHeader title="확인할 후보" home />
-      <VStack align="stretch">
-        {/* 내 신고 내용은 본인이 방금 적은 것이라 다시 펼쳐 보여 줄 이유가 없음
-            지금 할 일은 아래 후보를 보는 것이고 머리글은 그것만 말함
-            개체 확정이 아니라는 말은 카드마다 되풀이하지 않고 여기서 한 번만 밝힘 */}
-        <ScreenBody pb="x3" gap="x1">
-          <Text as="h1" textStyle="t7Bold" color="fg.neutral">
-            확인할 후보 {candidates.length}건
-          </Text>
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {[ANIMAL_LABEL[lost.animalType], SIZE_LABEL[lost.size]].join(" · ")} 신고와 닮은
-            순서예요. 유사도이며 동일 개체 확정이 아니에요
-          </Text>
-        </ScreenBody>
-
-        <Divider />
-
-        <CandidateDeck candidates={candidates} />
-      </VStack>
+      {/* 앱바가 이미 이름을 대고 있어 같은 말을 큰 제목으로 또 쓰지 않음
+          건수는 이름에 붙이면 한 줄로 끝나고 화면 위가 사진에 돌아감 */}
+      <AppHeader title={`확인할 후보 ${candidates.length}건`} home />
+      <CandidateDeck
+        candidates={candidates}
+        lostLabel={[ANIMAL_LABEL[lost.animalType], SIZE_LABEL[lost.size]].join(" · ")}
+      />
     </Screen>
   );
 }
