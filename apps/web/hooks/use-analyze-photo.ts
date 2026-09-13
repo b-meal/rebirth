@@ -19,6 +19,19 @@ export type AnalyzeState = {
   clear: () => void;
 };
 
+export type UseAnalyzePhotoOptions = {
+  /**
+   * 초안이 도착했을 때 부름
+   * 결과를 폼 값으로 옮기는 화면이 이펙트로 status 를 지켜보면
+   * 렌더가 한 번 더 도는 데다 같은 결과를 두 번 넣지 않으려 열쇠를 또 들어야 함
+   */
+  onDone?: (payload: {
+    draft: AnalyzeResult;
+    model: string | null;
+    analyzedAt: string | null;
+  }) => void;
+};
+
 type Payload = {
   draft?: AnalyzeResult;
   advice?: AnalyzeAdviceState;
@@ -27,7 +40,7 @@ type Payload = {
   analyzedAt?: string;
 };
 
-export function useAnalyzePhoto(): AnalyzeState {
+export function useAnalyzePhoto({ onDone }: UseAnalyzePhotoOptions = {}): AnalyzeState {
   const [status, setStatus] = useState<AnalyzeState["status"]>("idle");
   const [advice, setAdvice] = useState<AnalyzeAdviceState | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -36,6 +49,12 @@ export function useAnalyzePhoto(): AnalyzeState {
   const [analyzedAt, setAnalyzedAt] = useState<string | null>(null);
 
   const inflight = useRef<AbortController | null>(null);
+
+  // 매 렌더 새로 오는 함수라 start 가 그때마다 다시 만들어지지 않게 참조로 들고 있음
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
 
   useEffect(() => () => inflight.current?.abort(), []);
 
@@ -75,6 +94,12 @@ export function useAnalyzePhoto(): AnalyzeState {
         setAdvice(payload.advice ?? "draft");
         setMessage(payload.message ?? null);
         setStatus("done");
+
+        onDoneRef.current?.({
+          draft: payload.draft,
+          model: payload.model ?? null,
+          analyzedAt: payload.analyzedAt ?? null,
+        });
       } catch {
         if (controller.signal.aborted) return;
         setStatus("failed");
