@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Box, HStack, Text, VStack } from "@seed-design/react";
+import { AspectRatio, Box, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
+import { IconPawprintLine } from "@karrotmarket/react-monochrome-icon";
 import type { AnimalType } from "@rebirth/types";
 import { LIST_PERIOD_DAYS } from "@rebirth/types";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -11,9 +12,10 @@ import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { ResultSection } from "seed-design/ui/result-section";
 
-import { CARE_LABEL, describeAnimal } from "@/lib/report-label";
+import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
+import { Badge } from "@/components/ui/badge";
 
 // WEB-08 최근 제보를 조건으로 좁혀 훑되 품종 필터와 거리 정렬은 두지 않음
 
@@ -27,7 +29,19 @@ export type ListItem = {
   injury: boolean | null;
   areaName: string | null;
   occurredAt: Date;
+  /** 대표 사진 축소본. 사진이 없거나 서명이 실패하면 null */
+  photoUrl?: string | null;
 };
+
+/** 목록 API 응답. 날짜는 JSON 을 거치며 문자열이 됨 */
+type ListResponse = {
+  items: (Omit<ListItem, "occurredAt"> & { occurredAt: string })[];
+  nextCursor: string | null;
+};
+
+function toItems(rows: ListResponse["items"]): ListItem[] {
+  return rows.map((item) => ({ ...item, occurredAt: new Date(item.occurredAt) }));
+}
 
 const TYPE_OPTIONS: { value: AnimalType; label: string }[] = [
   { value: "dog", label: "개" },
@@ -35,45 +49,62 @@ const TYPE_OPTIONS: { value: AnimalType; label: string }[] = [
   { value: "other", label: "그 외" },
 ];
 
-const KST = new Intl.DateTimeFormat("ko-KR", {
-  timeZone: "Asia/Seoul",
-  dateStyle: "long",
-  timeStyle: "short",
-});
+/** 카드 사진 한 변. 글 두세 줄과 높이가 맞는 크기 */
+const THUMB = "88px";
 
 function Card({ item }: { item: ListItem }) {
   return (
     <Box
       asChild
-      p="x4"
+      p="x3"
       borderRadius="r3"
       borderWidth={1}
       borderColor="stroke.neutralMuted"
       bg="bg.layerDefault"
+      minWidth="0"
     >
       {/* 링크로 두어 키보드 이동과 새 탭 열기가 그대로 동작함 */}
-      <Link href={`/r/${item.id}`}>
-        <VStack align="stretch" gap="x1">
-          <Text textStyle="t5Bold" color="fg.neutral">
-            {describeAnimal(item)}
-          </Text>
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {item.areaName ?? "지역 미확인"}
-          </Text>
-          <Text textStyle="t2Regular" color="fg.neutralSubtle">
-            {KST.format(item.occurredAt)}
-          </Text>
-          <HStack gap="x2" mt="x1">
-            <Text textStyle="t2Regular" color="fg.neutralMuted">
-              {CARE_LABEL[item.careSituation] ?? ""}
+      <Link href={`/r/${item.id}`} className="rebirth-card">
+        <HStack gap="x3" align="stretch" minWidth="0">
+          {item.photoUrl ? (
+            <Box width={THUMB} minWidth={THUMB}>
+              <ImageFrame
+                ratio={1}
+                src={item.photoUrl}
+                alt={describeAnimal(item)}
+                borderRadius="r2"
+              />
+            </Box>
+          ) : (
+            // 사진 없는 제보도 같은 자리를 차지해 줄이 들쭉날쭉해지지 않음
+            <Box width={THUMB} minWidth={THUMB}>
+              <AspectRatio ratio={1} borderRadius="r2" bg="bg.neutralWeak">
+                <VStack align="center" justify="center" height="full">
+                  <Icon svg={<IconPawprintLine />} size="x7" color="fg.neutralSubtle" />
+                </VStack>
+              </AspectRatio>
+            </Box>
+          )}
+
+          <VStack align="stretch" gap="x1" grow={1} minWidth="0" justify="center">
+            <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
+              {describeAnimal(item)}
             </Text>
-            {item.injury === true ? (
-              <Text textStyle="t2Regular" color="fg.critical">
-                다친 것으로 보임
-              </Text>
-            ) : null}
-          </HStack>
-        </VStack>
+            <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
+              {item.areaName ?? "지역 미확인"} · {sinceLabel(item.occurredAt)}
+            </Text>
+            {/* 상황은 색으로 먼저 읽히고 글자가 뜻을 확인해 줌 */}
+            <HStack gap="x1" align="center" wrap>
+              <Badge
+                label={CARE_LABEL[item.careSituation] ?? "확인되지 않음"}
+                tone={item.careSituation === "in_care" ? "informative" : "neutral"}
+              />
+              {item.injury === true ? (
+                <Badge label="다친 것으로 보임" tone="critical" />
+              ) : null}
+            </HStack>
+          </VStack>
+        </HStack>
       </Link>
     </Box>
   );
@@ -98,6 +129,16 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
   const animalType = params.get("animalType");
   const days = Number(params.get("days")) || LIST_PERIOD_DAYS[0];
 
+  // 서버가 새 쪽을 그려 보내면 쌓아 둔 것을 버리고 그 쪽에서 다시 시작함
+  // 조건을 바꿀 때가 이 경우라, 옛 커서와 옛 목록이 남아 섞이지 않음
+  const serverPage = `${nextCursor ?? ""}|${items.length}`;
+  const [drawn, setDrawn] = useState(serverPage);
+  if (drawn !== serverPage) {
+    setDrawn(serverPage);
+    setExtra([]);
+    setCursor(nextCursor);
+  }
+
   // 조건을 URL 에 담아 상세에서 뒤로 왔을 때 그대로 복원됨
   const setParam = (key: string, value?: string) => {
     const next = new URLSearchParams(params.toString());
@@ -117,8 +158,8 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
       query.set("cursor", cursor);
       const response = await fetch(`/api/reports?${query}`);
       if (!response.ok) throw new Error("list");
-      const data = (await response.json()) as { items: ListItem[]; nextCursor: string | null };
-      setExtra((current) => [...current, ...data.items]);
+      const data = (await response.json()) as ListResponse;
+      setExtra((current) => [...current, ...toItems(data.items)]);
       setCursor(data.nextCursor);
     } catch {
       // 자동으로 다시 부르지 않고 사용자가 누를 때만 재시도함
@@ -133,35 +174,36 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
 
   return (
     <Screen>
-      <AppHeader title="최근 발견 제보" />
-      <ScreenBody gap="x5">
-        <Text as="h1" textStyle="t8Bold" color="fg.neutral">
-          최근 발견 제보
-        </Text>
-
+      <AppHeader title="발견 제보" />
+      <ScreenBody gap="x4" pt="x3">
         <Section gap="x2">
-          <HStack gap="spacingX.betweenChips" wrap>
-            {TYPE_OPTIONS.map((option) => (
-              <Chip.Toggle
-                key={option.value}
-                checked={animalType === option.value}
-                onCheckedChange={() => setParam("animalType", option.value)}
-              >
-                <Chip.Label>{option.label}</Chip.Label>
-              </Chip.Toggle>
-            ))}
-          </HStack>
-          <HStack gap="spacingX.betweenChips" wrap>
-            {LIST_PERIOD_DAYS.map((period) => (
-              <Chip.Toggle
-                key={period}
-                checked={days === period}
-                onCheckedChange={() => setParam("days", String(period))}
-              >
-                <Chip.Label>최근 {period}일</Chip.Label>
-              </Chip.Toggle>
-            ))}
-          </HStack>
+          {/* 조건이 늘면 줄바꿈 대신 옆으로 밀림, 목록이 아래로 내려가지 않음 */}
+          <Box className="rebirth-scroll-row rebirth-bleed">
+            <HStack gap="spacingX.betweenChips">
+              {TYPE_OPTIONS.map((option) => (
+                <Chip.Toggle
+                  key={option.value}
+                  checked={animalType === option.value}
+                  onCheckedChange={() => setParam("animalType", option.value)}
+                >
+                  <Chip.Label>{option.label}</Chip.Label>
+                </Chip.Toggle>
+              ))}
+            </HStack>
+          </Box>
+          <Box className="rebirth-scroll-row rebirth-bleed">
+            <HStack gap="spacingX.betweenChips">
+              {LIST_PERIOD_DAYS.map((period) => (
+                <Chip.Toggle
+                  key={period}
+                  checked={days === period}
+                  onCheckedChange={() => setParam("days", String(period))}
+                >
+                  <Chip.Label>최근 {period}일</Chip.Label>
+                </Chip.Toggle>
+              ))}
+            </HStack>
+          </Box>
         </Section>
 
         <HStack justify="space-between" align="center">
@@ -188,7 +230,12 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
             })}
           />
         ) : (
-          <VStack align="stretch" gap="x2">
+          // 조건을 바꾸는 동안 문구 대신 목록을 흐려 전환 중임을 보여 줌
+          <VStack
+            align="stretch"
+            gap="x2"
+            style={{ opacity: pending ? 0.4 : 1, transition: "opacity 120ms ease" }}
+          >
             {rows.map((item) => (
               <Card key={item.id} item={item} />
             ))}
