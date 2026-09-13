@@ -366,6 +366,19 @@ body .seed-snackbar-region {
   }
 }
 
+/* 누를 수 있는 목록 줄에 손 모양을 줌
+   SEED 레시피는 hover 배경만 주고 cursor 를 정하지 않아 마우스에서 누를 수 있는지 알기 어려움
+   button 과 a 로 그려진 줄에만 걸어 읽기만 하는 줄은 그대로 둠 */
+.seed-list-item__content:is(button, a):not(:disabled, [disabled], [data-disabled]) {
+  cursor: pointer;
+}
+
+/* 사진 사이에 끼는 더 담기 칸. 옆 사진과 같은 정사각이라야 줄이 어긋나지 않음 */
+.rebirth-photo-tile {
+  aspect-ratio: 1;
+  width: 100%;
+}
+
 /* 올리는 중인 사진은 어둡게 눌러 그 위의 흰 표시가 읽히게 함
    프레임 전체에 걸면 떠 있는 표시와 삭제 단추까지 함께 어두워져 img 에만 걺 */
 .rebirth-photo--busy img {

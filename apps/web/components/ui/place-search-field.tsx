@@ -64,7 +64,9 @@ export function PlaceSearchField({
       {search.query ? (
         <Box position="absolute" top="0" right="x2" height="full">
           <VStack justify="center" height="full">
+            {/* 폼 안에서는 type 이 없으면 submit 이 되어 누르는 순간 저장이 돌아감 */}
             <ActionButton
+              type="button"
               variant="ghost"
               size="xsmall"
               layout="iconOnly"
