@@ -43,6 +43,7 @@ export default async function PetPage({ params }: PageProps<"/mine/pets/[id]">) 
         breedGuess: pet.breedGuess,
         size: pet.size,
         colors: pet.colors,
+        registrationNumber: pet.registrationNumber,
         note: pet.note,
       }}
       photoUrls={photoUrls}

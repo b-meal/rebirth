@@ -16,6 +16,7 @@ import {
   insertReportComment,
   insertReportWithPhotos,
   listPublicReports,
+  listReportCards,
   releaseIdempotencyKey,
   toggleReportInterest,
   type PublicListCursor,
@@ -52,7 +53,7 @@ import {
   type RouteContext,
 } from "../http";
 import { coarseGridMetersFor, snapToGrid } from "../location/geo";
-import { SIGNED_URL_TTL_SECONDS, createSignedUrl } from "../storage";
+import { SIGNED_URL_TTL_SECONDS, createSignedThumbUrls, createSignedUrl } from "../storage";
 
 // 제보 API 의 라우트 핸들러. web 과 admin 이 각자 route.ts 에서 재수출해 씀
 // 정확 좌표는 여기서 저장만 하고 어떤 응답에도 넣지 않음
@@ -60,6 +61,35 @@ import { SIGNED_URL_TTL_SECONDS, createSignedUrl } from "../storage";
 const REPORT_NOT_FOUND = "찾는 제보가 없습니다. 주소를 다시 확인해 주십시오";
 const DRAFT_EXPIRED =
   "작성 중이던 정보가 만료됐습니다. 사진과 위치를 다시 확인해 주십시오";
+
+/**
+ * 목록 카드에 붙일 대표 사진
+ * 공개 목록 질의는 저장 경로를 담지 않아 id 로 한 번 더 읽어 서명함
+ * 목록 API 와 서버에서 첫 장을 그리는 화면이 같은 함수를 써야 이어 읽은 카드가 달라 보이지 않음
+ */
+export async function attachPhotoUrls<T extends { id: string }>(
+  rows: T[],
+): Promise<(T & { photoUrl: string | null })[]> {
+  if (rows.length === 0) return [];
+
+  let byId = new Map<string, string>();
+  try {
+    const cards = await listReportCards(rows.map((row) => row.id));
+    const paths = cards.flatMap((card) => (card.photoPath ? [card.photoPath] : []));
+    const signed = await createSignedThumbUrls(paths);
+
+    byId = new Map(
+      cards.flatMap((card) => {
+        const url = card.photoPath ? signed.get(card.photoPath) : undefined;
+        return url ? [[card.id, url] as const] : [];
+      }),
+    );
+  } catch {
+    // 사진을 못 읽어도 목록은 보여야 함
+  }
+
+  return rows.map((row) => ({ ...row, photoUrl: byId.get(row.id) ?? null }));
+}
 
 /* POST /api/reports  초안 세션의 사진·위치 참조를 제보로 확정함 */
 
@@ -374,7 +404,7 @@ export async function listReportsHandler(request: Request): Promise<Response> {
     const items = rows.slice(0, LIST_PAGE_SIZE);
     const last = items.at(-1);
     return ok({
-      items,
+      items: await attachPhotoUrls(items),
       nextCursor:
         rows.length > LIST_PAGE_SIZE && last ? encodeCursor(last) : null,
     });

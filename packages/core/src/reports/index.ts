@@ -1,5 +1,6 @@
 export {
   DRAFT_EXPIRED,
+  attachPhotoUrls,
   createCommentHandler,
   createFlagHandler,
   createReportHandler,

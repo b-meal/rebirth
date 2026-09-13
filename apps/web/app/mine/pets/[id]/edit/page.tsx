@@ -41,6 +41,7 @@ export default async function EditPetPage({ params }: PageProps<"/mine/pets/[id]
         breedGuess: pet.breedGuess,
         size: pet.size,
         colors: pet.colors,
+        registrationNumber: pet.registrationNumber,
         note: pet.note,
         photos: rows.flatMap((row) => {
           const url = signed.get(row.storagePath);

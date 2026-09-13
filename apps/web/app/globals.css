@@ -193,6 +193,22 @@ a {
   padding-bottom: calc(var(--seed-dimension-x3) + env(safe-area-inset-bottom, 0px));
 }
 
+/* 탭바가 덮는 높이만큼 아래를 비우는 자리
+   알약 높이(x16)와 띄운 여백(x4)에 기기 안전 영역을 더한 값 */
+.rebirth-tab-space {
+  padding-bottom: calc(
+    var(--seed-dimension-x16) + var(--seed-dimension-x4) + env(safe-area-inset-bottom, 0px)
+  );
+}
+
+/* 탭바 위에 떠 있는 버튼
+   탭바 높이만 비우면 두 알약이 맞닿아 한 덩어리로 보여 한 칸 더 띄움 */
+.rebirth-above-tabs {
+  padding-bottom: calc(
+    var(--seed-dimension-x16) + var(--seed-dimension-x7) + env(safe-area-inset-bottom, 0px)
+  );
+}
+
 /* 바텀시트는 뷰포트에 붙어 앱 프레임을 벗어남
    SEED 기본이 flex: 1 이라 max-width 만으로는 폭이 줄지 않음
    레시피와 특성도가 같아 순서에 기대지 않도록 body 를 앞에 두어 한 단계 올림
@@ -423,5 +439,82 @@ body .seed-snackbar__root {
 @media (hover: hover) and (pointer: fine) {
   .rebirth-pointer-only {
     display: block;
+  }
+}
+
+/* 화면에서만 감추고 보조 기술과 폼에는 남는 입력
+   색 동그라미를 직접 그리느라 기본 체크박스 모양을 쓰지 않음 */
+.rebirth-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 털색 동그라미. 고르면 바탕과 한 칸 띄운 브랜드색 테가 둘림 */
+.rebirth-swatch {
+  cursor: pointer;
+  transition: box-shadow 120ms ease;
+}
+
+.rebirth-swatch-input:checked + .rebirth-swatch {
+  box-shadow:
+    0 0 0 2px var(--seed-color-bg-layer-default),
+    0 0 0 4px var(--seed-color-fg-brand);
+}
+
+/* 색만으로는 무엇을 골랐는지 가리기 어려워 체크와 글자색이 함께 알림 */
+.rebirth-swatch-check {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.rebirth-swatch-input:checked + .rebirth-swatch .rebirth-swatch-check {
+  opacity: 1;
+}
+
+.rebirth-swatch-input:checked ~ .rebirth-swatch-label {
+  color: var(--seed-color-fg-brand);
+}
+
+/* 키보드로 옮겨 다닐 때만 테두리를 보여 마우스 클릭에는 남지 않음 */
+.rebirth-swatch-input:focus-visible + .rebirth-swatch {
+  outline: var(--seed-dimension-x0_5) solid var(--seed-color-stroke-focus-ring);
+  outline-offset: var(--seed-dimension-x1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rebirth-swatch,
+  .rebirth-swatch-check {
+    transition: none;
+  }
+}
+
+/* 진입 덮개
+   걷는 일을 스크립트에 맡기면 하이드레이션이 늦거나 막혔을 때 화면이 덮인 채로 남음
+   시간은 컴포넌트가 지연과 길이로 넘겨 두 곳에 같은 숫자를 적지 않음
+   forwards 로 끝 상태를 지켜 스크립트가 지우지 못해도 다시 나타나지 않음 */
+@keyframes rebirth-splash-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.rebirth-splash {
+  pointer-events: none;
+  animation-name: rebirth-splash-out;
+  animation-timing-function: ease-out;
+  animation-fill-mode: forwards;
+}
+
+/* 움직임을 줄이도록 설정한 기기에서도 덮개는 걷혀야 해 페이드만 없앰 */
+@media (prefers-reduced-motion: reduce) {
+  .rebirth-splash {
+    animation-timing-function: step-end;
   }
 }

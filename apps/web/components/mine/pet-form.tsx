@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
   Grid,
-  HStack,
   Icon,
   ImageFrame,
   ImageFrameFloater,
@@ -12,10 +11,9 @@ import {
   VStack,
 } from "@seed-design/react";
 import { IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
-import { PET_NOTE_MAX, PHOTO_MAX_COUNT } from "@rebirth/types";
+import { PET_NOTE_MAX, PET_REGISTRATION_DIGITS, PHOTO_MAX_COUNT } from "@rebirth/types";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
-import { Chip } from "seed-design/ui/chip";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 import {
@@ -25,6 +23,7 @@ import {
 } from "seed-design/ui/text-field";
 
 import { AppHeader } from "@/components/ui/app-header";
+import { CoatColorPicker } from "@/components/ui/coat-color-picker";
 import { PhotoField } from "@/components/ui/photo-field";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { useFocusError } from "@/hooks/use-focus-error";
@@ -49,8 +48,6 @@ const SIZE_OPTIONS = [
   { value: "large", label: "대형" },
 ] as const;
 
-const COLOR_OPTIONS = ["흰색", "검정색", "갈색", "회색", "노란색", "얼룩"] as const;
-
 export type PetFormValues = {
   id: string;
   name: string;
@@ -58,6 +55,7 @@ export type PetFormValues = {
   breedGuess: string | null;
   size: string;
   colors: string[];
+  registrationNumber: string | null;
   note: string | null;
   /** 이미 올려 둔 사진. 경로와 보여 줄 서명 주소를 짝지어 둠 */
   photos: { path: string; url: string }[];
@@ -86,6 +84,7 @@ export function PetForm({ pet }: PetFormProps) {
   // controlled 와 uncontrolled 가 섞임. 고칠 값이 있는 칸은 이 화면이 값을 쥠
   const [name, setName] = useState(pet?.name ?? "");
   const [breedGuess, setBreedGuess] = useState(pet?.breedGuess ?? "");
+  const [registrationNumber, setRegistrationNumber] = useState(pet?.registrationNumber ?? "");
   const [note, setNote] = useState(pet?.note ?? "");
 
   // 저장된 값이 unknown 이면 고를 수 있는 칸에 없어 기본값으로 되돌림
@@ -252,25 +251,13 @@ export function PetForm({ pet }: PetFormProps) {
               </SegmentedControl>
             </Section>
 
-            {/* 칩의 체크박스는 숨어 있어 오류가 나면 이 줄을 대신 찾아 옮김 */}
+            {/* 체크박스가 숨어 있어 오류가 나면 이 줄을 대신 찾아 옮김 */}
             <Section data-error-anchor="colors" tabIndex={-1}>
               <Text as="h3" textStyle="t5Bold" color="fg.neutral">
                 털색
               </Text>
-              <HStack gap="spacingX.betweenChips" wrap>
-                {COLOR_OPTIONS.map((color) => (
-                  <Chip.Toggle
-                    key={color}
-                    size="small"
-                    defaultChecked={pet?.colors.includes(color)}
-                    // 값은 숨은 체크박스가 실어 보내므로 이름과 값을 그쪽에 줌
-                    inputProps={{ name: "colors", value: color }}
-                  >
-                    <Chip.Label>{color}</Chip.Label>
-                  </Chip.Toggle>
-                ))}
-              </HStack>
-              {/* 칩 줄에는 오류를 붙일 입력 칸이 없어 바로 아래에 둠 */}
+              <CoatColorPicker name="colors" defaultValue={pet?.colors} />
+              {/* 색 줄에는 오류를 붙일 입력 칸이 없어 바로 아래에 둠 */}
               {errors.colors ? (
                 <Text textStyle="t3Regular" color="fg.critical">
                   {errors.colors}
@@ -289,6 +276,24 @@ export function PetForm({ pet }: PetFormProps) {
               invalid={Boolean(errors.breedGuess)}
             >
               <TextFieldInput placeholder="말티즈" />
+            </TextField>
+
+            <TextField
+              label="동물등록번호"
+              name="registrationNumber"
+              size="medium"
+              description={`동물병원이나 등록증에 적힌 숫자 ${PET_REGISTRATION_DIGITS}자리`}
+              value={registrationNumber}
+              onValueChange={(next) => setRegistrationNumber(next.slicedValue)}
+              errorMessage={errors.registrationNumber}
+              invalid={Boolean(errors.registrationNumber)}
+            >
+              {/* 숫자만 쓰는 칸이라 숫자 자판이 먼저 뜨게 함 */}
+              <TextFieldInput
+                placeholder="410123456789012"
+                inputMode="numeric"
+                autoComplete="off"
+              />
             </TextField>
 
             <TextField

@@ -284,6 +284,9 @@ export type UpdateProfile = z.infer<typeof updateProfile>
 /** 우리 동물의 특징. 실종 신고에 그대로 옮겨 붙는 값이라 그쪽과 같은 길이로 둠 */
 export const PET_NOTE_MAX = 300
 
+/** 동물등록번호 자릿수. 무선식별장치 번호는 국가코드를 포함해 15자리 숫자임 */
+export const PET_REGISTRATION_DIGITS = 15
+
 /** 내가 키우는 동물 기록. 실종 신고를 빠르게 채우려고 미리 적어 둠 */
 export const createPet = z.object({
   name: z
@@ -300,6 +303,16 @@ export const createPet = z.object({
     .transform((v) => v ?? ''),
   size: animalSize.default('unknown'),
   colors: z.array(z.string().trim().min(1).max(20)).max(5, '털색은 5개까지 고를 수 있어요').default([]),
+  // 사람이 하이픈이나 공백을 넣어 적어도 숫자만 남겨 저장함
+  registrationNumber: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => (v ?? '').replace(/\D/g, ''))
+    .refine(
+      (v) => v === '' || v.length === PET_REGISTRATION_DIGITS,
+      `동물등록번호는 숫자 ${PET_REGISTRATION_DIGITS}자리예요`,
+    ),
   note: z
     .string()
     .trim()

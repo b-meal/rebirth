@@ -24,13 +24,12 @@ import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
 import { Callout } from "seed-design/ui/callout";
 import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-button";
 import { FloatingActionButton } from "seed-design/ui/floating-action-button";
-import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
+import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { describeAnimal } from "@/lib/report-label";
 import { useCurrentPosition } from "@/hooks/use-current-position";
 import { useMap } from "@/hooks/use-map";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
-import { BottomNav } from "@/components/ui/bottom-nav";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
 
@@ -493,13 +492,6 @@ export function HomeScreen({ markers: markersPromise }: HomeScreenProps) {
           </Box>
         </VStack>
       </VStack>
-
-      {/* 준비 중임을 알리는 스낵바가 탭을 덮지 않도록 탭 높이를 재게 함 */}
-      <SnackbarAvoidOverlap>
-        <Box position="absolute" bottom="0" left="0" right="0" zIndex={4} px="x4" pb="x4">
-          <BottomNav onUnavailable={(label) => notice(`${label}는 아직 준비 중입니다`)} />
-        </Box>
-      </SnackbarAvoidOverlap>
     </Box>
   );
 }

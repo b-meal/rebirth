@@ -59,6 +59,7 @@ import { ToggleButton } from "seed-design/ui/toggle-button";
 
 import { CATALOG } from "./registry";
 import { Row, Spec, Stage } from "./spec";
+import { CoatColorPicker } from "@/components/ui/coat-color-picker";
 
 // 액션 입력 표시 절, 변형 목록은 SEED 레시피의 variantMap 을 그대로 순회
 
@@ -72,6 +73,7 @@ const SAMPLE_IMAGE =
 export function CatalogComponents() {
   const [segment, setSegment] = useState("dog");
   const [chips, setChips] = useState<string[]>(["흰색"]);
+  const [coats, setCoats] = useState<string[]>(["흰색", "갈색"]);
   const [radio, setRadio] = useState("roaming");
   const [switched, setSwitched] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -199,6 +201,17 @@ export function CatalogComponents() {
             </Chip.Button>
           </Row>
         ))}
+      </Spec>
+
+      <Spec section={SECTIONS["coat-color-picker"]}>
+        <Row label="고른 값이 아래에 그대로 나감">
+          <VStack align="stretch" gap="x3" width="full">
+            <CoatColorPicker value={coats} onChange={setCoats} />
+            <Text textStyle="t3Regular" color="fg.neutralMuted">
+              {coats.length > 0 ? coats.join(", ") : "고른 털색 없음"}
+            </Text>
+          </VStack>
+        </Row>
       </Spec>
 
       <Spec section={SECTIONS.checkbox}>

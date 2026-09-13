@@ -18,6 +18,11 @@ try {
 const nextConfig: NextConfig = {
   // 워크스페이스 패키지를 TS 소스 그대로 소비
   transpilePackages: ["@rebirth/core", "@rebirth/db", "@rebirth/types"],
+
+  // 폰에서 같은 공유기의 이 컴퓨터로 붙어 볼 때 쓰는 주소
+  // 없으면 dev 서버가 다른 오리진으로 보고 내부 요청을 막아 지도와 목록이 비어 옴
+  // 배포는 한 오리진이라 이 목록과 무관함
+  allowedDevOrigins: ["192.168.75.130", "192.168.75.168"],
 };
 
 export default nextConfig;

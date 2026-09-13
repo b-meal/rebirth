@@ -9,8 +9,15 @@ import {
   useTransition,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Box, HStack, Text, VStack } from "@seed-design/react";
-import { IconPencilLine } from "@karrotmarket/react-monochrome-icon";
+import Link from "next/link";
+import { AspectRatio, Box, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
+import {
+  IconDot3HorizontalChatbubbleLeftLine,
+  IconFireworkLine,
+  IconHeartLine,
+  IconLocationpinLine,
+  IconPencilLine,
+} from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
@@ -22,7 +29,7 @@ import { COMMUNITY_CATEGORIES } from "@rebirth/core/community";
 
 import { useNeighborhood } from "@/components/location/neighborhood-provider";
 import { AppHeader } from "@/components/ui/app-header";
-import { Screen, ScreenBody } from "@/components/ui/screen";
+import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { ComposeSheet } from "./compose-sheet";
 import { PostCard, type PostCardItem } from "./post-card";
@@ -32,6 +39,67 @@ import { PostCard, type PostCardItem } from "./post-card";
 // 동네를 알면 내 동네 글을 먼저 보여 줌
 // 지난번에 알아낸 동네가 쿠키에 있으면 서버가 이미 그렇게 그려 보내므로 다시 읽지 않음
 // 처음 오는 사람은 서버가 동네를 몰라 전국 목록을 그리고, 위치를 잡은 뒤 한 번 다시 읽음
+
+/** 반응 많은 글을 세울 최소 목록 길이. 서너 건뿐이면 골라 봐야 같은 글이 두 번 보임 */
+const MIN_FOR_HOT = 5;
+
+/** 가로줄에 세울 장 수 */
+const HOT_COUNT = 3;
+
+/** 가로 카드 한 장 폭. 두 장 반이 보여 더 있다는 것이 드러남 */
+const HOT_WIDTH = "132px";
+
+/** 가로로 넘겨 보는 글 한 장 */
+function HotCard({ item }: { item: PostCardItem }) {
+  return (
+    <VStack asChild align="stretch" gap="x2" width={HOT_WIDTH} minWidth={HOT_WIDTH}>
+      <Link href={`/community/${item.id}`}>
+        {item.photoUrl ? (
+          <ImageFrame ratio={1} src={item.photoUrl} alt="" borderRadius="r3" />
+        ) : (
+          // 사진 없는 글도 같은 자리를 차지해 줄이 들쭉날쭉해지지 않음
+          <AspectRatio ratio={1} borderRadius="r3" bg="bg.neutralWeak">
+            <VStack align="center" justify="center" height="full">
+              <Icon svg={<IconPencilLine />} size="x6" color="fg.neutralSubtle" />
+            </VStack>
+          </AspectRatio>
+        )}
+        <Text textStyle="t3Bold" color="fg.neutral" maxLines={2}>
+          {item.title}
+        </Text>
+        <HStack gap="x2" align="center">
+          <HStack gap="x1" align="center">
+            <Icon svg={<IconHeartLine />} size="x3_5" color="fg.neutralSubtle" />
+            <Text textStyle="t2Regular" color="fg.neutralSubtle">
+              {item.likeCount}
+            </Text>
+          </HStack>
+          <HStack gap="x1" align="center">
+            <Icon
+              svg={<IconDot3HorizontalChatbubbleLeftLine />}
+              size="x3_5"
+              color="fg.neutralSubtle"
+            />
+            <Text textStyle="t2Regular" color="fg.neutralSubtle">
+              {item.commentCount}
+            </Text>
+          </HStack>
+        </HStack>
+      </Link>
+    </VStack>
+  );
+}
+
+/** 지금 목록 안에서 반응이 많은 순. 서버가 따로 세는 값이 아니라 이 쪽 기준 */
+function pickHot(rows: PostCardItem[]): PostCardItem[] {
+  if (rows.length < MIN_FOR_HOT) return [];
+  return rows
+    .filter((item) => item.likeCount + item.commentCount > 0)
+    .toSorted(
+      (a, b) => b.likeCount + b.commentCount - (a.likeCount + a.commentCount),
+    )
+    .slice(0, HOT_COUNT);
+}
 
 export type CommunityFeedProps = {
   items: PostCardItem[];
@@ -88,7 +156,7 @@ export function CommunityFeed({
   }
 
   const category = params.get("category");
-  const { areaName: found, ensure } = useNeighborhood();
+  const { areaName: found, ensure, retry, loading: locating, blocked } = useNeighborhood();
 
   // 서버가 쓴 동네를 먼저 믿음. 위치를 다시 잡기 전에도 글자가 비어 있지 않음
   const areaName = found ?? serverArea;
@@ -181,15 +249,63 @@ export function CommunityFeed({
   const grouped = Boolean(areaName) && rows.length > 0;
   // 내 동네 글이 끝나는 자리. 한 건도 없으면 첫 줄부터 다른 동네라 0
   const dividerAt = grouped && rows.length > nearCount ? nearCount : -1;
+  const hot = pickHot(rows);
 
   return (
     // 떠 있는 버튼이 화면 밖이 아니라 이 프레임 기준으로 붙게 함
     <Screen position="relative">
-      {/* 탭으로 들어오는 최상위 화면이라 뒤로 대신 홈으로 보냄 */}
-      <AppHeader title="커뮤니티" home />
+      <AppHeader
+        title="커뮤니티"
+        action={
+          <ActionButton
+            variant="ghost"
+            size="medium"
+            layout="iconOnly"
+            aria-label="내 동네 다시 잡기"
+            loading={locating}
+            onClick={retry}
+          >
+            <Icon svg={<IconLocationpinLine />} />
+          </ActionButton>
+        }
+      />
       {/* 설명 줄과 건수를 두지 않음. 목록을 보면 아는 것을 글로 다시 적지 않음 */}
       {/* 주제 줄과 목록은 한 덩어리라 사이를 좁히고 아래 블록과만 벌림 */}
       <ScreenBody gap="x4" pt="x3">
+        {/* 어느 동네를 기준으로 목록을 그렸는지 한 줄로 알림
+            켜지 않은 사람에게는 켜면 무엇이 달라지는지 같은 자리에서 말함 */}
+        <HStack
+          gap="x2"
+          align="center"
+          px="x3"
+          py="x2_5"
+          borderRadius="r2"
+          bg="bg.neutralWeak"
+        >
+          <Icon svg={<IconLocationpinLine />} size="x4" color="fg.neutralMuted" />
+          {areaName ? (
+            <HStack gap="x1" align="center" grow={1} minWidth="0">
+              <Text textStyle="t3Bold" color="fg.neutral" maxLines={1}>
+                {areaName}
+              </Text>
+              <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
+                이웃 글을 먼저 보여 줍니다
+              </Text>
+            </HStack>
+          ) : (
+            <HStack grow={1} minWidth="0">
+              <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
+                위치를 켜면 우리 동네 글부터 보입니다
+              </Text>
+            </HStack>
+          )}
+          {blocked ? (
+            <ActionButton variant="ghost" size="xsmall" onClick={retry}>
+              다시 시도
+            </ActionButton>
+          ) : null}
+        </HStack>
+
         {/* 주제가 늘면 줄바꿈 대신 옆으로 밀림, 목록이 아래로 내려가지 않음
             본문 좌우 여백을 상쇄해 칩이 화면 양 끝에 붙음
             globalGutter 와 x4 는 같은 값이라 어긋나지 않음 */}
@@ -206,6 +322,25 @@ export function CommunityFeed({
             ))}
           </HStack>
         </Box>
+
+        {hot.length > 0 ? (
+          <Section gap="x3">
+            <HStack gap="x1_5" align="center">
+              <Icon svg={<IconFireworkLine />} size="x4" color="fg.brand" />
+              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+                반응이 많은 글
+              </Text>
+            </HStack>
+            {/* 가로로 넘기는 줄은 첫 장이 화면 끝에서 시작해야 더 있다는 것이 보임 */}
+            <Box className="rebirth-scroll-row rebirth-bleed">
+              <HStack gap="x3" align="stretch">
+                {hot.map((item) => (
+                  <HotCard key={item.id} item={item} />
+                ))}
+              </HStack>
+            </Box>
+          </Section>
+        ) : null}
 
         {/* 동네 글이 먼저 온다는 것을 목록 위에서 한 줄로 알림
             구분선만 두면 왜 이 글이 위에 있는지 알 수 없음
@@ -291,8 +426,8 @@ export function CommunityFeed({
         bottom="0"
         justify="flex-end"
         px="spacingX.globalGutter"
-        pb="x5"
         zIndex={2}
+        className="rebirth-above-tabs"
       >
         <FloatingActionButton
           icon={<IconPencilLine />}

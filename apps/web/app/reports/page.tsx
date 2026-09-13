@@ -1,3 +1,4 @@
+import { attachPhotoUrls } from "@rebirth/core/reports";
 import { listPublicReports } from "@rebirth/db";
 import { LIST_DEFAULT_DAYS, LIST_PAGE_SIZE, LIST_PERIOD_DAYS, animalType } from "@rebirth/types";
 
@@ -41,9 +42,11 @@ export default async function ReportsPage({
     limit: LIST_PAGE_SIZE + 1,
   });
 
-  const items = rows.slice(0, LIST_PAGE_SIZE) as ListItem[];
-  const last = items.at(-1);
+  const page = rows.slice(0, LIST_PAGE_SIZE) as ListItem[];
+  const last = page.at(-1);
   const hasMore = rows.length > LIST_PAGE_SIZE && Boolean(last);
+
+  const items = await attachPhotoUrls(page);
 
   return (
     <ReportList

@@ -39,6 +39,8 @@ export const pets = pgTable(
     breedGuess: text(),
     size: animalSize().notNull().default('unknown'),
     colors: text().array().notNull().default([]),
+    // 무선식별장치 15자리. 본인 화면에만 나오고 공개 응답과 실종 신고에는 담지 않음
+    registrationNumber: text(),
     // 목줄 색이나 습관처럼 찾을 때 쓸 메모
     note: text(),
     // Supabase Storage 오브젝트 키. 서명 URL 로만 노출

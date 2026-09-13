@@ -18,8 +18,16 @@ export type PetDetailItem = {
   breedGuess: string | null;
   size: string;
   colors: string[];
+  registrationNumber: string | null;
   note: string | null;
 };
+
+/** 15 자리를 붙여 두면 눈으로 세어야 해 국가코드와 나머지를 끊어 보여 줌 */
+function registrationLabel(value: string): string {
+  return [value.slice(0, 3), value.slice(3, 7), value.slice(7, 11), value.slice(11)]
+    .filter(Boolean)
+    .join(" ");
+}
 
 export function PetDetail({
   pet,
@@ -64,6 +72,21 @@ export function PetDetail({
             </Text>
           )}
         </Section>
+
+        {pet.registrationNumber ? (
+          <Section gap="x2">
+            <Text as="h2" textStyle="t5Bold" color="fg.neutral">
+              동물등록번호
+            </Text>
+            <Text textStyle="t4Regular" color="fg.neutral">
+              {registrationLabel(pet.registrationNumber)}
+            </Text>
+            {/* 실종 신고는 공개 글이라 이 번호를 옮겨 담지 않음을 알림 */}
+            <Text textStyle="t3Regular" color="fg.neutralSubtle">
+              이 번호는 나만 볼 수 있고 제보나 실종 신고에 실리지 않습니다
+            </Text>
+          </Section>
+        ) : null}
 
         {pet.note ? (
           <Section gap="x2">
