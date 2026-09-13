@@ -75,6 +75,7 @@ export async function addPet(_state: ActionState, form: FormData): Promise<Actio
     breedGuess: form.get("breedGuess"),
     size: animalSize.catch("unknown").parse(form.get("size")),
     colors: form.getAll("colors").map(String),
+    registrationNumber: form.get("registrationNumber"),
     note: form.get("note"),
     uploadIds: form.getAll("uploadIds").map(String).filter(Boolean),
   });
@@ -87,6 +88,7 @@ export async function addPet(_state: ActionState, form: FormData): Promise<Actio
     breedGuess: parsed.data.breedGuess || null,
     size: parsed.data.size,
     colors: parsed.data.colors,
+    registrationNumber: parsed.data.registrationNumber || null,
     note: parsed.data.note || null,
     photoPaths: await resolveUploadPaths(parsed.data.uploadIds),
   });
@@ -106,6 +108,7 @@ export async function editPet(_state: ActionState, form: FormData): Promise<Acti
     breedGuess: form.get("breedGuess"),
     size: animalSize.catch("unknown").parse(form.get("size")),
     colors: form.getAll("colors").map(String),
+    registrationNumber: form.get("registrationNumber"),
     note: form.get("note"),
     uploadIds: form.getAll("uploadIds").map(String).filter(Boolean),
     keepPhotoPaths: form.getAll("keepPhotoPaths").map(String).filter(Boolean),
@@ -125,6 +128,7 @@ export async function editPet(_state: ActionState, form: FormData): Promise<Acti
       breedGuess: parsed.data.breedGuess || null,
       size: parsed.data.size,
       colors: parsed.data.colors,
+      registrationNumber: parsed.data.registrationNumber || null,
       note: parsed.data.note || null,
     },
     photoPaths,
