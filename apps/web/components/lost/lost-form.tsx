@@ -27,6 +27,7 @@ import { PhotoField } from "@/components/ui/photo-field";
 import { PlaceSearchField } from "@/components/ui/place-search-field";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
+import { CoatColorPicker } from "@/components/ui/coat-color-picker";
 import { TokenNotice } from "./token-notice";
 
 // 실종 신고 등록, 보호자가 급한 상태라 전화번호와 이름 입력란을 만들지 않음
@@ -148,17 +149,6 @@ const SIZE_OPTIONS = [
   { value: "small", label: "소형" },
   { value: "medium", label: "중형" },
   { value: "large", label: "대형" },
-] as const;
-
-const COLOR_OPTIONS = [
-  "흰색",
-  "검정색",
-  "갈색",
-  "노란색",
-  "회색",
-  "베이지",
-  "얼룩",
-  "삼색",
 ] as const;
 
 function toLocalInput(date: Date): string {
@@ -511,27 +501,7 @@ export function LostForm() {
               <Text as="h2" textStyle="t5Bold" color="fg.neutral">
                 털색
               </Text>
-              <HStack gap="spacingX.betweenChips" wrap>
-                {COLOR_OPTIONS.map((color) => {
-                  const selected = colors.includes(color);
-                  return (
-                    <Chip.Toggle
-                      key={color}
-                      size="small"
-                      checked={selected}
-                      onCheckedChange={() =>
-                        setColors((prev) =>
-                          selected
-                            ? prev.filter((c) => c !== color)
-                            : [...prev, color].slice(0, 5),
-                        )
-                      }
-                    >
-                      <Chip.Label>{color}</Chip.Label>
-                    </Chip.Toggle>
-                  );
-                })}
-              </HStack>
+              <CoatColorPicker value={colors} onChange={setColors} />
             </Section>
 
             <Section>

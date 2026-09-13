@@ -57,6 +57,8 @@ export const CATALOG: CatalogGroup[] = [
         doc: "react/components/segmented-control",
       },
       { id: "chip", title: "Chip", doc: "react/components/chip" },
+      // SEED 에 없어 앱 껍데기로 둔 것이라 공식 문서가 없음
+      { id: "coat-color-picker", title: "CoatColorPicker" },
       { id: "checkbox", title: "Checkbox", doc: "react/components/checkbox" },
       { id: "radio-group", title: "RadioGroup", doc: "react/components/radio-group" },
       { id: "switch", title: "Switch", doc: "react/components/switch" },
