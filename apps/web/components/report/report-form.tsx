@@ -14,6 +14,7 @@ import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 
 import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
+import { useCameraAvailable } from "@/hooks/use-camera-available";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
 import { usePhotoUpload } from "@/hooks/use-photo-upload";
 import { useReportDraft, type ReportDraft, type ReportStep } from "@/hooks/use-report-draft";
@@ -49,28 +50,12 @@ function readStepFromUrl(): ReportStep {
   return raw >= 1 && raw <= TOTAL_STEPS ? (raw as ReportStep) : 1;
 }
 
-/** 카메라 유무는 화면 폭이 아니라 장치 목록으로 판단함. 큰 화면 노트북도 촬영할 수 있음 */
-async function detectCamera(): Promise<boolean> {
-  const media = navigator.mediaDevices;
-  if (!media?.enumerateDevices) {
-    // 장치를 조회할 수 없으면 좁은 화면에서만 촬영으로 봄
-    return window.matchMedia("(max-width: 1023px)").matches;
-  }
-  try {
-    const devices = await media.enumerateDevices();
-    return devices.some((device) => device.kind === "videoinput");
-  } catch {
-    return false;
-  }
-}
-
 export function ReportForm() {
   const router = useRouter();
   const [step, setStep] = useState<ReportStep>(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // 서버는 장치 목록을 몰라 null 로 시작하고 마운트 뒤에만 확정함
-  const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
+  const cameraAvailable = useCameraAvailable();
   // 사진 순서대로 받은 참조. 훅은 한 장씩 올리므로 결과를 여기에 모음
   const [uploadIds, setUploadIds] = useState<string[]>([]);
   // 초안을 고칠 때만 여는 상세 입력
@@ -101,14 +86,6 @@ export function ReportForm() {
       url.searchParams.delete("step");
       window.history.replaceState({ step: 1 }, "", url);
     }
-
-    let alive = true;
-    void detectCamera().then((available) => {
-      if (alive) setCameraAvailable(available);
-    });
-    return () => {
-      alive = false;
-    };
   }, []);
 
   // 뒤로가기로 단계가 하나 되돌아가게 함

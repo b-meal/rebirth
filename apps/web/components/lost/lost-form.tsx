@@ -17,6 +17,7 @@ import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/text-field";
 
+import { useCameraAvailable } from "@/hooks/use-camera-available";
 import { useCurrentPosition } from "@/hooks/use-current-position";
 import { useLocationToken } from "@/hooks/use-location-token";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
@@ -181,6 +182,7 @@ export function LostForm() {
   // 여러 장을 각자 올림. use-photo-upload 는 새로 올릴 때 앞의 것을 끊어 한 장만 남음
   const upload = usePhotoUploads();
   const snackbar = useSnackbarAdapter();
+  const cameraAvailable = useCameraAvailable();
   const picker = usePhotoPicker({
     maxCount: PHOTO_MAX_COUNT,
     onChange: upload.sync,
@@ -453,7 +455,8 @@ export function LostForm() {
               picker={picker}
               label="사진"
               hint="얼굴이 잘 보이는 사진일수록 찾기 쉬워요"
-              cameraAvailable={false}
+              // 확인이 끝나기 전에는 null. 사진 칸이 갈 곳을 단정하지 않게 그대로 넘김
+              cameraAvailable={cameraAvailable}
               uploading={upload.uploading}
               disabled={upload.uploading}
             />
