@@ -13,10 +13,9 @@ import {
   VStack,
 } from "@seed-design/react";
 import { IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
-import { PET_NOTE_MAX, PHOTO_MAX_COUNT } from "@rebirth/types";
+import { PET_NOTE_MAX, PET_REGISTRATION_DIGITS, PHOTO_MAX_COUNT } from "@rebirth/types";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
-import { Chip } from "seed-design/ui/chip";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 import {
@@ -26,6 +25,7 @@ import {
 } from "seed-design/ui/text-field";
 
 import { AppHeader } from "@/components/ui/app-header";
+import { COAT_COLORS, CoatColorPicker } from "@/components/ui/coat-color-picker";
 import { PhotoField } from "@/components/ui/photo-field";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
@@ -53,10 +53,9 @@ const SIZE_OPTIONS = [
   { value: "large", label: "대형" },
 ] as const;
 
-const COLOR_OPTIONS = ["흰색", "검정색", "갈색", "회색", "노란색", "얼룩"] as const;
-
 /** 한 요청에 넣는 사진 수. 서버 상한과 같음 */
 const ANALYZE_PHOTOS = 2;
+
 
 export type PetFormValues = {
   id: string;
@@ -65,6 +64,7 @@ export type PetFormValues = {
   breedGuess: string | null;
   size: string;
   colors: string[];
+  registrationNumber: string | null;
   note: string | null;
   /** 이미 올려 둔 사진. 경로와 보여 줄 서명 주소를 짝지어 둠 */
   photos: { path: string; url: string }[];
@@ -93,6 +93,7 @@ export function PetForm({ pet }: PetFormProps) {
   // controlled 와 uncontrolled 가 섞임. 고칠 값이 있는 칸은 이 화면이 값을 쥠
   const [name, setName] = useState(pet?.name ?? "");
   const [breedGuess, setBreedGuess] = useState(pet?.breedGuess ?? "");
+  const [registrationNumber, setRegistrationNumber] = useState(pet?.registrationNumber ?? "");
   const [note, setNote] = useState(pet?.note ?? "");
 
   // 저장된 값이 unknown 이면 고를 수 있는 칸에 없어 기본값으로 되돌림
@@ -140,7 +141,8 @@ export function PetForm({ pet }: PetFormProps) {
       const values = applyAi(draft, {
         animalOptions: ANIMAL_OPTIONS.map((it) => it.value),
         sizeOptions: SIZE_OPTIONS.map((it) => it.value),
-        colorOptions: COLOR_OPTIONS,
+        // 세 화면이 같은 목록을 써 베이지·삼색도 그대로 고를 수 있음
+        colorOptions: COAT_COLORS.map((it) => it.label),
       });
       if (values.animalType !== undefined) setAnimalType(values.animalType);
       if (values.size !== undefined) setSize(values.size);
@@ -356,7 +358,7 @@ export function PetForm({ pet }: PetFormProps) {
               </SegmentedControl>
             </Section>
 
-            {/* 칩의 체크박스는 숨어 있어 오류가 나면 이 줄을 대신 찾아 옮김 */}
+            {/* 체크박스가 숨어 있어 오류가 나면 이 줄을 대신 찾아 옮김 */}
             <Section data-error-anchor="colors" tabIndex={-1}>
               <HStack gap="x1_5" align="center">
                 <Text as="h3" textStyle="t5Bold" color="fg.neutral">
@@ -364,29 +366,20 @@ export function PetForm({ pet }: PetFormProps) {
                 </Text>
                 {aiBadge("colors")}
               </HStack>
-              <HStack gap="spacingX.betweenChips" wrap>
-                {COLOR_OPTIONS.map((color) => (
-                  <Chip.Toggle
-                    key={color}
-                    size="small"
-                    checked={colors.includes(color)}
-                    onCheckedChange={(checked) => {
-                      setColors((current) =>
-                        checked
-                          ? // 서버 상한이 5개
-                            [...current, color].slice(0, 5)
-                          : current.filter((item) => item !== color),
-                      );
-                      ai.touch("colors");
-                    }}
-                    // 값은 숨은 체크박스가 실어 보내므로 이름과 값을 그쪽에 줌
-                    inputProps={{ name: "colors", value: color }}
-                  >
-                    <Chip.Label>{color}</Chip.Label>
-                  </Chip.Toggle>
-                ))}
-              </HStack>
-              {/* 칩 줄에는 오류를 붙일 입력 칸이 없어 바로 아래에 둠 */}
+              {/* AI 초안이 나중에 도착해 값을 바꾸므로 이 화면이 값을 쥠 */}
+              <CoatColorPicker
+                value={colors}
+                onChange={(next) => {
+                  setColors(next);
+                  ai.touch("colors");
+                }}
+              />
+              {/* 통제 모드의 체크박스는 name 을 달지 않아 폼에 실리지 않음
+                이 화면은 서버 액션에 FormData 로 보내므로 고른 값을 따로 실어 보냄 */}
+              {colors.map((color) => (
+                <input key={color} type="hidden" name="colors" value={color} />
+              ))}
+              {/* 색 줄에는 오류를 붙일 입력 칸이 없어 바로 아래에 둠 */}
               {errors.colors ? (
                 <Text textStyle="t3Regular" color="fg.critical">
                   {errors.colors}
@@ -411,6 +404,24 @@ export function PetForm({ pet }: PetFormProps) {
               invalid={Boolean(errors.breedGuess)}
             >
               <TextFieldInput placeholder="말티즈 계열" />
+            </TextField>
+
+            <TextField
+              label="동물등록번호"
+              name="registrationNumber"
+              size="medium"
+              description={`동물병원이나 등록증에 적힌 숫자 ${PET_REGISTRATION_DIGITS}자리`}
+              value={registrationNumber}
+              onValueChange={(next) => setRegistrationNumber(next.slicedValue)}
+              errorMessage={errors.registrationNumber}
+              invalid={Boolean(errors.registrationNumber)}
+            >
+              {/* 숫자만 쓰는 칸이라 숫자 자판이 먼저 뜨게 함 */}
+              <TextFieldInput
+                placeholder="410123456789012"
+                inputMode="numeric"
+                autoComplete="off"
+              />
             </TextField>
 
             <TextField

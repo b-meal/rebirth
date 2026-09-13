@@ -27,10 +27,9 @@ const GLASS = {
 
 type NavItem = {
   label: string;
+  href: string;
   icon: typeof IconHouseLine;
   activeIcon: typeof IconHouseLine;
-  // 화면이 아직 없는 항목은 비워 두고 눌렀을 때 준비 중임을 알림
-  href?: string;
 };
 
 const NAV: NavItem[] = [
@@ -61,17 +60,20 @@ const NAV: NavItem[] = [
   },
 ];
 
-function isActive(pathname: string, href?: string): boolean {
-  if (!href) return false;
+function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-export type BottomNavProps = {
-  /** 화면이 없는 항목을 눌렀을 때 알릴 방법 */
-  onUnavailable: (label: string) => void;
-};
+// 탭바를 띄우는 화면. 실종신고는 탭에서 열리지만 작성 폼이라 빠짐
+// 폼은 아래에 제출 띠가 붙어 탭바와 겹치고, 쓰다 말고 탭을 옮길 자리도 아님
+const TAB_ROOTS = ["/", "/community", "/reports", "/mine"];
 
-export function BottomNav({ onUnavailable }: BottomNavProps) {
+/** 탭으로 곧장 닿고 되돌아갈 곳이 없는 최상위 화면인지 */
+export function isTabRoot(pathname: string): boolean {
+  return TAB_ROOTS.includes(pathname);
+}
+
+export function BottomNav() {
   const pathname = usePathname() ?? "/";
 
   return (
@@ -91,14 +93,6 @@ export function BottomNav({ onUnavailable }: BottomNavProps) {
         const active = isActive(pathname, item.href);
         const Glyph = active ? item.activeIcon : item.icon;
         const tone = active ? "fg.neutral" : "fg.neutralSubtle";
-        const body = (
-          <>
-            <Icon svg={<Glyph />} color={tone} />
-            <Text textStyle="t1Regular" color={tone}>
-              {item.label}
-            </Text>
-          </>
-        );
 
         return (
           <VStack
@@ -112,15 +106,12 @@ export function BottomNav({ onUnavailable }: BottomNavProps) {
             borderRadius="full"
             bg={active ? "bg.neutralWeak" : undefined}
           >
-            {item.href ? (
-              <Link href={item.href} aria-current={active ? "page" : undefined}>
-                {body}
-              </Link>
-            ) : (
-              <button type="button" onClick={() => onUnavailable(item.label)}>
-                {body}
-              </button>
-            )}
+            <Link href={item.href} aria-current={active ? "page" : undefined}>
+              <Icon svg={<Glyph />} color={tone} />
+              <Text textStyle="t1Regular" color={tone}>
+                {item.label}
+              </Text>
+            </Link>
           </VStack>
         );
       })}

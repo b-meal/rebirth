@@ -7,6 +7,7 @@ import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/tex
 
 import type { DraftField, ReportDraft } from "@/hooks/use-report-draft";
 import { Section } from "@/components/ui/screen";
+import { CoatColorPicker } from "@/components/ui/coat-color-picker";
 
 // 초안을 고치는 상세 입력. 바텀시트 안에서만 열림
 // confidence 수치는 확정으로 읽히므로 화면에 내지 않음
@@ -23,17 +24,6 @@ const SIZE_OPTIONS = [
   { value: "medium", label: "중형" },
   { value: "large", label: "대형" },
   { value: "unknown", label: "모름" },
-] as const;
-
-const COLOR_OPTIONS = [
-  "흰색",
-  "검정색",
-  "갈색",
-  "노란색",
-  "회색",
-  "베이지",
-  "얼룩",
-  "삼색",
 ] as const;
 
 // 상세의 특징 절에 그대로 나오는 값. 관찰한 것만 고르게 두고 의료 판단은 넣지 않음
@@ -148,29 +138,7 @@ export function ReportFeatureForm({ draft, onEdit }: ReportFeatureFormProps) {
 
       <Section>
         {label("털색", "colors")}
-        <HStack gap="spacingX.betweenChips" wrap>
-          {COLOR_OPTIONS.map((color) => {
-            const selected = draft.colors.includes(color);
-            return (
-              <Chip.Toggle
-                key={color}
-                size="small"
-                checked={selected}
-                onCheckedChange={() =>
-                  onEdit(
-                    "colors",
-                    selected
-                      ? draft.colors.filter((c) => c !== color)
-                      : // 서버 상한이 5개
-                        [...draft.colors, color].slice(0, 5),
-                  )
-                }
-              >
-                <Chip.Label>{color}</Chip.Label>
-              </Chip.Toggle>
-            );
-          })}
-        </HStack>
+        <CoatColorPicker value={draft.colors} onChange={(next) => onEdit("colors", next)} />
       </Section>
 
       <Section>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { createSignedThumbUrls } from "@rebirth/core/storage";
-import { countReporterReports, listPets } from "@rebirth/db";
+import { countReporterReportsByKind, listPets } from "@rebirth/db";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { isAuthConfigured } from "@/lib/supabase/config";
@@ -48,12 +48,12 @@ export default async function MinePage() {
   const user = await getCurrentUser();
 
   // 서로 기다릴 이유가 없어 함께 보냄
-  const [pets, reportCount] = user
+  const [pets, counts] = user
     ? await Promise.all([
         listPets(user.id).then(toPetCards).catch((): PetCard[] => []),
-        countReporterReports(user.id).catch(() => 0),
+        countReporterReportsByKind(user.id).catch(() => ({ sighting: 0, lost: 0 })),
       ])
-    : [[], 0];
+    : [[], { sighting: 0, lost: 0 }];
 
   return (
     <MineScreen
@@ -68,7 +68,7 @@ export default async function MinePage() {
           : null
       }
       pets={pets}
-      reportCount={reportCount}
+      counts={counts}
       authReady={isAuthConfigured()}
       signOut={<SignOutButton />}
       removePet={removePet}

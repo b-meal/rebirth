@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { Box, HStack, Icon, Text } from "@seed-design/react";
 import { IconChevronLeftLine, IconHouseLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
+
+import { isTabRoot } from "./bottom-nav";
 
 // SEED 앱바는 Stackflow 에 묶여 있어 Next 라우터를 쓰는 이 앱에서는 껍데기로 둠
 
@@ -22,6 +24,33 @@ export type AppHeaderProps = {
 
 export function AppHeader({ title, home = false, action }: AppHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname() ?? "";
+
+  // 탭바로 오가는 최상위 화면은 되돌아갈 곳이 없어 왼쪽 자리를 비우고 제목을 크게 둠
+  if (isTabRoot(pathname)) {
+    return (
+      <HStack
+        as="header"
+        align="center"
+        justify="space-between"
+        gap="x2"
+        px="spacingX.globalGutter"
+        pt="x4"
+        pb="x2"
+        position="sticky"
+        top="0"
+        zIndex={10}
+        bg="bg.layerDefault"
+      >
+        <Text as="h1" textStyle="t8Bold" color="fg.neutral" maxLines={1}>
+          {title}
+        </Text>
+        <HStack gap="x1" align="center">
+          {action}
+        </HStack>
+      </HStack>
+    );
+  }
 
   return (
     <HStack
