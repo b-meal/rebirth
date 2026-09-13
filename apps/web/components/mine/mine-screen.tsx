@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   AspectRatio,
   Box,
+  Grid,
   HStack,
   Icon,
   ImageFrame,
@@ -9,11 +10,13 @@ import {
   VStack,
 } from "@seed-design/react";
 import {
+  IconCameraLine,
   IconChevronRightLine,
   IconHeadsetLine,
   IconHospitalcrossShieldLine,
   IconPawprintLine,
   IconPersonFill,
+  IconPersonMagnifyingglassLine,
   IconWonShieldLine,
 } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -24,6 +27,7 @@ import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { ANIMAL_LABEL, SIZE_LABEL, breedLabel } from "@/lib/report-label";
+import { RecentReports } from "./recent-reports";
 import { DeletePetButton } from "./delete-pet-button";
 
 // 마이페이지, 제보는 로그인 없이도 되므로 여기서만 계정을 요구함
@@ -36,36 +40,28 @@ const PROVIDER_LABEL: Record<string, string> = {
 // 계정 없이도 쓰는 기능이라 로그인 화면으로 보낼 곳을 미리 정해 둠
 const SIGN_IN_HREF = `${SIGN_IN_PATH}?${NEXT_PARAM}=%2Fmine`;
 
+/** 동물 사진 한 변 */
+const PET_THUMB = "56px";
+
 type MineLink = {
   href: string;
   label: string;
   icon: React.ReactNode;
-  /** 오른쪽 화살표 앞에 붙는 숫자, 셀 것이 없는 줄은 비움 */
-  count?: number;
 };
 
-/**
- * 내 제보는 로그인한 사람에게만 열려 있어 목록을 그때 만듦
- * 최근 발견 제보는 하단 탭의 발견제보와 같은 곳이라 여기 두지 않음
- */
-function buildLinks(signedIn: boolean, reportCount: number): MineLink[] {
-  return [
-    ...(signedIn
-      ? [
-          {
-            href: "/mine/reports",
-            label: "내 제보",
-            icon: <IconPawprintLine />,
-            count: reportCount,
-          },
-        ]
-      : []),
-    { href: "/guide/injured", label: "다친 동물을 발견했어요", icon: <IconHospitalcrossShieldLine /> },
-    // 계정이 없어도 물을 일이 생겨 로그인과 상관없이 둠
-    { href: "/support", label: "문의하기", icon: <IconHeadsetLine /> },
-    { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
-  ];
-}
+// 내 기록은 위 숫자 칸이 맡고, 이 목록은 계정과 상관없이 늘 같은 줄만 둠
+const LINKS: MineLink[] = [
+  // 계정이 없어도 물을 일이 생겨 로그인과 상관없이 둠
+  { href: "/support", label: "문의하기", icon: <IconHeadsetLine /> },
+  { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
+];
+
+// 길에서 급히 찾는 일 셋. 로그인 전에도 여기서 바로 출발할 수 있어야 함
+const SHORTCUTS: MineLink[] = [
+  { href: "/report", label: "제보하기", icon: <IconCameraLine /> },
+  { href: "/lost/new", label: "실종 신고", icon: <IconPersonMagnifyingglassLine /> },
+  { href: "/guide/injured", label: "다친 동물", icon: <IconHospitalcrossShieldLine /> },
+];
 
 export type MineUser = {
   displayName: string | null;
@@ -88,8 +84,8 @@ export type PetCard = {
 export type MineScreenProps = {
   user: MineUser | null;
   pets: PetCard[];
-  /** 내 제보 줄에 붙는 건수. 종료와 숨김도 포함해 기록이 사라져 보이지 않게 함 */
-  reportCount: number;
+  /** 종류별 기록 수. 숨김과 종료도 포함해 기록이 사라져 보이지 않게 함 */
+  counts: { sighting: number; lost: number };
   /** 로그인 설정이 끝나지 않은 환경에서는 로그인 버튼을 감춤 */
   authReady: boolean;
   signOut: React.ReactNode;
@@ -115,6 +111,64 @@ function EmptyRow({ title, hint }: { title: string; hint: string }) {
   );
 }
 
+/** 기록 한 종류. 숫자를 눌러 그 목록으로 바로 감 */
+function StatLink({
+  href,
+  label,
+  value,
+  icon,
+}: {
+  href: string;
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+}) {
+  return (
+    <VStack
+      asChild
+      align="center"
+      gap="x1"
+      grow={1}
+      minWidth="0"
+      py="x3"
+      borderRadius="r2"
+      bg="bg.neutralWeak"
+    >
+      <Link href={href} className="rebirth-row">
+        <Icon svg={icon} size="x5" color="fg.neutralMuted" />
+        <Text textStyle="t6Bold" color="fg.neutral">
+          {value}
+        </Text>
+        <Text textStyle="t2Regular" color="fg.neutralMuted" maxLines={1}>
+          {label}
+        </Text>
+      </Link>
+    </VStack>
+  );
+}
+
+/** 바로 가기 한 칸 */
+function Shortcut({ href, label, icon }: MineLink) {
+  return (
+    <VStack
+      asChild
+      align="center"
+      gap="x2"
+      py="x4"
+      borderRadius="r2"
+      bg="bg.neutralWeak"
+      minWidth="0"
+    >
+      <Link href={href} className="rebirth-row">
+        <Icon svg={icon} size="x6" color="fg.brand" />
+        <Text textStyle="t3Bold" color="fg.neutral" maxLines={1}>
+          {label}
+        </Text>
+      </Link>
+    </VStack>
+  );
+}
+
 /** 등록한 동물 한 줄. 사진과 이름, 특징 요약을 함께 보여 줌 */
 function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) => Promise<void> }) {
   const detail = [ANIMAL_LABEL[pet.animalType] ?? "", breedLabel(pet.breedGuess) ?? "", SIZE_LABEL[pet.size] ?? ""]
@@ -128,11 +182,14 @@ function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) 
       <HStack asChild gap="x3" align="center" grow={1} minWidth="0">
         <Link href={`/mine/pets/${pet.id}`} className="rebirth-row">
           {pet.photoUrl ? (
-            <ImageFrame ratio={1} width="56px" src={pet.photoUrl} alt="" borderRadius="r3" />
+            <ImageFrame ratio={1} width={PET_THUMB} src={pet.photoUrl} alt="" borderRadius="r3" />
           ) : (
-            <Box width="56px">
+            // 사진을 올리지 않은 동물도 같은 자리를 차지해 줄이 어긋나지 않음
+            <Box width={PET_THUMB} minWidth={PET_THUMB}>
               <AspectRatio ratio={1} borderRadius="r3" bg="bg.neutralWeak">
-                <Box />
+                <VStack align="center" justify="center" height="full">
+                  <Icon svg={<IconPawprintLine />} size="x6" color="fg.neutralSubtle" />
+                </VStack>
               </AspectRatio>
             </Box>
           )}
@@ -161,40 +218,60 @@ function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) 
 export function MineScreen({
   user,
   pets,
-  reportCount,
+  counts,
   authReady,
   signOut,
   removePet,
 }: MineScreenProps) {
-  const links = buildLinks(Boolean(user), reportCount);
-
   return (
     <Screen bg="bg.layerBasement">
-      <AppHeader title="마이페이지" home />
+      <AppHeader title="마이페이지" />
 
       {/* 아래 여백을 두면 마지막 카드 밑에 바탕색 띠가 남아 여백 없이 붙임 */}
       <VStack align="stretch" grow={1} gap="x2">
         <SectionCard gap="x4">
           {user ? (
-            <HStack align="center" gap="x3">
-              <Avatar
-                size="56"
-                src={user.avatarUrl ?? undefined}
-                alt=""
-                fallback={
-                  user.displayName?.slice(0, 1) ?? <Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />
-                }
-              />
-              <VStack align="stretch" gap="x0_5" minWidth="0">
-                <Text textStyle="t6Bold" color="fg.neutral" maxLines={1}>
-                  {/* 이름은 커뮤니티 작성자로 나가는 값이라 비어 있으면 정하도록 권함 */}
-                  {user.displayName ?? "이름을 정해 주세요"}
-                </Text>
-                <Text textStyle="t3Regular" color="fg.neutralMuted">
-                  {PROVIDER_LABEL[user.provider] ?? "SNS"} 계정 · {joinedLabel(user.createdAt)}
-                </Text>
-              </VStack>
-            </HStack>
+            <>
+              {/* 줄 전체가 프로필로 가는 자리라 따로 수정 단추를 두지 않음 */}
+              <HStack asChild gap="x3" align="center" px="x1" py="x1">
+                <Link href="/mine/profile" className="rebirth-row">
+                  <Avatar
+                    size="56"
+                    src={user.avatarUrl ?? undefined}
+                    alt=""
+                    fallback={
+                      user.displayName?.slice(0, 1) ?? <Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />
+                    }
+                  />
+                  <VStack align="stretch" gap="x0_5" grow={1} minWidth="0">
+                    <Text textStyle="t6Bold" color="fg.neutral" maxLines={1}>
+                      {/* 이름은 커뮤니티 작성자로 나가는 값이라 비어 있으면 정하도록 권함 */}
+                      {user.displayName ?? "이름을 정해 주세요"}
+                    </Text>
+                    <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
+                      {PROVIDER_LABEL[user.provider] ?? "SNS"} 계정 · {joinedLabel(user.createdAt)}
+                    </Text>
+                  </VStack>
+                  <Icon svg={<IconChevronRightLine />} size="x5" color="fg.neutralSubtle" />
+                </Link>
+              </HStack>
+
+              {/* 남긴 기록을 종류별로 세어 그 목록으로 바로 보냄 */}
+              <HStack gap="x2" align="stretch">
+                <StatLink
+                  href="/mine/reports?kind=sighting"
+                  label="발견 제보"
+                  value={counts.sighting}
+                  icon={<IconPawprintLine />}
+                />
+                <StatLink
+                  href="/mine/reports?kind=lost"
+                  label="실종 신고"
+                  value={counts.lost}
+                  icon={<IconPersonMagnifyingglassLine />}
+                />
+              </HStack>
+            </>
           ) : (
             <VStack align="stretch" gap="x3">
               <VStack align="stretch" gap="x1">
@@ -218,47 +295,63 @@ export function MineScreen({
               )}
             </VStack>
           )}
-          {user ? (
-            <HStack align="stretch">
-              <ActionButton variant="neutralWeak" size="medium" flexGrow={1} asChild>
-                <Link href="/mine/profile">프로필 수정</Link>
-              </ActionButton>
-            </HStack>
-          ) : null}
+        </SectionCard>
+
+        <SectionCard gap="x3">
+          <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+            바로 가기
+          </Text>
+          <Grid columns={3} gap="x2">
+            {SHORTCUTS.map((item) => (
+              <Shortcut key={item.href} {...item} />
+            ))}
+          </Grid>
         </SectionCard>
 
         {user ? (
-          <>
-            <SectionCard gap="x3">
-              <HStack justify="space-between" align="center">
+          <SectionCard gap="x3">
+            <HStack justify="space-between" align="center">
+              <HStack gap="x1_5" align="center">
                 <Text as="h2" textStyle="t4Bold" color="fg.neutral">
                   우리 동물
                 </Text>
-                <ActionButton variant="ghost" size="xsmall" asChild>
-                  <Link href="/mine/pets/new">등록</Link>
-                </ActionButton>
+                {pets.length > 0 ? (
+                  <Text textStyle="t4Regular" color="fg.neutralMuted">
+                    {pets.length}
+                  </Text>
+                ) : null}
               </HStack>
+              <ActionButton variant="ghost" size="xsmall" asChild>
+                <Link href="/mine/pets/new">등록</Link>
+              </ActionButton>
+            </HStack>
 
-              {pets.length === 0 ? (
-                <EmptyRow
-                  title="아직 등록한 동물이 없어요"
-                  hint="미리 등록해 두면 실종 신고를 빠르게 쓸 수 있어요"
-                />
-              ) : (
-                <VStack align="stretch" gap="x3">
-                  {pets.map((pet) => (
-                    <PetRow key={pet.id} pet={pet} removePet={removePet} />
-                  ))}
-                </VStack>
-              )}
-            </SectionCard>
-
-          </>
+            {pets.length === 0 ? (
+              <EmptyRow
+                title="아직 등록한 동물이 없어요"
+                hint="미리 등록해 두면 실종 신고를 빠르게 쓸 수 있어요"
+              />
+            ) : (
+              <VStack align="stretch" gap="x3">
+                {pets.map((pet) => (
+                  <PetRow key={pet.id} pet={pet} removePet={removePet} />
+                ))}
+              </VStack>
+            )}
+          </SectionCard>
         ) : null}
+
+        {/* 로그인과 상관없이 이 브라우저에 남은 기록이라 늘 보여 줌 */}
+        <SectionCard gap="x3">
+          <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+            최근 본 제보
+          </Text>
+          <RecentReports />
+        </SectionCard>
 
         {/* 비로그인은 이 카드가 마지막이라 남는 높이를 여기서 먹음 */}
         <SectionCard gap="x1" grow={user ? undefined : 1}>
-          {links.map((link) => (
+          {LINKS.map((link) => (
             <VStack key={link.href} align="stretch">
               {/* 줄 전체가 누르는 자리라 면 색으로 눌리는 곳을 보여 줌 */}
               {/* 음수 마진 prop 은 토큰 이름을 그대로 내보내 쓰지 않고 안쪽 여백만 줌 */}
@@ -269,11 +362,6 @@ export function MineScreen({
                     {link.label}
                   </Text>
                   <HStack marginLeft="auto" gap="x1" align="center">
-                    {link.count ? (
-                      <Text textStyle="t4Regular" color="fg.neutralMuted">
-                        {link.count}
-                      </Text>
-                    ) : null}
                     <Icon svg={<IconChevronRightLine />} size="x4" color="fg.neutralSubtle" />
                   </HStack>
                 </Link>
