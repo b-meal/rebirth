@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import {
   Button,
   Card,
@@ -14,28 +16,105 @@ import {
   FlexBox,
   Typography,
 } from "@wanteddev/wds";
-import { MODERATION_QUEUE, SIGHTINGS } from "@/lib/mock";
 
-type Decision = "hide" | "keep";
+import { VISIBILITY_LABEL, when } from "@/lib/labels";
+import { decideFlag, type ModerationResult } from "./actions";
 
-export function ModerationView() {
-  // 서버 반영 전 화면 상태. API 연결 시 mutation 결과로 대체
-  const [decided, setDecided] = useState<Record<string, Decision>>({});
+// 판정은 공개 여부만 바꿈. 진행 상태는 운영자가 대신 인증하지 않음. POL-06
 
-  const pending = MODERATION_QUEUE.filter((q) => !decided[q.sightingId]);
+export type ModerationItem = {
+  reportId: string;
+  flagCount: number;
+  firstReportedAt: string;
+  reasons: string[];
+  appearance: string | null;
+  areaName: string | null;
+  visibility: string | null;
+};
 
+function DecideButton({
+  decision,
+  label,
+  variant,
+}: {
+  decision: "hide" | "keep";
+  label: string;
+  variant?: "outlined";
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      type="submit"
+      name="decision"
+      value={decision}
+      size="small"
+      variant={variant}
+      disabled={pending}
+    >
+      {label}
+    </Button>
+  );
+}
+
+function QueueCard({ item }: { item: ModerationItem }) {
+  const [state, action] = useActionState<ModerationResult, FormData>(decideFlag, {
+    ok: false,
+  });
+
+  return (
+    <Card>
+      <CardContent>
+        <FlexBox alignItems="center" flexWrap="wrap" gap="6px">
+          <Chip size="xsmall" disableInteraction>
+            신고 {item.flagCount}건
+          </Chip>
+          {item.visibility ? (
+            <Chip size="xsmall" variant="outlined" disableInteraction>
+              {VISIBILITY_LABEL[item.visibility]}
+            </Chip>
+          ) : null}
+          <Typography variant="caption1">{when(item.firstReportedAt)}</Typography>
+        </FlexBox>
+
+        <CardTitle variant="headline2">
+          <Link
+            href={`/sightings/${item.reportId}`}
+            style={{ color: "inherit", textDecoration: "underline" }}
+          >
+            {item.appearance ?? "외형 미기재"}
+          </Link>
+        </CardTitle>
+        <CardCaption variant="body2">신고 사유 {item.reasons.join(", ")}</CardCaption>
+        <CardCaption variant="caption1">{item.areaName ?? "지역 미확인"}</CardCaption>
+
+        <form action={action}>
+          <input type="hidden" name="reportId" value={item.reportId} />
+          <FlexBox alignItems="center" gap="8px">
+            <DecideButton decision="hide" label="공개 목록에서 빼기" />
+            <DecideButton decision="keep" label="유지" variant="outlined" />
+            {state.message ? (
+              <Typography variant="caption1" color="semantic.status.negative">
+                {state.message}
+              </Typography>
+            ) : null}
+          </FlexBox>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function ModerationView({ items }: { items: ModerationItem[] }) {
   return (
     <>
       <FlexBox alignItems="center" gap="8px">
         <Typography variant="title3" weight="bold">
           검수
         </Typography>
-        <Typography variant="caption1">
-          대기 {pending.length}건 · 전체 {MODERATION_QUEUE.length}건
-        </Typography>
+        <Typography variant="caption1">대기 {items.length}건</Typography>
       </FlexBox>
 
-      {MODERATION_QUEUE.length === 0 ? (
+      {items.length === 0 ? (
         <FallbackView>
           <FallbackViewContent>
             <FallbackViewText
@@ -46,59 +125,14 @@ export function ModerationView() {
         </FallbackView>
       ) : (
         <FlexBox flexDirection="column" gap="8px">
-          {MODERATION_QUEUE.map((q) => {
-            const sighting = SIGHTINGS.find((s) => s.id === q.sightingId);
-            const decision = decided[q.sightingId];
-
-            return (
-              <Card key={q.sightingId}>
-                <CardContent>
-                  <FlexBox alignItems="center" flexWrap="wrap" gap="6px">
-                    <Chip size="xsmall" disableInteraction>
-                      신고 {q.reportCount}건
-                    </Chip>
-                    <Typography variant="caption1">{q.reportedAt}</Typography>
-                    {decision ? (
-                      <Chip size="xsmall" variant="outlined" disableInteraction>
-                        {decision === "hide" ? "숨김 예정" : "유지 예정"}
-                      </Chip>
-                    ) : null}
-                  </FlexBox>
-                  <CardTitle variant="headline2">
-                    {sighting?.appearance ?? "목데이터에 없는 제보"}
-                  </CardTitle>
-                  <CardCaption variant="body2">신고 사유 {q.reason}</CardCaption>
-                  <CardCaption variant="caption1">
-                    {sighting?.areaName ?? "지역 미확인"}
-                  </CardCaption>
-                  <FlexBox gap="8px">
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        setDecided((prev) => ({ ...prev, [q.sightingId]: "hide" }))
-                      }
-                    >
-                      공개 목록에서 빼기
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() =>
-                        setDecided((prev) => ({ ...prev, [q.sightingId]: "keep" }))
-                      }
-                    >
-                      유지
-                    </Button>
-                  </FlexBox>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {items.map((item) => (
+            <QueueCard key={item.reportId} item={item} />
+          ))}
         </FlexBox>
       )}
+
       <Typography variant="caption1">
-        판정은 화면 상태로만 남습니다. status 를 hidden 으로 바꾸는 mutation 은
-        API 연결 시 붙습니다.
+        판정은 공개 여부만 바꿉니다. 종료 여부는 제보자만 정합니다.
       </Typography>
     </>
   );

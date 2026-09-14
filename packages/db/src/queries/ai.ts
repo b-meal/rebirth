@@ -3,9 +3,9 @@ import 'server-only'
 import { desc, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
-import { analysisJobs, matchScores, reports } from '../schema'
+import { analysisJobs, matchScores, reportFlags, reports } from '../schema'
 
-/* AI 파이프라인 지표. 사진 원본과 좌표를 읽지 않고 실행 기록만 집계함 */
+/* 운영 대시보드 집계. 사진 원본과 좌표를 읽지 않고 건수와 실행 기록만 셈 */
 
 // 추이 기본 기간. 대회 기간 전체가 이 아래라 더 늘릴 이유가 없음
 export const TREND_DAYS = 30
@@ -170,4 +170,100 @@ export async function matchBreakdownAverages() {
     })
     .from(matchScores)
   return row
+}
+
+/** 개요 타일. 제보 상태별 건수와 미판정 신고 수를 한 행으로 돌려줌 */
+export async function adminOverview() {
+  const [row] = await db
+    .select({
+      total: raw<number>`count(*)::int`.mapWith(Number),
+      sightings: raw<number>`count(*) filter (where ${reports.kind} = 'sighting')::int`.mapWith(
+        Number,
+      ),
+      lost: raw<number>`count(*) filter (where ${reports.kind} = 'lost')::int`.mapWith(Number),
+      hidden: raw<number>`count(*) filter (where ${reports.visibility} = 'hidden')::int`.mapWith(
+        Number,
+      ),
+      resolved: raw<number>`count(*) filter (where ${reports.lifecycle} = 'resolved')::int`.mapWith(
+        Number,
+      ),
+      last24h: raw<number>`count(*) filter (where ${reports.createdAt} >= now() - interval '24 hours')::int`.mapWith(
+        Number,
+      ),
+    })
+    .from(reports)
+    .where(raw`${reports.visibility} <> 'deleted'`)
+  return row
+}
+
+/** 미판정 신고 수. 검수 대기가 쌓이는지만 보면 되므로 건수만 셈 */
+export async function countPendingFlags() {
+  const [row] = await db
+    .select({ reports: raw<number>`count(distinct report_id)::int`.mapWith(Number) })
+    .from(reportFlags)
+    .where(raw`${reportFlags.resolvedAt} is null`)
+  return row
+}
+
+/** 일자별 제보 추이. 빈 날은 행이 없으므로 화면에서 채움 */
+export function reportsDaily(days = TREND_DAYS) {
+  return db
+    .select({
+      day: raw<string>`to_char(date_trunc('day', ${reports.createdAt}), 'YYYY-MM-DD')`,
+      sightings: raw<number>`count(*) filter (where ${reports.kind} = 'sighting')::int`.mapWith(
+        Number,
+      ),
+      lost: raw<number>`count(*) filter (where ${reports.kind} = 'lost')::int`.mapWith(Number),
+    })
+    .from(reports)
+    .where(
+      raw`${reports.visibility} <> 'deleted' and ${reports.createdAt} >= now() - make_interval(days => ${days})`,
+    )
+    .groupBy(raw`1`)
+    .orderBy(raw`1 desc`)
+}
+
+/** 지역별 상위. 어디에 제보가 몰리는지 보고 보호센터 안내 범위를 조정함 */
+export function reportsByArea(limit = 20) {
+  return db
+    .select({
+      areaName: raw<string>`coalesce(${reports.areaName}, '(미확인)')`,
+      total: raw<number>`count(*)::int`.mapWith(Number),
+      roaming: raw<number>`count(*) filter (where ${reports.careSituation} = 'roaming')::int`.mapWith(
+        Number,
+      ),
+    })
+    .from(reports)
+    .where(raw`${reports.visibility} <> 'deleted' and ${reports.kind} = 'sighting'`)
+    .groupBy(raw`1`)
+    .orderBy(raw`2 desc`)
+    .limit(limit)
+}
+
+/** 보호 상황 분포. 4단계 마무리 문구가 이 분기를 따라감 */
+export function careSituationBreakdown() {
+  return db
+    .select({
+      careSituation: reports.careSituation,
+      total: raw<number>`count(*)::int`.mapWith(Number),
+    })
+    .from(reports)
+    .where(raw`${reports.visibility} <> 'deleted' and ${reports.kind} = 'sighting'`)
+    .groupBy(reports.careSituation)
+    .orderBy(raw`2 desc`)
+}
+
+/** 이 제보를 후보로 올린 실종 신고. 개체 동일성이 아니라 확인할 후보 목록 */
+export function listMatchesForSighting(sightingId: string, limit = 10) {
+  return db
+    .select({
+      lostId: matchScores.lostId,
+      score: matchScores.score,
+      breakdown: matchScores.breakdown,
+      createdAt: matchScores.createdAt,
+    })
+    .from(matchScores)
+    .where(raw`${matchScores.sightingId} = ${sightingId}`)
+    .orderBy(raw`${matchScores.score} desc`)
+    .limit(limit)
 }

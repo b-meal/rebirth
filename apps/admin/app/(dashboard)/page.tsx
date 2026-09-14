@@ -1,6 +1,9 @@
-"use client";
-
 import Link from "next/link";
+import {
+  adminOverview,
+  countPendingFlags,
+  listAdminReports,
+} from "@rebirth/db";
 import {
   Card,
   CardCaption,
@@ -11,35 +14,64 @@ import {
   FlexBox,
   Typography,
 } from "@wanteddev/wds";
+
 import {
   ANIMAL_LABEL,
-  CUSTODY_LABEL,
-  OVERVIEW,
-  SIGHTINGS,
-  STATUS_LABEL,
-} from "@/lib/mock";
+  CARE_LABEL,
+  KIND_LABEL,
+  VISIBILITY_LABEL,
+  describeAnimal,
+  when,
+} from "@/lib/labels";
 
-export default function DashboardPage() {
-  const recent = SIGHTINGS.filter((s) => s.status !== "hidden").slice(0, 3);
+// 숨김 처리와 새 제보가 즉시 반영돼야 해 캐시하지 않음
+export const dynamic = "force-dynamic";
+
+const RECENT_LIMIT = 5;
+
+export default async function DashboardPage() {
+  const [overview, flags, recent] = await Promise.all([
+    adminOverview().catch(() => null),
+    countPendingFlags().catch(() => null),
+    listAdminReports({ kind: "sighting", visibility: "public", limit: RECENT_LIMIT }).catch(
+      () => [],
+    ),
+  ]);
+
+  const tiles = overview
+    ? [
+        { label: "전체 기록", value: overview.total, note: "삭제 제외" },
+        { label: "발견 제보", value: overview.sightings, note: "" },
+        { label: "실종 신고", value: overview.lost, note: "" },
+        { label: "최근 24시간", value: overview.last24h, note: "신규 등록" },
+        { label: "숨김", value: overview.hidden, note: "운영자 판정" },
+        { label: "검수 대기", value: flags?.reports ?? 0, note: "미판정 신고" },
+      ]
+    : [];
 
   return (
     <>
       <Typography variant="title3" weight="bold">
         개요
       </Typography>
-      <FlexBox flexWrap="wrap" gap="12px">
-        {OVERVIEW.map((tile) => (
-          <Card key={tile.label} width="220px">
-            <CardContent>
-              <CardCaption variant="caption1">{tile.label}</CardCaption>
-              <CardTitle variant="title2" weight="bold">
-                {tile.value}
-              </CardTitle>
-              <CardCaption variant="caption2">{tile.source}</CardCaption>
-            </CardContent>
-          </Card>
-        ))}
-      </FlexBox>
+
+      {tiles.length > 0 ? (
+        <FlexBox flexWrap="wrap" gap="12px">
+          {tiles.map((tile) => (
+            <Card key={tile.label} width="180px">
+              <CardContent>
+                <CardCaption variant="caption1">{tile.label}</CardCaption>
+                <CardTitle variant="title2" weight="bold">
+                  {tile.value.toLocaleString()}
+                </CardTitle>
+                {tile.note ? <CardCaption variant="caption2">{tile.note}</CardCaption> : null}
+              </CardContent>
+            </Card>
+          ))}
+        </FlexBox>
+      ) : (
+        <Typography variant="body2">집계를 읽지 못했습니다.</Typography>
+      )}
 
       <Divider />
 
@@ -47,38 +79,43 @@ export default function DashboardPage() {
         최근 제보
       </Typography>
       <FlexBox flexDirection="column" gap="8px">
-        {recent.map((s) => (
+        {recent.map((report) => (
           <Link
-            key={s.id}
-            href={`/sightings/${s.id}`}
+            key={report.id}
+            href={`/sightings/${report.id}`}
             style={{ textDecoration: "none", color: "inherit" }}
           >
             <Card>
               <CardContent>
                 <FlexBox alignItems="center" flexWrap="wrap" gap="6px">
                   <Chip size="xsmall" disableInteraction>
-                    {ANIMAL_LABEL[s.animalType]}
+                    {KIND_LABEL[report.kind]}
                   </Chip>
                   <Chip size="xsmall" variant="outlined" disableInteraction>
-                    {CUSTODY_LABEL[s.custody]}
+                    {ANIMAL_LABEL[report.animalType]}
                   </Chip>
                   <Chip size="xsmall" variant="outlined" disableInteraction>
-                    {STATUS_LABEL[s.status]}
+                    {CARE_LABEL[report.careSituation]}
                   </Chip>
-                  <Typography variant="caption1">{s.sightedAt}</Typography>
+                  <Chip size="xsmall" variant="outlined" disableInteraction>
+                    {VISIBILITY_LABEL[report.visibility]}
+                  </Chip>
+                  <Typography variant="caption1">{when(report.occurredAt)}</Typography>
                 </FlexBox>
-                <CardTitle variant="headline2">{s.appearance}</CardTitle>
+                <CardTitle variant="headline2">
+                  {report.appearance ?? describeAnimal(report)}
+                </CardTitle>
                 <CardCaption variant="caption1">
-                  {s.areaName} · 확인할 후보 {s.candidateCount}건
+                  {report.areaName ?? "위치 미확인"}
                 </CardCaption>
               </CardContent>
             </Card>
           </Link>
         ))}
+        {recent.length === 0 ? (
+          <Typography variant="body2">공개된 제보가 없습니다.</Typography>
+        ) : null}
       </FlexBox>
-      <Typography variant="caption1">
-        목데이터입니다. API 연결 시 lib/mock 대신 조회 결과를 넣습니다.
-      </Typography>
     </>
   );
 }
