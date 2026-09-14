@@ -438,6 +438,27 @@ body .seed-snackbar__root {
   padding-inline: var(--seed-dimension-spacing-x-global-gutter);
 }
 
+/* 마우스로 잡아 끌어 넘기는 가로줄
+   끄는 동안 글자가 잡히거나 사진이 통째로 끌려가면 줄이 손을 따라오지 않음
+   손가락 화면에는 커서가 없어 마우스가 있는 기기에서만 손 모양을 바꿈 */
+.rebirth-drag-scroll {
+  user-select: none;
+}
+
+.rebirth-drag-scroll img {
+  -webkit-user-drag: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rebirth-drag-scroll {
+    cursor: grab;
+  }
+
+  .rebirth-drag-scroll:active {
+    cursor: grabbing;
+  }
+}
+
 /* 눌러서 크게 보는 사진
    손가락 화면에는 커서가 없어 마우스가 있는 기기에서만 바꿈 */
 @media (hover: hover) and (pointer: fine) {

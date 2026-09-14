@@ -30,6 +30,7 @@ import { COMMUNITY_CATEGORIES } from "@rebirth/core/community";
 import { useNeighborhood } from "@/components/location/neighborhood-provider";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { useDragScroll } from "@/hooks/use-drag-scroll";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { ComposeSheet } from "./compose-sheet";
 import { PostCard, type PostCardItem } from "./post-card";
@@ -154,6 +155,9 @@ export function CommunityFeed({
     setLocal(null);
     setNearCount(serverNearCount);
   }
+
+  // 마우스에는 가로로 굴릴 바퀴가 없어 반응 많은 글 줄은 끌어서도 넘기게 함
+  const dragHot = useDragScroll<HTMLDivElement>();
 
   const category = params.get("category");
   const { areaName: found, ensure, retry, loading: locating, blocked } = useNeighborhood();
@@ -334,7 +338,12 @@ export function CommunityFeed({
             {/* 가로로 넘기는 줄은 첫 장이 화면 끝에서 시작해야 더 있다는 것이 보임
                 넘기는 자리를 HStack 이 직접 맡음. 블록 상자로 감싸면 끝쪽 안쪽 여백이
                 스크롤 영역에서 빠져 마지막 장이 화면 끝에 붙음 */}
-            <HStack className="rebirth-scroll-row rebirth-bleed" gap="x3" align="stretch">
+            <HStack
+              className="rebirth-scroll-row rebirth-bleed rebirth-drag-scroll"
+              gap="x3"
+              align="stretch"
+              {...dragHot}
+            >
               {hot.map((item) => (
                 <HotCard key={item.id} item={item} />
               ))}
