@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Box, HStack, ImageFrame, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 import type { AnimalType } from "@rebirth/types";
@@ -12,7 +12,9 @@ import { Screen, SectionCard } from "@/components/ui/screen";
 import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
 
 // 구독한 동네에 올라온 제보를 모아 보여 주는 알림함
-// 항목별 읽음을 두지 않고 마지막으로 본 시각 하나로 점을 판단함
+// 서버는 마지막으로 본 시각 하나로 점을 판단하고, 방금 열어 본 줄은 화면이 따로 지움
+// 뒤로 오면 라우터가 그린 화면을 되살려 서버를 다시 부르지 않아 점이 그대로 남기 때문
+// 화면이 새로 그려지는 경우에는 읽은 시각이 이미 올라가 있어 점이 모두 사라짐
 
 export type NotificationArea = {
   areaCode: string;
@@ -40,11 +42,16 @@ export type NotificationListProps = {
 };
 
 export function NotificationList({ areas, items }: NotificationListProps) {
+  const [opened, setOpened] = useState<string[]>([]);
+
   // 목록을 그린 뒤에 읽음으로 올림. 이번에 본 점은 남고 다음에 들어오면 사라짐
   useEffect(() => {
     if (areas.length === 0) return;
     void markNotificationsRead();
   }, [areas.length]);
+
+  const markOpened = (id: string) =>
+    setOpened((prev) => (prev.includes(id) ? prev : [...prev, id]));
 
   return (
     <Screen bg="bg.layerBasement">
@@ -93,7 +100,12 @@ export function NotificationList({ areas, items }: NotificationListProps) {
           ) : (
             <VStack align="stretch" gap="x3">
               {items.map((item) => (
-                <NotificationRow key={item.id} item={item} />
+                <NotificationRow
+                  key={item.id}
+                  item={item}
+                  unread={item.unread && !opened.includes(item.id)}
+                  onOpen={() => markOpened(item.id)}
+                />
               ))}
             </VStack>
           )}
@@ -130,10 +142,18 @@ function AreaRow({ area }: { area: NotificationArea }) {
   );
 }
 
-function NotificationRow({ item }: { item: NotificationItem }) {
+function NotificationRow({
+  item,
+  unread,
+  onOpen,
+}: {
+  item: NotificationItem;
+  unread: boolean;
+  onOpen: () => void;
+}) {
   return (
     <HStack asChild gap="x3" align="center" minWidth="0">
-      <Link href={`/r/${item.id}`} className="rebirth-row">
+      <Link href={`/r/${item.id}`} className="rebirth-row" onClick={onOpen}>
         {item.photoUrl ? (
           <ImageFrame
             ratio={1}
@@ -165,7 +185,7 @@ function NotificationRow({ item }: { item: NotificationItem }) {
         </VStack>
 
         {/* 안 읽은 줄에만 붙는 점. 숫자를 쓰면 줄마다 세어야 해 표시만 둠 */}
-        {item.unread ? (
+        {unread ? (
           <Box width="x2" height="x2" borderRadius="full" bg="bg.brandSolid" />
         ) : null}
       </Link>
