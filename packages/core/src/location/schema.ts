@@ -37,8 +37,10 @@ const categoryGroupCodeSchema = z.enum(
 // 쿼리스트링은 전부 문자열로 오므로 coerce 로 받음
 export const placeSearchSchema = z
   .object({
+    // both 는 주소와 장소명을 함께 찾음
+    // 사람은 마지막으로 본 곳을 동 이름이 아니라 강남역·코엑스처럼 기억함
     mode: z
-      .enum(["keyword", "address", "category"], {
+      .enum(["keyword", "address", "category", "both"], {
         error: "검색 방식이 올바르지 않습니다",
       })
       .default("keyword"),

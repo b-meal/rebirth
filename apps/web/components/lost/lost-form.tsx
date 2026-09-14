@@ -205,7 +205,8 @@ export function LostForm() {
   });
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
-  const search = usePlaceSearch({ mode: "address" });
+  // 마지막으로 본 곳을 동 이름으로만 기억하지 않음. 강남역·코엑스로도 찾게 함
+  const search = usePlaceSearch({ mode: "both" });
   const location = useLocationToken();
 
   // 현재 위치로 확인된 지역을 서버 참조로 바꿈, 좌표는 여기서 서버로만 나감
@@ -589,8 +590,8 @@ export function LostForm() {
               ) : showManual ? (
                 <PlaceSearchField
                   search={search}
-                  placeholder="동, 면, 도로명으로 검색"
-                  emptyMessage="찾는 곳이 없어요. 동이나 면 이름으로 찾아 주세요"
+                  placeholder="동, 도로명, 건물 이름으로 검색"
+                  emptyMessage="찾는 곳이 없어요. 가까운 역이나 동 이름으로 찾아 주세요"
                   onPick={(candidate) => {
                     // 검색으로 고른 지점도 서버에서 참조로 바꿈
                     void location
