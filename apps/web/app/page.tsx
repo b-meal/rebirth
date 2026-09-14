@@ -1,7 +1,8 @@
 import { createSignedThumbUrls } from "@rebirth/core/storage";
-import { listMapReports } from "@rebirth/db";
+import { countUnreadAreaReports, listMapReports } from "@rebirth/db";
 import { LIST_PERIOD_DAYS } from "@rebirth/types";
 
+import { getCurrentUser } from "@/lib/auth/session";
 import { sinceLabel } from "@/lib/report-label";
 import { HomeScreen, type MapMarker } from "@/components/home/home-screen";
 
@@ -41,7 +42,18 @@ async function loadMarkers(): Promise<MapMarker[]> {
   }
 }
 
+/** 알림 버튼에 찍을 점. 로그인 전이거나 구독이 없으면 0 */
+async function loadUnread(): Promise<number> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return 0;
+    return await countUnreadAreaReports(user.id);
+  } catch {
+    return 0;
+  }
+}
+
 export default function HomePage() {
   // 기다리지 않고 약속만 넘김, 마커를 기다리느라 화면이 늦게 뜨면 덮개보다 로딩 표시가 먼저 보임
-  return <HomeScreen markers={loadMarkers()} />;
+  return <HomeScreen markers={loadMarkers()} unread={loadUnread()} />;
 }
