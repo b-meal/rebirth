@@ -10,6 +10,7 @@ import {
   VStack,
 } from "@seed-design/react";
 import {
+  IconBellLine,
   IconCameraLine,
   IconChevronRightLine,
   IconHeadsetLine,
@@ -25,6 +26,7 @@ import { Avatar } from "seed-design/ui/avatar";
 import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
 
 import { AppHeader } from "@/components/ui/app-header";
+import { Badge } from "@/components/ui/badge";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { ANIMAL_LABEL, SIZE_LABEL, breedLabel } from "@/lib/report-label";
 import { RecentReports } from "./recent-reports";
@@ -86,6 +88,8 @@ export type MineScreenProps = {
   pets: PetCard[];
   /** 종류별 기록 수. 숨김과 종료도 포함해 기록이 사라져 보이지 않게 함 */
   counts: { sighting: number; lost: number };
+  /** 구독한 동네에 마지막으로 본 뒤 올라온 제보 수 */
+  unread: number;
   /** 로그인 설정이 끝나지 않은 환경에서는 로그인 버튼을 감춤 */
   authReady: boolean;
   signOut: React.ReactNode;
@@ -221,6 +225,7 @@ export function MineScreen({
   user,
   pets,
   counts,
+  unread,
   authReady,
   signOut,
   removePet,
@@ -272,6 +277,20 @@ export function MineScreen({
                   value={counts.lost}
                   icon={<IconPersonMagnifyingglassLine />}
                 />
+              </HStack>
+
+              {/* 구독한 동네의 새 제보를 모아 보는 자리. 안 읽은 수가 있을 때만 수를 붙임 */}
+              <HStack asChild gap="x3" align="center" px="x1" py="x1">
+                <Link href="/mine/notifications" className="rebirth-row">
+                  <Icon svg={<IconBellLine />} size="x5" color="fg.neutralMuted" />
+                  <VStack align="stretch" grow={1} minWidth="0">
+                    <Text textStyle="t4Regular" color="fg.neutral">
+                      알림
+                    </Text>
+                  </VStack>
+                  {unread > 0 ? <Badge label={`${unread}`} tone="brand" /> : null}
+                  <Icon svg={<IconChevronRightLine />} size="x5" color="fg.neutralSubtle" />
+                </Link>
               </HStack>
             </>
           ) : (

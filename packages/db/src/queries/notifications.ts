@@ -6,6 +6,7 @@ import type { AreaCodeSystem } from '@rebirth/types'
 
 import { db } from '../client'
 import { AREA_SUBSCRIPTION_LIMIT, areaSubscriptions, reports } from '../schema'
+import { publicReportColumns, type PublicReport } from './reports'
 
 // 동네 구독과 안 읽은 수
 // 알림 행을 만들지 않고 lastReadAt 이후 제보를 세어 같은 숫자를 냄
@@ -61,6 +62,45 @@ export async function countUnreadAreaReports(userId: string): Promise<number> {
     .where(eq(areaSubscriptions.userId, userId))
 
   return row?.unread ?? 0
+}
+
+/** 알림함 한 줄. readAt 보다 나중에 올라왔으면 안 읽음 */
+export type SubscribedAreaReport = PublicReport & { readAt: Date | null }
+
+/** 구독한 동네에 올라온 제보를 최신순으로. 알림함 목록이 이 결과를 그대로 그림 */
+export async function listSubscribedAreaReports(
+  userId: string,
+  limit = 30,
+): Promise<SubscribedAreaReport[]> {
+  const subscribed = raw`
+    exists (
+      select 1 from ${areaSubscriptions} s
+      where s.user_id = ${userId}
+        and ${reports.areaCode} like s.area_code || '%'
+    )
+  `
+
+  return db
+    .select({
+      ...publicReportColumns,
+      // 구와 동을 겹쳐 구독했으면 더 최근에 읽은 쪽을 기준으로 삼아 덜 시끄럽게 함
+      readAt: raw<Date | null>`(
+        select max(s.last_read_at) from ${areaSubscriptions} s
+        where s.user_id = ${userId}
+          and ${reports.areaCode} like s.area_code || '%'
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.visibility, 'public'),
+        raw`${reports.lifecycle} in ('active', 'searching')`,
+        raw`(${reports.reporterId} is null or ${reports.reporterId} <> ${userId})`,
+        subscribed,
+      ),
+    )
+    .orderBy(desc(reports.createdAt))
+    .limit(limit)
 }
 
 export type AddAreaSubscriptionInput = {
