@@ -62,7 +62,9 @@ export function PlaceSearchField({
       </TextField>
 
       {search.query ? (
-        <Box position="absolute" top="0" right="x2" height="full">
+        // 위치 prop 은 간격 토큰을 받지 않음. x2 를 주면 offset 이 만들어지지 않아
+        // 칸 왼쪽 끝으로 붙어 돋보기와 겹침. 끝에 붙이고 여백은 padding 으로 띄움
+        <Box position="absolute" top="0" right="0" height="full" pr="x2">
           <VStack justify="center" height="full">
             {/* 폼 안에서는 type 이 없으면 submit 이 되어 누르는 순간 저장이 돌아감 */}
             <ActionButton

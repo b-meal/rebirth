@@ -650,7 +650,7 @@ export function LostForm() {
                   <PickRow
                     icon={<IconMagnifyingglassLine />}
                     label="주소로 직접 찾기"
-                    hint="동이나 면 이름으로 찾아요"
+                    hint="동, 도로명, 건물 이름으로 찾아요"
                     onClick={() => setManual(true)}
                   />
                 </VStack>
