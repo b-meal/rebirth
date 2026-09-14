@@ -112,7 +112,7 @@ function FeatureRow({ label, value }: { label: string; value: string }) {
 export type ReportDetailProps = {
   report: PublicReport;
   shareUrl: string;
-  /** 목격 시각을 방금·n시간 전으로 줄인 표기, 서버에서 계산해 넘김 */
+  /** 목격 시각을 방금, n시간 전으로 줄인 표기, 서버에서 계산해 넘김 */
   sinceLabel: string;
   /** 격자 스냅 좌표, 좌표가 없는 지역 선택 제보는 null */
   location: { point: LatLng; gridMeters: number } | null;
@@ -283,7 +283,7 @@ export function ReportDetail({
               {describeAnimal(report)}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {report.areaName ?? "지역 미확인"} · {sinceLabel} 발견
+              {report.areaName ?? "지역 미확인"}, {sinceLabel} 발견
             </Text>
           </VStack>
 
@@ -392,7 +392,7 @@ export function ReportDetail({
 
         <SectionCard gap="x2" align="flex-start">
           <Text textStyle="t3Regular" color="fg.neutralSubtle">
-            댓글 {comments.length} · 공유 {report.shareCount}
+            댓글 {comments.length}, 공유 {report.shareCount}
           </Text>
           <ActionButton variant="ghost" size="small" onClick={() => setFlagOpen(true)}>
             이 제보 신고하기

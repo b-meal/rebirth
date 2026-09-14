@@ -18,3 +18,14 @@ export {
   syncShelterSource,
   type SyncOutcome,
 } from "./sync";
+
+export {
+  RescueDataError,
+  UP_KINDS,
+  collectRescueStats,
+  fetchKinds,
+  fetchRegions,
+  type KindRow,
+  type RegionRow,
+  type StatRow,
+} from "./rescue-data";

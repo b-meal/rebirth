@@ -10,7 +10,7 @@ export type PhotoPickerInputHandle = {
 };
 
 export type PhotoPickerInputProps = {
-  // camera 는 후면 카메라 즉시 실행, library 는 앨범·파일 선택
+  // camera 는 후면 카메라 즉시 실행, library 는 앨범, 파일 선택
   mode: "camera" | "library";
   multiple?: boolean;
   disabled?: boolean;

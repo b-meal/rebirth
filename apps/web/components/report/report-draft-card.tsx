@@ -17,7 +17,7 @@ type SummaryTag = { name?: string; label: string; tone: BadgeTone };
 
 /**
  * 카드에 접어 보여줄 뱃지. 값이 없는 항목은 줄에서 빠짐
- * 종류·크기·털색·품종·목줄은 값만 보면 무엇인지 모르므로 이름을 붙이고
+ * 종류, 크기, 털색, 품종, 목줄은 값만 보면 무엇인지 모르므로 이름을 붙이고
  * 상태 태그와 부상은 문장 자체가 말해 주므로 이름 없이 둠
  */
 function summaryTags(draft: ReportDraft): SummaryTag[] {

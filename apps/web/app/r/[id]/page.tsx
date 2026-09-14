@@ -57,7 +57,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const title = report.appearance?.split("\n")[0] ?? "발견동물 제보";
   // 링크 미리보기에서 한눈에 판단할 값만 앞에 둠. 카카오톡은 두 줄 남짓만 보임
   const facts = [where, CARE_LABEL[report.careSituation], describeAnimal(report)].filter(Boolean);
-  const description = `${facts.join(" · ")} — 이 동물을 본 적 있나요?`;
+  const description = `${facts.join(", ")} — 이 동물을 본 적 있나요?`;
   const image = `${SITE}/r/${id}/card`;
 
   return {
@@ -118,7 +118,7 @@ async function loadNearby(currentId: string, origin: NearbyOrigin): Promise<Repo
   }
 }
 
-/** 근처 보호·구조 기관. 아직 시드되지 않았거나 조회가 실패하면 절을 감춤 */
+/** 근처 보호, 구조 기관. 아직 시드되지 않았거나 조회가 실패하면 절을 감춤 */
 async function loadShelters(origin: NearbyOrigin): Promise<ShelterItem[]> {
   if (!origin) return [];
   try {

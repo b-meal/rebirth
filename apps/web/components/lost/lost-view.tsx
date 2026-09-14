@@ -238,7 +238,7 @@ export function LostView() {
       <AppHeader title={`확인할 후보 ${candidates.length}건`} />
       <CandidateDeck
         candidates={candidates}
-        lostLabel={[ANIMAL_LABEL[lost.animalType], SIZE_LABEL[lost.size]].join(" · ")}
+        lostLabel={[ANIMAL_LABEL[lost.animalType], SIZE_LABEL[lost.size]].join(", ")}
       />
     </Screen>
   );

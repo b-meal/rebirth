@@ -76,7 +76,7 @@ export function ReportCapture({
               />
             </Box>
             <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {step} / {total} · {label}
+              {step} / {total}, {label}
             </Text>
           </VStack>
 

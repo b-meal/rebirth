@@ -22,7 +22,7 @@ import { Screen, ScreenBody } from "@/components/ui/screen";
 import { MineReportTabs } from "./mine-report-tabs";
 
 // 마이페이지 카드에서 넘어오는 전체 목록
-// 공개 목록과 달리 종료·숨김도 함께 보여 줌. 상태를 감추면 내 기록이 사라진 것처럼 보임
+// 공개 목록과 달리 종료, 숨김도 함께 보여 줌. 상태를 감추면 내 기록이 사라진 것처럼 보임
 // 첫 쪽은 서버가 그리고 아래로 내려가면 이어서 받음
 
 export type MineReportItem = ReportCardItem & {

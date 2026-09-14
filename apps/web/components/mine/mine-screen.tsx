@@ -261,7 +261,7 @@ export function MineScreen({
                       {user.displayName ?? "이름을 정해 주세요"}
                     </Text>
                     <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
-                      {PROVIDER_LABEL[user.provider] ?? "SNS"} 계정 · {joinedLabel(user.createdAt)}
+                      {PROVIDER_LABEL[user.provider] ?? "SNS"} 계정, {joinedLabel(user.createdAt)}
                     </Text>
                   </VStack>
                   <Icon svg={<IconChevronRightLine />} size="x5" color="fg.neutralSubtle" />

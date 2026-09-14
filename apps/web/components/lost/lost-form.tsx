@@ -208,7 +208,7 @@ export function LostForm() {
   });
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
-  // 마지막으로 본 곳을 동 이름으로만 기억하지 않음. 강남역·코엑스로도 찾게 함
+  // 마지막으로 본 곳을 동 이름으로만 기억하지 않음. 강남역, 코엑스로도 찾게 함
   const search = usePlaceSearch({ mode: "both" });
   const location = useLocationToken();
 
@@ -304,7 +304,7 @@ export function LostForm() {
     (next: LostStep) => {
       // 마지막 걸음에 들어설 때 시각을 지금으로 채움
       // 서버에는 브라우저의 시각이 없어 첫 렌더에서 넣으면 서버와 화면이 갈림
-      // 상한도 이때 한 번만 정함. 매 렌더 새로 만들면 연·월·일을 고르는 사이에 상한이 움직임
+      // 상한도 이때 한 번만 정함. 매 렌더 새로 만들면 연, 월, 일을 고르는 사이에 상한이 움직임
       if (next === LAST_STEP) {
         const now = toLocalInput(new Date());
         setOccurredAt((current) => current || now);
@@ -665,7 +665,7 @@ export function LostForm() {
                 className="rebirth-datetime"
                 // 상태가 빈 값을 들고 화면만 지금 시각을 보이면
                 // 사용자가 보는 값과 저장될 값이 갈리고, 매 렌더 new Date 가 다시 돌아
-                // 연·월·일을 고르는 사이에 값이 저 혼자 움직임
+                // 연, 월, 일을 고르는 사이에 값이 저 혼자 움직임
                 value={occurredAt}
                 // 주소로 이 걸음에 바로 들어오면 아직 비어 있음. 그때는 상한을 걸지 않음
                 {...(maxOccurredAt && { max: maxOccurredAt })}
