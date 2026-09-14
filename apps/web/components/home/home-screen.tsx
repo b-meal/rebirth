@@ -429,13 +429,18 @@ export function HomeScreen({
           {unread > 0 ? (
             <Box
               position="absolute"
-              top="x1"
-              right="x1"
-              width="x2"
-              height="x2"
+              width="x3"
+              height="x3"
               borderRadius="full"
-              bg="bg.brandSolid"
-              style={{ pointerEvents: "none" }}
+              bg="bg.criticalSolid"
+              borderColor="bg.layerDefault"
+              // 단추 테두리에 걸치게 빼야 원형 면에 묻히지 않음
+              style={{
+                top: "-2px",
+                right: "-2px",
+                borderWidth: "2px",
+                pointerEvents: "none",
+              }}
             />
           ) : null}
         </Box>
