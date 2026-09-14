@@ -19,6 +19,9 @@ export type AnalyzeState = {
   clear: () => void;
 };
 
+// 서버까지 못 갔을 때 쓰는 문구. 서버가 준 사유가 있으면 그쪽을 씀
+const NETWORK_FAILED = "잠시 후 다시 시도해 주세요";
+
 export type UseAnalyzePhotoOptions = {
   /**
    * 초안이 도착했을 때 부름
@@ -32,6 +35,8 @@ export type UseAnalyzePhotoOptions = {
     advice: AnalyzeAdviceState;
     message: string | null;
   }) => void;
+  /** 초안을 못 받았을 때. 모델 오류·타임아웃·네트워크 끊김이 모두 여기로 옴 */
+  onFail?: (message: string | null) => void;
 };
 
 type Payload = {
@@ -42,7 +47,7 @@ type Payload = {
   analyzedAt?: string;
 };
 
-export function useAnalyzePhoto({ onDone }: UseAnalyzePhotoOptions = {}): AnalyzeState {
+export function useAnalyzePhoto({ onDone, onFail }: UseAnalyzePhotoOptions = {}): AnalyzeState {
   const [status, setStatus] = useState<AnalyzeState["status"]>("idle");
   const [advice, setAdvice] = useState<AnalyzeAdviceState | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -54,9 +59,11 @@ export function useAnalyzePhoto({ onDone }: UseAnalyzePhotoOptions = {}): Analyz
 
   // 매 렌더 새로 오는 함수라 start 가 그때마다 다시 만들어지지 않게 참조로 들고 있음
   const onDoneRef = useRef(onDone);
+  const onFailRef = useRef(onFail);
   useEffect(() => {
     onDoneRef.current = onDone;
-  }, [onDone]);
+    onFailRef.current = onFail;
+  }, [onDone, onFail]);
 
   useEffect(() => () => inflight.current?.abort(), []);
 
@@ -87,6 +94,7 @@ export function useAnalyzePhoto({ onDone }: UseAnalyzePhotoOptions = {}): Analyz
           setStatus("failed");
           setAdvice("failed");
           setMessage(payload.message ?? null);
+          onFailRef.current?.(payload.message ?? null);
           return;
         }
 
@@ -108,7 +116,8 @@ export function useAnalyzePhoto({ onDone }: UseAnalyzePhotoOptions = {}): Analyz
         if (controller.signal.aborted) return;
         setStatus("failed");
         setAdvice("failed");
-        setMessage("자동 정리가 안 됐어요. 내용을 직접 적어 제보할 수 있어요");
+        setMessage(NETWORK_FAILED);
+        onFailRef.current?.(NETWORK_FAILED);
       }
     })();
   }, []);
