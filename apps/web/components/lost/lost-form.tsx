@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { HStack, Icon, Text, VStack } from "@seed-design/react";
+import { HStack, Icon, Text, VisuallyHidden, VStack } from "@seed-design/react";
 import {
   IconChevronRightLine,
   IconMagnifyingglassLine,
@@ -170,7 +170,10 @@ export function LostForm() {
   const [areaName, setAreaName] = useState<string | null>(null);
   const [locationToken, setLocationToken] = useState<string | null>(null);
   const [usableForDistance, setUsableForDistance] = useState(false);
+  // 서버와 브라우저의 시각이 달라 렌더가 갈리므로 빈 값으로 시작하고 3단계에서 채움
   const [occurredAt, setOccurredAt] = useState("");
+  // 앞으로의 시각은 고를 수 없음. 매 렌더 새로 만들면 고르는 중에 상한이 움직임
+  const [maxOccurredAt, setMaxOccurredAt] = useState("");
   const [manual, setManual] = useState(false);
   // 잡아 둔 좌표로 동네를 채워도 되는지. 비운 뒤에는 눌러서 다시 켬
   const [wantsGps, setWantsGps] = useState(true);
@@ -205,7 +208,8 @@ export function LostForm() {
   });
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
-  const search = usePlaceSearch({ mode: "address" });
+  // 마지막으로 본 곳을 동 이름으로만 기억하지 않음. 강남역·코엑스로도 찾게 함
+  const search = usePlaceSearch({ mode: "both" });
   const location = useLocationToken();
 
   // 현재 위치로 확인된 지역을 서버 참조로 바꿈, 좌표는 여기서 서버로만 나감
@@ -273,6 +277,20 @@ export function LostForm() {
    */
   const urlStep = readStep(params.get("step"));
 
+  /**
+   * 주소로 마지막 걸음에 바로 들어온 경우를 채움
+   * 걸어서 오면 goTo 가 이미 채워 두고, 이 자리는 새로고침과 직접 진입만 맡음
+   * 브라우저의 시각은 서버에 없어 첫 렌더가 아니라 마운트 뒤에 넣어야 두 결과가 같음
+   */
+  useEffect(() => {
+    if (urlStep !== LAST_STEP || occurredAt) return;
+    const now = toLocalInput(new Date());
+    // 서버에 없는 값이라 마운트 뒤 한 번만 넣음
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setOccurredAt(now);
+    setMaxOccurredAt(now);
+  }, [urlStep, occurredAt]);
+
   // 마지막 걸음에서 빠져나오면 거기 적은 것은 지움
   const leaving = useRef(urlStep);
   useEffect(() => {
@@ -284,6 +302,14 @@ export function LostForm() {
 
   const goTo = useCallback(
     (next: LostStep) => {
+      // 마지막 걸음에 들어설 때 시각을 지금으로 채움
+      // 서버에는 브라우저의 시각이 없어 첫 렌더에서 넣으면 서버와 화면이 갈림
+      // 상한도 이때 한 번만 정함. 매 렌더 새로 만들면 연·월·일을 고르는 사이에 상한이 움직임
+      if (next === LAST_STEP) {
+        const now = toLocalInput(new Date());
+        setOccurredAt((current) => current || now);
+        setMaxOccurredAt(now);
+      }
       const query = new URLSearchParams(params.toString());
       query.set("step", String(next));
       router.push(`${pathname}?${query}`);
@@ -589,8 +615,8 @@ export function LostForm() {
               ) : showManual ? (
                 <PlaceSearchField
                   search={search}
-                  placeholder="동, 면, 도로명으로 검색"
-                  emptyMessage="찾는 곳이 없어요. 동이나 면 이름으로 찾아 주세요"
+                  placeholder="동, 도로명, 건물 이름으로 검색"
+                  emptyMessage="찾는 곳이 없어요. 가까운 역이나 동 이름으로 찾아 주세요"
                   onPick={(candidate) => {
                     // 검색으로 고른 지점도 서버에서 참조로 바꿈
                     void location
@@ -624,26 +650,26 @@ export function LostForm() {
                   <PickRow
                     icon={<IconMagnifyingglassLine />}
                     label="주소로 직접 찾기"
-                    hint="동이나 면 이름으로 찾아요"
+                    hint="동, 도로명, 건물 이름으로 찾아요"
                     onClick={() => setManual(true)}
                   />
                 </VStack>
               )}
             </Section>
 
-            {/* 값이 곧 언제인지를 말해 줘 위에 이름표를 또 달지 않음
-                읽어 주는 이름은 aria-label 로만 남김 */}
-            <TextField>
-              {/* 기본은 오른쪽 끝 아이콘을 정확히 눌러야 열림
-                  칸 아무 데나 눌러도 열리게 해 좁은 화면에서 헛손질하지 않게 함 */}
+            {/* 값이 곧 언제인지를 말해 줘 이름표를 눈에 보이게 두지 않음
+                label 을 비우면 SEED 가 콘솔에 경고를 남기므로 감춘 이름표로 줌 */}
+            <TextField label={<VisuallyHidden>마지막 목격 시각</VisuallyHidden>}>
               <TextFieldInput
-                aria-label="마지막 목격 시각"
                 type="datetime-local"
                 className="rebirth-datetime"
-                value={occurredAt || toLocalInput(new Date())}
-                max={toLocalInput(new Date())}
+                // 상태가 빈 값을 들고 화면만 지금 시각을 보이면
+                // 사용자가 보는 값과 저장될 값이 갈리고, 매 렌더 new Date 가 다시 돌아
+                // 연·월·일을 고르는 사이에 값이 저 혼자 움직임
+                value={occurredAt}
+                // 주소로 이 걸음에 바로 들어오면 아직 비어 있음. 그때는 상한을 걸지 않음
+                {...(maxOccurredAt && { max: maxOccurredAt })}
                 onChange={(event) => setOccurredAt(event.target.value)}
-                onClick={(event) => event.currentTarget.showPicker?.()}
               />
             </TextField>
           </>

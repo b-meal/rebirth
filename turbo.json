@@ -23,6 +23,7 @@
       "outputs": [
         ".next/**",
         "!.next/cache/**",
+        "!.next/dev/**",
         "dist/**"
       ]
     },

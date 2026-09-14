@@ -1,8 +1,7 @@
-import Link from "next/link";
 import { HStack, Text, VStack } from "@seed-design/react";
-import { ActionButton } from "seed-design/ui/action-button";
 
 import { ANIMAL_LABEL, SIZE_LABEL } from "@/lib/report-label";
+import { EditPetLink } from "@/components/mine/edit-pet-link";
 import { AppHeader } from "@/components/ui/app-header";
 import { Badge } from "@/components/ui/badge";
 import { PhotoCarousel } from "@/components/ui/photo-carousel";
@@ -116,9 +115,7 @@ export function PetDetail({
         pt="x3"
         bg="bg.layerDefault"
       >
-        <ActionButton variant="brandSolid" size="large" asChild>
-          <Link href={`/mine/pets/${pet.id}/edit`}>정보 수정</Link>
-        </ActionButton>
+        <EditPetLink petId={pet.id}>정보 수정</EditPetLink>
       </VStack>
     </Screen>
   );
