@@ -51,6 +51,7 @@ import {
 } from "@/components/report/report-comments";
 import { ReportInterestButton } from "@/components/report/report-interest-button";
 import { ReportLocationMap } from "@/components/report/report-location-map";
+import { ReportShelters, type ShelterItem } from "@/components/report/report-shelters";
 import { ReportShareSheet, useReportShare } from "@/components/share/report-share";
 import { rememberView } from "@/components/mine/recent-views";
 
@@ -116,6 +117,8 @@ export type ReportDetailProps = {
   location: { point: LatLng; gridMeters: number } | null;
   comments: ReportComment[];
   nearby: ReportCardItem[];
+  /** 격자 좌표에서 가까운 순으로 고른 공공데이터 기관, 좌표가 없으면 빈 배열 */
+  shelters: ShelterItem[];
   interest: { count: number; mine: boolean };
 };
 
@@ -126,6 +129,7 @@ export function ReportDetail({
   location,
   comments,
   nearby,
+  shelters,
   interest,
 }: ReportDetailProps) {
   const router = useRouter();
@@ -344,6 +348,8 @@ export function ReportDetail({
             />
           ) : null}
         </SectionCard>
+
+        <ReportShelters items={shelters} />
 
         {nearby.length > 0 ? (
           <SectionCard gap="x3">

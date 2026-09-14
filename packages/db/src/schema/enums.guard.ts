@@ -17,6 +17,7 @@ import type {
   locationSource,
   neuterStatus,
   reportKind,
+  shelterKind,
   visibility,
 } from './enums'
 
@@ -38,6 +39,7 @@ const _areaCodeSystem: Same<Values<typeof areaCodeSystem>, t.AreaCodeSystem> = t
 const _closeReason: Same<Values<typeof closeReason>, t.CloseReason> = true
 const _authProvider: Same<Values<typeof authProvider>, t.AuthProvider> = true
 const _community: Same<Values<typeof communityCategory>, t.CommunityCategory> = true
+const _shelterKind: Same<Values<typeof shelterKind>, t.ShelterKind> = true
 
 void [
   _kind,
@@ -55,4 +57,5 @@ void [
   _closeReason,
   _authProvider,
   _community,
+  _shelterKind,
 ]
