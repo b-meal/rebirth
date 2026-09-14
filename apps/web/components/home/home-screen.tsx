@@ -415,9 +415,27 @@ export function HomeScreen({ markers: markersPromise }: HomeScreenProps) {
         </ContextualFloatingButton>
       </HStack>
 
-      <VStack position="absolute" bottom="0" left="0" right="0" zIndex={2} gap="x3" align="stretch">
+      {/* 이 묶음은 시트와 떠 있는 버튼의 자리만 잡음
+          면이 없는 곳까지 탭을 먹으면 지도 아래 절반에서 확대와 이동이 듣지 않음 */}
+      <VStack
+        position="absolute"
+        bottom="0"
+        left="0"
+        right="0"
+        zIndex={2}
+        gap="x3"
+        align="stretch"
+        style={{ pointerEvents: "none" }}
+      >
         {selected ? null : (
-        <VStack align="flex-end" gap="x2" px="spacingX.globalGutter">
+        <VStack
+          alignSelf="flex-end"
+          width="fit-content"
+          align="flex-end"
+          gap="x2"
+          px="spacingX.globalGutter"
+          style={{ pointerEvents: "auto" }}
+        >
           <ContextualFloatingButton
             variant="layer"
             layout="iconOnly"
@@ -444,6 +462,7 @@ export function HomeScreen({ markers: markersPromise }: HomeScreenProps) {
           borderTopLeftRadius="r5"
           borderTopRightRadius="r5"
           boxShadow="s3"
+          style={{ pointerEvents: "auto" }}
         >
           <VStack asChild align="center" pt="x2_5" pb="x0_5">
             <button
