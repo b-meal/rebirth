@@ -17,8 +17,11 @@ import {
 // 추이 기본 기간. 대회 기간 전체가 이 아래라 더 늘릴 이유가 없음
 export const TREND_DAYS = 30
 
-/** 분석 작업 전체 현황. 성공률과 지연을 한 행으로 돌려줌 */
-export async function analysisJobSummary() {
+/**
+ * 분석 작업 현황. 성공률과 지연을 한 행으로 돌려줌
+ * model 을 주면 그 모델의 기록만 셈. 더미와 일회성 실험이 섞이면 배포된 값이 가려짐
+ */
+export async function analysisJobSummary({ model }: { model?: string } = {}) {
   const [row] = await db
     .select({
       total: raw<number>`count(*)::int`.mapWith(Number),
@@ -46,6 +49,7 @@ export async function analysisJobSummary() {
       lastRunAt: raw<string | null>`to_char(max(${analysisJobs.createdAt}) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
     })
     .from(analysisJobs)
+    .where(model ? raw`${analysisJobs.model} = ${model}` : undefined)
   return row
 }
 
@@ -68,6 +72,15 @@ export function analysisJobsByModel() {
     .orderBy(raw`3 desc`)
 }
 
+/** 모델을 남기기 전에 끊긴 실패. 어느 모델의 실패인지 알 수 없어 따로 셈 */
+export async function countUnattributedFailures() {
+  const [row] = await db
+    .select({ total: raw<number>`count(*)::int`.mapWith(Number) })
+    .from(analysisJobs)
+    .where(raw`${analysisJobs.status} = 'failed' and ${analysisJobs.model} is null`)
+  return row
+}
+
 /** 실패 코드별 집계. 무엇을 먼저 고쳐야 하는지가 이 표에서 나옴 */
 export function analysisFailureCodes() {
   return db
@@ -81,23 +94,32 @@ export function analysisFailureCodes() {
     .orderBy(raw`2 desc`)
 }
 
-/** 일자별 추이. 빈 날은 행이 없으므로 화면에서 채움 */
+/**
+ * 일자별 추이. 기록이 없는 날도 자리를 지켜야 끊긴 구간이 보임
+ * 빈 날 채우기를 SQL 에서 하는 이유는 화면에서 하면 서버 시계와 DB 시계가 갈려서임
+ */
 export function analysisJobsDaily(days = TREND_DAYS) {
   return db
     .select({
-      day: raw<string>`to_char(date_trunc('day', ${analysisJobs.createdAt}), 'YYYY-MM-DD')`,
-      total: raw<number>`count(*)::int`.mapWith(Number),
+      day: raw<string>`to_char(d.day, 'YYYY-MM-DD')`,
+      total: raw<number>`count(${analysisJobs.id})::int`.mapWith(Number),
       failed: raw<number>`count(*) filter (where ${analysisJobs.status} = 'failed')::int`.mapWith(
         Number,
       ),
-      avgLatencyMs: raw<number | null>`round(avg(${analysisJobs.latencyMs}))::int`.mapWith(
-        (v) => (v === null ? null : Number(v)),
-      ),
     })
-    .from(analysisJobs)
-    .where(raw`${analysisJobs.createdAt} >= now() - make_interval(days => ${days})`)
-    .groupBy(raw`1`)
-    .orderBy(raw`1`)
+    .from(
+      raw`generate_series(
+        date_trunc('day', now()) - make_interval(days => ${days - 1}),
+        date_trunc('day', now()),
+        interval '1 day'
+      ) as d(day)`,
+    )
+    .leftJoin(
+      analysisJobs,
+      raw`date_trunc('day', ${analysisJobs.createdAt}) = d.day`,
+    )
+    .groupBy(raw`d.day`)
+    .orderBy(raw`d.day`)
 }
 
 /** 최근 분석 작업. 결과 본문은 무거워 목록에서 빼고 상세에서만 읽음 */

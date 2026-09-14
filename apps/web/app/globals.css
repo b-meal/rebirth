@@ -494,31 +494,6 @@ body .seed-snackbar__root {
   }
 }
 
-/* 진입 덮개
-   걷는 일을 스크립트에 맡기면 하이드레이션이 늦거나 막혔을 때 화면이 덮인 채로 남음
-   시간은 컴포넌트가 지연과 길이로 넘겨 두 곳에 같은 숫자를 적지 않음
-   forwards 로 끝 상태를 지켜 스크립트가 지우지 못해도 다시 나타나지 않음 */
-@keyframes rebirth-splash-out {
-  to {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-
-.rebirth-splash {
-  pointer-events: none;
-  animation-name: rebirth-splash-out;
-  animation-timing-function: ease-out;
-  animation-fill-mode: forwards;
-}
-
-/* 움직임을 줄이도록 설정한 기기에서도 덮개는 걷혀야 해 페이드만 없앰 */
-@media (prefers-reduced-motion: reduce) {
-  .rebirth-splash {
-    animation-timing-function: step-end;
-  }
-}
-
 /* 눌러서 길찾기로 넘어가는 지도
    지도 미리보기는 손조작을 받지 않아 누를 수 있다는 것이 커서로만 드러남 */
 .rebirth-map-tap {

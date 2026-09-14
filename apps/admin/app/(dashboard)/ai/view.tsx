@@ -5,10 +5,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 import {
   Button,
-  Card,
-  CardCaption,
-  CardContent,
-  CardTitle,
+  Chip,
   Divider,
   FlexBox,
   Table,
@@ -20,15 +17,58 @@ import {
   Typography,
 } from "@wanteddev/wds";
 
+import {
+  BarList,
+  DayBars,
+  Grid,
+  Hero,
+  Metric,
+  Panel,
+  Ratio,
+  TrackBar,
+} from "@/components/charts";
 import { reviewPair, type ReviewActionResult } from "./actions";
 
-// AI 파이프라인 운영 화면. 사진 원본과 좌표는 읽지 않고 실행 기록만 봄
-// 더미 모델로 만든 기록이 실제 호출과 섞이면 제출 자료가 사실과 어긋나므로 모델별로 갈라 둠
+// AI 운영 화면. 세 축이 각각 무엇을 메우는지와 그 증거를 위에 두고 원장은 맨 아래에 둠
+// 더미로 만든 기록은 머릿수에서 빼고 따로 표시함. 섞으면 제출 자료가 사실과 어긋남
 
 export type AiDashboard = {
-  visionModel: string;
-  reviewModel: string;
-  mockModel: string;
+  models: { vision: string; review: string; embedding: string };
+  real: {
+    total: number;
+    succeeded: number;
+    failed: number;
+    running: number;
+    avgLatencyMs: number | null;
+    p95LatencyMs: number | null;
+    maxLatencyMs: number | null;
+    lastRunAt: string | null;
+  } | null;
+  orphanFailures: number;
+  mockRuns: number;
+  totalRuns: number;
+  byModel: {
+    model: string;
+    promptVersion: string;
+    total: number;
+    succeeded: number;
+    avgLatencyMs: number | null;
+  }[];
+  failures: { failureCode: string; count: number }[];
+  days: { day: string; total: number; failed: number }[];
+  editedFields: { field: string; edits: number }[];
+  acceptance: { withDraft: number; untouched: number; avgEdits: number } | null;
+  scoreBuckets: { bucket: string; count: number }[];
+  breakdown: {
+    pairs: number;
+    avgScore: number;
+    maxScore: number;
+    distance: number;
+    time: number;
+    color: number;
+    size: number;
+    features: number;
+  } | null;
   reviewSummary: { verdict: string; label: string; total: number; avgLatencyMs: number | null }[];
   reviews: {
     lostId: string;
@@ -43,7 +83,6 @@ export type AiDashboard = {
     createdAt: string;
   }[];
   unreviewed: { lostId: string; sightingId: string; score: number }[];
-  embeddingModel: string;
   coverage: {
     reports: number;
     embedded: number;
@@ -58,102 +97,34 @@ export type AiDashboard = {
     similarity: number;
     scored: boolean;
   }[];
-  summary: {
-    total: number;
-    succeeded: number;
-    failed: number;
-    running: number;
-    avgLatencyMs: number | null;
-    p95LatencyMs: number | null;
-    maxLatencyMs: number | null;
-    lastRunAt: string | null;
-  } | null;
-  byModel: {
-    model: string;
-    promptVersion: string;
-    total: number;
-    succeeded: number;
-    avgLatencyMs: number | null;
-  }[];
-  failures: { failureCode: string; count: number }[];
-  daily: { day: string; total: number; failed: number; avgLatencyMs: number | null }[];
-  editedFields: { field: string; edits: number }[];
-  acceptance: { withDraft: number; untouched: number; avgEdits: number } | null;
-  scoreBuckets: { bucket: string; count: number }[];
-  breakdown: {
-    pairs: number;
-    avgScore: number;
-    maxScore: number;
-    distance: number;
-    time: number;
-    color: number;
-    size: number;
-    features: number;
-  } | null;
   jobs: {
     id: string;
-    uploadId: string;
-    revision: number;
     status: string;
     failureCode: string | null;
     model: string | null;
-    promptVersion: string | null;
     latencyMs: number | null;
     createdAt: string;
-    finishedAt: string | null;
   }[];
 };
 
-const percent = (part: number, whole: number) =>
-  whole === 0 ? "-" : `${Math.round((part / whole) * 1000) / 10}%`;
+const ms = (value: number | null) =>
+  value === null ? "-" : `${value.toLocaleString()}ms`;
 
 // 시드 픽스처는 UUID 앞자리가 모두 0 이라 뒷자리로 구분함
 const shortId = (value: string) => value.slice(-8);
-
-const ms = (value: number | null) => (value === null ? "-" : `${value.toLocaleString()}ms`);
 
 const when = (value: string | null) => {
   if (!value) return "-";
   const date = new Date(value);
   const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
-
-function Stat({ label, value, note }: { label: string; value: string; note?: string }) {
-  return (
-    <Card width="200px">
-      <CardContent>
-        <CardCaption variant="caption1">{label}</CardCaption>
-        <CardTitle variant="title3" weight="bold">
-          {value}
-        </CardTitle>
-        {note ? <CardCaption variant="caption2">{note}</CardCaption> : null}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Section({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
-  return (
-    <FlexBox flexDirection="column" gap="8px" sx={{ marginTop: "8px" }}>
-      <Typography variant="headline1" weight="bold">
-        {title}
-      </Typography>
-      {note ? <Typography variant="caption1">{note}</Typography> : null}
-      {children}
-    </FlexBox>
-  );
-}
-
-function Empty({ children }: { children: React.ReactNode }) {
-  return <Typography variant="body2">{children}</Typography>;
-}
 
 function RunButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" size="small" disabled={pending}>
-      {pending ? "재평가 중" : "재평가 실행"}
+    <Button type="submit" size="small" variant="outlined" disabled={pending}>
+      {pending ? "재평가 중" : "재평가"}
     </Button>
   );
 }
@@ -170,390 +141,439 @@ function ReviewRunner({
 
   return (
     <form action={action}>
-      <input type="hidden" name="lostId" value={pair.lostId} />
-      <input type="hidden" name="sightingId" value={pair.sightingId} />
-      <FlexBox alignItems="center" gap="8px">
-        <Typography variant="body2">
-          {pair.score}점 · 제보 {shortId(pair.sightingId)} · 실종 {shortId(pair.lostId)}
+      <FlexBox alignItems="center" justifyContent="space-between" gap="8px">
+        <input type="hidden" name="lostId" value={pair.lostId} />
+        <input type="hidden" name="sightingId" value={pair.sightingId} />
+        <Typography variant="caption1" color="semantic.label.alternative">
+          {pair.score}점 · 제보 {shortId(pair.sightingId)}
         </Typography>
-        <RunButton />
-        {state.message ? (
-          <Typography
-            variant="caption1"
-            color={state.ok ? "semantic.status.positive" : "semantic.status.negative"}
-          >
-            {state.message}
-          </Typography>
-        ) : null}
+        <FlexBox alignItems="center" gap="6px">
+          {state.message ? (
+            <Typography
+              variant="caption2"
+              color={state.ok ? "semantic.status.positive" : "semantic.status.negative"}
+            >
+              {state.message}
+            </Typography>
+          ) : null}
+          <RunButton />
+        </FlexBox>
       </FlexBox>
     </form>
   );
 }
 
+function ReviewCard({ review }: { review: AiDashboard["reviews"][number] }) {
+  return (
+    <FlexBox
+      flexDirection="column"
+      gap="6px"
+      sx={{
+        padding: "12px",
+        borderRadius: "4px",
+        background: "semantic.background.normal.alternative",
+      }}
+    >
+      <FlexBox alignItems="center" flexWrap="wrap" gap="6px">
+        <Chip size="xsmall" disableInteraction>
+          {review.label}
+        </Chip>
+        <Typography variant="caption2" color="semantic.label.assistive">
+          {review.model} · {ms(review.latencyMs)} · {when(review.createdAt)}
+        </Typography>
+      </FlexBox>
+      {review.agreements.length > 0 ? (
+        <Typography variant="caption1">겹침 {review.agreements.join(" · ")}</Typography>
+      ) : null}
+      {review.conflicts.length > 0 ? (
+        <Typography variant="caption1" color="semantic.status.negative">
+          어긋남 {review.conflicts.join(" · ")}
+        </Typography>
+      ) : null}
+      {review.checkFirst ? (
+        <Typography variant="caption1" color="semantic.label.alternative">
+          먼저 확인 {review.checkFirst}
+        </Typography>
+      ) : null}
+      <Link
+        href={`/sightings/${review.sightingId}`}
+        style={{ color: "inherit", fontSize: "12px" }}
+      >
+        제보 {shortId(review.sightingId)} 열기
+      </Link>
+    </FlexBox>
+  );
+}
+
+function NeighborCard({ pair }: { pair: AiDashboard["neighbors"][number] }) {
+  return (
+    <FlexBox
+      flexDirection="column"
+      gap="6px"
+      sx={{
+        padding: "12px",
+        borderRadius: "4px",
+        background: "semantic.background.normal.alternative",
+      }}
+    >
+      <FlexBox alignItems="center" gap="8px">
+        <Typography
+          variant="label1"
+          weight="bold"
+          sx={{ fontVariantNumeric: "tabular-nums" }}
+          color={pair.scored ? "semantic.label.normal" : "semantic.primary.normal"}
+        >
+          {pair.similarity.toFixed(3)}
+        </Typography>
+        <Chip size="xsmall" variant="outlined" disableInteraction>
+          {pair.scored ? "배점도 올림" : "배점이 놓침"}
+        </Chip>
+      </FlexBox>
+      <Typography variant="caption1" color="semantic.label.alternative">
+        실종 {pair.lostText}
+      </Typography>
+      <Typography variant="caption1">제보 {pair.sightingText}</Typography>
+      <Link
+        href={`/sightings/${pair.sightingId}`}
+        style={{ color: "inherit", fontSize: "12px" }}
+      >
+        제보 {shortId(pair.sightingId)} 열기
+      </Link>
+    </FlexBox>
+  );
+}
+
 export function AiView({ data }: { data: AiDashboard }) {
-  const { summary, acceptance, breakdown } = data;
-  const mockJobs = data.byModel
-    .filter((row) => row.model === data.mockModel)
-    .reduce((sum, row) => sum + row.total, 0);
+  const { real, acceptance, breakdown, coverage } = data;
+  const missed = data.neighbors.filter((pair) => !pair.scored).length;
+  const reviewTotal = data.reviewSummary.reduce((sum, row) => sum + row.total, 0);
 
   return (
-    <>
+    <FlexBox flexDirection="column" gap="20px">
       <FlexBox flexDirection="column" gap="4px">
         <Typography variant="title3" weight="bold">
-          AI
+          AI 파이프라인
         </Typography>
-        <Typography variant="caption1">
-          비전 초안 {data.visionModel} · 유사도는 결정식 배점이고 개체 동일성을 확정하지 않음
+        <Typography variant="caption1" color="semantic.label.alternative">
+          사진을 초안으로, 문장을 벡터로, 후보를 근거로. 세 자리가 서로 못 보는 곳을 메웁니다
         </Typography>
       </FlexBox>
 
-      {mockJobs > 0 ? (
-        <Card>
-          <CardContent>
-            <CardTitle variant="headline2" weight="bold">
-              더미 초안 {mockJobs.toLocaleString()}건이 섞여 있습니다
-            </CardTitle>
-            <CardCaption variant="body2">
-              ANALYZE_MOCK 으로 만든 기록입니다. 제출 자료의 수치는 {data.visionModel} 행만 씁니다.
-            </CardCaption>
-          </CardContent>
-        </Card>
+      {/* 1. 세 축이 지금 어떤 상태인지 */}
+      <Grid>
+        <Panel title="사진 → 외형 초안" note={data.models.vision}>
+          {real && real.total > 0 ? (
+            <>
+              <Ratio
+                value={real.succeeded}
+                total={real.total}
+                label={`성공 ${real.succeeded}/${real.total}`}
+              />
+              <FlexBox gap="20px" flexWrap="wrap">
+                <Metric label="평균" value={ms(real.avgLatencyMs)} />
+                <Metric label="p95" value={ms(real.p95LatencyMs)} />
+                <Metric label="마지막" value={when(real.lastRunAt)} />
+                {data.orphanFailures > 0 ? (
+                  <Metric
+                    label="모델 기록 전 실패"
+                    value={String(data.orphanFailures)}
+                    unit="건"
+                    tone="negative"
+                    note="어느 모델인지 알 수 없음"
+                  />
+                ) : null}
+              </FlexBox>
+            </>
+          ) : (
+            <Typography variant="body2" color="semantic.label.alternative">
+              실제 호출 기록이 없습니다.
+            </Typography>
+          )}
+        </Panel>
+
+        <Panel title="문장 → 의미 벡터" note={`${data.models.embedding} · 384차원`}>
+          {coverage && coverage.reports > 0 ? (
+            <>
+              <Ratio
+                value={coverage.embedded}
+                total={coverage.reports}
+                label={`${coverage.embedded.toLocaleString()} / ${coverage.reports.toLocaleString()}건`}
+              />
+              <FlexBox gap="20px" flexWrap="wrap">
+                <Metric
+                  label="배점이 놓친 쌍"
+                  value={String(missed)}
+                  unit="건"
+                  tone="accent"
+                  note="아래 증거 참고"
+                />
+                <Metric label="마지막 생성" value={when(coverage.lastAt)} />
+              </FlexBox>
+            </>
+          ) : (
+            <Typography variant="body2" color="semantic.label.alternative">
+              아직 만들어진 벡터가 없습니다.
+            </Typography>
+          )}
+        </Panel>
+
+        <Panel title="후보 → 확인 근거" note={data.models.review}>
+          {reviewTotal > 0 ? (
+            <>
+              <Hero value={reviewTotal.toLocaleString()} unit="쌍" label="근거를 붙인 후보" />
+              <BarList
+                rows={data.reviewSummary.map((row) => ({
+                  label: row.label,
+                  value: row.total,
+                  note: `${row.total}쌍`,
+                }))}
+              />
+              <Metric
+                label="평균 지연"
+                value={ms(data.reviewSummary[0]?.avgLatencyMs ?? null)}
+              />
+              {data.unreviewed.length > 0 ? (
+                <FlexBox flexDirection="column" gap="6px">
+                  <Typography variant="caption1" color="semantic.label.alternative">
+                    아직 재평가하지 않은 상위 후보
+                  </Typography>
+                  {data.unreviewed.map((pair) => (
+                    <ReviewRunner key={`${pair.lostId}-${pair.sightingId}`} pair={pair} />
+                  ))}
+                </FlexBox>
+              ) : null}
+            </>
+          ) : (
+            <Typography variant="body2" color="semantic.label.alternative">
+              아직 재평가한 후보가 없습니다.
+            </Typography>
+          )}
+        </Panel>
+      </Grid>
+
+      {data.mockRuns > 0 ? (
+        <Typography variant="caption1" color="semantic.label.alternative">
+          위 성공률은 배포된 모델 {data.models.vision} 의 {real?.total ?? 0}건 기준입니다. 화면을
+          돌려보려고 만든 더미 {data.mockRuns.toLocaleString()}건과 일회성 모델 실험은 뺐고, 전체
+          실행은 {data.totalRuns.toLocaleString()}건입니다.
+        </Typography>
       ) : null}
 
-      <Section title="분석 실행">
-        {summary && summary.total > 0 ? (
-          <FlexBox flexWrap="wrap" gap="12px">
-            <Stat label="총 실행" value={summary.total.toLocaleString()} note={`마지막 ${when(summary.lastRunAt)}`} />
-            <Stat
-              label="성공률"
-              value={percent(summary.succeeded, summary.total)}
-              note={`성공 ${summary.succeeded} · 실패 ${summary.failed} · 진행 ${summary.running}`}
-            />
-            <Stat label="평균 지연" value={ms(summary.avgLatencyMs)} />
-            <Stat label="p95 지연" value={ms(summary.p95LatencyMs)} note="사용자가 체감하는 꼬리" />
-            <Stat
-              label="최대 지연"
-              value={ms(summary.maxLatencyMs)}
-              note="이 값이 평균을 끌어올림"
-            />
-          </FlexBox>
-        ) : (
-          <Empty>아직 분석 실행 기록이 없습니다.</Empty>
-        )}
-      </Section>
+      <Divider />
 
-      <Section title="모델과 프롬프트" note="더미 모델과 실제 호출을 갈라 봅니다">
-        {data.byModel.length > 0 ? (
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableHeadCell>모델</TableHeadCell>
-                <TableHeadCell>프롬프트</TableHeadCell>
-                <TableHeadCell>실행</TableHeadCell>
-                <TableHeadCell>성공률</TableHeadCell>
-                <TableHeadCell>평균 지연</TableHeadCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data.byModel.map((row) => (
-                <TableRow key={`${row.model}-${row.promptVersion}`}>
-                  <TableCell>{row.model}</TableCell>
-                  <TableCell>{row.promptVersion}</TableCell>
-                  <TableCell>{row.total.toLocaleString()}</TableCell>
-                  <TableCell>{percent(row.succeeded, row.total)}</TableCell>
-                  <TableCell>{ms(row.avgLatencyMs)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <Empty>기록이 없습니다.</Empty>
-        )}
-      </Section>
+      {/* 2. 세 축이 서로를 메운다는 증거 */}
+      <FlexBox flexDirection="column" gap="4px">
+        <Typography variant="headline2" weight="bold">
+          세 축이 서로를 메웁니다
+        </Typography>
+        <Typography variant="caption1" color="semantic.label.alternative">
+          한 축만으로는 후보를 고르지 못합니다. 아래는 각 축이 실제로 찾아낸 것입니다
+        </Typography>
+      </FlexBox>
 
-      <Section title="실패 사유" note="무엇을 먼저 고칠지 정하는 표입니다">
-        {data.failures.length > 0 ? (
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableHeadCell>실패 코드</TableHeadCell>
-                <TableHeadCell>건수</TableHeadCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {data.failures.map((row) => (
-                <TableRow key={row.failureCode}>
-                  <TableCell>{row.failureCode}</TableCell>
-                  <TableCell>{row.count.toLocaleString()}건</TableCell>
-                </TableRow>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableHeadCell>축</TableHeadCell>
+            <TableHeadCell>보는 것</TableHeadCell>
+            <TableHeadCell>못 보는 것</TableHeadCell>
+            <TableHeadCell>지금</TableHeadCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          <TableRow>
+            <TableCell>결정식 배점</TableCell>
+            <TableCell>거리 · 시각 · 털색 · 크기 · 특징</TableCell>
+            <TableCell>같은 뜻을 다르게 쓴 문장</TableCell>
+            <TableCell>
+              {breakdown ? `${breakdown.pairs}쌍 · 평균 ${breakdown.avgScore}점` : "-"}
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>의미 벡터</TableCell>
+            <TableCell>외형 문장의 의미</TableCell>
+            <TableCell>거리와 시각</TableCell>
+            <TableCell>
+              {coverage ? `${coverage.embedded.toLocaleString()}건 임베딩` : "-"}
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Claude 재평가</TableCell>
+            <TableCell>두 기록을 읽고 겹침과 어긋남</TableCell>
+            <TableCell>비용과 지연이 후보 수만큼 늘어남</TableCell>
+            <TableCell>{reviewTotal > 0 ? `${reviewTotal}쌍 판정` : "-"}</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+
+      <Grid>
+        <Panel
+          title="벡터가 찾고 배점이 놓친 쌍"
+          note="문장 의미가 가까운 순. 파란 값은 배점 후보에 없던 쌍입니다"
+        >
+          {data.neighbors.length > 0 ? (
+            <FlexBox flexDirection="column" gap="8px">
+              {data.neighbors.map((pair) => (
+                <NeighborCard key={`${pair.lostId}-${pair.sightingId}`} pair={pair} />
               ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <Empty>실패한 실행이 없습니다.</Empty>
-        )}
-      </Section>
+            </FlexBox>
+          ) : (
+            <Typography variant="body2" color="semantic.label.alternative">
+              아직 이웃을 찾지 못했습니다.
+            </Typography>
+          )}
+        </Panel>
+
+        <Panel
+          title="Claude 가 쓴 확인 근거"
+          note="개체 동일성을 확정하지 않고 확인할 값어치만 적습니다"
+        >
+          {data.reviews.length > 0 ? (
+            <FlexBox flexDirection="column" gap="8px">
+              {data.reviews.map((review) => (
+                <ReviewCard key={`${review.lostId}-${review.sightingId}`} review={review} />
+              ))}
+            </FlexBox>
+          ) : (
+            <Typography variant="body2" color="semantic.label.alternative">
+              아직 재평가한 후보가 없습니다.
+            </Typography>
+          )}
+        </Panel>
+      </Grid>
 
       <Divider />
 
-      <Section title="초안 수용" note="사람이 고치지 않은 초안의 비율이 AI 정확도입니다">
-        {acceptance && acceptance.withDraft > 0 ? (
-          <>
-            <FlexBox flexWrap="wrap" gap="12px">
-              <Stat label="초안이 붙은 제보" value={acceptance.withDraft.toLocaleString()} />
-              <Stat
-                label="무수정 비율"
-                value={percent(acceptance.untouched, acceptance.withDraft)}
-                note={`무수정 ${acceptance.untouched}건`}
-              />
-              <Stat label="제보당 평균 수정" value={`${acceptance.avgEdits}개`} />
-            </FlexBox>
-            {data.editedFields.length > 0 ? (
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableHeadCell>고쳐진 필드</TableHeadCell>
-                    <TableHeadCell>수정 횟수</TableHeadCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {data.editedFields.map((row) => (
-                    <TableRow key={row.field}>
-                      <TableCell>{row.field}</TableCell>
-                      <TableCell>{row.edits.toLocaleString()}회</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : null}
-          </>
-        ) : (
-          <Empty>AI 초안이 붙은 제보가 아직 없습니다.</Empty>
-        )}
-      </Section>
+      {/* 3. 품질 */}
+      <Typography variant="headline2" weight="bold">
+        품질
+      </Typography>
 
-      <Section title="유사도 매칭" note="거리 35 · 시간 25 · 털색 20 · 크기 10 · 특징 10 배점">
-        {breakdown && breakdown.pairs > 0 ? (
-          <>
-            <FlexBox flexWrap="wrap" gap="12px">
-              <Stat label="채점된 쌍" value={breakdown.pairs.toLocaleString()} />
-              <Stat label="평균 점수" value={`${breakdown.avgScore}점`} note={`최고 ${breakdown.maxScore}점`} />
-            </FlexBox>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableHeadCell>항목</TableHeadCell>
-                  <TableHeadCell>평균</TableHeadCell>
-                  <TableHeadCell>배점</TableHeadCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(
-                  [
-                    ["거리", breakdown.distance, 35],
-                    ["시간", breakdown.time, 25],
-                    ["털색", breakdown.color, 20],
-                    ["크기", breakdown.size, 10],
-                    ["특징", breakdown.features, 10],
-                  ] as const
-                ).map(([label, value, weight]) => (
-                  <TableRow key={label}>
-                    <TableCell>{label}</TableCell>
-                    <TableCell>{value}점</TableCell>
-                    <TableCell>{weight}점</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {data.scoreBuckets.length > 0 ? (
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableHeadCell>점수 구간</TableHeadCell>
-                    <TableHeadCell>쌍</TableHeadCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {data.scoreBuckets.map((row) => (
-                    <TableRow key={row.bucket}>
-                      <TableCell>{row.bucket}점</TableCell>
-                      <TableCell>{row.count.toLocaleString()}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            ) : null}
-          </>
-        ) : (
-          <Empty>채점된 후보 쌍이 아직 없습니다.</Empty>
-        )}
-      </Section>
+      <Grid>
+        <Panel title="일자별 실행" note={`최근 ${data.days.length}일 · 더미 포함`}>
+          <DayBars rows={data.days.map((d) => ({ day: d.day, value: d.total }))} />
+        </Panel>
 
-      <Section
-        title="Claude 재평가"
-        note={`${data.reviewModel} 가 후보 한 쌍을 다시 읽고 겹치는 점과 어긋나는 점을 적습니다`}
-      >
-        {data.reviewSummary.length > 0 ? (
-          <FlexBox flexWrap="wrap" gap="12px">
-            {data.reviewSummary.map((row) => (
-              <Stat
-                key={row.verdict}
-                label={row.label}
-                value={row.total.toLocaleString()}
-                note={ms(row.avgLatencyMs)}
-              />
-            ))}
-          </FlexBox>
-        ) : null}
-
-        {data.unreviewed.length > 0 ? (
-          <FlexBox flexDirection="column" gap="8px">
-            <Typography variant="label1">아직 재평가하지 않은 상위 후보</Typography>
-            {data.unreviewed.map((pair) => (
-              <ReviewRunner key={`${pair.lostId}-${pair.sightingId}`} pair={pair} />
-            ))}
-          </FlexBox>
-        ) : (
-          <Empty>재평가할 후보가 없습니다.</Empty>
-        )}
-
-        {data.reviews.length > 0 ? (
-          <FlexBox flexDirection="column" gap="8px">
-            {data.reviews.map((review) => (
-              <Card key={`${review.lostId}-${review.sightingId}`}>
-                <CardContent>
-                  <FlexBox alignItems="center" flexWrap="wrap" gap="8px">
-                    <Typography variant="label1" weight="bold">
-                      {review.label}
-                    </Typography>
-                    <Typography variant="caption1">
-                      {review.model} · {ms(review.latencyMs)} · {when(review.createdAt)}
-                    </Typography>
-                  </FlexBox>
-                  {review.agreements.length > 0 ? (
-                    <CardCaption variant="body2">
-                      겹침 {review.agreements.join(" · ")}
-                    </CardCaption>
-                  ) : null}
-                  {review.conflicts.length > 0 ? (
-                    <CardCaption variant="body2">
-                      어긋남 {review.conflicts.join(" · ")}
-                    </CardCaption>
-                  ) : null}
-                  {review.checkFirst ? (
-                    <CardCaption variant="body2">먼저 확인 {review.checkFirst}</CardCaption>
-                  ) : null}
-                  <CardCaption variant="caption2">
-                    <Link
-                      href={`/sightings/${review.sightingId}`}
-                      style={{ color: "inherit" }}
-                    >
-                      제보 {shortId(review.sightingId)}
-                    </Link>
-                    {" · "}
-                    실종 {shortId(review.lostId)}
-                  </CardCaption>
-                </CardContent>
-              </Card>
-            ))}
-          </FlexBox>
-        ) : null}
-
-        <Typography variant="caption1">
-          재평가는 확인할 값어치만 말하고 개체 동일성을 확정하지 않습니다.
-        </Typography>
-      </Section>
-
-      <Section
-        title="임베딩"
-        note={`${data.embeddingModel} 로 외형 설명을 384차원 벡터로 바꿔 pgvector 로 이웃을 찾습니다`}
-      >
-        {data.coverage && data.coverage.reports > 0 ? (
-          <FlexBox flexWrap="wrap" gap="12px">
-            <Stat
-              label="벡터가 붙은 제보"
-              value={data.coverage.embedded.toLocaleString()}
-              note={`전체 ${data.coverage.reports.toLocaleString()}건`}
+        <Panel title="일자별 실패" note="같은 기간, 같은 눈금이 아니라 실패만 따로 봅니다">
+          <DayBars
+            rows={data.days.map((d) => ({ day: d.day, value: d.failed }))}
+            tone="negative"
+          />
+          {data.failures.length > 0 ? (
+            <BarList
+              rows={data.failures.map((row) => ({
+                label: row.failureCode,
+                value: row.count,
+                note: `${row.count}건`,
+              }))}
+              tone="negative"
             />
-            <Stat
-              label="적용률"
-              value={percent(data.coverage.embedded, data.coverage.reports)}
-              note={`마지막 ${when(data.coverage.lastAt)}`}
-            />
-          </FlexBox>
-        ) : (
-          <Empty>아직 만들어진 벡터가 없습니다.</Empty>
-        )}
+          ) : null}
+        </Panel>
 
-        <Typography variant="caption1">
-          벡터는 pnpm --filter @rebirth/db run db:embed 로 만듭니다. 모델이 381MB 라 배포
-          번들에 넣지 않고 조회만 SQL 로 합니다.
-        </Typography>
+        <Panel title="유사도 배점 항목별 평균" note="배점 대비 실제로 받은 점수">
+          {breakdown && breakdown.pairs > 0 ? (
+            <FlexBox flexDirection="column" gap="10px">
+              <TrackBar label="거리" value={breakdown.distance} max={35} valueText={`${breakdown.distance} / 35`} />
+              <TrackBar label="시각" value={breakdown.time} max={25} valueText={`${breakdown.time} / 25`} />
+              <TrackBar label="털색" value={breakdown.color} max={20} valueText={`${breakdown.color} / 20`} />
+              <TrackBar label="크기" value={breakdown.size} max={10} valueText={`${breakdown.size} / 10`} />
+              <TrackBar label="특징" value={breakdown.features} max={10} valueText={`${breakdown.features} / 10`} />
+            </FlexBox>
+          ) : (
+            <Typography variant="body2" color="semantic.label.alternative">
+              채점된 쌍이 없습니다.
+            </Typography>
+          )}
+        </Panel>
 
-        {data.neighbors.length > 0 ? (
-          <FlexBox flexDirection="column" gap="8px">
-            <Typography variant="label1">표현이 가장 가까운 쌍</Typography>
-            {data.neighbors.map((pair) => (
-              <Card key={`${pair.lostId}-${pair.sightingId}`}>
-                <CardContent>
-                  <FlexBox alignItems="center" flexWrap="wrap" gap="8px">
-                    <Typography variant="label1" weight="bold">
-                      {pair.similarity.toFixed(3)}
-                    </Typography>
-                    <Typography variant="caption1">
-                      {pair.scored ? "배점 후보에도 있음" : "배점이 올리지 않은 쌍"}
-                    </Typography>
-                  </FlexBox>
-                  <CardCaption variant="body2">실종 {pair.lostText}</CardCaption>
-                  <CardCaption variant="body2">제보 {pair.sightingText}</CardCaption>
-                  <CardCaption variant="caption2">
-                    <Link href={`/sightings/${pair.sightingId}`} style={{ color: "inherit" }}>
-                      제보 {shortId(pair.sightingId)}
-                    </Link>
-                    {" · 실종 "}
-                    {shortId(pair.lostId)}
-                  </CardCaption>
-                </CardContent>
-              </Card>
-            ))}
-          </FlexBox>
-        ) : null}
+        <Panel title="후보 점수 분포" note="임계값을 어디에 둘지 판단하는 근거">
+          <BarList
+            rows={data.scoreBuckets.map((row) => ({
+              label: `${row.bucket}점`,
+              value: row.count,
+              note: `${row.count}쌍`,
+            }))}
+            emptyText="채점된 쌍이 없습니다"
+          />
+        </Panel>
 
-        <Typography variant="caption1">
-          벡터는 표현이 비슷한 정도만 말합니다. 거리와 시각은 배점이 보고 개체 동일성은 어느 쪽도 확정하지 않습니다.
-        </Typography>
-      </Section>
+        <Panel title="AI 초안을 사람이 고친 필드" note="고치지 않은 초안의 비율이 곧 정확도">
+          {acceptance && acceptance.withDraft > 0 ? (
+            <>
+              <Ratio
+                value={acceptance.untouched}
+                total={acceptance.withDraft}
+                label={`무수정 ${acceptance.untouched}/${acceptance.withDraft}`}
+              />
+              <BarList
+                rows={data.editedFields.map((row) => ({
+                  label: row.field,
+                  value: row.edits,
+                  note: `${row.edits}회`,
+                }))}
+                emptyText="고쳐진 필드가 없습니다"
+              />
+            </>
+          ) : (
+            <Typography variant="body2" color="semantic.label.alternative">
+              초안이 붙은 제보가 아직 없습니다. 새 제보부터 모델과 원본이 함께 저장됩니다.
+            </Typography>
+          )}
+        </Panel>
+
+        <Panel title="모델별 실행" note="더미와 실제 호출을 갈라 봅니다">
+          <BarList
+            rows={data.byModel.map((row) => ({
+              label: row.model,
+              value: row.total,
+              note: `${row.total}회 · ${ms(row.avgLatencyMs)}`,
+            }))}
+            emptyText="기록이 없습니다"
+          />
+        </Panel>
+      </Grid>
 
       <Divider />
 
-      <Section title={`최근 분석 작업 ${data.jobs.length}건`}>
-        {data.jobs.length > 0 ? (
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableHeadCell>시각</TableHeadCell>
-                <TableHeadCell>상태</TableHeadCell>
-                <TableHeadCell>모델</TableHeadCell>
-                <TableHeadCell>지연</TableHeadCell>
-                <TableHeadCell>실패 코드</TableHeadCell>
+      {/* 4. 원장 */}
+      <Typography variant="headline2" weight="bold">
+        최근 실행 {data.jobs.length}건
+      </Typography>
+      {data.jobs.length > 0 ? (
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableHeadCell>시각</TableHeadCell>
+              <TableHeadCell>상태</TableHeadCell>
+              <TableHeadCell>모델</TableHeadCell>
+              <TableHeadCell>지연</TableHeadCell>
+              <TableHeadCell>실패 코드</TableHeadCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {data.jobs.map((job) => (
+              <TableRow key={job.id}>
+                <TableCell>{when(job.createdAt)}</TableCell>
+                <TableCell>
+                  <Chip size="xsmall" variant="outlined" disableInteraction>
+                    {job.status === "succeeded" ? "성공" : job.status === "failed" ? "실패" : job.status}
+                  </Chip>
+                </TableCell>
+                <TableCell>{job.model ?? "-"}</TableCell>
+                <TableCell sx={{ fontVariantNumeric: "tabular-nums" }}>
+                  {ms(job.latencyMs)}
+                </TableCell>
+                <TableCell>{job.failureCode ?? "-"}</TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {data.jobs.map((job) => (
-                <TableRow key={job.id}>
-                  <TableCell>{when(job.createdAt)}</TableCell>
-                  <TableCell>{job.status}</TableCell>
-                  <TableCell>{job.model ?? "-"}</TableCell>
-                  <TableCell>{ms(job.latencyMs)}</TableCell>
-                  <TableCell>{job.failureCode ?? "-"}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <Empty>기록이 없습니다.</Empty>
-        )}
-      </Section>
-    </>
+            ))}
+          </TableBody>
+        </Table>
+      ) : (
+        <Typography variant="body2" color="semantic.label.alternative">
+          기록이 없습니다.
+        </Typography>
+      )}
+    </FlexBox>
   );
 }
