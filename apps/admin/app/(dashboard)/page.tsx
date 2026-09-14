@@ -1,20 +1,10 @@
 import Link from "next/link";
-import {
-  adminOverview,
-  countPendingFlags,
-  listAdminReports,
-} from "@rebirth/db";
-import {
-  Card,
-  CardCaption,
-  CardContent,
-  CardTitle,
-  Chip,
-  Divider,
-  FlexBox,
-  Typography,
-} from "@wanteddev/wds";
 
+import { adminOverview, countPendingFlags, listAdminReports } from "@rebirth/db";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import {
   ANIMAL_LABEL,
   CARE_LABEL,
@@ -50,72 +40,60 @@ export default async function DashboardPage() {
     : [];
 
   return (
-    <>
-      <Typography variant="title3" weight="bold">
-        개요
-      </Typography>
+    <div className="flex flex-col gap-5">
+      <h1 className="text-xl font-bold">개요</h1>
 
       {tiles.length > 0 ? (
-        <FlexBox flexWrap="wrap" gap="12px">
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
           {tiles.map((tile) => (
-            <Card key={tile.label} width="180px">
-              <CardContent>
-                <CardCaption variant="caption1">{tile.label}</CardCaption>
-                <CardTitle variant="title2" weight="bold">
+            <Card key={tile.label}>
+              <CardContent className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground">{tile.label}</span>
+                <span className="text-2xl font-bold tabular-nums">
                   {tile.value.toLocaleString()}
-                </CardTitle>
-                {tile.note ? <CardCaption variant="caption2">{tile.note}</CardCaption> : null}
+                </span>
+                {tile.note ? (
+                  <span className="text-[11px] text-muted-foreground">{tile.note}</span>
+                ) : null}
               </CardContent>
             </Card>
           ))}
-        </FlexBox>
+        </div>
       ) : (
-        <Typography variant="body2">집계를 읽지 못했습니다.</Typography>
+        <p className="text-sm text-muted-foreground">집계를 읽지 못했습니다.</p>
       )}
 
-      <Divider />
+      <Separator />
 
-      <Typography variant="headline1" weight="bold">
-        최근 제보
-      </Typography>
-      <FlexBox flexDirection="column" gap="8px">
+      <h2 className="text-base font-bold">최근 제보</h2>
+      <div className="flex flex-col gap-2">
         {recent.map((report) => (
-          <Link
-            key={report.id}
-            href={`/sightings/${report.id}`}
-            style={{ textDecoration: "none", color: "inherit" }}
-          >
-            <Card>
-              <CardContent>
-                <FlexBox alignItems="center" flexWrap="wrap" gap="6px">
-                  <Chip size="xsmall" disableInteraction>
-                    {KIND_LABEL[report.kind]}
-                  </Chip>
-                  <Chip size="xsmall" variant="outlined" disableInteraction>
-                    {ANIMAL_LABEL[report.animalType]}
-                  </Chip>
-                  <Chip size="xsmall" variant="outlined" disableInteraction>
-                    {CARE_LABEL[report.careSituation]}
-                  </Chip>
-                  <Chip size="xsmall" variant="outlined" disableInteraction>
-                    {VISIBILITY_LABEL[report.visibility]}
-                  </Chip>
-                  <Typography variant="caption1">{when(report.occurredAt)}</Typography>
-                </FlexBox>
-                <CardTitle variant="headline2">
+          <Link key={report.id} href={`/sightings/${report.id}`}>
+            <Card className="hover:bg-accent/40">
+              <CardHeader>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <Badge variant="secondary">{KIND_LABEL[report.kind]}</Badge>
+                  <Badge variant="outline">{ANIMAL_LABEL[report.animalType]}</Badge>
+                  <Badge variant="outline">{CARE_LABEL[report.careSituation]}</Badge>
+                  <Badge variant="outline">{VISIBILITY_LABEL[report.visibility]}</Badge>
+                  <span className="text-xs text-muted-foreground">
+                    {when(report.occurredAt)}
+                  </span>
+                </div>
+                <CardTitle className="line-clamp-2 font-normal">
                   {report.appearance ?? describeAnimal(report)}
                 </CardTitle>
-                <CardCaption variant="caption1">
+                <span className="text-xs text-muted-foreground">
                   {report.areaName ?? "위치 미확인"}
-                </CardCaption>
-              </CardContent>
+                </span>
+              </CardHeader>
             </Card>
           </Link>
         ))}
         {recent.length === 0 ? (
-          <Typography variant="body2">공개된 제보가 없습니다.</Typography>
+          <p className="text-sm text-muted-foreground">공개된 제보가 없습니다.</p>
         ) : null}
-      </FlexBox>
-    </>
+      </div>
+    </div>
   );
 }

@@ -2,16 +2,11 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState, type FormEvent } from "react";
-import {
-  Button,
-  Card,
-  CardCaption,
-  CardContent,
-  CardTitle,
-  FlexBox,
-  TextField,
-  Typography,
-} from "@wanteddev/wds";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // 공유 비밀번호 한 겹. 계정 체계는 P1 이고 지금은 출입만 막음
 
@@ -48,42 +43,32 @@ export function LoginView() {
   }
 
   return (
-    <FlexBox
-      alignItems="center"
-      justifyContent="center"
-      sx={{ minHeight: "100vh", padding: "24px" }}
-    >
-      <Card width="360px">
+    <div className="flex min-h-screen items-center justify-center p-6">
+      <Card className="w-90">
+        <CardHeader>
+          <CardTitle>다시집 운영</CardTitle>
+        </CardHeader>
         <CardContent>
-          <CardTitle variant="title3">다시집 운영</CardTitle>
-          <CardCaption variant="body2">발견동물 제보 검수와 운영 지표</CardCaption>
-          <form onSubmit={onSubmit}>
-            <FlexBox flexDirection="column" gap="12px" sx={{ marginTop: "16px" }}>
-              <FlexBox flexDirection="column" gap="4px">
-                <Typography variant="label2">운영 비밀번호</Typography>
-                <TextField
-                  type="password"
-                  name="password"
-                  autoComplete="current-password"
-                  placeholder="ADMIN_API_TOKEN"
-                  required
-                />
-              </FlexBox>
-              {message ? (
-                <Typography variant="caption1" color="semantic.status.negative">
-                  {message}
-                </Typography>
-              ) : null}
-              <Button type="submit" size="large" fullWidth disabled={pending}>
-                {pending ? "확인 중" : "로그인"}
-              </Button>
-              <Typography variant="caption1">
-                계정 체계는 P1입니다. 지금은 운영 토큰 한 겹입니다.
-              </Typography>
-            </FlexBox>
+          <form onSubmit={onSubmit} className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="password">운영 비밀번호</Label>
+              <Input
+                id="password"
+                type="password"
+                name="password"
+                autoComplete="current-password"
+                required
+              />
+            </div>
+            {message ? (
+              <p className="text-xs text-destructive">{message}</p>
+            ) : null}
+            <Button type="submit" disabled={pending}>
+              {pending ? "확인 중" : "로그인"}
+            </Button>
           </form>
         </CardContent>
       </Card>
-    </FlexBox>
+    </div>
   );
 }

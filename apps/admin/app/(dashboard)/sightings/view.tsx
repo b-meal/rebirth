@@ -1,18 +1,17 @@
 "use client";
 
 import Link from "next/link";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
-  Chip,
-  FlexBox,
   Table,
   TableBody,
   TableCell,
   TableHead,
-  TableHeadCell,
-  Typography,
+  TableHeader,
   TableRow,
-} from "@wanteddev/wds";
-
+} from "@/components/ui/table";
 import {
   ANIMAL_LABEL,
   CARE_LABEL,
@@ -54,65 +53,64 @@ const COLUMNS = [
 
 export function SightingsView({ items }: { items: AdminReportRow[] }) {
   return (
-    <>
-      <FlexBox alignItems="center" gap="8px">
-        <Typography variant="title3" weight="bold">
-          제보
-        </Typography>
-        <Typography variant="caption1">총 {items.length}건</Typography>
-      </FlexBox>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-baseline gap-2">
+        <h1 className="text-xl font-bold">제보</h1>
+        <span className="text-xs text-muted-foreground">총 {items.length}건</span>
+      </div>
 
-      {items.length === 0 ? (
-        <Typography variant="body2">제보가 없습니다.</Typography>
-      ) : (
-        <Table>
-          <TableHead>
-            <TableRow>
-              {COLUMNS.map((column) => (
-                <TableHeadCell key={column}>{column}</TableHeadCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {items.map((item) => (
-              <TableRow key={item.id} interaction>
-                <TableCell>{when(item.occurredAt)}</TableCell>
-                <TableCell>{ANIMAL_LABEL[item.animalType]}</TableCell>
-                <TableCell>
-                  <Link
-                    href={`/sightings/${item.id}`}
-                    style={{ color: "inherit", textDecoration: "underline" }}
-                  >
-                    {item.appearance ?? describeAnimal(item)}
-                  </Link>
-                </TableCell>
-                <TableCell>{SIZE_LABEL[item.size]}</TableCell>
-                <TableCell>{CARE_LABEL[item.careSituation]}</TableCell>
-                <TableCell>{item.areaName ?? "-"}</TableCell>
-                <TableCell>
-                  {item.aiModel
-                    ? `${item.aiModel} · 수정 ${item.aiEditedFields.length}개`
-                    : "-"}
-                </TableCell>
-                <TableCell>
-                  <Chip size="xsmall" variant="outlined" disableInteraction>
-                    {VISIBILITY_LABEL[item.visibility]}
-                  </Chip>
-                </TableCell>
-                <TableCell>
-                  <Chip size="xsmall" variant="outlined" disableInteraction>
-                    {LIFECYCLE_LABEL[item.lifecycle]}
-                  </Chip>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+      <Card>
+        <CardContent>
+          {items.length === 0 ? (
+            <p className="text-sm text-muted-foreground">제보가 없습니다.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  {COLUMNS.map((column) => (
+                    <TableHead key={column}>{column}</TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {items.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="whitespace-nowrap tabular-nums">
+                      {when(item.occurredAt)}
+                    </TableCell>
+                    <TableCell>{ANIMAL_LABEL[item.animalType]}</TableCell>
+                    <TableCell className="max-w-96">
+                      <Link
+                        href={`/sightings/${item.id}`}
+                        className="line-clamp-2 underline underline-offset-2"
+                      >
+                        {item.appearance ?? describeAnimal(item)}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{SIZE_LABEL[item.size]}</TableCell>
+                    <TableCell>{CARE_LABEL[item.careSituation]}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {item.areaName ?? "-"}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {item.aiModel
+                        ? `${item.aiModel} · 수정 ${item.aiEditedFields.length}개`
+                        : "-"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{VISIBILITY_LABEL[item.visibility]}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{LIFECYCLE_LABEL[item.lifecycle]}</Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
 
-      <Typography variant="caption1">
-        정확 좌표는 운영 화면에도 표시하지 않습니다. 품종은 단정하지 않고 계열 추정으로만 적습니다.
-      </Typography>
-    </>
+    </div>
   );
 }

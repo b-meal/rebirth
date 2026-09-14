@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FlexBox, Typography } from "@wanteddev/wds";
+
+import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/", label: "개요" },
@@ -17,7 +18,7 @@ export function DashboardNav() {
   const pathname = usePathname();
 
   return (
-    <FlexBox flexDirection="column" gap="2px" sx={{ padding: "8px" }}>
+    <nav className="flex flex-col gap-px border-t border-border p-2">
       {NAV.map((item) => {
         const active =
           item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -26,23 +27,17 @@ export function DashboardNav() {
           <Link
             key={item.href}
             href={item.href}
-            style={{ textDecoration: "none", color: "inherit" }}
+            className={cn(
+              "px-3 py-2 text-sm",
+              active
+                ? "bg-accent font-bold text-accent-foreground"
+                : "text-muted-foreground hover:bg-accent/50",
+            )}
           >
-            <FlexBox
-              alignItems="center"
-              sx={{
-                padding: "8px 12px",
-                borderRadius: "8px",
-                background: active ? "rgba(0, 0, 0, 0.06)" : "transparent",
-              }}
-            >
-              <Typography variant="label1" weight={active ? "bold" : "regular"}>
-                {item.label}
-              </Typography>
-            </FlexBox>
+            {item.label}
           </Link>
         );
       })}
-    </FlexBox>
+    </nav>
   );
 }

@@ -1,23 +1,18 @@
 "use client";
 
 import Link from "next/link";
+
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import {
-  Card,
-  CardCaption,
-  CardContent,
-  CardTitle,
-  Chip,
-  Divider,
-  FlexBox,
   Table,
   TableBody,
   TableCell,
   TableHead,
-  TableHeadCell,
+  TableHeader,
   TableRow,
-  Typography,
-} from "@wanteddev/wds";
-
+} from "@/components/ui/table";
 import {
   ANIMAL_LABEL,
   CARE_LABEL,
@@ -73,10 +68,10 @@ export type SightingDetail = {
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
-    <FlexBox justifyContent="space-between" gap="16px">
-      <Typography variant="label2">{label}</Typography>
-      <Typography variant="body2">{value}</Typography>
-    </FlexBox>
+    <div className="flex justify-between gap-4 py-1">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm">{value}</span>
+    </div>
   );
 }
 
@@ -87,36 +82,28 @@ export function SightingDetailView({ detail }: { detail: SightingDetail }) {
   const pendingFlags = detail.flags.filter((flag) => flag.resolvedAt === null).length;
 
   return (
-    <>
-      <FlexBox alignItems="center" flexWrap="wrap" gap="8px">
-        <Typography variant="title3" weight="bold">
-          제보 상세
-        </Typography>
-        <Chip size="xsmall" disableInteraction>
-          {KIND_LABEL[detail.kind]}
-        </Chip>
-        <Chip size="xsmall" variant="outlined" disableInteraction>
-          {VISIBILITY_LABEL[detail.visibility]}
-        </Chip>
-        <Chip size="xsmall" variant="outlined" disableInteraction>
-          {LIFECYCLE_LABEL[detail.lifecycle]}
-        </Chip>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <h1 className="text-xl font-bold">제보 상세</h1>
+        <Badge variant="secondary">{KIND_LABEL[detail.kind]}</Badge>
+        <Badge variant="outline">{VISIBILITY_LABEL[detail.visibility]}</Badge>
+        <Badge variant="outline">{LIFECYCLE_LABEL[detail.lifecycle]}</Badge>
         {pendingFlags > 0 ? (
-          <Chip size="xsmall" disableInteraction>
-            미판정 신고 {pendingFlags}건
-          </Chip>
+          <Badge variant="destructive">미판정 신고 {pendingFlags}건</Badge>
         ) : null}
-      </FlexBox>
+      </div>
 
-      <Card>
-        <CardContent>
-          <CardTitle variant="headline2">
-            {detail.appearance ?? describeAnimal(detail)}
-          </CardTitle>
-          <CardCaption variant="caption1">
-            {detail.areaName ?? "위치 미확인"} · 발견 {when(detail.occurredAt)}
-          </CardCaption>
-          <FlexBox flexDirection="column" gap="6px" sx={{ marginTop: "12px" }}>
+      <div className="grid items-start gap-3 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="font-normal">
+              {detail.appearance ?? describeAnimal(detail)}
+            </CardTitle>
+            <CardDescription>
+              {detail.areaName ?? "위치 미확인"} · 발견 {when(detail.occurredAt)}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="divide-y divide-border">
             <Row label="종류" value={ANIMAL_LABEL[detail.animalType] ?? "-"} />
             <Row label="품종" value={breedLabel(detail.breedGuess) ?? "적지 않음"} />
             <Row label="털색" value={detail.colors.join(", ") || "미기재"} />
@@ -127,93 +114,87 @@ export function SightingDetailView({ detail }: { detail: SightingDetail }) {
             <Row label="눈에 보이는 부상" value={tri(detail.injury)} />
             <Row label="귀 끝 잘림" value={tri(detail.earTip)} />
             <Row label="사진" value={`${detail.photoCount}장`} />
-          </FlexBox>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
+        <div className="flex flex-col gap-3">
+          <Card>
+            <CardHeader>
+              <CardTitle>AI 초안</CardTitle>
+              </CardHeader>
+            <CardContent className="divide-y divide-border">
+              <Row label="모델" value={detail.aiModel ?? "초안 없음"} />
+              <Row label="분석 시각" value={when(detail.aiAnalyzedAt)} />
+              <Row
+                label="사람이 고친 필드"
+                value={detail.aiEditedFields.join(", ") || "없음"}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>위치와 판</CardTitle>
+            </CardHeader>
+            <CardContent className="divide-y divide-border">
+              <Row label="행정동 코드" value={detail.areaCode ?? "-"} />
+              <Row
+                label="좌표 출처"
+                value={
+                  detail.locationSource
+                    ? (LOCATION_SOURCE_LABEL[detail.locationSource] ?? detail.locationSource)
+                    : "-"
+                }
+              />
+              <Row label="격자" value={detail.coarseGridM ? `${detail.coarseGridM}m` : "-"} />
+              <Row label="등록" value={when(detail.createdAt)} />
+              <Row label="판" value={`v${detail.version}`} />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Separator />
+
+      <h2 className="text-base font-bold">확인할 후보 {detail.matches.length}건</h2>
       <Card>
         <CardContent>
-          <CardTitle variant="headline2">AI 초안</CardTitle>
-          <FlexBox flexDirection="column" gap="6px" sx={{ marginTop: "12px" }}>
-            <Row label="모델" value={detail.aiModel ?? "초안 없음"} />
-            <Row label="분석 시각" value={when(detail.aiAnalyzedAt)} />
-            <Row
-              label="사람이 고친 필드"
-              value={detail.aiEditedFields.join(", ") || "없음"}
-            />
-          </FlexBox>
-          <CardCaption variant="caption2">
-            AI 초안은 수정 가능한 제안이고 품종을 단정하지 않습니다.
-          </CardCaption>
+          {detail.matches.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>실종 신고</TableHead>
+                  <TableHead className="text-right">점수</TableHead>
+                  <TableHead>항목별</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {detail.matches.map((match) => (
+                  <TableRow key={match.lostId}>
+                    <TableCell>
+                      <Link
+                        href={`/sightings/${match.lostId}`}
+                        className="underline underline-offset-2"
+                      >
+                        {match.lostId.slice(-8)}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{match.score}점</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {Object.entries(BREAKDOWN_LABEL)
+                        .map(([key, label]) => `${label}: ${match.breakdown[key] ?? "-"}`)
+                        .join(" · ")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-muted-foreground">채점된 후보가 없습니다.</p>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent>
-          <CardTitle variant="headline2">위치와 판</CardTitle>
-          <FlexBox flexDirection="column" gap="6px" sx={{ marginTop: "12px" }}>
-            <Row label="행정동" value={detail.areaName ?? "-"} />
-            <Row label="행정동 코드" value={detail.areaCode ?? "-"} />
-            <Row
-              label="좌표 출처"
-              value={
-                detail.locationSource
-                  ? (LOCATION_SOURCE_LABEL[detail.locationSource] ?? detail.locationSource)
-                  : "-"
-              }
-            />
-            <Row label="격자" value={detail.coarseGridM ? `${detail.coarseGridM}m` : "-"} />
-            <Row label="등록" value={when(detail.createdAt)} />
-            <Row label="판" value={`v${detail.version}`} />
-          </FlexBox>
-          <CardCaption variant="caption2">
-            정확 좌표는 운영 화면에도 내려오지 않습니다.
-          </CardCaption>
-        </CardContent>
-      </Card>
-
-      <Divider />
-
-      <Typography variant="headline1" weight="bold">
-        확인할 후보 {detail.matches.length}건
-      </Typography>
-      {detail.matches.length > 0 ? (
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableHeadCell>실종 신고</TableHeadCell>
-              <TableHeadCell>점수</TableHeadCell>
-              <TableHeadCell>항목별</TableHeadCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {detail.matches.map((match) => (
-              <TableRow key={match.lostId}>
-                <TableCell>
-                  <Link
-                    href={`/sightings/${match.lostId}`}
-                    style={{ color: "inherit", textDecoration: "underline" }}
-                  >
-                    {match.lostId.slice(0, 8)}
-                  </Link>
-                </TableCell>
-                <TableCell>{match.score}점</TableCell>
-                <TableCell>
-                  {Object.entries(BREAKDOWN_LABEL)
-                    .map(([key, label]) => `${label}: ${match.breakdown[key] ?? "-"}`)
-                    .join(" · ")}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      ) : (
-        <Typography variant="body2">채점된 후보가 없습니다.</Typography>
-      )}
-
-      <Typography variant="caption1">
-        점수는 확인할 후보의 순서일 뿐이고 개체 동일성을 확정하지 않습니다.
-      </Typography>
-    </>
+    </div>
   );
 }

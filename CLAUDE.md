@@ -22,7 +22,7 @@
 
 ## 스택
 
-Next.js 16 App Router · React 19 · TypeScript · web 은 SEED(`@seed-design/react`) · admin 은 Montage(`@wanteddev/wds`) · Supabase Postgres(PostGIS, pgvector) · Supabase Storage · Drizzle ORM · Vercel · Anthropic `claude-sonnet-5`
+Next.js 16 App Router · React 19 · TypeScript · web 은 SEED(`@seed-design/react`) · admin 은 shadcn/ui(Tailwind v4) · Supabase Postgres(PostGIS, pgvector) · Supabase Storage · Drizzle ORM · Vercel · Anthropic `claude-sonnet-5`
 
 ## 검증
 
@@ -58,6 +58,8 @@ API를 건드렸다면 정상 경로와 오류 경로를 모두 호출해 확인
 | AI 진단 | AI 초안, 수정 가능 |
 
 ## 디자인 시스템
+
+`apps/admin` 은 shadcn/ui 를 씁니다. 무채색 한 벌에 `--radius: 0`, 차트 색도 `--chart-1`~`--chart-5` 가 전부 회색 단계입니다. 컴포넌트는 `pnpm dlx shadcn@latest add <이름>` 으로 받아 `apps/admin/components/ui` 에 둡니다. 유채색은 `--destructive` 한 곳에만 씁니다.
 
 `apps/web` 의 UI 단일 원천은 당근 SEED 하나입니다. 자체 디자인 시스템을 만들지 않고 컴포넌트와 토큰을 모두 SEED 에서 가져옵니다.
 

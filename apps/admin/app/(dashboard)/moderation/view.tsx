@@ -3,20 +3,10 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
-import {
-  Button,
-  Card,
-  CardCaption,
-  CardContent,
-  CardTitle,
-  Chip,
-  FallbackView,
-  FallbackViewContent,
-  FallbackViewText,
-  FlexBox,
-  Typography,
-} from "@wanteddev/wds";
 
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VISIBILITY_LABEL, when } from "@/lib/labels";
 import { decideFlag, type ModerationResult } from "./actions";
 
@@ -39,7 +29,7 @@ function DecideButton({
 }: {
   decision: "hide" | "keep";
   label: string;
-  variant?: "outlined";
+  variant?: "outline";
 }) {
   const { pending } = useFormStatus();
   return (
@@ -47,7 +37,7 @@ function DecideButton({
       type="submit"
       name="decision"
       value={decision}
-      size="small"
+      size="sm"
       variant={variant}
       disabled={pending}
     >
@@ -63,41 +53,35 @@ function QueueCard({ item }: { item: ModerationItem }) {
 
   return (
     <Card>
-      <CardContent>
-        <FlexBox alignItems="center" flexWrap="wrap" gap="6px">
-          <Chip size="xsmall" disableInteraction>
-            신고 {item.flagCount}건
-          </Chip>
+      <CardHeader>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="destructive">신고 {item.flagCount}건</Badge>
           {item.visibility ? (
-            <Chip size="xsmall" variant="outlined" disableInteraction>
-              {VISIBILITY_LABEL[item.visibility]}
-            </Chip>
+            <Badge variant="outline">{VISIBILITY_LABEL[item.visibility]}</Badge>
           ) : null}
-          <Typography variant="caption1">{when(item.firstReportedAt)}</Typography>
-        </FlexBox>
-
-        <CardTitle variant="headline2">
+          <span className="text-xs text-muted-foreground">
+            {when(item.firstReportedAt)}
+          </span>
+        </div>
+        <CardTitle className="font-normal">
           <Link
             href={`/sightings/${item.reportId}`}
-            style={{ color: "inherit", textDecoration: "underline" }}
+            className="underline underline-offset-2"
           >
             {item.appearance ?? "외형 미기재"}
           </Link>
         </CardTitle>
-        <CardCaption variant="body2">신고 사유 {item.reasons.join(", ")}</CardCaption>
-        <CardCaption variant="caption1">{item.areaName ?? "지역 미확인"}</CardCaption>
-
-        <form action={action}>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <p className="text-sm">신고 사유 {item.reasons.join(", ")}</p>
+        <p className="text-xs text-muted-foreground">{item.areaName ?? "지역 미확인"}</p>
+        <form action={action} className="flex items-center gap-2">
           <input type="hidden" name="reportId" value={item.reportId} />
-          <FlexBox alignItems="center" gap="8px">
-            <DecideButton decision="hide" label="공개 목록에서 빼기" />
-            <DecideButton decision="keep" label="유지" variant="outlined" />
-            {state.message ? (
-              <Typography variant="caption1" color="semantic.status.negative">
-                {state.message}
-              </Typography>
-            ) : null}
-          </FlexBox>
+          <DecideButton decision="hide" label="공개 목록에서 빼기" />
+          <DecideButton decision="keep" label="유지" variant="outline" />
+          {state.message ? (
+            <span className="text-xs text-destructive">{state.message}</span>
+          ) : null}
         </form>
       </CardContent>
     </Card>
@@ -106,34 +90,29 @@ function QueueCard({ item }: { item: ModerationItem }) {
 
 export function ModerationView({ items }: { items: ModerationItem[] }) {
   return (
-    <>
-      <FlexBox alignItems="center" gap="8px">
-        <Typography variant="title3" weight="bold">
-          검수
-        </Typography>
-        <Typography variant="caption1">대기 {items.length}건</Typography>
-      </FlexBox>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-baseline gap-2">
+        <h1 className="text-xl font-bold">검수</h1>
+        <span className="text-xs text-muted-foreground">대기 {items.length}건</span>
+      </div>
 
       {items.length === 0 ? (
-        <FallbackView>
-          <FallbackViewContent>
-            <FallbackViewText
-              title="검수 대기 없음"
-              description="신고가 들어온 제보가 없습니다."
-            />
-          </FallbackViewContent>
-        </FallbackView>
+        <Card>
+          <CardContent className="flex flex-col items-center gap-1 py-10">
+            <span className="text-sm font-bold">검수 대기 없음</span>
+            <span className="text-xs text-muted-foreground">
+              신고가 들어온 제보가 없습니다.
+            </span>
+          </CardContent>
+        </Card>
       ) : (
-        <FlexBox flexDirection="column" gap="8px">
+        <div className="flex flex-col gap-2">
           {items.map((item) => (
             <QueueCard key={item.reportId} item={item} />
           ))}
-        </FlexBox>
+        </div>
       )}
 
-      <Typography variant="caption1">
-        판정은 공개 여부만 바꿉니다. 종료 여부는 제보자만 정합니다.
-      </Typography>
-    </>
+    </div>
   );
 }

@@ -1,235 +1,23 @@
 "use client";
 
-import { FlexBox, Typography, useTheme } from "@wanteddev/wds";
+import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";
 
-// 운영 화면 차트 조각. 라이브러리를 들이지 않고 div 와 SVG 로만 그림
-// 모노크롬이 기본이고 유채색은 상태 신호와 강조 한 곳에만 씀
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "@/components/ui/chart";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
+
+// 운영 화면 차트 조각. 무채색 한 계열이 기본이고 유채색은 부정 신호에만 씀
 // 한 차트는 한 계열만 그림. 두 계열을 겹치면 무엇을 읽는 차트인지 흐려짐
 
-export type ChartTone = "neutral" | "negative" | "accent";
+const NEUTRAL: ChartConfig = { value: { label: "값", color: "var(--chart-3)" } };
+const NEGATIVE: ChartConfig = { value: { label: "값", color: "var(--destructive)" } };
 
-function useTone(tone: ChartTone): string {
-  const theme = useTheme();
-  if (tone === "negative") return theme.semantic.status.negative;
-  if (tone === "accent") return theme.semantic.primary.normal;
-  return theme.semantic.label.normal;
-}
-
-function useTrack(): string {
-  return useTheme().semantic.fill.normal;
-}
-
-/** 큰 숫자 하나. 차트가 필요 없는 값은 여기서 끝냄 */
-export function Metric({
-  label,
-  value,
-  unit,
-  note,
-  tone = "neutral",
-}: {
-  label: string;
-  value: string;
-  unit?: string;
-  note?: string;
-  tone?: ChartTone;
-}) {
-  const color = useTone(tone);
-
-  return (
-    <FlexBox flexDirection="column" gap="2px" sx={{ minWidth: 0 }}>
-      <Typography variant="caption1" color="semantic.label.alternative">
-        {label}
-      </Typography>
-      <FlexBox alignItems="baseline" gap="2px">
-        <Typography
-          variant="title3"
-          weight="bold"
-          sx={{ color, fontVariantNumeric: "tabular-nums" }}
-        >
-          {value}
-        </Typography>
-        {unit ? (
-          <Typography variant="label2" color="semantic.label.alternative">
-            {unit}
-          </Typography>
-        ) : null}
-      </FlexBox>
-      {note ? (
-        <Typography variant="caption2" color="semantic.label.assistive">
-          {note}
-        </Typography>
-      ) : null}
-    </FlexBox>
-  );
-}
-
-/** 달성과 상한이 함께 있는 값. 배점처럼 최댓값이 정해진 축에만 씀 */
-export function TrackBar({
-  label,
-  value,
-  max,
-  valueText,
-  tone = "neutral",
-}: {
-  label: string;
-  value: number;
-  max: number;
-  valueText?: string;
-  tone?: ChartTone;
-}) {
-  const color = useTone(tone);
-  const track = useTrack();
-  const ratio = max <= 0 ? 0 : Math.min(1, value / max);
-
-  return (
-    <FlexBox flexDirection="column" gap="4px">
-      <FlexBox justifyContent="space-between" alignItems="baseline" gap="8px">
-        <Typography variant="label2">{label}</Typography>
-        <Typography
-          variant="label2"
-          color="semantic.label.alternative"
-          sx={{ fontVariantNumeric: "tabular-nums" }}
-        >
-          {valueText ?? `${value} / ${max}`}
-        </Typography>
-      </FlexBox>
-      <FlexBox
-        sx={{ height: "8px", borderRadius: "2px", background: track, overflow: "hidden" }}
-      >
-        <FlexBox
-          sx={{
-            width: `${ratio * 100}%`,
-            background: color,
-            borderRadius: "2px",
-            transition: "width .4s",
-          }}
-        />
-      </FlexBox>
-    </FlexBox>
-  );
-}
-
-/** 같은 뜻의 값이 여러 줄일 때. 가장 큰 값을 기준으로 길이를 맞춤 */
-export function BarList({
-  rows,
-  tone = "neutral",
-  emptyText = "값이 없습니다",
-}: {
-  rows: { label: string; value: number; note?: string }[];
-  tone?: ChartTone;
-  emptyText?: string;
-}) {
-  const color = useTone(tone);
-  const track = useTrack();
-  const max = Math.max(1, ...rows.map((row) => row.value));
-
-  if (rows.length === 0) {
-    return (
-      <Typography variant="body2" color="semantic.label.alternative">
-        {emptyText}
-      </Typography>
-    );
-  }
-
-  return (
-    <FlexBox flexDirection="column" gap="6px">
-      {rows.map((row) => (
-        <FlexBox key={row.label} alignItems="center" gap="8px">
-          <Typography
-            variant="caption1"
-            color="semantic.label.alternative"
-            sx={{ width: "88px", flexShrink: 0, textAlign: "right" }}
-          >
-            {row.label}
-          </Typography>
-          <FlexBox
-            sx={{
-              flex: 1,
-              height: "8px",
-              borderRadius: "2px",
-              background: track,
-              overflow: "hidden",
-            }}
-          >
-            <FlexBox
-              sx={{
-                width: `${(row.value / max) * 100}%`,
-                background: color,
-                borderRadius: "2px",
-              }}
-            />
-          </FlexBox>
-          <Typography
-            variant="caption1"
-            sx={{ width: "56px", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}
-          >
-            {row.note ?? row.value.toLocaleString()}
-          </Typography>
-        </FlexBox>
-      ))}
-    </FlexBox>
-  );
-}
-
-/** 날짜별 한 계열. 값이 0 인 날도 자리를 지켜 빈 구간이 보이게 함 */
-export function DayBars({
-  rows,
-  tone = "neutral",
-  emptyText = "기록이 없습니다",
-}: {
-  rows: { day: string; value: number }[];
-  tone?: ChartTone;
-  emptyText?: string;
-}) {
-  const color = useTone(tone);
-  const track = useTrack();
-  const max = Math.max(1, ...rows.map((row) => row.value));
-
-  if (rows.length === 0) {
-    return (
-      <Typography variant="body2" color="semantic.label.alternative">
-        {emptyText}
-      </Typography>
-    );
-  }
-
-  return (
-    <FlexBox flexDirection="column" gap="6px">
-      <FlexBox alignItems="flex-end" gap="3px" sx={{ height: "72px" }}>
-        {rows.map((row) => (
-          <FlexBox
-            key={row.day}
-            flexDirection="column"
-            justifyContent="flex-end"
-            sx={{ flex: 1, height: "100%" }}
-            title={`${row.day} ${row.value.toLocaleString()}건`}
-          >
-            <FlexBox
-              sx={{
-                height: `${Math.max(row.value === 0 ? 1 : 6, (row.value / max) * 100)}%`,
-                background: row.value === 0 ? track : color,
-                borderRadius: "2px",
-              }}
-            />
-          </FlexBox>
-        ))}
-      </FlexBox>
-      <FlexBox justifyContent="space-between">
-        <Typography variant="caption2" color="semantic.label.assistive">
-          {rows[0]?.day.slice(5)}
-        </Typography>
-        <Typography variant="caption2" color="semantic.label.assistive">
-          최대 {max.toLocaleString()} · {rows[rows.length - 1]?.day.slice(5)}
-        </Typography>
-      </FlexBox>
-    </FlexBox>
-  );
-}
-
-/**
- * 비율 하나. 값 자체가 메시지라 막대를 두지 않음
- * 100% 막대는 카드를 가로지르는 검은 띠가 되어 구분선처럼 읽힘
- */
+/** 비율 하나. 값 자체가 메시지라 막대를 두지 않음 */
 export function Ratio({
   value,
   total,
@@ -239,24 +27,22 @@ export function Ratio({
   value: number;
   total: number;
   label: string;
-  tone?: ChartTone;
+  tone?: "neutral" | "negative";
 }) {
-  const color = useTone(tone);
   const ratio = total <= 0 ? 0 : value / total;
 
   return (
-    <FlexBox alignItems="baseline" gap="6px">
-      <Typography
-        variant="display3"
-        weight="bold"
-        sx={{ color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}
+    <div className="flex items-baseline gap-2">
+      <span
+        className={cn(
+          "text-4xl font-bold tabular-nums leading-none",
+          tone === "negative" && "text-destructive",
+        )}
       >
         {total <= 0 ? "-" : `${Math.round(ratio * 1000) / 10}%`}
-      </Typography>
-      <Typography variant="caption1" color="semantic.label.alternative">
-        {label}
-      </Typography>
-    </FlexBox>
+      </span>
+      <span className="text-xs text-muted-foreground">{label}</span>
+    </div>
   );
 }
 
@@ -270,86 +56,189 @@ export function Hero({
   value: string;
   unit?: string;
   label: string;
-  tone?: ChartTone;
+  tone?: "neutral" | "negative" | "accent";
 }) {
-  const color = useTone(tone);
-
   return (
-    <FlexBox alignItems="baseline" gap="6px">
-      <Typography
-        variant="display3"
-        weight="bold"
-        sx={{ color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}
+    <div className="flex items-baseline gap-2">
+      <span
+        className={cn(
+          "text-4xl font-bold tabular-nums leading-none",
+          tone === "negative" && "text-destructive",
+        )}
       >
         {value}
-      </Typography>
-      {unit ? (
-        <Typography variant="label1" color="semantic.label.alternative">
-          {unit}
-        </Typography>
-      ) : null}
-      <Typography variant="caption1" color="semantic.label.alternative">
-        {label}
-      </Typography>
-    </FlexBox>
+      </span>
+      {unit ? <span className="text-sm text-muted-foreground">{unit}</span> : null}
+      <span className="text-xs text-muted-foreground">{label}</span>
+    </div>
   );
 }
 
-/** 카드 한 장. 하드코딩한 그림자 없이 헤어라인으로만 면을 나눔 */
-export function Panel({
-  title,
+/** 작은 값 하나. 카드 안에 여러 개를 나란히 둘 때 */
+export function Metric({
+  label,
+  value,
+  unit,
   note,
-  children,
-  span = 1,
+  tone = "neutral",
 }: {
-  title?: string;
+  label: string;
+  value: string;
+  unit?: string;
   note?: string;
-  children: React.ReactNode;
-  span?: 1 | 2;
+  tone?: "neutral" | "negative";
 }) {
   return (
-    <FlexBox
-      flexDirection="column"
-      gap="12px"
-      sx={{
-        gridColumn: `span ${span}`,
-        minWidth: 0,
-        padding: "16px",
-        borderRadius: "8px",
-        border: "1px solid",
-        borderColor: "semantic.line.normal.neutral",
-        background: "semantic.background.normal.normal",
-      }}
-    >
-      {title ? (
-        <FlexBox flexDirection="column" gap="2px">
-          <Typography variant="label1" weight="bold">
-            {title}
-          </Typography>
-          {note ? (
-            <Typography variant="caption1" color="semantic.label.alternative">
-              {note}
-            </Typography>
-          ) : null}
-        </FlexBox>
-      ) : null}
-      {children}
-    </FlexBox>
+    <div className="flex min-w-0 flex-col gap-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="flex items-baseline gap-0.5">
+        <span
+          className={cn(
+            "text-lg font-bold tabular-nums",
+            tone === "negative" && "text-destructive",
+          )}
+        >
+          {value}
+        </span>
+        {unit ? <span className="text-xs text-muted-foreground">{unit}</span> : null}
+      </span>
+      {note ? <span className="text-[11px] text-muted-foreground">{note}</span> : null}
+    </div>
   );
 }
 
-/** 카드를 담는 격자. 좁은 화면에서는 한 줄로 내려감 */
-export function Grid({ children }: { children: React.ReactNode }) {
+/** 달성과 상한이 함께 있는 값. 배점처럼 최댓값이 정해진 축에만 씀 */
+export function TrackBar({
+  label,
+  value,
+  max,
+}: {
+  label: string;
+  value: number;
+  max: number;
+}) {
+  const ratio = max <= 0 ? 0 : Math.min(100, (value / max) * 100);
+
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-        gap: "12px",
-        alignItems: "start",
-      }}
-    >
-      {children}
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm">{label}</span>
+        <span className="text-sm tabular-nums text-muted-foreground">
+          {value} / {max}
+        </span>
+      </div>
+      <Progress value={ratio} className="h-2" />
     </div>
+  );
+}
+
+/** 같은 뜻의 값이 여러 줄일 때. 가로 막대로 길이를 견줌 */
+export function BarList({
+  rows,
+  tone = "neutral",
+  emptyText = "값이 없습니다",
+}: {
+  rows: { label: string; value: number; note?: string }[];
+  tone?: "neutral" | "negative";
+  emptyText?: string;
+}) {
+  if (rows.length === 0) {
+    return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+  }
+
+  // 한 줄짜리 막대는 언제나 가득 차 아무것도 말하지 않음. 값만 적음
+  if (rows.length === 1) {
+    const row = rows[0]!;
+    return (
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm">{row.label}</span>
+        <span
+          className={cn(
+            "text-sm font-bold tabular-nums",
+            tone === "negative" && "text-destructive",
+          )}
+        >
+          {row.note ?? row.value.toLocaleString()}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <ChartContainer
+      config={tone === "negative" ? NEGATIVE : NEUTRAL}
+      className="w-full"
+      style={{ height: `${Math.max(80, rows.length * 34)}px` }}
+    >
+      <BarChart
+        accessibilityLayer
+        data={rows}
+        layout="vertical"
+        margin={{ left: 4, right: 40, top: 4, bottom: 4 }}
+      >
+        <CartesianGrid horizontal={false} strokeDasharray="2 2" />
+        <YAxis
+          dataKey="label"
+          type="category"
+          tickLine={false}
+          axisLine={false}
+          width={96}
+          tick={{ fontSize: 12 }}
+        />
+        <XAxis dataKey="value" type="number" hide />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+        <Bar dataKey="value" fill="var(--color-value)" radius={0} barSize={14}>
+          <LabelList
+            dataKey="value"
+            position="right"
+            offset={6}
+            className="fill-muted-foreground"
+            fontSize={11}
+          />
+        </Bar>
+      </BarChart>
+    </ChartContainer>
+  );
+}
+
+/** 날짜별 한 계열. 값이 0 인 날도 자리를 지켜 빈 구간이 보이게 함 */
+export function DayBars({
+  rows,
+  tone = "neutral",
+  emptyText = "기록이 없습니다",
+}: {
+  rows: { day: string; value: number }[];
+  tone?: "neutral" | "negative";
+  emptyText?: string;
+}) {
+  if (rows.length === 0) {
+    return <p className="text-sm text-muted-foreground">{emptyText}</p>;
+  }
+
+  return (
+    <ChartContainer
+      config={tone === "negative" ? NEGATIVE : NEUTRAL}
+      className="h-32 w-full"
+    >
+      <BarChart
+        accessibilityLayer
+        data={rows}
+        margin={{ left: 0, right: 0, top: 4, bottom: 0 }}
+      >
+        <CartesianGrid vertical={false} strokeDasharray="2 2" />
+        <XAxis
+          dataKey="day"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={6}
+          tick={{ fontSize: 11 }}
+          tickFormatter={(value: string) => value.slice(5)}
+          interval="preserveStartEnd"
+        />
+        <YAxis width={28} tickLine={false} axisLine={false} tick={{ fontSize: 11 }} />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
+        <Bar dataKey="value" fill="var(--color-value)" radius={0} />
+      </BarChart>
+    </ChartContainer>
   );
 }
