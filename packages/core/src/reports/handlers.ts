@@ -14,6 +14,7 @@ import {
   insertConsentRecords,
   insertFlag,
   insertReportComment,
+  findLatestSucceededAnalysis,
   insertReportWithPhotos,
   listPublicReports,
   listReportCards,
@@ -30,6 +31,7 @@ import {
   listQuery,
   toggleInterest,
   type CreateReport,
+  type AnalyzeResult,
 } from "@rebirth/types";
 
 import {
@@ -247,6 +249,12 @@ async function saveReport({
       : undefined;
   const coarse = exact ? snapToGrid(exact, gridMeters) : undefined;
 
+  // 분석 결과를 제보에 이어 붙임. 없으면 손으로 채운 제보라 그대로 둠
+  const analysis = await findLatestSucceededAnalysis({
+    sessionId,
+    uploadIds: input.uploadIds,
+  }).catch(() => undefined);
+
   const manageToken = issueToken();
   const row = await insertReportWithPhotos(
     {
@@ -282,6 +290,9 @@ async function saveReport({
       landmarkNote: input.landmarkNote,
       occurredAt: input.occurredAt,
       aiEditedFields: input.aiEditedFields,
+      aiRaw: (analysis?.result as AnalyzeResult | undefined) ?? null,
+      aiModel: analysis?.model ?? null,
+      aiAnalyzedAt: analysis?.finishedAt ?? null,
     },
     uploads.map((upload, index) => ({
       storagePath: upload.storagePath!,

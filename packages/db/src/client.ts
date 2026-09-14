@@ -10,26 +10,13 @@ declare global {
   var __rebirthSql: ReturnType<typeof postgres> | undefined
 }
 
-/**
- * 한 프로세스가 쥘 연결 수
- * Supabase 세션 풀러는 클라이언트 연결 하나가 서버 자리 하나를 잡고 프로젝트 전체가 15 자리를 나눠 씀
- * postgres 기본값 10 이면 개발 서버 하나가 자리를 거의 다 쥐어
- * 관리자 앱이나 마이그레이션이 붙는 순간 max clients reached 로 질의가 통째로 실패함
- */
-const POOL_MAX = 5
-
-/** 쉬는 연결을 놓아 주는 시간(초). 켜 두기만 한 서버가 자리를 계속 차지하지 않게 함 */
-const IDLE_TIMEOUT = 20
-
 function createSql() {
   const url = process.env.DATABASE_URL
   if (!url) throw new Error('DATABASE_URL 이 없습니다')
-  // Supabase transaction pooler 는 prepared statement 를 지원하지 않음
-  return postgres(url, {
-    prepare: false,
-    max: POOL_MAX,
-    idle_timeout: IDLE_TIMEOUT,
-  })
+  // Supabase 풀러는 prepared statement 를 지원하지 않음
+  // 5432 세션 모드는 전체 15개가 상한인데 기본값이 프로세스당 10개라 앱 둘만 띄워도 마름
+  // AI 화면은 한 요청에 질의를 여럿 띄우므로 프로세스당 상한을 낮게 못박음
+  return postgres(url, { prepare: false, max: 4, idle_timeout: 20 })
 }
 
 // 빌드 시점에 라우트 모듈을 평가할 때 DATABASE_URL 이 없어도 되게 접속을 늦춤

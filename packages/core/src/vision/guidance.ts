@@ -34,6 +34,5 @@ export function adviseFromResult(result: AnalyzeResult): AnalyzeAdvice {
   return { state: "draft", message: null };
 }
 
-// 분석이 실패했을 때 화면이 쓸 문구. 빈 폼을 열어 직접 입력하게 함
-export const ANALYZE_FAILED_MESSAGE =
-  "자동 정리가 안 됐어요. 내용을 직접 적어 제보할 수 있어요";
+// 분석이 실패했을 때 화면이 쓸 문구. 알럿 제목이 실패를 말하므로 여기는 다음 할 일만 적음
+export const ANALYZE_FAILED_MESSAGE = "잠시 후 다시 시도해 주세요";

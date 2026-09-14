@@ -1,105 +1,118 @@
 "use client";
 
-import { useState } from "react";
-import {
-  Button,
-  Card,
-  CardCaption,
-  CardContent,
-  CardTitle,
-  Chip,
-  FallbackView,
-  FallbackViewContent,
-  FallbackViewText,
-  FlexBox,
-  Typography,
-} from "@wanteddev/wds";
-import { MODERATION_QUEUE, SIGHTINGS } from "@/lib/mock";
+import Link from "next/link";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 
-type Decision = "hide" | "keep";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { VISIBILITY_LABEL, when } from "@/lib/labels";
+import { decideFlag, type ModerationResult } from "./actions";
 
-export function ModerationView() {
-  // 서버 반영 전 화면 상태. API 연결 시 mutation 결과로 대체
-  const [decided, setDecided] = useState<Record<string, Decision>>({});
+// 판정은 공개 여부만 바꿈. 진행 상태는 운영자가 대신 인증하지 않음. POL-06
 
-  const pending = MODERATION_QUEUE.filter((q) => !decided[q.sightingId]);
+export type ModerationItem = {
+  reportId: string;
+  flagCount: number;
+  firstReportedAt: string;
+  reasons: string[];
+  appearance: string | null;
+  areaName: string | null;
+  visibility: string | null;
+};
+
+function DecideButton({
+  decision,
+  label,
+  variant,
+}: {
+  decision: "hide" | "keep";
+  label: string;
+  variant?: "outline";
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      type="submit"
+      name="decision"
+      value={decision}
+      size="sm"
+      variant={variant}
+      disabled={pending}
+    >
+      {label}
+    </Button>
+  );
+}
+
+function QueueCard({ item }: { item: ModerationItem }) {
+  const [state, action] = useActionState<ModerationResult, FormData>(decideFlag, {
+    ok: false,
+  });
 
   return (
-    <>
-      <FlexBox alignItems="center" gap="8px">
-        <Typography variant="title3" weight="bold">
-          검수
-        </Typography>
-        <Typography variant="caption1">
-          대기 {pending.length}건 · 전체 {MODERATION_QUEUE.length}건
-        </Typography>
-      </FlexBox>
+    <Card>
+      <CardHeader>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="destructive">신고 {item.flagCount}건</Badge>
+          {item.visibility ? (
+            <Badge variant="outline">{VISIBILITY_LABEL[item.visibility]}</Badge>
+          ) : null}
+          <span className="text-xs text-muted-foreground">
+            {when(item.firstReportedAt)}
+          </span>
+        </div>
+        <CardTitle className="font-normal">
+          <Link
+            href={`/sightings/${item.reportId}`}
+            className="underline underline-offset-2"
+          >
+            {item.appearance ?? "외형 미기재"}
+          </Link>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <p className="text-sm">신고 사유 {item.reasons.join(", ")}</p>
+        <p className="text-xs text-muted-foreground">{item.areaName ?? "지역 미확인"}</p>
+        <form action={action} className="flex items-center gap-2">
+          <input type="hidden" name="reportId" value={item.reportId} />
+          <DecideButton decision="hide" label="공개 목록에서 빼기" />
+          <DecideButton decision="keep" label="유지" variant="outline" />
+          {state.message ? (
+            <span className="text-xs text-destructive">{state.message}</span>
+          ) : null}
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
 
-      {MODERATION_QUEUE.length === 0 ? (
-        <FallbackView>
-          <FallbackViewContent>
-            <FallbackViewText
-              title="검수 대기 없음"
-              description="신고가 들어온 제보가 없습니다."
-            />
-          </FallbackViewContent>
-        </FallbackView>
+export function ModerationView({ items }: { items: ModerationItem[] }) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-baseline gap-2">
+        <h1 className="text-xl font-bold">검수</h1>
+        <span className="text-xs text-muted-foreground">대기 {items.length}건</span>
+      </div>
+
+      {items.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center gap-1 py-10">
+            <span className="text-sm font-bold">검수 대기 없음</span>
+            <span className="text-xs text-muted-foreground">
+              신고가 들어온 제보 없음
+            </span>
+          </CardContent>
+        </Card>
       ) : (
-        <FlexBox flexDirection="column" gap="8px">
-          {MODERATION_QUEUE.map((q) => {
-            const sighting = SIGHTINGS.find((s) => s.id === q.sightingId);
-            const decision = decided[q.sightingId];
-
-            return (
-              <Card key={q.sightingId}>
-                <CardContent>
-                  <FlexBox alignItems="center" flexWrap="wrap" gap="6px">
-                    <Chip size="xsmall" disableInteraction>
-                      신고 {q.reportCount}건
-                    </Chip>
-                    <Typography variant="caption1">{q.reportedAt}</Typography>
-                    {decision ? (
-                      <Chip size="xsmall" variant="outlined" disableInteraction>
-                        {decision === "hide" ? "숨김 예정" : "유지 예정"}
-                      </Chip>
-                    ) : null}
-                  </FlexBox>
-                  <CardTitle variant="headline2">
-                    {sighting?.appearance ?? "목데이터에 없는 제보"}
-                  </CardTitle>
-                  <CardCaption variant="body2">신고 사유 {q.reason}</CardCaption>
-                  <CardCaption variant="caption1">
-                    {sighting?.areaName ?? "지역 미확인"}
-                  </CardCaption>
-                  <FlexBox gap="8px">
-                    <Button
-                      size="small"
-                      onClick={() =>
-                        setDecided((prev) => ({ ...prev, [q.sightingId]: "hide" }))
-                      }
-                    >
-                      공개 목록에서 빼기
-                    </Button>
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() =>
-                        setDecided((prev) => ({ ...prev, [q.sightingId]: "keep" }))
-                      }
-                    >
-                      유지
-                    </Button>
-                  </FlexBox>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </FlexBox>
+        <div className="flex flex-col gap-2">
+          {items.map((item) => (
+            <QueueCard key={item.reportId} item={item} />
+          ))}
+        </div>
       )}
-      <Typography variant="caption1">
-        판정은 화면 상태로만 남습니다. status 를 hidden 으로 바꾸는 mutation 은
-        API 연결 시 붙습니다.
-      </Typography>
-    </>
+
+    </div>
   );
 }

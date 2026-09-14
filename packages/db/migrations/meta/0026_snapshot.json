@@ -1,5 +1,5 @@
 {
-  "id": "596a2d82-4651-4778-9bd5-75c9e51834f4",
+  "id": "c2b1a4ab-0ee7-4c6b-9605-f43d45b28638",
   "prevId": "0bb8ebcb-0241-4f76-a48a-94e00d527742",
   "version": "7",
   "dialect": "postgresql",
@@ -271,6 +271,141 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.match_reviews": {
+      "name": "match_reviews",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "lost_id": {
+          "name": "lost_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sighting_id": {
+          "name": "sighting_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verdict": {
+          "name": "verdict",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "agreements": {
+          "name": "agreements",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "conflicts": {
+          "name": "conflicts",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'"
+        },
+        "check_first": {
+          "name": "check_first",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "prompt_version": {
+          "name": "prompt_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "latency_ms": {
+          "name": "latency_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "match_reviews_recent_idx": {
+          "name": "match_reviews_recent_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "match_reviews_lost_id_reports_id_fk": {
+          "name": "match_reviews_lost_id_reports_id_fk",
+          "tableFrom": "match_reviews",
+          "tableTo": "reports",
+          "columnsFrom": [
+            "lost_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "match_reviews_sighting_id_reports_id_fk": {
+          "name": "match_reviews_sighting_id_reports_id_fk",
+          "tableFrom": "match_reviews",
+          "tableTo": "reports",
+          "columnsFrom": [
+            "sighting_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "match_reviews_pair_uk": {
+          "name": "match_reviews_pair_uk",
+          "nullsNotDistinct": false,
+          "columns": [
+            "lost_id",
+            "sighting_id"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -3161,88 +3296,6 @@
       },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.area_subscriptions": {
-      "name": "area_subscriptions",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "area_code": {
-          "name": "area_code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "area_code_system": {
-          "name": "area_code_system",
-          "type": "area_code_system",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "area_name": {
-          "name": "area_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "last_read_at": {
-          "name": "last_read_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "area_subscriptions_user_idx": {
-          "name": "area_subscriptions_user_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "created_at",
-              "isExpression": false,
-              "asc": false,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "area_subscriptions_user_id_area_code_pk": {
-          "name": "area_subscriptions_user_id_area_code_pk",
-          "columns": [
-            "user_id",
-            "area_code"
-          ]
-        }
-      },
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
