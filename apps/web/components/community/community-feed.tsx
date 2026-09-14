@@ -40,11 +40,11 @@ import { PostCard, type PostCardItem } from "./post-card";
 // 지난번에 알아낸 동네가 쿠키에 있으면 서버가 이미 그렇게 그려 보내므로 다시 읽지 않음
 // 처음 오는 사람은 서버가 동네를 몰라 전국 목록을 그리고, 위치를 잡은 뒤 한 번 다시 읽음
 
-/** 반응 많은 글을 세울 최소 목록 길이. 서너 건뿐이면 골라 봐야 같은 글이 두 번 보임 */
-const MIN_FOR_HOT = 5;
+/** 반응 많은 글을 세울 최소 목록 길이. 골라 세운 수의 곱절은 돼야 같은 글이 두 번 보이지 않음 */
+const MIN_FOR_HOT = 12;
 
-/** 가로줄에 세울 장 수 */
-const HOT_COUNT = 3;
+/** 가로줄에 세울 장 수. 세 장은 한 화면에 거의 다 들어와 밀어도 멈춘 것처럼 보임 */
+const HOT_COUNT = 6;
 
 /** 가로 카드 한 장 폭. 두 장 반이 보여 더 있다는 것이 드러남 */
 const HOT_WIDTH = "132px";
@@ -331,14 +331,14 @@ export function CommunityFeed({
                 반응이 많은 글
               </Text>
             </HStack>
-            {/* 가로로 넘기는 줄은 첫 장이 화면 끝에서 시작해야 더 있다는 것이 보임 */}
-            <Box className="rebirth-scroll-row rebirth-bleed">
-              <HStack gap="x3" align="stretch">
-                {hot.map((item) => (
-                  <HotCard key={item.id} item={item} />
-                ))}
-              </HStack>
-            </Box>
+            {/* 가로로 넘기는 줄은 첫 장이 화면 끝에서 시작해야 더 있다는 것이 보임
+                넘기는 자리를 HStack 이 직접 맡음. 블록 상자로 감싸면 끝쪽 안쪽 여백이
+                스크롤 영역에서 빠져 마지막 장이 화면 끝에 붙음 */}
+            <HStack className="rebirth-scroll-row rebirth-bleed" gap="x3" align="stretch">
+              {hot.map((item) => (
+                <HotCard key={item.id} item={item} />
+              ))}
+            </HStack>
           </Section>
         ) : null}
 
