@@ -1,4 +1,5 @@
 import { findCategory } from "@rebirth/core/community";
+import { serverError } from "@rebirth/core/http";
 
 import { toFeedItems } from "@/app/community/feed-item";
 import { encodeFeedCursor, readFeedPage, type FeedCursor } from "@/app/community/feed-page";
@@ -52,11 +53,9 @@ export async function GET(request: Request): Promise<Response> {
       nextCursor: encodeFeedCursor(page.nextCursor),
       nearCount: page.nearCount,
     });
-  } catch {
-    // 원인을 그대로 내보내지 않음. 목록 실패는 화면이 재시도 버튼으로 다룸
-    return Response.json(
-      { message: "목록을 불러오지 못했습니다" },
-      { status: 500 },
-    );
+  } catch (error) {
+    // 원인은 로그에만 남김. 목록 실패는 화면이 재시도 버튼으로 다룸
+    // 삼켜 버리면 연결이 모자라 터진 것인지 질의가 틀린 것인지 나중에 알 길이 없음
+    return serverError("community.list", error);
   }
 }

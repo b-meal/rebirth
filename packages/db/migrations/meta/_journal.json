@@ -232,6 +232,20 @@
       "when": 1789397400311,
       "tag": "0032_lock_down_gov_data_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1789404908799,
+      "tag": "0033_add_area_subscriptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1789404909799,
+      "tag": "0034_lock_down_area_subscriptions_rls",
+      "breakpoints": true
     }
   ]
 }
