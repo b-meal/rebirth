@@ -1,8 +1,17 @@
 "use client";
 
 import { useRef } from "react";
-import { Box, Grid, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
-import { IconCameraFill, IconPictureFill } from "@karrotmarket/react-monochrome-icon";
+import {
+  Box,
+  Grid,
+  HStack,
+  Icon,
+  ImageFrame,
+  ImageFrameFloater,
+  Text,
+  VStack,
+} from "@seed-design/react";
+import { IconCameraFill, IconPictureFill, IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { DismissibleCallout } from "seed-design/ui/callout";
 
@@ -144,6 +153,7 @@ export function ReportCapture({
 
         <Grid columns={3} gap="x2">
           {photos.map((photo, index) => (
+            // 한 장만 빼는 일이 잦아 사진마다 지우는 자리를 둠. 전체 비우기는 아래 버튼이 함
             <ImageFrame
               key={photo.id}
               src={photo.previewUrl}
@@ -152,7 +162,20 @@ export function ReportCapture({
               width="full"
               borderRadius="r3"
               stroke
-            />
+            >
+              <ImageFrameFloater placement="top-end" offsetX="x2" offsetY="x2">
+                <ActionButton
+                  type="button"
+                  variant="neutralSolid"
+                  size="xsmall"
+                  layout="iconOnly"
+                  aria-label={`사진 ${index + 1} 삭제`}
+                  onClick={() => picker.removePhoto(photo.id)}
+                >
+                  <Icon svg={<IconXmarkFill />} />
+                </ActionButton>
+              </ImageFrameFloater>
+            </ImageFrame>
           ))}
           {isFull ? null : (
             <VStack

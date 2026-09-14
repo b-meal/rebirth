@@ -75,9 +75,9 @@ export async function analyzeHandler(request: Request): Promise<Response> {
       MODEL_MEDIA_TYPES.includes(row.contentType as (typeof MODEL_MEDIA_TYPES)[number]),
     );
     if (usable.length === 0) {
-      // 실패가 아니라 직접 입력 안내
+      // 다시 시도해도 같은 형식이라 결과가 같음. 사진을 바꾸라고 안내함
       return serviceUnavailable(
-        "이 형식은 AI 초안을 만들 수 없어요. 직접 입력해 주세요",
+        "이 형식은 분석할 수 없어요. 다른 사진으로 다시 찍어 주세요",
       );
     }
 
