@@ -20,6 +20,14 @@ export type AreaSubscribeButtonProps = {
   subscribed: boolean;
 };
 
+/**
+ * 단추 한 줄에 들어가도록 행정구역 이름의 마지막 조각만 씀
+ * 경기도 수원시 영통구 광교1동 → 광교1동. 구독 목록에는 전체 이름이 그대로 남음
+ */
+function shortArea(name: string): string {
+  return name.trim().split(/\s+/).at(-1) ?? name;
+}
+
 const MESSAGE = {
   limit: "구독할 수 있는 동네를 다 채웠어요. 알림에서 하나를 해제해 주세요",
   "no-area": "이 제보는 동네가 정해지지 않아 알림을 받을 수 없어요",
@@ -35,12 +43,14 @@ export function AreaSubscribeButton({
   const [problem, setProblem] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
+  const label = shortArea(areaName);
+
   if (on) {
     return (
       <HStack gap="x1_5" align="center" py="x1">
         <Icon svg={<IconBellLine />} size="x4" color="fg.brand" />
         <Text textStyle="t3Regular" color="fg.brand">
-          {areaName} 알림을 받고 있어요
+          {label} 알림을 받고 있어요
         </Text>
       </HStack>
     );
@@ -74,7 +84,7 @@ export function AreaSubscribeButton({
           onClick={subscribe}
         >
           <PrefixIcon svg={<IconBellLine />} />
-          {areaName} 알림 받기
+          {label} 알림 받기
         </ActionButton>
       </HStack>
       {problem ? (
