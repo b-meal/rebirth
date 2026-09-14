@@ -3,6 +3,7 @@ import { distanceKm } from "@rebirth/core/location/geo";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
   countReportInterests,
+  findNearbyShelters,
   findPublicReport,
   findReportCoarsePoint,
   hasReportInterest,
@@ -18,6 +19,7 @@ import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
 import { ReportDetail } from "@/components/report/report-detail";
 import type { ReportCardItem } from "@/components/report/report-card";
 import type { ReportComment } from "@/components/report/report-comments";
+import type { ShelterItem } from "@/components/report/report-shelters";
 
 // 공유 링크를 받은 제3자용 화면, 정확 좌표와 제보자 정보와 품종 확정 표현 제외
 
@@ -31,6 +33,8 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 // 아래에 붙이는 다른 제보 수와 조회 기간
 const NEARBY_COUNT = 4;
 const NEARBY_DAYS = LIST_PERIOD_DAYS[1];
+// 전화를 걸 만한 후보 수. 더 늘리면 고르는 일이 되어 버림
+const SHELTER_COUNT = 3;
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { id } = await params;
@@ -112,6 +116,16 @@ async function loadNearby(currentId: string, origin: NearbyOrigin): Promise<Repo
   }
 }
 
+/** 근처 보호·구조 기관. 아직 시드되지 않았거나 조회가 실패하면 절을 감춤 */
+async function loadShelters(origin: NearbyOrigin): Promise<ShelterItem[]> {
+  if (!origin) return [];
+  try {
+    return await findNearbyShelters({ point: origin, limit: SHELTER_COUNT });
+  } catch {
+    return [];
+  }
+}
+
 async function loadComments(reportId: string): Promise<ReportComment[]> {
   try {
     const rows = await listReportComments(reportId);
@@ -149,9 +163,10 @@ export default async function ReportDetailPage({ params }: Params) {
   const spot = await findReportCoarsePoint(id).catch(() => undefined);
   const point = spot?.coarsePoint ? { lat: spot.coarsePoint.y, lng: spot.coarsePoint.x } : null;
 
-  const [comments, nearby, interest] = await Promise.all([
+  const [comments, nearby, shelters, interest] = await Promise.all([
     loadComments(id),
     loadNearby(id, point),
+    loadShelters(point),
     loadInterest(id),
   ]);
 
@@ -163,6 +178,7 @@ export default async function ReportDetailPage({ params }: Params) {
       location={point ? { point, gridMeters: spot?.coarseGridM ?? 300 } : null}
       comments={comments}
       nearby={nearby}
+      shelters={shelters}
       interest={interest}
     />
   );

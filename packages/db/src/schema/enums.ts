@@ -144,3 +144,6 @@ export const flagResolution = pgEnum('flag_resolution', [
   'request_edit',
   'escalate',
 ])
+
+// 공공데이터 출처 구분. care_center 는 동물보호센터, wildlife_center 는 야생동물구조센터
+export const shelterKind = pgEnum('shelter_kind', ['care_center', 'wildlife_center'])

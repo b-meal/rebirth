@@ -116,6 +116,12 @@ export const communityCategory = z.enum(
   { error: '주제를 선택해 주십시오' },
 )
 
+// 보호·구조 기관 출처. 동물보호센터와 야생동물구조센터는 소관 부처가 다름
+export const shelterKind = z.enum(
+  ['care_center', 'wildlife_center'],
+  { error: '기관 종류가 올바르지 않습니다' },
+)
+
 export type ReportKind = z.infer<typeof reportKind>
 export type Visibility = z.infer<typeof visibility>
 export type Lifecycle = z.infer<typeof lifecycle>
@@ -131,6 +137,7 @@ export type LocationSource = z.infer<typeof locationSource>
 export type AreaCodeSystem = z.infer<typeof areaCodeSystem>
 export type CloseReason = z.infer<typeof closeReason>
 export type CommunityCategory = z.infer<typeof communityCategory>
+export type ShelterKind = z.infer<typeof shelterKind>
 export type SupportRequestKind = z.infer<typeof supportRequestKind>
 export type SupportStatus = z.infer<typeof supportStatus>
 export type LegalDocType = z.infer<typeof legalDocType>
