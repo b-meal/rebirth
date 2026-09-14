@@ -1,7 +1,7 @@
 "use client";
 
 import type { LocationCandidate } from "@rebirth/core/location/candidate";
-import { Box, Icon, Skeleton, Text, VStack } from "@seed-design/react";
+import { Box, Icon, Skeleton, Text, VisuallyHidden, VStack } from "@seed-design/react";
 import {
   IconMagnifyingglassLine,
   IconXmarkCircleFill,
@@ -49,16 +49,15 @@ export function PlaceSearchField({
 
   return (
     <Box position="relative">
+      {/* placeholder 가 이미 무엇을 적는 자리인지 말해 이름표를 눈에 보이게 두지 않음
+          label 을 비우면 SEED 가 콘솔에 경고를 남기므로 감춘 이름표로 줌 */}
       <TextField
+        label={<VisuallyHidden>{placeholder}</VisuallyHidden>}
         prefixIcon={<IconMagnifyingglassLine />}
         value={search.query}
         onValueChange={(next) => search.setQuery(next.value)}
       >
-        <TextFieldInput
-          placeholder={placeholder}
-          aria-label={placeholder}
-          aria-busy={search.loading}
-        />
+        <TextFieldInput placeholder={placeholder} aria-busy={search.loading} />
       </TextField>
 
       {search.query ? (

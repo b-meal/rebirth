@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { HStack, Icon, Text, VStack } from "@seed-design/react";
+import { HStack, Icon, Text, VisuallyHidden, VStack } from "@seed-design/react";
 import {
   IconChevronRightLine,
   IconMagnifyingglassLine,
@@ -657,11 +657,10 @@ export function LostForm() {
               )}
             </Section>
 
-            {/* 값이 곧 언제인지를 말해 줘 위에 이름표를 또 달지 않음
-                읽어 주는 이름은 aria-label 로만 남김 */}
-            <TextField>
+            {/* 값이 곧 언제인지를 말해 줘 이름표를 눈에 보이게 두지 않음
+                label 을 비우면 SEED 가 콘솔에 경고를 남기므로 감춘 이름표로 줌 */}
+            <TextField label={<VisuallyHidden>마지막 목격 시각</VisuallyHidden>}>
               <TextFieldInput
-                aria-label="마지막 목격 시각"
                 type="datetime-local"
                 className="rebirth-datetime"
                 // 상태가 빈 값을 들고 화면만 지금 시각을 보이면
