@@ -134,7 +134,8 @@ function StatLink({
       borderRadius="r2"
       bg="bg.neutralWeak"
     >
-      <Link href={href} className="rebirth-row">
+      {/* 바로 가기 칸과 같은 면을 깔고 있어 반응도 같은 결로 둠 */}
+      <Link href={href} className="rebirth-tile">
         <Icon svg={icon} size="x5" color="fg.neutralMuted" />
         <Text textStyle="t6Bold" color="fg.neutral">
           {value}
