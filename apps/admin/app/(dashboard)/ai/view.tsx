@@ -446,6 +446,31 @@ export function AiView({ data }: { data: AiDashboard }) {
         </Typography>
       </Section>
 
+      <Section
+        title="임베딩"
+        note="외형 설명을 벡터로 바꿔 배점이 놓치는 표현 차이를 잡으려는 자리입니다"
+      >
+        <Card>
+          <CardContent>
+            <CardTitle variant="headline2" weight="bold">
+              아직 연결되지 않았습니다
+            </CardTitle>
+            <CardCaption variant="body2">
+              Anthropic 에 임베딩 API 가 없어 Vercel AI Gateway 를 거쳐야 하고, Gateway 는 팀에
+              결제수단이 등록돼야 요청을 받습니다. 카드를 등록하면 rebirth-embeddings 키
+              (월 5달러 한도)가 바로 동작합니다.
+            </CardCaption>
+            <CardCaption variant="caption2">
+              후보 모델 google/text-multilingual-embedding-002 · voyage/voyage-3.5-lite ·
+              openai/text-embedding-3-small
+            </CardCaption>
+            <CardCaption variant="caption2">
+              연결 전까지 유사도는 결정식 배점과 Claude 재평가 두 축으로만 냅니다.
+            </CardCaption>
+          </CardContent>
+        </Card>
+      </Section>
+
       <Divider />
 
       <Section title={`최근 분석 작업 ${data.jobs.length}건`}>
