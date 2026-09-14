@@ -100,7 +100,7 @@ export function SightingDetailView({ detail }: { detail: SightingDetail }) {
               {detail.appearance ?? describeAnimal(detail)}
             </CardTitle>
             <CardDescription>
-              {detail.areaName ?? "위치 미확인"} · 발견 {when(detail.occurredAt)}
+              {detail.areaName ?? "위치 미확인"}, 발견 {when(detail.occurredAt)}
             </CardDescription>
           </CardHeader>
           <CardContent className="divide-y divide-border">
@@ -183,7 +183,7 @@ export function SightingDetailView({ detail }: { detail: SightingDetail }) {
                     <TableCell className="text-muted-foreground">
                       {Object.entries(BREAKDOWN_LABEL)
                         .map(([key, label]) => `${label}: ${match.breakdown[key] ?? "-"}`)
-                        .join(" · ")}
+                        .join(", ")}
                     </TableCell>
                   </TableRow>
                 ))}

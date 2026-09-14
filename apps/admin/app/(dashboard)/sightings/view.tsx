@@ -94,7 +94,7 @@ export function SightingsView({ items }: { items: AdminReportRow[] }) {
                     </TableCell>
                     <TableCell className="whitespace-nowrap text-muted-foreground">
                       {item.aiModel
-                        ? `${item.aiModel} · 수정 ${item.aiEditedFields.length}개`
+                        ? `${item.aiModel}, 수정 ${item.aiEditedFields.length}개`
                         : "-"}
                     </TableCell>
                     <TableCell>

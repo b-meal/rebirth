@@ -169,7 +169,7 @@ function ReviewRunner({
       <input type="hidden" name="lostId" value={pair.lostId} />
       <input type="hidden" name="sightingId" value={pair.sightingId} />
       <span className="text-xs text-muted-foreground">
-        {pair.score}점 · 제보 {shortId(pair.sightingId)}
+        {pair.score}점, 제보 {shortId(pair.sightingId)}
       </span>
       <span className="flex items-center gap-2">
         {state.message ? (
@@ -193,14 +193,14 @@ function ReviewCard({ review }: { review: AiDashboard["reviews"][number] }) {
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="secondary">{review.label}</Badge>
         <span className="text-[11px] text-muted-foreground">
-          {review.model} · {ms(review.latencyMs)} · {when(review.createdAt)}
+          {review.model}, {ms(review.latencyMs)}, {when(review.createdAt)}
         </span>
       </div>
       {review.agreements.length > 0 ? (
-        <p className="text-xs">겹침 {review.agreements.join(" · ")}</p>
+        <p className="text-xs">겹침 {review.agreements.join(", ")}</p>
       ) : null}
       {review.conflicts.length > 0 ? (
-        <p className="text-xs text-destructive">어긋남 {review.conflicts.join(" · ")}</p>
+        <p className="text-xs text-destructive">어긋남 {review.conflicts.join(", ")}</p>
       ) : null}
       {review.checkFirst ? (
         <p className="text-xs text-muted-foreground">먼저 확인 {review.checkFirst}</p>
@@ -264,7 +264,7 @@ export function AiView({ data }: { data: AiDashboard }) {
     {
       label: "모델 호출",
       value: calls.toLocaleString(),
-      source: `외형 초안 ${real?.total ?? 0} · 재평가 ${reviewTotal} · 임베딩 ${(coverage?.embedded ?? 0).toLocaleString()}`,
+      source: `외형 초안 ${real?.total ?? 0}, 재평가 ${reviewTotal}, 임베딩 ${(coverage?.embedded ?? 0).toLocaleString()}`,
     },
     {
       label: "벡터 단독 발견",
@@ -277,7 +277,7 @@ export function AiView({ data }: { data: AiDashboard }) {
         real && real.total > 0
           ? `${Math.round((real.failed / real.total) * 1000) / 10}%`
           : "-",
-      source: `${data.models.vision} · 실패 ${real?.failed ?? 0}건`,
+      source: `${data.models.vision}, 실패 ${real?.failed ?? 0}건`,
     },
     {
       label: "초안 무수정 비율",
@@ -358,7 +358,7 @@ export function AiView({ data }: { data: AiDashboard }) {
         <Card>
           <CardHeader>
             <CardTitle>의미 벡터</CardTitle>
-            <CardDescription>{data.models.embedding} · 384차원</CardDescription>
+            <CardDescription>{data.models.embedding}, 384차원</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {coverage && coverage.reports > 0 ? (
@@ -426,8 +426,8 @@ export function AiView({ data }: { data: AiDashboard }) {
 
       {data.mockRuns > 0 ? (
         <p className="text-xs text-muted-foreground tabular-nums">
-          {data.models.vision} {real?.total ?? 0}건 기준 · 더미 {data.mockRuns.toLocaleString()}건
-          제외 · 전체 {data.totalRuns.toLocaleString()}건
+          {data.models.vision} {real?.total ?? 0}건 기준, 더미 {data.mockRuns.toLocaleString()}건
+          제외, 전체 {data.totalRuns.toLocaleString()}건
         </p>
       ) : null}
 
@@ -450,12 +450,12 @@ export function AiView({ data }: { data: AiDashboard }) {
             <TableBody>
               <TableRow>
                 <TableCell className="font-medium">결정식 배점</TableCell>
-                <TableCell>거리 · 시각 · 털색 · 크기 · 특징</TableCell>
+                <TableCell>거리, 시각, 털색, 크기, 특징</TableCell>
                 <TableCell className="text-muted-foreground">
                   같은 뜻을 다르게 쓴 문장
                 </TableCell>
                 <TableCell className="tabular-nums">
-                  {breakdown ? `${breakdown.pairs}쌍 · 평균 ${breakdown.avgScore}점` : "-"}
+                  {breakdown ? `${breakdown.pairs}쌍, 평균 ${breakdown.avgScore}점` : "-"}
                 </TableCell>
               </TableRow>
               <TableRow>
@@ -522,10 +522,10 @@ export function AiView({ data }: { data: AiDashboard }) {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>
-              표본 {data.points.length.toLocaleString()}건 · 좌표 {distinctPoints.toLocaleString()}개
+              표본 {data.points.length.toLocaleString()}건, 좌표 {distinctPoints.toLocaleString()}개
             </CardTitle>
             <CardDescription>
-              384차원을 주성분 둘로 투영 · 축에 뜻 없음 · 같은 문장은 같은 좌표
+              384차원을 주성분 둘로 투영, 축에 뜻 없음, 같은 문장은 같은 좌표
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -567,7 +567,7 @@ export function AiView({ data }: { data: AiDashboard }) {
             </Table>
             {gap !== null ? (
               <p className="pt-3 text-xs tabular-nums">
-                개와 고양이 중심 간격 {gap} · 각 군집 퍼짐보다 큼
+                개와 고양이 중심 간격 {gap}, 각 군집 퍼짐보다 큼
               </p>
             ) : null}
           </CardContent>
@@ -626,7 +626,7 @@ export function AiView({ data }: { data: AiDashboard }) {
                   {(data.coverage?.embedded ?? 0).toLocaleString()}건
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  db:embed · 모델 교체 시 전량 재생성
+                  db:embed, 모델 교체 시 전량 재생성
                 </TableCell>
               </TableRow>
             </TableBody>
@@ -643,7 +643,7 @@ export function AiView({ data }: { data: AiDashboard }) {
         <Card>
           <CardHeader>
             <CardTitle>일자별 실행</CardTitle>
-            <CardDescription>최근 {data.days.length}일 · 더미 포함</CardDescription>
+            <CardDescription>최근 {data.days.length}일, 더미 포함</CardDescription>
           </CardHeader>
           <CardContent>
             <DayBars rows={data.days.map((d) => ({ day: d.day, value: d.total }))} />

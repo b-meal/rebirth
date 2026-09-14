@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: {
     default: "다시집 운영",
-    template: "%s · 다시집 운영",
+    template: "%s, 다시집 운영",
   },
   description: "발견동물 제보 검수와 운영 지표",
   // 운영 화면은 검색 노출 대상 아님

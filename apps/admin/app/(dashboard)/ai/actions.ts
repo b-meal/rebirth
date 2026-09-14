@@ -29,7 +29,7 @@ export async function reviewPair(
   try {
     const outcome = await runMatchReview({ lostId, sightingId });
     revalidatePath("/ai");
-    return { ok: true, message: `${outcome.model} · ${outcome.latencyMs}ms` };
+    return { ok: true, message: `${outcome.model}, ${outcome.latencyMs}ms` };
   } catch (error) {
     if (error instanceof ReviewError) {
       console.error(`[ai] 재평가 중단 (${error.kind})`, error.message);
