@@ -40,7 +40,7 @@ import {
   describeAnimal,
   triStateLabel,
 } from "@/lib/report-label";
-import { Screen, SectionCard } from "@/components/ui/screen";
+import { FeatureRow, Screen, SectionCard, SectionTitle } from "@/components/ui/screen";
 import { Badge } from "@/components/ui/badge";
 import { ReportBadges } from "@/components/report/report-badges";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
@@ -82,30 +82,6 @@ function formatAbsolute(value: Date | string): string {
   const date = new Date(value);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-      {children}
-    </Text>
-  );
-}
-
-/** 라벨과 값을 한 줄에 둔 특징 행, 글 안에 섞지 않고 대조하기 쉽게 나눔 */
-function FeatureRow({ label, value }: { label: string; value: string }) {
-  return (
-    <HStack justify="space-between" align="flex-start" gap="x4">
-      <Text textStyle="t4Regular" color="fg.neutralMuted">
-        {label}
-      </Text>
-      <VStack align="flex-end" minWidth="0">
-        <Text textStyle="t4Regular" color="fg.neutral">
-          {value}
-        </Text>
-      </VStack>
-    </HStack>
-  );
 }
 
 export type ReportDetailProps = {

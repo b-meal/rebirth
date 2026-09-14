@@ -10,6 +10,11 @@ import { PetDetail } from "@/components/mine/pet-detail";
 
 // 등록한 동물 한 마리. 올려 둔 사진을 모두 넘겨 보는 자리
 
+/** 등록 시각을 사람이 읽는 날짜로. 서버에서 만들어 두 곳의 시간대가 갈리지 않게 함 */
+function formatDay(value: Date): string {
+  return `${value.getFullYear()}년 ${value.getMonth() + 1}월 ${value.getDate()}일`;
+}
+
 export const metadata: Metadata = { title: "우리 동물", robots: { index: false } };
 
 export const dynamic = "force-dynamic";
@@ -45,6 +50,7 @@ export default async function PetPage({ params }: PageProps<"/mine/pets/[id]">) 
         colors: pet.colors,
         registrationNumber: pet.registrationNumber,
         note: pet.note,
+        createdAt: formatDay(pet.createdAt),
       }}
       photoUrls={photoUrls}
     />
