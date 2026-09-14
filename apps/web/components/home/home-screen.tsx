@@ -414,7 +414,7 @@ export function HomeScreen({
             </HStack>
           </Link>
         </VStack>
-        {/* 안 읽은 수는 점으로만 알림. 지도 위라 숫자를 얹으면 마커와 겹쳐 읽힘 */}
+        {/* SEED notification-badge large 사양. 지도 위라 테두리를 둘러 면을 끊음 */}
         <Box position="relative">
           <ContextualFloatingButton
             variant="layer"
@@ -427,21 +427,28 @@ export function HomeScreen({
             </Link>
           </ContextualFloatingButton>
           {unread > 0 ? (
-            <Box
+            <HStack
               position="absolute"
-              width="x3"
-              height="x3"
+              align="center"
+              justify="center"
+              px="x1"
               borderRadius="full"
-              bg="bg.criticalSolid"
+              bg="bg.brandSolid"
               borderColor="bg.layerDefault"
               // 단추 테두리에 걸치게 빼야 원형 면에 묻히지 않음
               style={{
-                top: "-2px",
-                right: "-2px",
+                top: "-4px",
+                right: "-4px",
+                minWidth: "18px",
+                height: "18px",
                 borderWidth: "2px",
                 pointerEvents: "none",
               }}
-            />
+            >
+              <Text textStyle="t1Bold" color="palette.staticWhite">
+                {unread > 99 ? "99+" : unread}
+              </Text>
+            </HStack>
           ) : null}
         </Box>
       </HStack>
