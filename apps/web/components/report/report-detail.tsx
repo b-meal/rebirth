@@ -337,7 +337,11 @@ export function ReportDetail({
             </Text>
           ) : null}
           {location ? (
-            <ReportLocationMap point={location.point} gridMeters={location.gridMeters} />
+            <ReportLocationMap
+              point={location.point}
+              gridMeters={location.gridMeters}
+              destinationName={report.areaName ?? "발견 위치"}
+            />
           ) : null}
         </SectionCard>
 

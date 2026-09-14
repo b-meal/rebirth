@@ -518,3 +518,9 @@ body .seed-snackbar__root {
     animation-timing-function: step-end;
   }
 }
+
+/* 눌러서 길찾기로 넘어가는 지도
+   지도 미리보기는 손조작을 받지 않아 누를 수 있다는 것이 커서로만 드러남 */
+.rebirth-map-tap {
+  cursor: pointer;
+}
