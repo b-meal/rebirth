@@ -1,5 +1,6 @@
 /* 선택한 원본의 비율과 글자 경계를 유지하는 이미지 좌표 */
 .root {
+  transform: translateX(-50%);
   pointer-events: none;
   animation: expire 1ms var(--splash-load-timeout) step-end forwards;
 }
