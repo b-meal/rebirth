@@ -20,6 +20,7 @@
     "./reports/*": "./src/reports/*.ts",
     "./shelter": "./src/shelter/index.ts",
     "./shelter/handlers": "./src/shelter/handlers.ts",
+    "./shelter/rescue-handlers": "./src/shelter/rescue-handlers.ts",
     "./storage": "./src/storage/index.ts",
     "./support": "./src/support/index.ts",
     "./support/rescue": "./src/support/rescue.ts",
