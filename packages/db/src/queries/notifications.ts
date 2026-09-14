@@ -103,6 +103,42 @@ export async function listSubscribedAreaReports(
     .limit(limit)
 }
 
+/**
+ * 구독에 쓸 제보의 행정구역
+ * 공개 응답은 areaName 까지만 내보내므로 화면은 제보 id 만 넘기고 코드는 서버가 읽음
+ */
+export async function findPublicReportArea(reportId: string) {
+  const [row] = await db
+    .select({
+      areaCode: reports.areaCode,
+      areaCodeSystem: reports.areaCodeSystem,
+      areaName: reports.areaName,
+    })
+    .from(reports)
+    .where(and(eq(reports.id, reportId), eq(reports.visibility, 'public')))
+
+  return row
+}
+
+/** 그 제보의 동네를 이미 구독했는지. 상위 구역을 구독한 경우도 켜진 것으로 봄 */
+export async function isReportAreaSubscribed(userId: string, reportId: string) {
+  const [row] = await db
+    .select({ subscribed: raw<boolean>`true` })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.id, reportId),
+        raw`exists (
+          select 1 from ${areaSubscriptions} s
+          where s.user_id = ${userId}
+            and ${reports.areaCode} like s.area_code || '%'
+        )`,
+      ),
+    )
+
+  return Boolean(row?.subscribed)
+}
+
 export type AddAreaSubscriptionInput = {
   userId: string
   areaCode: string

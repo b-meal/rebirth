@@ -42,6 +42,7 @@ import {
 } from "@/lib/report-label";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { Badge } from "@/components/ui/badge";
+import { AreaSubscribeButton } from "@/components/report/area-subscribe-button";
 import { ReportBadges } from "@/components/report/report-badges";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
 import {
@@ -120,6 +121,8 @@ export type ReportDetailProps = {
   /** 격자 좌표에서 가까운 순으로 고른 공공데이터 기관, 좌표가 없으면 빈 배열 */
   shelters: ShelterItem[];
   interest: { count: number; mine: boolean };
+  /** 이 제보의 동네를 이미 구독했는지. 로그인 전이면 늘 false */
+  areaSubscribed: boolean;
 };
 
 export function ReportDetail({
@@ -131,6 +134,7 @@ export function ReportDetail({
   nearby,
   shelters,
   interest,
+  areaSubscribed,
 }: ReportDetailProps) {
   const router = useRouter();
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -345,6 +349,14 @@ export function ReportDetail({
               point={location.point}
               gridMeters={location.gridMeters}
               destinationName={report.areaName ?? "발견 위치"}
+            />
+          ) : null}
+          {/* 같은 동네 제보를 이어서 보려는 사람이 가장 많이 머무는 자리 */}
+          {report.areaName ? (
+            <AreaSubscribeButton
+              reportId={report.id}
+              areaName={report.areaName}
+              subscribed={areaSubscribed}
             />
           ) : null}
         </SectionCard>

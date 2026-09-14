@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import {
   addAreaSubscription,
+  findPublicReportArea,
   markAreaSubscriptionsRead,
   removeAreaSubscription,
 } from "@rebirth/db";
@@ -35,25 +36,33 @@ export async function unsubscribeArea(areaCode: string) {
   revalidatePath("/mine");
 }
 
-export type SubscribeResult = { ok: boolean; reason?: "signed-out" | "limit" };
+export type SubscribeResult = {
+  ok: boolean;
+  reason?: "signed-out" | "limit" | "no-area";
+};
 
-/** 제보 상세에서 그 동네를 구독함. 상한을 넘으면 이유를 돌려줘 화면이 안내함 */
-export async function subscribeArea(input: {
-  areaCode: string;
-  areaCodeSystem: string;
-  areaName: string;
-}): Promise<SubscribeResult> {
+/**
+ * 제보가 올라온 동네를 구독함
+ * 공개 응답에 행정구역 코드가 없어 화면은 제보 id 만 넘기고 코드는 여기서 읽음
+ */
+export async function subscribeReportArea(
+  reportId: string,
+): Promise<SubscribeResult> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, reason: "signed-out" };
 
-  const system = areaCodeSystem.safeParse(input.areaCodeSystem);
-  if (!system.success) return { ok: false, reason: "limit" };
+  const area = await findPublicReportArea(reportId);
+  const system = areaCodeSystem.safeParse(area?.areaCodeSystem);
+  // 수동 지역으로 남긴 제보는 코드가 없어 구독할 동네를 특정하지 못함
+  if (!area?.areaCode || !area.areaName || !system.success) {
+    return { ok: false, reason: "no-area" };
+  }
 
   const added = await addAreaSubscription({
     userId: user.id,
-    areaCode: input.areaCode,
+    areaCode: area.areaCode,
     areaCodeSystem: system.data,
-    areaName: input.areaName,
+    areaName: area.areaName,
   });
 
   if (!added) return { ok: false, reason: "limit" };
