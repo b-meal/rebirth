@@ -419,6 +419,14 @@ body .seed-snackbar__root {
   border-radius: var(--seed-radius-full);
 }
 
+/* 시트·대화상자·메뉴는 떠 있는 탭바(z 40) 보다 앞에 와야 함
+   SEED 기본 층이 2 라 그대로 두면 탭바가 시트 머리말과 딤을 덮음
+   positioner 한 곳에만 주면 딤과 면이 같이 올라가고, 화면마다 층을 다시 세지 않음
+   전체 화면을 덮는 사진 뷰어와 스플래시(100)는 시트 위에 남음 */
+[class*="seed-"][class*="__positioner"] {
+  --layer-index: 50;
+}
+
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
 .rebirth-scroll-row {
   overflow-x: auto;
