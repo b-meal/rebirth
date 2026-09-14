@@ -244,6 +244,8 @@ export function AiView({ data }: { data: AiDashboard }) {
   const reviewTotal = data.reviewSummary.reduce((sum, row) => sum + row.total, 0);
   const calls = (real?.total ?? 0) + reviewTotal + (coverage?.embedded ?? 0);
   const editedTotal = data.editedFields.reduce((sum, row) => sum + row.edits, 0);
+  // 같은 문장을 가진 제보가 많아 점이 겹침. 몇 개로 보이는지 함께 적음
+  const distinctPoints = new Set(data.points.map((p) => `${p.x},${p.y}`)).size;
 
   // 두 종의 중심이 각 군집 퍼짐보다 멀리 떨어졌는지가 갈라내는지 여부임
   const dog = data.clusters.find((row) => row.animalType === "dog");
@@ -519,9 +521,11 @@ export function AiView({ data }: { data: AiDashboard }) {
       <div className="grid items-start gap-3 lg:grid-cols-3">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>표본 {data.points.length.toLocaleString()}건</CardTitle>
+            <CardTitle>
+              표본 {data.points.length.toLocaleString()}건 · 좌표 {distinctPoints.toLocaleString()}개
+            </CardTitle>
             <CardDescription>
-              384차원을 주성분 둘로 투영 · 축에 뜻 없음
+              384차원을 주성분 둘로 투영 · 축에 뜻 없음 · 같은 문장은 같은 좌표
             </CardDescription>
           </CardHeader>
           <CardContent>
