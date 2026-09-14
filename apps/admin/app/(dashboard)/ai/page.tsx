@@ -13,11 +13,17 @@ import {
   listMatchReviews,
   listSemanticNeighbors,
   listUnreviewedPairs,
+  listVectorPoints,
   matchBreakdownAverages,
   matchReviewSummary,
   matchScoreDistribution,
+  vectorClusters,
 } from "@rebirth/db";
-import { MATCH_VERDICT_LABEL, REVIEW_MODEL } from "@rebirth/core/matching";
+import {
+  MATCH_VERDICT_LABEL,
+  REVIEW_MODEL,
+  REVIEW_PROMPT_VERSION,
+} from "@rebirth/core/matching";
 import { EMBEDDING_MODEL } from "@rebirth/core/matching/embed-text";
 import { MOCK_MODEL, VISION_MODEL } from "@rebirth/core/vision";
 
@@ -64,10 +70,12 @@ export default async function AiPage() {
       safe(() => listUnreviewedPairs(3), []),
     ]);
 
-  const [coverage, neighbors, jobs] = await Promise.all([
+  const [coverage, neighbors, jobs, points, clusters] = await Promise.all([
     safe(() => embeddingCoverage(), undefined),
     safe(() => listSemanticNeighbors(4), []),
     safe(() => listAnalysisJobs(LEDGER_LIMIT), []),
+    safe(() => listVectorPoints(1200), []),
+    safe(() => vectorClusters(), []),
   ]);
 
   const mockRuns = byModel
@@ -107,6 +115,9 @@ export default async function AiPage() {
     unreviewed,
     coverage: coverage ?? null,
     neighbors,
+    points,
+    clusters,
+    reviewPromptVersion: REVIEW_PROMPT_VERSION,
     // 클라이언트 경계를 넘으면 Date 가 문자열이 되므로 서버에서 형태를 맞춤
     jobs: jobs.map((job) => ({
       id: job.id,

@@ -1,6 +1,16 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, LabelList, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  LabelList,
+  Scatter,
+  ScatterChart,
+  XAxis,
+  YAxis,
+  ZAxis,
+} from "recharts";
 
 import {
   ChartContainer,
@@ -136,7 +146,7 @@ export function TrackBar({
 export function BarList({
   rows,
   tone = "neutral",
-  emptyText = "값이 없습니다",
+  emptyText = "값 없음",
 }: {
   rows: { label: string; value: number; note?: string }[];
   tone?: "neutral" | "negative";
@@ -205,7 +215,7 @@ export function BarList({
 export function DayBars({
   rows,
   tone = "neutral",
-  emptyText = "기록이 없습니다",
+  emptyText = "기록 없음",
 }: {
   rows: { day: string; value: number }[];
   tone?: "neutral" | "negative";
@@ -240,5 +250,77 @@ export function DayBars({
         <Bar dataKey="value" fill="var(--color-value)" radius={0} />
       </BarChart>
     </ChartContainer>
+  );
+}
+
+const SPECIES: Record<string, { label: string; color: string }> = {
+  dog: { label: "개", color: "var(--chart-5)" },
+  cat: { label: "고양이", color: "var(--chart-2)" },
+  other: { label: "그 외", color: "var(--chart-1)" },
+  unknown: { label: "확인 어려움", color: "var(--chart-1)" },
+};
+
+/**
+ * 384차원을 주성분 둘로 눌러 흩뿌린 그림
+ * 축에는 뜻이 없고 점끼리 뭉치는 모양만 읽음. 눈금을 지운 이유가 이것임
+ */
+export function VectorScatter({
+  points,
+}: {
+  points: { x: number; y: number; animalType: string; kind: string; label: string }[];
+}) {
+  if (points.length === 0) {
+    return <p className="text-sm text-muted-foreground">좌표 없음</p>;
+  }
+
+  const groups = Object.keys(SPECIES)
+    .map((key) => ({
+      key,
+      ...SPECIES[key]!,
+      data: points.filter((point) => point.animalType === key),
+    }))
+    .filter((group) => group.data.length > 0);
+
+  const config: ChartConfig = Object.fromEntries(
+    groups.map((group) => [group.key, { label: group.label, color: group.color }]),
+  );
+
+  return (
+    <div className="flex flex-col gap-2">
+      <ChartContainer config={config} className="h-72 w-full">
+        <ScatterChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+          <CartesianGrid strokeDasharray="2 2" />
+          <XAxis type="number" dataKey="x" domain={[-1, 1]} hide />
+          <YAxis type="number" dataKey="y" domain={[-1, 1]} hide />
+          <ZAxis range={[8, 8]} />
+          <ChartTooltip
+            cursor={false}
+            content={<ChartTooltipContent hideLabel nameKey="animalType" />}
+          />
+          {groups.map((group) => (
+            <Scatter
+              key={group.key}
+              name={group.label}
+              data={group.data}
+              fill={group.color}
+              fillOpacity={0.55}
+              isAnimationActive={false}
+            />
+          ))}
+        </ScatterChart>
+      </ChartContainer>
+      <div className="flex flex-wrap gap-4">
+        {groups.map((group) => (
+          <span key={group.key} className="flex items-center gap-1.5 text-xs">
+            <span
+              className="size-2.5 rounded-full"
+              style={{ background: group.color }}
+              aria-hidden
+            />
+            {group.label} {group.data.length.toLocaleString()}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }

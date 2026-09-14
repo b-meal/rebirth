@@ -211,6 +211,13 @@
       "when": 1789389679387,
       "tag": "0029_lock_down_report_embeddings_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1789394172283,
+      "tag": "0030_add_embedding_projection",
+      "breakpoints": true
     }
   ]
 }

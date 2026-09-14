@@ -51,7 +51,7 @@ export function LostView({ items }: { items: LostRow[] }) {
       <Card>
         <CardContent>
           {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">실종 신고가 없습니다.</p>
+            <p className="text-sm text-muted-foreground">실종 신고 없음</p>
           ) : (
             <Table>
               <TableHeader>

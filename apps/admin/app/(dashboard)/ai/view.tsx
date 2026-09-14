@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
-import { BarList, DayBars, Hero, Metric, Ratio, TrackBar } from "@/components/charts";
+import {
+  BarList,
+  DayBars,
+  Hero,
+  Metric,
+  Ratio,
+  TrackBar,
+  VectorScatter,
+} from "@/components/charts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,6 +98,15 @@ export type AiDashboard = {
     model: string | null;
     lastAt: string | null;
   } | null;
+  points: { x: number; y: number; kind: string; animalType: string; label: string }[];
+  clusters: {
+    animalType: string;
+    total: number;
+    cx: number;
+    cy: number;
+    spread: number | null;
+  }[];
+  reviewPromptVersion: string;
   neighbors: {
     lostId: string;
     lostText: string;
@@ -106,6 +123,13 @@ export type AiDashboard = {
     latencyMs: number | null;
     createdAt: string;
   }[];
+};
+
+const SPECIES_LABEL: Record<string, string> = {
+  dog: "개",
+  cat: "고양이",
+  other: "그 외",
+  unknown: "확인 어려움",
 };
 
 const ms = (value: number | null) =>
@@ -219,14 +243,21 @@ export function AiView({ data }: { data: AiDashboard }) {
   const missed = data.neighbors.filter((pair) => !pair.scored).length;
   const reviewTotal = data.reviewSummary.reduce((sum, row) => sum + row.total, 0);
   const calls = (real?.total ?? 0) + reviewTotal + (coverage?.embedded ?? 0);
+  const editedTotal = data.editedFields.reduce((sum, row) => sum + row.edits, 0);
+
+  // 두 종의 중심이 각 군집 퍼짐보다 멀리 떨어졌는지가 갈라내는지 여부임
+  const dog = data.clusters.find((row) => row.animalType === "dog");
+  const cat = data.clusters.find((row) => row.animalType === "cat");
+  const gap =
+    dog && cat ? Math.round(Math.abs(dog.cx - cat.cx) * 1000) / 1000 : null;
 
   const scorecard = [
     {
-      label: "AI 가 손댄 기록",
+      label: "벡터 적용 범위",
       value: coverage
         ? `${coverage.embedded.toLocaleString()} / ${coverage.reports.toLocaleString()}`
         : "-",
-      source: "제보 전체 대비 벡터가 붙은 수",
+      source: "제보 전체 대비 벡터 보유",
     },
     {
       label: "모델 호출",
@@ -234,9 +265,9 @@ export function AiView({ data }: { data: AiDashboard }) {
       source: `외형 초안 ${real?.total ?? 0} · 재평가 ${reviewTotal} · 임베딩 ${(coverage?.embedded ?? 0).toLocaleString()}`,
     },
     {
-      label: "AI 가 혼자 찾은 후보",
+      label: "벡터 단독 발견",
       value: `${missed}쌍`,
-      source: "배점이 올리지 않았고 벡터가 올린 쌍",
+      source: "배점 후보에 없던 쌍",
     },
     {
       label: "배포 모델 실패율",
@@ -247,13 +278,13 @@ export function AiView({ data }: { data: AiDashboard }) {
       source: `${data.models.vision} · 실패 ${real?.failed ?? 0}건`,
     },
     {
-      label: "사람이 고치지 않은 초안",
+      label: "초안 무수정 비율",
       value:
         acceptance && acceptance.withDraft > 0
           ? `${Math.round((acceptance.untouched / acceptance.withDraft) * 1000) / 10}%`
           : "-",
       source: acceptance?.withDraft
-        ? `초안 붙은 제보 ${acceptance.withDraft}건`
+        ? `초안 보유 제보 ${acceptance.withDraft}건`
         : "초안이 붙은 제보 없음",
     },
   ];
@@ -291,7 +322,7 @@ export function AiView({ data }: { data: AiDashboard }) {
       <div className="grid items-start gap-3 lg:grid-cols-3">
         <Card>
           <CardHeader>
-            <CardTitle>사진 → 외형 초안</CardTitle>
+            <CardTitle>외형 초안</CardTitle>
             <CardDescription>{data.models.vision}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -317,14 +348,14 @@ export function AiView({ data }: { data: AiDashboard }) {
                 ) : null}
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">실제 호출 기록이 없습니다.</p>
+              <p className="text-sm text-muted-foreground">실제 호출 없음</p>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>문장 → 의미 벡터</CardTitle>
+            <CardTitle>의미 벡터</CardTitle>
             <CardDescription>{data.models.embedding} · 384차원</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -345,14 +376,14 @@ export function AiView({ data }: { data: AiDashboard }) {
                 </div>
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">아직 만들어진 벡터가 없습니다.</p>
+              <p className="text-sm text-muted-foreground">벡터 없음</p>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>후보 → 확인 근거</CardTitle>
+            <CardTitle>후보 재평가</CardTitle>
             <CardDescription>{data.models.review}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
@@ -361,7 +392,7 @@ export function AiView({ data }: { data: AiDashboard }) {
                 <Hero
                   value={reviewTotal.toLocaleString()}
                   unit="쌍"
-                  label="근거를 붙인 후보"
+                  label="근거 보유 후보"
                 />
                 <BarList
                   rows={data.reviewSummary.map((row) => ({
@@ -375,12 +406,12 @@ export function AiView({ data }: { data: AiDashboard }) {
                 />
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">아직 재평가한 후보가 없습니다.</p>
+              <p className="text-sm text-muted-foreground">재평가 기록 없음</p>
             )}
             {data.unreviewed.length > 0 ? (
               <div className="flex flex-col gap-2 border-t border-border pt-3">
                 <span className="text-xs text-muted-foreground">
-                  아직 재평가하지 않은 상위 후보
+                  미재평가 상위 후보
                 </span>
                 {data.unreviewed.map((pair) => (
                   <ReviewRunner key={`${pair.lostId}-${pair.sightingId}`} pair={pair} />
@@ -401,7 +432,7 @@ export function AiView({ data }: { data: AiDashboard }) {
       <Separator />
 
       {/* 2. 세 축이 서로를 메운다는 증거 */}
-      <h2 className="text-base font-bold">세 축이 서로를 메웁니다</h2>
+      <h2 className="text-base font-bold">유사도 축 세 가지</h2>
 
       <Card>
         <CardContent>
@@ -451,7 +482,7 @@ export function AiView({ data }: { data: AiDashboard }) {
       <div className="grid items-start gap-3 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>벡터가 찾고 배점이 놓친 쌍</CardTitle>
+            <CardTitle>배점 미포착 후보</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {data.neighbors.length > 0 ? (
@@ -459,14 +490,14 @@ export function AiView({ data }: { data: AiDashboard }) {
                 <NeighborCard key={`${pair.lostId}-${pair.sightingId}`} pair={pair} />
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">아직 이웃을 찾지 못했습니다.</p>
+              <p className="text-sm text-muted-foreground">이웃 없음</p>
             )}
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Claude 가 쓴 확인 근거</CardTitle>
+            <CardTitle>재평가 근거</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
             {data.reviews.length > 0 ? (
@@ -474,7 +505,7 @@ export function AiView({ data }: { data: AiDashboard }) {
                 <ReviewCard key={`${review.lostId}-${review.sightingId}`} review={review} />
               ))
             ) : (
-              <p className="text-sm text-muted-foreground">아직 재평가한 후보가 없습니다.</p>
+              <p className="text-sm text-muted-foreground">재평가 기록 없음</p>
             )}
           </CardContent>
         </Card>
@@ -482,7 +513,126 @@ export function AiView({ data }: { data: AiDashboard }) {
 
       <Separator />
 
-      {/* 3. 품질 */}
+      {/* 3. 벡터 공간 */}
+      <h2 className="text-base font-bold">벡터 공간</h2>
+
+      <div className="grid items-start gap-3 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>표본 {data.points.length.toLocaleString()}건</CardTitle>
+            <CardDescription>
+              384차원을 주성분 둘로 투영 · 축에 뜻 없음
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <VectorScatter points={data.points} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>군집 중심</CardTitle>
+            <CardDescription>1주성분 좌표</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>종</TableHead>
+                  <TableHead className="text-right">건수</TableHead>
+                  <TableHead className="text-right">중심 x</TableHead>
+                  <TableHead className="text-right">퍼짐</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.clusters.map((row) => (
+                  <TableRow key={row.animalType}>
+                    <TableCell>
+                      {SPECIES_LABEL[row.animalType] ?? row.animalType}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.total.toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{row.cx}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {row.spread ?? "-"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            {gap !== null ? (
+              <p className="pt-3 text-xs tabular-nums">
+                개와 고양이 중심 간격 {gap} · 각 군집 퍼짐보다 큼
+              </p>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Separator />
+
+      {/* 4. 학습과 개선 */}
+      <h2 className="text-base font-bold">학습과 개선</h2>
+
+      <Card>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>신호</TableHead>
+                <TableHead className="text-right">쌓인 양</TableHead>
+                <TableHead>쓰이는 곳</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow>
+                <TableCell className="font-medium">모델 가중치</TableCell>
+                <TableCell className="text-right">학습 없음</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {data.models.vision} 와 {data.models.embedding} 모두 고정
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">초안 수정 이력</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {editedTotal.toLocaleString()}건
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  어느 필드가 자주 틀리는지 → 프롬프트 개정
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">재평가 판정</TableCell>
+                <TableCell className="text-right tabular-nums">{reviewTotal}쌍</TableCell>
+                <TableCell className="text-muted-foreground">
+                  판정 쏠림 → 후보 임계값 조정
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">프롬프트 판</TableCell>
+                <TableCell className="text-right">{data.reviewPromptVersion}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  실행마다 함께 저장 → 판별 성능 비교
+                </TableCell>
+              </TableRow>
+              <TableRow>
+                <TableCell className="font-medium">벡터 재생성</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {(data.coverage?.embedded ?? 0).toLocaleString()}건
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  db:embed · 모델 교체 시 전량 재생성
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* 5. 품질 */}
       <h2 className="text-base font-bold">품질</h2>
 
       <div className="grid items-start gap-3 lg:grid-cols-2">
@@ -531,7 +681,7 @@ export function AiView({ data }: { data: AiDashboard }) {
                 <TrackBar label="특징" value={breakdown.features} max={10} />
               </>
             ) : (
-              <p className="text-sm text-muted-foreground">채점된 쌍이 없습니다.</p>
+              <p className="text-sm text-muted-foreground">채점된 쌍 없음</p>
             )}
           </CardContent>
         </Card>
@@ -546,14 +696,14 @@ export function AiView({ data }: { data: AiDashboard }) {
                 label: `${row.bucket}점`,
                 value: row.count,
               }))}
-              emptyText="채점된 쌍이 없습니다"
+              emptyText="채점된 쌍 없음"
             />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>AI 초안을 사람이 고친 필드</CardTitle>
+            <CardTitle>초안 수정 필드</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
             {acceptance && acceptance.withDraft > 0 ? (
@@ -568,12 +718,12 @@ export function AiView({ data }: { data: AiDashboard }) {
                     label: row.field,
                     value: row.edits,
                   }))}
-                  emptyText="고쳐진 필드가 없습니다"
+                  emptyText="수정된 필드 없음"
                 />
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                초안이 붙은 제보가 아직 없습니다. 새 제보부터 모델과 원본이 함께 저장됩니다.
+                초안 보유 제보 없음
               </p>
             )}
           </CardContent>
@@ -589,7 +739,7 @@ export function AiView({ data }: { data: AiDashboard }) {
                 label: row.model,
                 value: row.total,
               }))}
-              emptyText="기록이 없습니다"
+              emptyText="기록 없음"
             />
           </CardContent>
         </Card>
@@ -637,7 +787,7 @@ export function AiView({ data }: { data: AiDashboard }) {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-muted-foreground">기록이 없습니다.</p>
+            <p className="text-sm text-muted-foreground">기록 없음</p>
           )}
         </CardContent>
       </Card>

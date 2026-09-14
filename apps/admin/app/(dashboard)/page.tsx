@@ -60,7 +60,7 @@ export default async function DashboardPage() {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">집계를 읽지 못했습니다.</p>
+        <p className="text-sm text-muted-foreground">집계 조회 실패</p>
       )}
 
       <Separator />
@@ -91,7 +91,7 @@ export default async function DashboardPage() {
           </Link>
         ))}
         {recent.length === 0 ? (
-          <p className="text-sm text-muted-foreground">공개된 제보가 없습니다.</p>
+          <p className="text-sm text-muted-foreground">공개된 제보 없음</p>
         ) : null}
       </div>
     </div>

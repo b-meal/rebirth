@@ -51,7 +51,7 @@ export function MetricsView({ data }: { data: MetricsData }) {
           ))}
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">집계를 읽지 못했습니다.</p>
+        <p className="text-sm text-muted-foreground">집계 조회 실패</p>
       )}
 
       <Separator />
@@ -86,7 +86,7 @@ export function MetricsView({ data }: { data: MetricsData }) {
                 label: CARE_LABEL[row.careSituation] ?? row.careSituation,
                 value: row.total,
               }))}
-              emptyText="제보가 없습니다"
+              emptyText="제보 없음"
             />
           </CardContent>
         </Card>
@@ -101,7 +101,7 @@ export function MetricsView({ data }: { data: MetricsData }) {
                 label: row.areaName.replace(/^(서울특별시|경기도|부산광역시)\s/, ""),
                 value: row.total,
               }))}
-              emptyText="제보가 없습니다"
+              emptyText="제보 없음"
             />
           </CardContent>
         </Card>

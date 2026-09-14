@@ -190,7 +190,7 @@ export function SightingDetailView({ detail }: { detail: SightingDetail }) {
               </TableBody>
             </Table>
           ) : (
-            <p className="text-sm text-muted-foreground">채점된 후보가 없습니다.</p>
+            <p className="text-sm text-muted-foreground">채점된 후보 없음</p>
           )}
         </CardContent>
       </Card>

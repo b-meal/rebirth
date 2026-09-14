@@ -460,3 +460,55 @@ export async function findSimilarReports(reportId: string, limit = 5) {
     similarity: number
   }[]
 }
+
+export type VectorPoint = {
+  x: number
+  y: number
+  kind: string
+  animalType: string
+  label: string
+}
+
+/**
+ * 벡터 공간을 흩뿌려 보기 위한 표본. 전부 그리면 점이 뭉개져 고르게 솎아냄
+ * 좌표는 주성분 둘로 눌러 담은 값이라 거리 판단에 쓰지 않음
+ */
+export async function listVectorPoints(limit = 1200): Promise<VectorPoint[]> {
+  const rows = await db.execute(raw`
+    select
+      e.proj_x            as "x",
+      e.proj_y            as "y",
+      r.kind              as "kind",
+      r.animal_type       as "animalType",
+      left(e.source_text, 60) as "label"
+    from report_embeddings e
+    join reports r on r.id = e.report_id
+    where e.proj_x is not null
+      and r.visibility <> 'deleted'
+    order by md5(e.report_id::text)
+    limit ${limit}`)
+  return rows as unknown as VectorPoint[]
+}
+
+/** 종별 군집 중심과 퍼짐. 벡터가 종을 갈라내는지 숫자로 확인하는 자리 */
+export async function vectorClusters() {
+  const rows = await db.execute(raw`
+    select
+      r.animal_type                                   as "animalType",
+      count(*)::int                                   as "total",
+      round(avg(e.proj_x)::numeric, 3)::float8        as "cx",
+      round(avg(e.proj_y)::numeric, 3)::float8        as "cy",
+      round(stddev(e.proj_x)::numeric, 3)::float8     as "spread"
+    from report_embeddings e
+    join reports r on r.id = e.report_id
+    where e.proj_x is not null
+    group by 1
+    order by 2 desc`)
+  return rows as unknown as {
+    animalType: string
+    total: number
+    cx: number
+    cy: number
+    spread: number | null
+  }[]
+}

@@ -62,7 +62,7 @@ export function SightingsView({ items }: { items: AdminReportRow[] }) {
       <Card>
         <CardContent>
           {items.length === 0 ? (
-            <p className="text-sm text-muted-foreground">제보가 없습니다.</p>
+            <p className="text-sm text-muted-foreground">제보 없음</p>
           ) : (
             <Table>
               <TableHeader>

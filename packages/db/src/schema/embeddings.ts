@@ -1,4 +1,12 @@
-import { index, pgTable, text, timestamp, uuid, vector } from 'drizzle-orm/pg-core'
+import {
+  doublePrecision,
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  vector,
+} from 'drizzle-orm/pg-core'
 
 import { reports } from './reports'
 
@@ -19,6 +27,11 @@ export const reportEmbeddings = pgTable(
     // 무엇을 넣어 만든 벡터인지. 프롬프트가 바뀌면 다시 만들 대상을 고르는 근거
     sourceText: text().notNull(),
     model: text().notNull(),
+
+    // 384차원을 주성분 둘로 눌러 담은 좌표. 화면에 흩뿌려 보는 용도로만 씀
+    // 거리 판단에는 쓰지 않음. 눌러 담는 과정에서 원래 거리가 보존되지 않음
+    projX: doublePrecision(),
+    projY: doublePrecision(),
 
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },

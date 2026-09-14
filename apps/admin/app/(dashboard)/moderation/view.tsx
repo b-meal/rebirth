@@ -101,7 +101,7 @@ export function ModerationView({ items }: { items: ModerationItem[] }) {
           <CardContent className="flex flex-col items-center gap-1 py-10">
             <span className="text-sm font-bold">검수 대기 없음</span>
             <span className="text-xs text-muted-foreground">
-              신고가 들어온 제보가 없습니다.
+              신고가 들어온 제보 없음
             </span>
           </CardContent>
         </Card>
