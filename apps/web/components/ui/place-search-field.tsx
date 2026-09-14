@@ -99,13 +99,16 @@ export function PlaceSearchField({
         >
           {search.error ? <Callout tone="critical" description={search.error} /> : null}
 
-          {/* 앞 결과가 남아 있으면 그대로 두고 빈 자리에서만 결과 자리를 잡아 둠 */}
+          {/* 앞 결과가 남아 있으면 그대로 두고 빈 자리에서만 결과 자리를 잡아 둠
+              결과 줄과 같은 자리에 같은 크기로 둠. 치수가 어긋나면 결과가 온 순간 글이 튐
+              ListButtonItem 은 패딩 12/16, 제목 22px, 설명 18px, 사이 2px 임 */}
           {search.loading && search.items.length === 0 ? (
-            <VStack align="stretch" gap="x2" p="x4" aria-hidden="true">
+            <VStack align="stretch" gap="0" aria-hidden="true">
               {SKELETON_ROWS.map((row) => (
-                <VStack key={row} align="stretch" gap="x1_5">
-                  <Skeleton width="45%" height="x4" radius="8" />
-                  <Skeleton width="70%" height="x3_5" radius="8" />
+                <VStack key={row} align="stretch" gap="x0_5" pt="x3" pb="x3" px="x4">
+                  {/* 장소 이름은 길이가 제각각이라 줄마다 너비를 달리해 목록처럼 보이게 함 */}
+                  <Skeleton width={row === 0 ? "58%" : "44%"} height="22px" radius="8" />
+                  <Skeleton width={row === 0 ? "72%" : "62%"} height="18px" radius="8" />
                 </VStack>
               ))}
             </VStack>
