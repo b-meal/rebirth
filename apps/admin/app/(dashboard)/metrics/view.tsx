@@ -1,70 +1,111 @@
 "use client";
 
-import {
-  Card,
-  CardCaption,
-  CardContent,
-  CardTitle,
-  FlexBox,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeadCell,
-  TableRow,
-  Typography,
-} from "@wanteddev/wds";
-import { METRICS, SIGHTINGS } from "@/lib/mock";
+import { BarList, DayBars } from "@/components/charts";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { CARE_LABEL } from "@/lib/labels";
 
-export function MetricsView() {
-  const edited = SIGHTINGS.filter((s) => s.aiEditedFields.length > 0);
-  const fieldCounts = SIGHTINGS.flatMap((s) => s.aiEditedFields).reduce<
-    Record<string, number>
-  >((acc, field) => ({ ...acc, [field]: (acc[field] ?? 0) + 1 }), {});
+// 운영 지표. AI 품질은 AI 화면이 맡고 여기는 제보 흐름만 봄
+
+export type MetricsData = {
+  overview: {
+    total: number;
+    sightings: number;
+    lost: number;
+    hidden: number;
+    resolved: number;
+    last24h: number;
+  } | null;
+  daily: { day: string; sightings: number; lost: number }[];
+  areas: { areaName: string; total: number; roaming: number }[];
+  care: { careSituation: string; total: number }[];
+};
+
+export function MetricsView({ data }: { data: MetricsData }) {
+  const { overview } = data;
+  // 최근이 오른쪽에 오도록 뒤집음. 조회는 최신 순임
+  const days = [...data.daily].reverse();
 
   return (
-    <>
-      <Typography variant="title3" weight="bold">
-        지표
-      </Typography>
-      <FlexBox flexWrap="wrap" gap="12px">
-        {METRICS.map((m) => (
-          <Card key={m.label} width="240px">
-            <CardContent>
-              <CardCaption variant="caption1">{m.label}</CardCaption>
-              <CardTitle variant="title2" weight="bold">
-                {m.value}
-              </CardTitle>
-              <CardCaption variant="caption2">{m.source}</CardCaption>
-              <CardCaption variant="caption2">{m.note}</CardCaption>
-            </CardContent>
-          </Card>
-        ))}
-      </FlexBox>
+    <div className="flex flex-col gap-5">
+      <h1 className="text-xl font-bold">지표</h1>
 
-      <Typography variant="headline1" weight="bold">
-        AI 초안이 고쳐진 필드
-      </Typography>
-      <Table>
-        <TableHead>
-          <TableRow>
-            <TableHeadCell>필드</TableHeadCell>
-            <TableHeadCell>수정 횟수</TableHeadCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {Object.entries(fieldCounts).map(([field, count]) => (
-            <TableRow key={field}>
-              <TableCell>{field}</TableCell>
-              <TableCell>{count}회</TableCell>
-            </TableRow>
+      {overview ? (
+        <div className="grid gap-3 sm:grid-cols-3">
+          {[
+            { label: "발견 제보", value: overview.sightings, note: "" },
+            { label: "실종 신고", value: overview.lost, note: "" },
+            { label: "만남으로 종료", value: overview.resolved, note: "제보자가 직접 표시" },
+          ].map((tile) => (
+            <Card key={tile.label}>
+              <CardContent className="flex flex-col gap-1">
+                <span className="text-xs text-muted-foreground">{tile.label}</span>
+                <span className="text-2xl font-bold tabular-nums">
+                  {tile.value.toLocaleString()}
+                </span>
+                {tile.note ? (
+                  <span className="text-[11px] text-muted-foreground">{tile.note}</span>
+                ) : null}
+              </CardContent>
+            </Card>
           ))}
-        </TableBody>
-      </Table>
-      <Typography variant="caption1">
-        제보 {SIGHTINGS.length}건 중 {edited.length}건에서 초안을 고쳤습니다.
-        실제 정확도는 평가용 테스트 이미지 20장으로 측정한 뒤 대체합니다.
-      </Typography>
-    </>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">집계 조회 실패</p>
+      )}
+
+      <Separator />
+
+      <div className="grid items-start gap-3 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>일자별 발견 제보</CardTitle>
+            <CardDescription>최근 {days.length}일</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <DayBars rows={days.map((row) => ({ day: row.day, value: row.sightings }))} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>일자별 실종 신고</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DayBars rows={days.map((row) => ({ day: row.day, value: row.lost }))} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>보호 상황</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BarList
+              rows={data.care.map((row) => ({
+                label: CARE_LABEL[row.careSituation] ?? row.careSituation,
+                value: row.total,
+              }))}
+              emptyText="제보 없음"
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>지역 상위 {data.areas.length}곳</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <BarList
+              rows={data.areas.slice(0, 10).map((row) => ({
+                label: row.areaName.replace(/^(서울특별시|경기도|부산광역시)\s/, ""),
+                value: row.total,
+              }))}
+              emptyText="제보 없음"
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
   );
 }

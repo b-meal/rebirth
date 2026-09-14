@@ -183,6 +183,41 @@
       "when": 1789386162441,
       "tag": "0025_lock_down_shelters_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1789388864408,
+      "tag": "0026_add_match_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1789388865408,
+      "tag": "0027_lock_down_match_reviews_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1789389678387,
+      "tag": "0028_add_report_embeddings",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1789389679387,
+      "tag": "0029_lock_down_report_embeddings_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1789394172283,
+      "tag": "0030_add_embedding_projection",
+      "breakpoints": true
     }
   ]
 }

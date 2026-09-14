@@ -13,3 +13,20 @@ export {
   getLostCandidatesHandler,
   getLostMatchesHandler,
 } from "./handlers";
+
+export {
+  MATCH_VERDICT_LABEL,
+  REVIEW_MODEL,
+  REVIEW_PROMPT_VERSION,
+  ReviewError,
+  matchReview,
+  matchVerdict,
+  reviewMatch,
+  type MatchReview,
+  type ReviewInput,
+  type ReviewSubject,
+} from "./review";
+
+export { runMatchReview, type RunReviewOutcome } from "./run-review";
+
+export { reviewMatchHandler } from "./review-handlers";

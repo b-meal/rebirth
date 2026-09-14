@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from "next";
+
 import "./globals.css";
-import { Providers } from "./providers";
 
 export const metadata: Metadata = {
   title: {
     default: "다시집 운영",
-    template: "%s · 다시집 운영",
+    template: "%s, 다시집 운영",
   },
   description: "발견동물 제보 검수와 운영 지표",
   // 운영 화면은 검색 노출 대상 아님
@@ -20,9 +20,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko">
-      <body>
-        <Providers>{children}</Providers>
-      </body>
+      <body className="bg-background text-foreground antialiased">{children}</body>
     </html>
   );
 }

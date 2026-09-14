@@ -305,6 +305,39 @@ export const matchScoresRelations = relations(matchScores, ({ one }) => ({
   }),
 }))
 
+// 결정식 배점이 올린 후보를 모델이 다시 읽고 남긴 근거. 점수를 대신하지 않고 옆에 붙음
+// 같은 쌍을 다시 돌리면 덮어씀. 판정 이력이 아니라 지금의 근거를 보여 주는 자리
+export const matchReviews = pgTable(
+  'match_reviews',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    lostId: uuid()
+      .notNull()
+      .references(() => reports.id, { onDelete: 'cascade' }),
+    sightingId: uuid()
+      .notNull()
+      .references(() => reports.id, { onDelete: 'cascade' }),
+
+    // worth_checking 과 unlikely 와 insufficient. 개체 동일성 확정값이 아님
+    verdict: text().notNull(),
+    agreements: text().array().notNull().default([]),
+    conflicts: text().array().notNull().default([]),
+    checkFirst: text(),
+
+    model: text().notNull(),
+    promptVersion: text().notNull(),
+    latencyMs: integer(),
+
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    unique('match_reviews_pair_uk').on(t.lostId, t.sightingId),
+    index('match_reviews_recent_idx').on(t.createdAt.desc()),
+  ],
+)
+
+export type MatchReviewRow = typeof matchReviews.$inferSelect
+
 export type Report = typeof reports.$inferSelect
 export type NewReport = typeof reports.$inferInsert
 export type ReportPhoto = typeof reportPhotos.$inferSelect
