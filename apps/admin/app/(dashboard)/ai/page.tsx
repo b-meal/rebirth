@@ -8,10 +8,14 @@ import {
   countEditedFields,
   draftAcceptance,
   listAnalysisJobs,
+  listMatchReviews,
+  listUnreviewedPairs,
   matchBreakdownAverages,
+  matchReviewSummary,
   matchScoreDistribution,
 } from "@rebirth/db";
 import { MOCK_MODEL, VISION_MODEL } from "@rebirth/core/vision";
+import { MATCH_VERDICT_LABEL, REVIEW_MODEL } from "@rebirth/core/matching";
 
 import { AiView, type AiDashboard } from "./view";
 
@@ -46,9 +50,26 @@ export default async function AiPage() {
       safe(() => listAnalysisJobs(RECENT_LIMIT), []),
     ]);
 
+  const [reviewSummary, reviews, unreviewed] = await Promise.all([
+    safe(() => matchReviewSummary(), []),
+    safe(() => listMatchReviews(10), []),
+    safe(() => listUnreviewedPairs(3), []),
+  ]);
+
   const data: AiDashboard = {
     visionModel: VISION_MODEL,
+    reviewModel: REVIEW_MODEL,
     mockModel: MOCK_MODEL,
+    reviewSummary: reviewSummary.map((row) => ({
+      ...row,
+      label: MATCH_VERDICT_LABEL[row.verdict as keyof typeof MATCH_VERDICT_LABEL] ?? row.verdict,
+    })),
+    reviews: reviews.map((row) => ({
+      ...row,
+      label: MATCH_VERDICT_LABEL[row.verdict as keyof typeof MATCH_VERDICT_LABEL] ?? row.verdict,
+      createdAt: row.createdAt.toISOString(),
+    })),
+    unreviewed,
     summary: summary ?? null,
     byModel,
     failures,

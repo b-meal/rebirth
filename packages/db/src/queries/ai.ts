@@ -3,7 +3,7 @@ import 'server-only'
 import { desc, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
-import { analysisJobs, matchScores, reportFlags, reports } from '../schema'
+import { matchReviews, analysisJobs, matchScores, reportFlags, reports } from '../schema'
 
 /* 운영 대시보드 집계. 사진 원본과 좌표를 읽지 않고 건수와 실행 기록만 셈 */
 
@@ -265,5 +265,81 @@ export function listMatchesForSighting(sightingId: string, limit = 10) {
     .from(matchScores)
     .where(raw`${matchScores.sightingId} = ${sightingId}`)
     .orderBy(raw`${matchScores.score} desc`)
+    .limit(limit)
+}
+
+/** 재평가 저장. 같은 쌍을 다시 돌리면 덮어씀 */
+export async function upsertMatchReview(row: typeof matchReviews.$inferInsert) {
+  const [saved] = await db
+    .insert(matchReviews)
+    .values(row)
+    .onConflictDoUpdate({
+      target: [matchReviews.lostId, matchReviews.sightingId],
+      set: {
+        verdict: raw`excluded.verdict`,
+        agreements: raw`excluded.agreements`,
+        conflicts: raw`excluded.conflicts`,
+        checkFirst: raw`excluded.check_first`,
+        model: raw`excluded.model`,
+        promptVersion: raw`excluded.prompt_version`,
+        latencyMs: raw`excluded.latency_ms`,
+        createdAt: raw`now()`,
+      },
+    })
+    .returning({ id: matchReviews.id })
+  return saved
+}
+
+/** 최근 재평가. 근거 문장까지 함께 읽어 화면에서 바로 보여 줌 */
+export function listMatchReviews(limit = 20) {
+  return db
+    .select({
+      lostId: matchReviews.lostId,
+      sightingId: matchReviews.sightingId,
+      verdict: matchReviews.verdict,
+      agreements: matchReviews.agreements,
+      conflicts: matchReviews.conflicts,
+      checkFirst: matchReviews.checkFirst,
+      model: matchReviews.model,
+      latencyMs: matchReviews.latencyMs,
+      createdAt: matchReviews.createdAt,
+    })
+    .from(matchReviews)
+    .orderBy(desc(matchReviews.createdAt))
+    .limit(limit)
+}
+
+/** 판정별 건수. 모델이 어느 쪽으로 치우치는지 봄 */
+export function matchReviewSummary() {
+  return db
+    .select({
+      verdict: matchReviews.verdict,
+      total: raw<number>`count(*)::int`.mapWith(Number),
+      avgLatencyMs: raw<number | null>`round(avg(${matchReviews.latencyMs}))::int`.mapWith(
+        (v) => (v === null ? null : Number(v)),
+      ),
+    })
+    .from(matchReviews)
+    .groupBy(matchReviews.verdict)
+    .orderBy(raw`2 desc`)
+}
+
+/** 아직 재평가하지 않은 상위 점수 후보. 여기부터 돌리면 값어치가 큼 */
+export function listUnreviewedPairs(limit = 5) {
+  return db
+    .select({
+      lostId: matchScores.lostId,
+      sightingId: matchScores.sightingId,
+      score: matchScores.score,
+    })
+    .from(matchScores)
+    .where(
+      raw`not exists (
+        select 1 from ${matchReviews}
+        where ${matchReviews.lostId} = ${matchScores.lostId}
+          and ${matchReviews.sightingId} = ${matchScores.sightingId}
+      )`,
+    )
+    .orderBy(desc(matchScores.score))
     .limit(limit)
 }

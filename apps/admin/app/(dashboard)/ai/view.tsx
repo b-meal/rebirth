@@ -1,6 +1,10 @@
 "use client";
 
+import Link from "next/link";
+import { useActionState } from "react";
+import { useFormStatus } from "react-dom";
 import {
+  Button,
   Card,
   CardCaption,
   CardContent,
@@ -16,12 +20,29 @@ import {
   Typography,
 } from "@wanteddev/wds";
 
+import { reviewPair, type ReviewActionResult } from "./actions";
+
 // AI 파이프라인 운영 화면. 사진 원본과 좌표는 읽지 않고 실행 기록만 봄
 // 더미 모델로 만든 기록이 실제 호출과 섞이면 제출 자료가 사실과 어긋나므로 모델별로 갈라 둠
 
 export type AiDashboard = {
   visionModel: string;
+  reviewModel: string;
   mockModel: string;
+  reviewSummary: { verdict: string; label: string; total: number; avgLatencyMs: number | null }[];
+  reviews: {
+    lostId: string;
+    sightingId: string;
+    verdict: string;
+    label: string;
+    agreements: string[];
+    conflicts: string[];
+    checkFirst: string | null;
+    model: string;
+    latencyMs: number | null;
+    createdAt: string;
+  }[];
+  unreviewed: { lostId: string; sightingId: string; score: number }[];
   summary: {
     total: number;
     succeeded: number;
@@ -108,6 +129,47 @@ function Section({ title, note, children }: { title: string; note?: string; chil
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <Typography variant="body2">{children}</Typography>;
+}
+
+function RunButton() {
+  const { pending } = useFormStatus();
+  return (
+    <Button type="submit" size="small" disabled={pending}>
+      {pending ? "재평가 중" : "재평가 실행"}
+    </Button>
+  );
+}
+
+/** 한 쌍씩 버튼으로 돌림. 배치로 돌리면 호출 비용이 후보 수만큼 그대로 늘어남 */
+function ReviewRunner({
+  pair,
+}: {
+  pair: { lostId: string; sightingId: string; score: number };
+}) {
+  const [state, action] = useActionState<ReviewActionResult, FormData>(reviewPair, {
+    ok: false,
+  });
+
+  return (
+    <form action={action}>
+      <input type="hidden" name="lostId" value={pair.lostId} />
+      <input type="hidden" name="sightingId" value={pair.sightingId} />
+      <FlexBox alignItems="center" gap="8px">
+        <Typography variant="body2">
+          {pair.score}점 · 제보 {pair.sightingId.slice(0, 8)} · 실종 {pair.lostId.slice(0, 8)}
+        </Typography>
+        <RunButton />
+        {state.message ? (
+          <Typography
+            variant="caption1"
+            color={state.ok ? "semantic.status.positive" : "semantic.status.negative"}
+          >
+            {state.message}
+          </Typography>
+        ) : null}
+      </FlexBox>
+    </form>
+  );
 }
 
 export function AiView({ data }: { data: AiDashboard }) {
@@ -307,6 +369,81 @@ export function AiView({ data }: { data: AiDashboard }) {
         ) : (
           <Empty>채점된 후보 쌍이 아직 없습니다.</Empty>
         )}
+      </Section>
+
+      <Section
+        title="Claude 재평가"
+        note={`${data.reviewModel} 가 후보 한 쌍을 다시 읽고 겹치는 점과 어긋나는 점을 적습니다`}
+      >
+        {data.reviewSummary.length > 0 ? (
+          <FlexBox flexWrap="wrap" gap="12px">
+            {data.reviewSummary.map((row) => (
+              <Stat
+                key={row.verdict}
+                label={row.label}
+                value={row.total.toLocaleString()}
+                note={ms(row.avgLatencyMs)}
+              />
+            ))}
+          </FlexBox>
+        ) : null}
+
+        {data.unreviewed.length > 0 ? (
+          <FlexBox flexDirection="column" gap="8px">
+            <Typography variant="label1">아직 재평가하지 않은 상위 후보</Typography>
+            {data.unreviewed.map((pair) => (
+              <ReviewRunner key={`${pair.lostId}-${pair.sightingId}`} pair={pair} />
+            ))}
+          </FlexBox>
+        ) : (
+          <Empty>재평가할 후보가 없습니다.</Empty>
+        )}
+
+        {data.reviews.length > 0 ? (
+          <FlexBox flexDirection="column" gap="8px">
+            {data.reviews.map((review) => (
+              <Card key={`${review.lostId}-${review.sightingId}`}>
+                <CardContent>
+                  <FlexBox alignItems="center" flexWrap="wrap" gap="8px">
+                    <Typography variant="label1" weight="bold">
+                      {review.label}
+                    </Typography>
+                    <Typography variant="caption1">
+                      {review.model} · {ms(review.latencyMs)} · {when(review.createdAt)}
+                    </Typography>
+                  </FlexBox>
+                  {review.agreements.length > 0 ? (
+                    <CardCaption variant="body2">
+                      겹침 {review.agreements.join(" · ")}
+                    </CardCaption>
+                  ) : null}
+                  {review.conflicts.length > 0 ? (
+                    <CardCaption variant="body2">
+                      어긋남 {review.conflicts.join(" · ")}
+                    </CardCaption>
+                  ) : null}
+                  {review.checkFirst ? (
+                    <CardCaption variant="body2">먼저 확인 {review.checkFirst}</CardCaption>
+                  ) : null}
+                  <CardCaption variant="caption2">
+                    <Link
+                      href={`/sightings/${review.sightingId}`}
+                      style={{ color: "inherit" }}
+                    >
+                      제보 {review.sightingId.slice(0, 8)}
+                    </Link>
+                    {" · "}
+                    실종 {review.lostId.slice(0, 8)}
+                  </CardCaption>
+                </CardContent>
+              </Card>
+            ))}
+          </FlexBox>
+        ) : null}
+
+        <Typography variant="caption1">
+          재평가는 확인할 값어치만 말하고 개체 동일성을 확정하지 않습니다.
+        </Typography>
       </Section>
 
       <Divider />
