@@ -6,6 +6,7 @@ import { FlexBox, Typography } from "@wanteddev/wds";
 
 const NAV = [
   { href: "/", label: "개요" },
+  { href: "/ai", label: "AI" },
   { href: "/sightings", label: "제보" },
   { href: "/lost", label: "실종 신고" },
   { href: "/moderation", label: "검수" },

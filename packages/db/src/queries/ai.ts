@@ -31,7 +31,12 @@ export async function analysisJobSummary() {
       p95LatencyMs: raw<number | null>`percentile_disc(0.95) within group (order by ${analysisJobs.latencyMs})::int`.mapWith(
         (v) => (v === null ? null : Number(v)),
       ),
-      lastRunAt: raw<Date | null>`max(${analysisJobs.createdAt})`,
+      // 이상치 한 건이 평균을 끌어올리면 p95 가 평균보다 작아 보임. 최댓값을 함께 둠
+      maxLatencyMs: raw<number | null>`max(${analysisJobs.latencyMs})::int`.mapWith(
+        (v) => (v === null ? null : Number(v)),
+      ),
+      // raw 집계는 드라이버가 Date 로 바꿔 주지 않으므로 문자열로 못박음
+      lastRunAt: raw<string | null>`to_char(max(${analysisJobs.createdAt}) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
     })
     .from(analysisJobs)
   return row
