@@ -159,7 +159,8 @@ function Shortcut({ href, label, icon }: MineLink) {
       bg="bg.neutralWeak"
       minWidth="0"
     >
-      <Link href={href} className="rebirth-row">
+      {/* 면이 이미 칠해진 칸이라 rebirth-row 대신 한 단계 진해지는 타일로 둠 */}
+      <Link href={href} className="rebirth-tile">
         <Icon svg={icon} size="x6" color="fg.brand" />
         <Text textStyle="t3Bold" color="fg.neutral" maxLines={1}>
           {label}

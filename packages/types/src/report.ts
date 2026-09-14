@@ -270,13 +270,13 @@ export type CreateFlag = z.infer<typeof createFlag>
 
 /* 계정과 반려동물 */
 
+/** 이름은 커뮤니티 글과 댓글의 작성자로 나가는 값이라 비울 수 없음 */
 export const updateProfile = z.object({
   displayName: z
-    .string()
+    .string({ error: '이름을 적어 주세요' })
     .trim()
-    .max(20, '이름은 20자까지 쓸 수 있어요')
-    .optional()
-    .transform((v) => v ?? ''),
+    .min(1, '이름을 적어 주세요')
+    .max(20, '이름은 20자까지 쓸 수 있어요'),
 })
 
 export type UpdateProfile = z.infer<typeof updateProfile>
