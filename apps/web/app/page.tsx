@@ -43,17 +43,19 @@ async function loadMarkers(): Promise<MapMarker[]> {
 }
 
 /** 알림 버튼에 찍을 점. 로그인 전이거나 구독이 없으면 0 */
-async function loadUnread(): Promise<number> {
+async function loadUnread(userId: string | undefined): Promise<number> {
+  if (!userId) return 0;
   try {
-    const user = await getCurrentUser();
-    if (!user) return 0;
-    return await countUnreadAreaReports(user.id);
+    return await countUnreadAreaReports(userId);
   } catch {
     return 0;
   }
 }
 
-export default function HomePage() {
-  // 기다리지 않고 약속만 넘김, 마커를 기다리느라 화면이 늦게 뜨면 덮개보다 로딩 표시가 먼저 보임
-  return <HomeScreen markers={loadMarkers()} unread={loadUnread()} />;
+export default async function HomePage() {
+  // 쿠키 읽기는 렌더 중에 끝내야 함. 약속에 넣어 흘려보내면 요청 범위를 벗어나 실패함
+  const user = await getCurrentUser().catch(() => undefined);
+
+  // 질의만 약속으로 넘김, 마커를 기다리느라 화면이 늦게 뜨면 덮개보다 로딩 표시가 먼저 보임
+  return <HomeScreen markers={loadMarkers()} unread={loadUnread(user?.id)} />;
 }
