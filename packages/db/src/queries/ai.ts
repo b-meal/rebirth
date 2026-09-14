@@ -3,7 +3,14 @@ import 'server-only'
 import { desc, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
-import { matchReviews, analysisJobs, matchScores, reportFlags, reports } from '../schema'
+import {
+  matchReviews,
+  analysisJobs,
+  matchScores,
+  reportEmbeddings,
+  reportFlags,
+  reports,
+} from '../schema'
 
 /* 운영 대시보드 집계. 사진 원본과 좌표를 읽지 않고 건수와 실행 기록만 셈 */
 
@@ -342,4 +349,92 @@ export function listUnreviewedPairs(limit = 5) {
     )
     .orderBy(desc(matchScores.score))
     .limit(limit)
+}
+
+/* 의미 벡터 */
+
+/** 벡터가 붙은 제보 비율. 스크립트를 언제 다시 돌릴지 판단하는 근거 */
+export async function embeddingCoverage() {
+  const [row] = await db
+    .select({
+      reports: raw<number>`count(*)::int`.mapWith(Number),
+      embedded: raw<number>`count(${reportEmbeddings.reportId})::int`.mapWith(Number),
+      model: raw<string | null>`max(${reportEmbeddings.model})`,
+      lastAt: raw<string | null>`to_char(max(${reportEmbeddings.createdAt}) at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')`,
+    })
+    .from(reports)
+    .leftJoin(reportEmbeddings, raw`${reportEmbeddings.reportId} = ${reports.id}`)
+    .where(raw`${reports.visibility} <> 'deleted'`)
+  return row
+}
+
+export type SemanticNeighbor = {
+  lostId: string
+  lostText: string
+  sightingId: string
+  sightingText: string
+  similarity: number
+  scored: boolean
+}
+
+/**
+ * 실종 신고마다 표현이 가장 가까운 발견 제보를 찾음
+ * scored 가 false 면 배점이 후보로 올리지 않은 쌍이라 벡터가 새로 찾아낸 것
+ */
+export async function listSemanticNeighbors(limit = 8): Promise<SemanticNeighbor[]> {
+  // 같은 문장을 가진 실종 신고가 여럿이라 제보 기준으로 한 줄만 남김
+  const rows = await db.execute(raw`
+    select * from (
+      select distinct on (s.id)
+        l.id                                as "lostId",
+        le.source_text                      as "lostText",
+        s.id                                as "sightingId",
+        s.source_text                       as "sightingText",
+        round((1 - (le.embedding <=> s.embedding))::numeric, 3)::float8 as "similarity",
+        exists (
+          select 1 from match_scores m
+          where m.lost_id = l.id and m.sighting_id = s.id
+        )                                   as "scored"
+      from reports l
+      join report_embeddings le on le.report_id = l.id
+      cross join lateral (
+        select r.id, e.embedding, e.source_text
+        from reports r
+        join report_embeddings e on e.report_id = r.id
+        where r.kind = 'sighting'
+          and r.visibility = 'public'
+        order by e.embedding <=> le.embedding
+        limit 1
+      ) s
+      where l.kind = 'lost' and l.visibility = 'public'
+      order by s.id, 5 desc
+    ) t
+    order by t."similarity" desc
+    limit ${limit}`)
+  return rows as unknown as SemanticNeighbor[]
+}
+
+/** 이 제보와 표현이 가까운 다른 제보. 자기 자신은 뺌 */
+export async function findSimilarReports(reportId: string, limit = 5) {
+  const rows = await db.execute(raw`
+    select
+      r.id                                as "id",
+      r.area_name                         as "areaName",
+      r.kind                              as "kind",
+      e.source_text                       as "sourceText",
+      round((1 - (e.embedding <=> base.embedding))::numeric, 3)::float8 as "similarity"
+    from report_embeddings base
+    join report_embeddings e on e.report_id <> base.report_id
+    join reports r on r.id = e.report_id
+    where base.report_id = ${reportId}
+      and r.visibility = 'public'
+    order by e.embedding <=> base.embedding
+    limit ${limit}`)
+  return rows as unknown as {
+    id: string
+    areaName: string | null
+    kind: string
+    sourceText: string
+    similarity: number
+  }[]
 }

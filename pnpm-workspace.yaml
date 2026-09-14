@@ -8,3 +8,7 @@ allowBuilds:
   unrs-resolver: true
   # Storybook 의 Vite 번들러와 drizzle-kit 이 네이티브 바이너리 필요
   esbuild: true
+  # 임베딩 스크립트는 tarball 에 들어 있는 바이너리로 돌아 네이티브 빌드가 필요 없음
+  onnxruntime-node: false
+  protobufjs: false
+  sharp: false

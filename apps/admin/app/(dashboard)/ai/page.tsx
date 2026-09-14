@@ -7,8 +7,10 @@ import {
   analysisJobsDaily,
   countEditedFields,
   draftAcceptance,
+  embeddingCoverage,
   listAnalysisJobs,
   listMatchReviews,
+  listSemanticNeighbors,
   listUnreviewedPairs,
   matchBreakdownAverages,
   matchReviewSummary,
@@ -16,6 +18,7 @@ import {
 } from "@rebirth/db";
 import { MOCK_MODEL, VISION_MODEL } from "@rebirth/core/vision";
 import { MATCH_VERDICT_LABEL, REVIEW_MODEL } from "@rebirth/core/matching";
+import { EMBEDDING_MODEL } from "@rebirth/core/matching/embed-text";
 
 import { AiView, type AiDashboard } from "./view";
 
@@ -50,10 +53,12 @@ export default async function AiPage() {
       safe(() => listAnalysisJobs(RECENT_LIMIT), []),
     ]);
 
-  const [reviewSummary, reviews, unreviewed] = await Promise.all([
+  const [reviewSummary, reviews, unreviewed, coverage, neighbors] = await Promise.all([
     safe(() => matchReviewSummary(), []),
     safe(() => listMatchReviews(10), []),
     safe(() => listUnreviewedPairs(3), []),
+    safe(() => embeddingCoverage(), undefined),
+    safe(() => listSemanticNeighbors(6), []),
   ]);
 
   const data: AiDashboard = {
@@ -70,6 +75,9 @@ export default async function AiPage() {
       createdAt: row.createdAt.toISOString(),
     })),
     unreviewed,
+    embeddingModel: EMBEDDING_MODEL,
+    coverage: coverage ?? null,
+    neighbors,
     summary: summary ?? null,
     byModel,
     failures,

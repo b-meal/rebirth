@@ -43,6 +43,21 @@ export type AiDashboard = {
     createdAt: string;
   }[];
   unreviewed: { lostId: string; sightingId: string; score: number }[];
+  embeddingModel: string;
+  coverage: {
+    reports: number;
+    embedded: number;
+    model: string | null;
+    lastAt: string | null;
+  } | null;
+  neighbors: {
+    lostId: string;
+    lostText: string;
+    sightingId: string;
+    sightingText: string;
+    similarity: number;
+    scored: boolean;
+  }[];
   summary: {
     total: number;
     succeeded: number;
@@ -91,6 +106,9 @@ export type AiDashboard = {
 
 const percent = (part: number, whole: number) =>
   whole === 0 ? "-" : `${Math.round((part / whole) * 1000) / 10}%`;
+
+// 시드 픽스처는 UUID 앞자리가 모두 0 이라 뒷자리로 구분함
+const shortId = (value: string) => value.slice(-8);
 
 const ms = (value: number | null) => (value === null ? "-" : `${value.toLocaleString()}ms`);
 
@@ -156,7 +174,7 @@ function ReviewRunner({
       <input type="hidden" name="sightingId" value={pair.sightingId} />
       <FlexBox alignItems="center" gap="8px">
         <Typography variant="body2">
-          {pair.score}점 · 제보 {pair.sightingId.slice(0, 8)} · 실종 {pair.lostId.slice(0, 8)}
+          {pair.score}점 · 제보 {shortId(pair.sightingId)} · 실종 {shortId(pair.lostId)}
         </Typography>
         <RunButton />
         {state.message ? (
@@ -430,10 +448,10 @@ export function AiView({ data }: { data: AiDashboard }) {
                       href={`/sightings/${review.sightingId}`}
                       style={{ color: "inherit" }}
                     >
-                      제보 {review.sightingId.slice(0, 8)}
+                      제보 {shortId(review.sightingId)}
                     </Link>
                     {" · "}
-                    실종 {review.lostId.slice(0, 8)}
+                    실종 {shortId(review.lostId)}
                   </CardCaption>
                 </CardContent>
               </Card>
@@ -448,27 +466,62 @@ export function AiView({ data }: { data: AiDashboard }) {
 
       <Section
         title="임베딩"
-        note="외형 설명을 벡터로 바꿔 배점이 놓치는 표현 차이를 잡으려는 자리입니다"
+        note={`${data.embeddingModel} 로 외형 설명을 384차원 벡터로 바꿔 pgvector 로 이웃을 찾습니다`}
       >
-        <Card>
-          <CardContent>
-            <CardTitle variant="headline2" weight="bold">
-              아직 연결되지 않았습니다
-            </CardTitle>
-            <CardCaption variant="body2">
-              Anthropic 에 임베딩 API 가 없어 Vercel AI Gateway 를 거쳐야 하고, Gateway 는 팀에
-              결제수단이 등록돼야 요청을 받습니다. 카드를 등록하면 rebirth-embeddings 키
-              (월 5달러 한도)가 바로 동작합니다.
-            </CardCaption>
-            <CardCaption variant="caption2">
-              후보 모델 google/text-multilingual-embedding-002 · voyage/voyage-3.5-lite ·
-              openai/text-embedding-3-small
-            </CardCaption>
-            <CardCaption variant="caption2">
-              연결 전까지 유사도는 결정식 배점과 Claude 재평가 두 축으로만 냅니다.
-            </CardCaption>
-          </CardContent>
-        </Card>
+        {data.coverage && data.coverage.reports > 0 ? (
+          <FlexBox flexWrap="wrap" gap="12px">
+            <Stat
+              label="벡터가 붙은 제보"
+              value={data.coverage.embedded.toLocaleString()}
+              note={`전체 ${data.coverage.reports.toLocaleString()}건`}
+            />
+            <Stat
+              label="적용률"
+              value={percent(data.coverage.embedded, data.coverage.reports)}
+              note={`마지막 ${when(data.coverage.lastAt)}`}
+            />
+          </FlexBox>
+        ) : (
+          <Empty>아직 만들어진 벡터가 없습니다.</Empty>
+        )}
+
+        <Typography variant="caption1">
+          벡터는 pnpm --filter @rebirth/db run db:embed 로 만듭니다. 모델이 381MB 라 배포
+          번들에 넣지 않고 조회만 SQL 로 합니다.
+        </Typography>
+
+        {data.neighbors.length > 0 ? (
+          <FlexBox flexDirection="column" gap="8px">
+            <Typography variant="label1">표현이 가장 가까운 쌍</Typography>
+            {data.neighbors.map((pair) => (
+              <Card key={`${pair.lostId}-${pair.sightingId}`}>
+                <CardContent>
+                  <FlexBox alignItems="center" flexWrap="wrap" gap="8px">
+                    <Typography variant="label1" weight="bold">
+                      {pair.similarity.toFixed(3)}
+                    </Typography>
+                    <Typography variant="caption1">
+                      {pair.scored ? "배점 후보에도 있음" : "배점이 올리지 않은 쌍"}
+                    </Typography>
+                  </FlexBox>
+                  <CardCaption variant="body2">실종 {pair.lostText}</CardCaption>
+                  <CardCaption variant="body2">제보 {pair.sightingText}</CardCaption>
+                  <CardCaption variant="caption2">
+                    <Link href={`/sightings/${pair.sightingId}`} style={{ color: "inherit" }}>
+                      제보 {shortId(pair.sightingId)}
+                    </Link>
+                    {" · 실종 "}
+                    {shortId(pair.lostId)}
+                  </CardCaption>
+                </CardContent>
+              </Card>
+            ))}
+          </FlexBox>
+        ) : null}
+
+        <Typography variant="caption1">
+          벡터는 표현이 비슷한 정도만 말합니다. 거리와 시각은 배점이 보고 개체 동일성은 어느 쪽도 확정하지 않습니다.
+        </Typography>
       </Section>
 
       <Divider />
