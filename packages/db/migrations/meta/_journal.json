@@ -218,6 +218,20 @@
       "when": 1789394172283,
       "tag": "0030_add_embedding_projection",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1789397399311,
+      "tag": "0031_add_gov_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789397400311,
+      "tag": "0032_lock_down_gov_data_rls",
+      "breakpoints": true
     }
   ]
 }

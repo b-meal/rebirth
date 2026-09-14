@@ -36,7 +36,7 @@ export function LegalDocument({
       <ScreenBody gap="x6">
         {/* 제목은 헤더가 이미 말하고 있어 시행일만 남김 */}
         <Text textStyle="t3Regular" color="fg.neutralMuted">
-          {effectiveAt ? `${version} · ${KST.format(effectiveAt)} 시행` : version}
+          {effectiveAt ? `${version}, ${KST.format(effectiveAt)} 시행` : version}
         </Text>
 
         {/* 이번 개정에서 바뀐 곳을 알리는 메모라 경고가 아님. 파란 면은 과함 */}

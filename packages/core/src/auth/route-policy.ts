@@ -32,6 +32,8 @@ const PUBLIC_PREFIXES = [
   "/community",
   // 계정 화면은 로그인 권유도 겸하므로 열어 두고 안에서 갈라 보여 줌
   "/mine",
+  // 보호·구조 기관 찾기. 급한 사람이 로그인부터 하게 만들지 않음
+  "/shelters",
   // 안내와 법적 고지
   "/guide",
   "/privacy",

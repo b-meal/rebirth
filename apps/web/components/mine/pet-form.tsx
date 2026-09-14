@@ -35,6 +35,7 @@ import { usePetAiDraft, type PetAiField } from "@/hooks/use-pet-ai-draft";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
 import { usePhotoUploads } from "@/hooks/use-photo-uploads";
 import { addPet, editPet, type ActionState } from "@/app/mine/actions";
+import { BreedSuggest } from "@/components/ui/breed-suggest";
 
 // 우리 동물 등록. 실종 신고를 빠르게 채우려고 미리 적어 두는 기록
 
@@ -141,7 +142,7 @@ export function PetForm({ pet }: PetFormProps) {
       const values = applyAi(draft, {
         animalOptions: ANIMAL_OPTIONS.map((it) => it.value),
         sizeOptions: SIZE_OPTIONS.map((it) => it.value),
-        // 세 화면이 같은 목록을 써 베이지·삼색도 그대로 고를 수 있음
+        // 세 화면이 같은 목록을 써 베이지, 삼색도 그대로 고를 수 있음
         colorOptions: COAT_COLORS.map((it) => it.label),
       });
       if (values.animalType !== undefined) setAnimalType(values.animalType);
@@ -405,6 +406,14 @@ export function PetForm({ pet }: PetFormProps) {
             >
               <TextFieldInput placeholder="말티즈 계열" />
             </TextField>
+            <BreedSuggest
+              value={breedGuess}
+              animalType={animalType}
+              onPick={(kindNm) => {
+                setBreedGuess(kindNm);
+                ai.touch("breedGuess");
+              }}
+            />
 
             <TextField
               label="동물등록번호"

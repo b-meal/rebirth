@@ -59,6 +59,10 @@ function Done({ reference }: { reference: string }) {
           </ActionButton>
           {/* 접수는 즉시 처리가 아니라 급하면 전화가 빠름 */}
           <ActionButton variant="neutralOutline" size="large" asChild>
+            <Link href="/shelters">가까운 보호, 구조 기관 보기</Link>
+          </ActionButton>
+          {/* 접수는 즉시 처리가 아니라 급하면 전화가 빠름 */}
+          <ActionButton variant="ghost" size="large" asChild>
             <a href={`tel:${RESCUE_PHONE}`}>급하면 {RESCUE_PHONE} 전화</a>
           </ActionButton>
         </VStack>
@@ -141,7 +145,10 @@ export function RescueRequest() {
           </VStack>
         </form>
 
-        <HStack justify="center">
+        <HStack justify="center" gap="x2">
+          <ActionButton variant="ghost" size="medium" asChild>
+            <Link href="/shelters">가까운 기관 찾기</Link>
+          </ActionButton>
           <ActionButton variant="ghost" size="medium" asChild>
             <a href={`tel:${RESCUE_PHONE}`}>직접 전화할게요</a>
           </ActionButton>
