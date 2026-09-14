@@ -83,6 +83,41 @@ export function upsertShelters(rows: (typeof shelters.$inferInsert)[]) {
     .returning({ id: shelters.id })
 }
 
+/** 좌표 없이 지역으로 찾는 경로. 위치 권한을 주지 않은 사람도 목록을 봄 */
+export function listSheltersByRegion(input: {
+  region?: string
+  kind?: (typeof shelters.kind.enumValues)[number]
+  limit?: number
+}) {
+  return db
+    .select({
+      id: shelters.id,
+      kind: shelters.kind,
+      name: shelters.name,
+      orgName: shelters.orgName,
+      targetAnimals: shelters.targetAnimals,
+      roadAddress: shelters.roadAddress,
+      lotAddress: shelters.lotAddress,
+      tel: shelters.tel,
+      weekdayOpen: shelters.weekdayOpen,
+      weekdayClose: shelters.weekdayClose,
+      weekendOpen: shelters.weekendOpen,
+      weekendClose: shelters.weekendClose,
+      closedDay: shelters.closedDay,
+    })
+    .from(shelters)
+    .where(
+      and(
+        input.region
+          ? raw`coalesce(${shelters.roadAddress}, ${shelters.orgName}, '') like ${input.region + '%'}`
+          : undefined,
+        input.kind ? eq(shelters.kind, input.kind) : undefined,
+      ),
+    )
+    .orderBy(shelters.name)
+    .limit(input.limit ?? 50)
+}
+
 export function countShelters() {
   return db
     .select({

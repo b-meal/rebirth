@@ -104,7 +104,7 @@ export function ReportPhotoHero({ photos, step, total, label, onRetake }: Report
           </Box>
           <HStack justify="space-between" align="center">
             <Text textStyle="t3Medium" color="fg.neutral">
-              {step} / {total} · {label}
+              {step} / {total}, {label}
             </Text>
             {onRetake ? (
               <Box style={{ pointerEvents: "auto" }}>

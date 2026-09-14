@@ -181,7 +181,7 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
           </Text>
           <Text textStyle="t4Regular" color="fg.neutralMuted">
             {[formatAbsolute(current.occurredAt), CARE_LABEL[current.careSituation], ...conditions].join(
-              " · ",
+              ", ",
             )}
           </Text>
         </VStack>

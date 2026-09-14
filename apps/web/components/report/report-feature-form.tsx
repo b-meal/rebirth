@@ -8,6 +8,7 @@ import { TextField, TextFieldInput, TextFieldTextarea } from "seed-design/ui/tex
 import type { DraftField, ReportDraft } from "@/hooks/use-report-draft";
 import { Section } from "@/components/ui/screen";
 import { CoatColorPicker } from "@/components/ui/coat-color-picker";
+import { BreedSuggest } from "@/components/ui/breed-suggest";
 
 // 초안을 고치는 상세 입력. 바텀시트 안에서만 열림
 // confidence 수치는 확정으로 읽히므로 화면에 내지 않음
@@ -103,16 +104,23 @@ export function ReportFeatureForm({ draft, onEdit }: ReportFeatureFormProps) {
         </Chip.RadioRoot>
       </Section>
 
-      <TextField
-        label="품종 추정"
-        indicator={showBadge("breedGuess") ? "AI 초안" : undefined}
-        description="계열 추정으로만 적어요. 모르면 비워 두세요"
-        value={draft.breedGuess}
-        maxGraphemeCount={30}
-        onValueChange={(next) => onEdit("breedGuess", next.value)}
-      >
-        <TextFieldInput placeholder="말티즈" />
-      </TextField>
+      <Section gap="x2">
+        <TextField
+          label="품종 추정"
+          indicator={showBadge("breedGuess") ? "AI 초안" : undefined}
+          description="계열 추정으로만 적어요. 모르면 비워 두세요"
+          value={draft.breedGuess}
+          maxGraphemeCount={30}
+          onValueChange={(next) => onEdit("breedGuess", next.value)}
+        >
+          <TextFieldInput placeholder="말티즈" />
+        </TextField>
+        <BreedSuggest
+          value={draft.breedGuess}
+          animalType={draft.animalType}
+          onPick={(kindNm) => onEdit("breedGuess", kindNm)}
+        />
+      </Section>
 
       <TextField
         label="외형 요약"
