@@ -143,9 +143,9 @@ function toInsert(row: NormalizedShelter) {
 export async function syncShelterSource(
   kind: NormalizedShelter["kind"],
 ): Promise<SyncOutcome> {
-  const serviceKey = process.env.PUBLIC_DATA_API_KEY;
+  const serviceKey = process.env.DATA_GO_KR_API_KEY;
   if (!serviceKey) {
-    throw new ShelterSyncError("PUBLIC_DATA_API_KEY 가 없습니다", "no_key");
+    throw new ShelterSyncError("DATA_GO_KR_API_KEY 가 없습니다", "no_key");
   }
 
   const { rows, fetched, total } = await collect(SOURCES[kind], serviceKey);
