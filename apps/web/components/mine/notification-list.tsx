@@ -88,7 +88,7 @@ export function NotificationList({ areas, items }: NotificationListProps) {
             <Text textStyle="t3Regular" color="fg.neutralMuted">
               {areas.length === 0
                 ? "동네를 구독하면 그 동네 제보가 여기에 쌓여요"
-                : "아직 올라온 제보가 없어요"}
+                : "구독한 뒤에 올라온 제보가 여기에 쌓여요"}
             </Text>
           ) : (
             <VStack align="stretch" gap="x3">

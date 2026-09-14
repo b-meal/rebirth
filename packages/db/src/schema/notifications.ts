@@ -11,6 +11,7 @@ import { userProfiles } from './accounts'
 /** 한 계정이 구독할 수 있는 동네 수. 안 읽은 수 질의가 구독마다 한 번 도는 비용 상한 */
 export const AREA_SUBSCRIPTION_LIMIT = 10
 
+
 export const areaSubscriptions = pgTable(
   'area_subscriptions',
   {
@@ -25,6 +26,7 @@ export const areaSubscriptions = pgTable(
 
     // 이 시각 이후 올라온 제보가 안 읽음. 알림함을 열면 지금 시각으로 올라감
     lastReadAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    // 알림함에 보일 제보의 하한. 구독 전에 올라온 제보는 알림이 아니라서 목록에 넣지 않음
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

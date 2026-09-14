@@ -72,11 +72,13 @@ export async function listSubscribedAreaReports(
   userId: string,
   limit = 30,
 ): Promise<SubscribedAreaReport[]> {
+  // 구독 전에 올라온 제보는 알림이 아니므로 목록에 넣지 않음
   const subscribed = raw`
     exists (
       select 1 from ${areaSubscriptions} s
       where s.user_id = ${userId}
         and ${reports.areaCode} like s.area_code || '%'
+        and ${reports.createdAt} > s.created_at
     )
   `
 
@@ -88,6 +90,7 @@ export async function listSubscribedAreaReports(
         select max(s.last_read_at) from ${areaSubscriptions} s
         where s.user_id = ${userId}
           and ${reports.areaCode} like s.area_code || '%'
+          and ${reports.createdAt} > s.created_at
       )`,
     })
     .from(reports)
@@ -162,6 +165,7 @@ export async function addAreaSubscription(
   const already = owned.some((row) => row.areaCode === input.areaCode)
   if (!already && owned.length >= AREA_SUBSCRIPTION_LIMIT) return false
 
+  // 이미 구독한 동네를 다시 누르면 구독 시각과 읽은 시각을 되돌리지 않음
   await db
     .insert(areaSubscriptions)
     .values(input)
