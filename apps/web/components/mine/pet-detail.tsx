@@ -1,7 +1,7 @@
-import { HStack, Text, VStack } from "@seed-design/react";
+import { HStack, Text } from "@seed-design/react";
 
 import { ANIMAL_LABEL, SIZE_LABEL } from "@/lib/report-label";
-import { EditPetLink } from "@/components/mine/edit-pet-link";
+import { PetActionLink } from "@/components/mine/pet-action-link";
 import { AppHeader } from "@/components/ui/app-header";
 import { Badge } from "@/components/ui/badge";
 import { PhotoCarousel } from "@/components/ui/photo-carousel";
@@ -103,20 +103,25 @@ export function PetDetail({
         ) : null}
       </ScreenBody>
 
-      {/* 이 화면에서 할 일은 고치기 하나뿐이라 아래에 크게 둠
+      {/* 고치기와 실종 신고를 아래에 나란히 둠
           pb 는 유틸이 안전 영역을 더해 다시 잡으므로 여기서 주지 않음 */}
-      <VStack
+      <HStack
         className="rebirth-bottom-bar"
         position="sticky"
         bottom="0"
         zIndex={1}
         align="stretch"
+        gap="x2"
         px="spacingX.globalGutter"
         pt="x3"
         bg="bg.layerDefault"
       >
-        <EditPetLink petId={pet.id}>정보 수정</EditPetLink>
-      </VStack>
+        <PetActionLink href={`/mine/pets/${pet.id}/edit`} variant="neutralOutline">
+          정보 수정
+        </PetActionLink>
+        {/* 등록해 둔 사진과 특징을 그대로 옮겨 마지막 목격 위치만 고르면 끝남 */}
+        <PetActionLink href={`/lost/new?petId=${pet.id}`}>실종 신고</PetActionLink>
+      </HStack>
     </Screen>
   );
 }

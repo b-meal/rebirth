@@ -157,14 +157,26 @@ function toLocalInput(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function LostForm() {
+/** 등록해 둔 우리 동물에서 옮겨 오는 값. 마지막 목격 위치와 시각은 그때마다 달라 담지 않음 */
+export type LostPrefill = {
+  animalType: "dog" | "cat" | "other";
+  size: "small" | "medium" | "large";
+  colors: string[];
+  appearance: string;
+  /** 서명 URL. 브라우저가 받아 폼의 사진 고르기에 그대로 태움 */
+  photoUrls: string[];
+};
+
+export function LostForm({ prefill }: { prefill?: LostPrefill } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const [animalType, setAnimalType] = useState<"dog" | "cat" | "other">("dog");
-  const [size, setSize] = useState<"small" | "medium" | "large">("small");
-  const [colors, setColors] = useState<string[]>([]);
-  const [appearance, setAppearance] = useState("");
+  const [animalType, setAnimalType] = useState<"dog" | "cat" | "other">(
+    prefill?.animalType ?? "dog",
+  );
+  const [size, setSize] = useState<"small" | "medium" | "large">(prefill?.size ?? "small");
+  const [colors, setColors] = useState<string[]>(prefill?.colors ?? []);
+  const [appearance, setAppearance] = useState(prefill?.appearance ?? "");
   const [collar, setCollar] = useState(false);
   // 좌표 대신 서버가 발급한 참조만 들고 있는 POL-08
   const [areaName, setAreaName] = useState<string | null>(null);
@@ -206,6 +218,35 @@ export function LostForm() {
         ),
       }),
   });
+
+  /**
+   * 우리 동물 사진을 폼의 사진 고르기에 그대로 태움
+   * 서버에서 옮겨 담지 않고 브라우저가 받아 넣어 재인코딩·업로드 경로가 평소와 같음
+   * 한 번만 돌게 잠가 둠. 지운 사진이 다시 들어오면 지운 뜻이 사라짐
+   */
+  const seeded = useRef(false);
+  const { addFiles } = picker;
+  useEffect(() => {
+    const urls = prefill?.photoUrls;
+    if (!urls?.length || seeded.current) return;
+    seeded.current = true;
+
+    void (async () => {
+      const files: File[] = [];
+      for (const [index, url] of urls.entries()) {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) continue;
+          const blob = await response.blob();
+          files.push(new File([blob], `pet-${index + 1}.jpg`, { type: blob.type || "image/jpeg" }));
+        } catch {
+          // 한 장을 못 받아도 나머지로 진행함. 전부 실패하면 직접 고르면 됨
+        }
+      }
+      if (files.length > 0) await addFiles(files);
+    })();
+  }, [prefill?.photoUrls, addFiles]);
+
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
   // 마지막으로 본 곳을 동 이름으로만 기억하지 않음. 강남역·코엑스로도 찾게 함
