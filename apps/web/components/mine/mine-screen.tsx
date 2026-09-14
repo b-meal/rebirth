@@ -211,6 +211,11 @@ function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) 
         </Link>
       </HStack>
 
+      {/* 급할 때 상세를 거치지 않고 바로 신고하러 감. 사진과 특징은 다음 화면이 채움 */}
+      <ActionButton variant="neutralOutline" size="xsmall" asChild>
+        <Link href={`/lost/new?petId=${pet.id}`}>실종 신고</Link>
+      </ActionButton>
+
       <DeletePetButton id={pet.id} name={pet.name} removePet={removePet} />
     </HStack>
   );
