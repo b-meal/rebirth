@@ -19,6 +19,26 @@ export type AnalyzeState = {
   clear: () => void;
 };
 
+// 서버까지 못 갔을 때 쓰는 문구. 서버가 준 사유가 있으면 그쪽을 씀
+const NETWORK_FAILED = "잠시 후 다시 시도해 주세요";
+
+export type UseAnalyzePhotoOptions = {
+  /**
+   * 초안이 도착했을 때 부름
+   * 결과를 폼 값으로 옮기는 화면이 이펙트로 status 를 지켜보면
+   * 렌더가 한 번 더 도는 데다 같은 결과를 두 번 넣지 않으려 열쇠를 또 들어야 함
+   */
+  onDone?: (payload: {
+    draft: AnalyzeResult;
+    model: string | null;
+    analyzedAt: string | null;
+    advice: AnalyzeAdviceState;
+    message: string | null;
+  }) => void;
+  /** 초안을 못 받았을 때. 모델 오류·타임아웃·네트워크 끊김이 모두 여기로 옴 */
+  onFail?: (message: string | null) => void;
+};
+
 type Payload = {
   draft?: AnalyzeResult;
   advice?: AnalyzeAdviceState;
@@ -27,7 +47,7 @@ type Payload = {
   analyzedAt?: string;
 };
 
-export function useAnalyzePhoto(): AnalyzeState {
+export function useAnalyzePhoto({ onDone, onFail }: UseAnalyzePhotoOptions = {}): AnalyzeState {
   const [status, setStatus] = useState<AnalyzeState["status"]>("idle");
   const [advice, setAdvice] = useState<AnalyzeAdviceState | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -36,6 +56,14 @@ export function useAnalyzePhoto(): AnalyzeState {
   const [analyzedAt, setAnalyzedAt] = useState<string | null>(null);
 
   const inflight = useRef<AbortController | null>(null);
+
+  // 매 렌더 새로 오는 함수라 start 가 그때마다 다시 만들어지지 않게 참조로 들고 있음
+  const onDoneRef = useRef(onDone);
+  const onFailRef = useRef(onFail);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+    onFailRef.current = onFail;
+  }, [onDone, onFail]);
 
   useEffect(() => () => inflight.current?.abort(), []);
 
@@ -66,6 +94,7 @@ export function useAnalyzePhoto(): AnalyzeState {
           setStatus("failed");
           setAdvice("failed");
           setMessage(payload.message ?? null);
+          onFailRef.current?.(payload.message ?? null);
           return;
         }
 
@@ -75,11 +104,20 @@ export function useAnalyzePhoto(): AnalyzeState {
         setAdvice(payload.advice ?? "draft");
         setMessage(payload.message ?? null);
         setStatus("done");
+
+        onDoneRef.current?.({
+          draft: payload.draft,
+          model: payload.model ?? null,
+          analyzedAt: payload.analyzedAt ?? null,
+          advice: payload.advice ?? "draft",
+          message: payload.message ?? null,
+        });
       } catch {
         if (controller.signal.aborted) return;
         setStatus("failed");
         setAdvice("failed");
-        setMessage("자동 정리가 안 됐어요. 내용을 직접 적어 제보할 수 있어요");
+        setMessage(NETWORK_FAILED);
+        onFailRef.current?.(NETWORK_FAILED);
       }
     })();
   }, []);

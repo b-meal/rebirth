@@ -1,7 +1,7 @@
 "use client";
 
 import type { LocationCandidate } from "@rebirth/core/location/candidate";
-import { Box, Icon, Skeleton, Text, VStack } from "@seed-design/react";
+import { Box, Icon, Skeleton, Text, VisuallyHidden, VStack } from "@seed-design/react";
 import {
   IconMagnifyingglassLine,
   IconXmarkCircleFill,
@@ -49,22 +49,25 @@ export function PlaceSearchField({
 
   return (
     <Box position="relative">
+      {/* placeholder 가 이미 무엇을 적는 자리인지 말해 이름표를 눈에 보이게 두지 않음
+          label 을 비우면 SEED 가 콘솔에 경고를 남기므로 감춘 이름표로 줌 */}
       <TextField
+        label={<VisuallyHidden>{placeholder}</VisuallyHidden>}
         prefixIcon={<IconMagnifyingglassLine />}
         value={search.query}
         onValueChange={(next) => search.setQuery(next.value)}
       >
-        <TextFieldInput
-          placeholder={placeholder}
-          aria-label={placeholder}
-          aria-busy={search.loading}
-        />
+        <TextFieldInput placeholder={placeholder} aria-busy={search.loading} />
       </TextField>
 
       {search.query ? (
-        <Box position="absolute" top="0" right="x2" height="full">
+        // 위치 prop 은 간격 토큰을 받지 않음. x2 를 주면 offset 이 만들어지지 않아
+        // 칸 왼쪽 끝으로 붙어 돋보기와 겹침. 끝에 붙이고 여백은 padding 으로 띄움
+        <Box position="absolute" top="0" right="0" height="full" pr="x2">
           <VStack justify="center" height="full">
+            {/* 폼 안에서는 type 이 없으면 submit 이 되어 누르는 순간 저장이 돌아감 */}
             <ActionButton
+              type="button"
               variant="ghost"
               size="xsmall"
               layout="iconOnly"
@@ -95,13 +98,16 @@ export function PlaceSearchField({
         >
           {search.error ? <Callout tone="critical" description={search.error} /> : null}
 
-          {/* 앞 결과가 남아 있으면 그대로 두고 빈 자리에서만 결과 자리를 잡아 둠 */}
+          {/* 앞 결과가 남아 있으면 그대로 두고 빈 자리에서만 결과 자리를 잡아 둠
+              결과 줄과 같은 자리에 같은 크기로 둠. 치수가 어긋나면 결과가 온 순간 글이 튐
+              ListButtonItem 은 패딩 12/16, 제목 22px, 설명 18px, 사이 2px 임 */}
           {search.loading && search.items.length === 0 ? (
-            <VStack align="stretch" gap="x2" p="x4" aria-hidden="true">
+            <VStack align="stretch" gap="0" aria-hidden="true">
               {SKELETON_ROWS.map((row) => (
-                <VStack key={row} align="stretch" gap="x1_5">
-                  <Skeleton width="45%" height="x4" radius="8" />
-                  <Skeleton width="70%" height="x3_5" radius="8" />
+                <VStack key={row} align="stretch" gap="x0_5" pt="x3" pb="x3" px="x4">
+                  {/* 장소 이름은 길이가 제각각이라 줄마다 너비를 달리해 목록처럼 보이게 함 */}
+                  <Skeleton width={row === 0 ? "58%" : "44%"} height="22px" radius="8" />
+                  <Skeleton width={row === 0 ? "72%" : "62%"} height="18px" radius="8" />
                 </VStack>
               ))}
             </VStack>

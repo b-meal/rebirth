@@ -60,7 +60,7 @@ export async function saveProfile(_state: ActionState, form: FormData): Promise<
   const parsed = updateProfile.safeParse({ displayName: form.get("displayName") });
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
-  await updateUserProfile({ id: user.id, displayName: parsed.data.displayName || null });
+  await updateUserProfile({ id: user.id, displayName: parsed.data.displayName });
   revalidatePath("/mine");
   return { ok: true };
 }

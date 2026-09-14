@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // 장소·주소 검색. REST 키가 서버 전용이라 /api/places 를 거침
 
-export type PlaceSearchMode = "keyword" | "address" | "category";
+export type PlaceSearchMode = "keyword" | "address" | "category" | "both";
 
 export type UsePlaceSearchOptions = {
   mode?: PlaceSearchMode;

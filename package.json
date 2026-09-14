@@ -11,7 +11,8 @@
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "clean:cache": "node scripts/clean-cache.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.63.0",

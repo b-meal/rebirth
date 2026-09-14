@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { LocationCandidate } from "./candidate";
 import { snapToGrid } from "./geo";
 import {
   KakaoLocalError,
@@ -112,6 +113,21 @@ export async function geocodeHandler(request: Request): Promise<Response> {
   }
 }
 
+/**
+ * 같은 지점이 주소와 장소로 두 번 걸린 것을 하나로 줄임
+ * 좌표를 소수점 다섯 자리로 끊음. 대략 1m 라 같은 건물은 같은 열쇠가 됨
+ * 앞에 온 것을 남겨 주소가 장소보다 먼저 서게 함
+ */
+function dedupeByPoint(items: LocationCandidate[]): LocationCandidate[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = `${item.point.lat.toFixed(5)},${item.point.lng.toFixed(5)}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 /* GET /api/places 장소·주소 검색. REST 키가 서버 전용이라 브라우저는 이 라우트를 거침 */
 
 export async function placesHandler(request: Request): Promise<Response> {
@@ -138,6 +154,40 @@ export async function placesHandler(request: Request): Promise<Response> {
         mode,
         page: result.page,
         items: result.matches.map(addressToCandidate),
+      });
+    }
+
+    // 주소와 장소명을 함께 찾음. 한쪽이 비어도 다른 쪽 결과를 내보냄
+    // 동 이름을 적으면 주소가, 강남역을 적으면 장소가 걸림
+    if (mode === "both") {
+      const text = parsed.data.query ?? "";
+      const [address, keyword] = await Promise.allSettled([
+        searchAddress(text, { page, size }),
+        searchKeyword(text, options),
+      ]);
+
+      // 둘 다 실패했을 때만 오류로 돌림. 하나만 실패하면 나머지로 답함
+      if (address.status === "rejected" && keyword.status === "rejected") {
+        return kakaoErrorResponse(address.reason);
+      }
+
+      const items = [
+        // 적어 넣은 것이 주소면 그것이 가장 정확한 답이라 앞에 둠
+        ...(address.status === "fulfilled"
+          ? address.value.matches.map(addressToCandidate)
+          : []),
+        ...(keyword.status === "fulfilled" ? keyword.value.places.map(placeToCandidate) : []),
+      ];
+
+      return Response.json({
+        mode,
+        // 더 볼 것이 있는지는 장소 쪽이 정함. 주소는 대개 한 쪽이면 끝남
+        page:
+          keyword.status === "fulfilled"
+            ? keyword.value.page
+            : (address as PromiseFulfilledResult<Awaited<ReturnType<typeof searchAddress>>>)
+                .value.page,
+        items: dedupeByPoint(items),
       });
     }
 

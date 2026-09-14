@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import {
+  Badge,
   Grid,
+  HStack,
   Icon,
   ImageFrame,
   ImageFrameFloater,
@@ -23,10 +25,13 @@ import {
 } from "seed-design/ui/text-field";
 
 import { AppHeader } from "@/components/ui/app-header";
-import { CoatColorPicker } from "@/components/ui/coat-color-picker";
+import { COAT_COLORS, CoatColorPicker } from "@/components/ui/coat-color-picker";
 import { PhotoField } from "@/components/ui/photo-field";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
+import { useCameraAvailable } from "@/hooks/use-camera-available";
 import { useFocusError } from "@/hooks/use-focus-error";
+import { usePetAiDraft, type PetAiField } from "@/hooks/use-pet-ai-draft";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
 import { usePhotoUploads } from "@/hooks/use-photo-uploads";
 import { addPet, editPet, type ActionState } from "@/app/mine/actions";
@@ -47,6 +52,10 @@ const SIZE_OPTIONS = [
   { value: "medium", label: "중형" },
   { value: "large", label: "대형" },
 ] as const;
+
+/** 한 요청에 넣는 사진 수. 서버 상한과 같음 */
+const ANALYZE_PHOTOS = 2;
+
 
 export type PetFormValues = {
   id: string;
@@ -88,14 +97,19 @@ export function PetForm({ pet }: PetFormProps) {
   const [note, setNote] = useState(pet?.note ?? "");
 
   // 저장된 값이 unknown 이면 고를 수 있는 칸에 없어 기본값으로 되돌림
-  const animalDefault = ANIMAL_OPTIONS.some((it) => it.value === pet?.animalType)
-    ? pet!.animalType
-    : "dog";
-  const sizeDefault = SIZE_OPTIONS.some((it) => it.value === pet?.size) ? pet!.size : "small";
+  // AI 초안이 나중에 도착해 값을 바꾸므로 이 세 칸도 화면이 값을 쥠
+  const [animalType, setAnimalType] = useState(
+    ANIMAL_OPTIONS.some((it) => it.value === pet?.animalType) ? pet!.animalType : "dog",
+  );
+  const [size, setSize] = useState(
+    SIZE_OPTIONS.some((it) => it.value === pet?.size) ? pet!.size : "small",
+  );
+  const [colors, setColors] = useState<string[]>(pet?.colors ?? []);
 
   // 여러 장을 각자 올림. use-photo-upload 는 새로 올릴 때 앞의 것을 끊어 한 장만 남음
   const upload = usePhotoUploads();
   const snackbar = useSnackbarAdapter();
+  const cameraAvailable = useCameraAvailable();
   const picker = usePhotoPicker({
     // 남겨 둔 사진이 이미 자리를 차지해 그만큼 덜 고를 수 있음
     maxCount: Math.max(0, PHOTO_MAX_COUNT - kept.length),
@@ -116,6 +130,44 @@ export function PetForm({ pet }: PetFormProps) {
       }),
   });
 
+  // 사진을 올리면 제보와 같은 분석을 걸어 생김새 칸을 미리 채움
+  // 고치는 화면은 이미 적어 둔 값이 있어 덮지 않음. 사진 한 장 더 올렸다고 기록이 바뀌면 안 됨
+  const ai = usePetAiDraft();
+  const { apply: applyAi } = ai;
+
+  // 결과가 오는 그 자리에서 칸을 채움. 이펙트로 status 를 지켜보면 렌더가 한 번 더 돎
+  const analyze = useAnalyzePhoto({
+    onDone: ({ draft }) => {
+      const values = applyAi(draft, {
+        animalOptions: ANIMAL_OPTIONS.map((it) => it.value),
+        sizeOptions: SIZE_OPTIONS.map((it) => it.value),
+        // 세 화면이 같은 목록을 써 베이지·삼색도 그대로 고를 수 있음
+        colorOptions: COAT_COLORS.map((it) => it.label),
+      });
+      if (values.animalType !== undefined) setAnimalType(values.animalType);
+      if (values.size !== undefined) setSize(values.size);
+      if (values.colors !== undefined) setColors(values.colors);
+      if (values.breedGuess !== undefined) setBreedGuess(values.breedGuess);
+    },
+  });
+
+  const { uploadIds } = upload;
+  const { start: startAnalyze, clear: clearAnalyze } = analyze;
+
+  // 같은 사진 묶음을 두 번 분석하지 않음
+  const analyzedKey = useRef<string | null>(null);
+  useEffect(() => {
+    if (editing || uploadIds.length === 0) return;
+    // 서버가 한 요청에 두 장까지 받음. 대표 사진부터 보냄
+    const targets = uploadIds.slice(0, ANALYZE_PHOTOS);
+    const key = targets.join(",");
+    if (analyzedKey.current === key) return;
+    analyzedKey.current = key;
+
+    clearAnalyze();
+    startAnalyze(targets);
+  }, [editing, uploadIds, startAnalyze, clearAnalyze]);
+
   // 저장이 끝나면 방금 다룬 기록이 보이는 곳으로 돌려보냄
   useEffect(() => {
     if (!state.ok) return;
@@ -123,6 +175,29 @@ export function PetForm({ pet }: PetFormProps) {
     // 서버가 그린 상세를 다시 읽어 바뀐 값이 바로 보이게 함
     router.refresh();
   }, [state.ok, router, pet]);
+
+  // 분석 상태를 한 줄로만 알림. 등록을 막는 일은 없어 오류 색을 쓰지 않음
+  const aiNotice = (() => {
+    if (editing) return null;
+    if (analyze.status === "loading") return "사진에서 생김새를 읽고 있어요";
+    if (analyze.status === "failed") return "생김새를 자동으로 못 채웠어요. 직접 골라 주세요";
+    if (analyze.advice === "not-animal") {
+      // 주인이 자기 동물을 올리는 자리라 못 알아봐도 등록을 막지 않음
+      return "사진에서 동물을 찾지 못했어요. 직접 골라 주세요";
+    }
+    if (ai.applied && ai.filled.length > 0) {
+      return "AI 가 채운 초안이에요. 다르면 고쳐 주세요";
+    }
+    return null;
+  })();
+
+  // 초안이 채웠고 아직 고치지 않은 칸에만 붙음
+  const aiBadge = (field: PetAiField) =>
+    ai.isFilled(field) ? (
+      <Badge size="medium" variant="outline" tone="neutral">
+        AI 초안
+      </Badge>
+    ) : null;
 
   return (
     <Screen>
@@ -166,7 +241,9 @@ export function PetForm({ pet }: PetFormProps) {
                       stroke
                     >
                       <ImageFrameFloater placement="top-end" offsetX="x2" offsetY="x2">
+                        {/* 폼 안에서는 type 이 없으면 submit 이 되어 누르는 순간 저장이 돌아감 */}
                         <ActionButton
+                          type="button"
                           variant="neutralSolid"
                           size="xsmall"
                           layout="iconOnly"
@@ -193,8 +270,13 @@ export function PetForm({ pet }: PetFormProps) {
             <PhotoField
               picker={picker}
               label={kept.length > 0 ? "사진 더 올리기" : "사진"}
-              hint="얼굴이 잘 보이는 사진일수록 찾기 쉬워요"
-              cameraAvailable={false}
+              hint={
+                editing
+                  ? "얼굴이 잘 보이는 사진일수록 찾기 쉬워요"
+                  : "사진을 찍으면 생김새를 먼저 채워 드려요"
+              }
+              // 확인이 끝나기 전에는 null. 사진 칸이 갈 곳을 단정하지 않게 그대로 넘김
+              cameraAvailable={cameraAvailable}
               uploading={upload.uploading}
               disabled={upload.uploading || kept.length >= PHOTO_MAX_COUNT}
             />
@@ -203,6 +285,13 @@ export function PetForm({ pet }: PetFormProps) {
               <input key={id} type="hidden" name="uploadIds" value={id} />
             ))}
             {upload.message ? <Callout tone="critical" description={upload.message} /> : null}
+
+            {/* 분석은 거들 뿐이라 실패해도 등록을 막지 않음. 동물이 안 보여도 안내만 함 */}
+            {aiNotice ? (
+              <Text textStyle="t3Regular" color="fg.neutralMuted">
+                {aiNotice}
+              </Text>
+            ) : null}
 
             <TextField
               label="이름"
@@ -222,12 +311,19 @@ export function PetForm({ pet }: PetFormProps) {
             </Text>
 
             <Section>
-              <Text as="h3" textStyle="t5Bold" color="fg.neutral">
-                동물 종류
-              </Text>
+              <HStack gap="x1_5" align="center">
+                <Text as="h3" textStyle="t5Bold" color="fg.neutral">
+                  동물 종류
+                </Text>
+                {aiBadge("animalType")}
+              </HStack>
               <SegmentedControl
                 name="animalType"
-                defaultValue={animalDefault}
+                value={animalType}
+                onValueChange={(value) => {
+                  setAnimalType(value);
+                  ai.touch("animalType");
+                }}
                 aria-label="동물 종류"
               >
                 {ANIMAL_OPTIONS.map((option) => (
@@ -239,10 +335,21 @@ export function PetForm({ pet }: PetFormProps) {
             </Section>
 
             <Section>
-              <Text as="h3" textStyle="t5Bold" color="fg.neutral">
-                크기
-              </Text>
-              <SegmentedControl name="size" defaultValue={sizeDefault} aria-label="크기">
+              <HStack gap="x1_5" align="center">
+                <Text as="h3" textStyle="t5Bold" color="fg.neutral">
+                  크기
+                </Text>
+                {aiBadge("size")}
+              </HStack>
+              <SegmentedControl
+                name="size"
+                value={size}
+                onValueChange={(value) => {
+                  setSize(value);
+                  ai.touch("size");
+                }}
+                aria-label="크기"
+              >
                 {SIZE_OPTIONS.map((option) => (
                   <SegmentedControlItem key={option.value} value={option.value}>
                     {option.label}
@@ -253,10 +360,25 @@ export function PetForm({ pet }: PetFormProps) {
 
             {/* 체크박스가 숨어 있어 오류가 나면 이 줄을 대신 찾아 옮김 */}
             <Section data-error-anchor="colors" tabIndex={-1}>
-              <Text as="h3" textStyle="t5Bold" color="fg.neutral">
-                털색
-              </Text>
-              <CoatColorPicker name="colors" defaultValue={pet?.colors} />
+              <HStack gap="x1_5" align="center">
+                <Text as="h3" textStyle="t5Bold" color="fg.neutral">
+                  털색
+                </Text>
+                {aiBadge("colors")}
+              </HStack>
+              {/* AI 초안이 나중에 도착해 값을 바꾸므로 이 화면이 값을 쥠 */}
+              <CoatColorPicker
+                value={colors}
+                onChange={(next) => {
+                  setColors(next);
+                  ai.touch("colors");
+                }}
+              />
+              {/* 통제 모드의 체크박스는 name 을 달지 않아 폼에 실리지 않음
+                이 화면은 서버 액션에 FormData 로 보내므로 고른 값을 따로 실어 보냄 */}
+              {colors.map((color) => (
+                <input key={color} type="hidden" name="colors" value={color} />
+              ))}
               {/* 색 줄에는 오류를 붙일 입력 칸이 없어 바로 아래에 둠 */}
               {errors.colors ? (
                 <Text textStyle="t3Regular" color="fg.critical">
@@ -265,17 +387,23 @@ export function PetForm({ pet }: PetFormProps) {
               ) : null}
             </Section>
 
+            {/* 품종은 단정하지 않음. 라벨과 설명이 추정임을 먼저 말함 */}
             <TextField
-              label="품종"
+              label="품종 추정"
               name="breedGuess"
               size="medium"
+              indicator={ai.isFilled("breedGuess") ? "AI 초안" : undefined}
+              description="계열 추정으로만 적어요. 모르면 비워 두세요"
               maxGraphemeCount={30}
               value={breedGuess}
-              onValueChange={(next) => setBreedGuess(next.slicedValue)}
+              onValueChange={(next) => {
+                setBreedGuess(next.slicedValue);
+                ai.touch("breedGuess");
+              }}
               errorMessage={errors.breedGuess}
               invalid={Boolean(errors.breedGuess)}
             >
-              <TextFieldInput placeholder="말티즈" />
+              <TextFieldInput placeholder="말티즈 계열" />
             </TextField>
 
             <TextField

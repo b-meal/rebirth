@@ -111,9 +111,6 @@ export function ComposeSheet({ open, onOpenChange }: ComposeSheetProps) {
           스니펫이 description 유무로 자리를 정해 여기서 넘길지 말지 가림 */}
       <BottomSheetContent
         className={picked ? "rebirth-sheet--full" : "rebirth-sheet--compose"}
-        // 시트 기본 층은 2 라 AppHeader(10) 밑에 깔려 앱바가 시트 머리말을 덮고 탭까지 가로챔
-        // 열린 동안은 화면 맨 앞이어야 하므로 앱바 위로 올림
-        layerIndex={20}
         // 글쓰기는 제 앱바를 들고 있어 시트 머리말을 쓰지 않음. 이름은 읽는 기계에만 남김
         title={picked ? undefined : "주제 선택"}
         aria-label={picked ? "글쓰기" : undefined}

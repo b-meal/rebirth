@@ -126,6 +126,9 @@ const MOCK_VARIANTS: Record<string, Partial<AnalyzeResult>> = {
   "low-quality": { confidence: 0.2 },
 };
 
+/** 초안 대신 오류를 내는 변형. 분석 실패 화면을 눈으로 보려고 둠 */
+const MOCK_FAIL = "fail";
+
 function mockVariant(): Partial<AnalyzeResult> | null {
   const value = process.env.ANALYZE_MOCK ?? "";
   return value in MOCK_VARIANTS ? MOCK_VARIANTS[value] : null;
@@ -133,7 +136,7 @@ function mockVariant(): Partial<AnalyzeResult> | null {
 
 /** 더미 초안 사용 여부. 실제 모델을 부르지 않으므로 제출 자료에 이 결과를 쓰지 않음 */
 export function analyzeMockEnabled(): boolean {
-  return mockVariant() !== null;
+  return mockVariant() !== null || process.env.ANALYZE_MOCK === MOCK_FAIL;
 }
 
 /** 사진 한 장을 분석해 초안을 돌려줌. 실패는 VisionError 로 던져 호출부가 폴백을 고름 */
@@ -159,6 +162,9 @@ export async function analyzePhoto({
     // ponytail: 고정 응답. 실제 모델 연결은 크레딧 충전 뒤에 확인해야 함
     console.warn("[analyze] ANALYZE_MOCK 이 켜져 있어 더미 초안을 돌려줍니다");
     await new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS));
+    if (process.env.ANALYZE_MOCK === MOCK_FAIL) {
+      throw new VisionError("api", "ANALYZE_MOCK=fail 로 일부러 낸 오류입니다");
+    }
     return {
       result: { ...MOCK_RESULT, ...mockVariant() },
       model: MOCK_MODEL,

@@ -12,8 +12,18 @@ import {
 } from "seed-design/ui/bottom-sheet";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
+import {
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogRoot,
+  AlertDialogTitle,
+} from "seed-design/ui/alert-dialog";
 
 import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
+import { useCameraAvailable } from "@/hooks/use-camera-available";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
 import { usePhotoUpload } from "@/hooks/use-photo-upload";
 import { useReportDraft, type ReportDraft, type ReportStep } from "@/hooks/use-report-draft";
@@ -32,6 +42,10 @@ const TOTAL_STEPS = 2;
 /** 대표 사진 한 장과 보조 한 장. 서버 상한은 더 크지만 제보 흐름은 두 장만 받음 */
 const MAX_PHOTOS = 2;
 
+// 서버가 문구를 못 내려줬을 때만 쓰는 대비값. 평소에는 guidance 의 문구가 그대로 옴
+const NOT_ANIMAL_FALLBACK = "동물이 보이지 않아요. 동물이 담긴 사진으로 다시 찍어 주세요";
+const ANALYZE_FAILED_FALLBACK = "잠시 후 다시 시도해 주세요";
+
 const STEP_LABEL: Record<ReportStep, string> = {
   1: "사진",
   2: "제보 등록",
@@ -49,35 +63,45 @@ function readStepFromUrl(): ReportStep {
   return raw >= 1 && raw <= TOTAL_STEPS ? (raw as ReportStep) : 1;
 }
 
-/** 카메라 유무는 화면 폭이 아니라 장치 목록으로 판단함. 큰 화면 노트북도 촬영할 수 있음 */
-async function detectCamera(): Promise<boolean> {
-  const media = navigator.mediaDevices;
-  if (!media?.enumerateDevices) {
-    // 장치를 조회할 수 없으면 좁은 화면에서만 촬영으로 봄
-    return window.matchMedia("(max-width: 1023px)").matches;
-  }
-  try {
-    const devices = await media.enumerateDevices();
-    return devices.some((device) => device.kind === "videoinput");
-  } catch {
-    return false;
-  }
-}
-
 export function ReportForm() {
   const router = useRouter();
   const [step, setStep] = useState<ReportStep>(1);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // 서버는 장치 목록을 몰라 null 로 시작하고 마운트 뒤에만 확정함
-  const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
+  const cameraAvailable = useCameraAvailable();
   // 사진 순서대로 받은 참조. 훅은 한 장씩 올리므로 결과를 여기에 모음
   const [uploadIds, setUploadIds] = useState<string[]>([]);
   // 초안을 고칠 때만 여는 상세 입력
   const [formOpen, setFormOpen] = useState(false);
+  // 1단계로 되돌린 이유를 알리는 알럿. null 이면 닫힘
+  // retry 는 닫을 때 분석을 초기화할지. 실패는 같은 사진으로 다시 해 볼 수 있고 비동물은 아님
+  const [block, setBlock] = useState<{
+    title: string;
+    description: string;
+    retry: boolean;
+  } | null>(null);
 
   const { draft, photos, setPhotos, applyAiDraft, edit, reset } = useReportDraft();
-  const analyze = useAnalyzePhoto();
+  // 되돌리기는 picker 와 goTo 가 만들어진 뒤에야 쓸 수 있어 참조로 받아 둠
+  const bounceRef = useRef<(next: NonNullable<typeof block>) => void>(() => {});
+  const analyze = useAnalyzePhoto({
+    onDone: ({ advice, message }) => {
+      if (advice !== "not-animal") return;
+      bounceRef.current({
+        title: "다시 찍어 주세요",
+        description: message ?? NOT_ANIMAL_FALLBACK,
+        retry: false,
+      });
+    },
+    // 초안 없이 등록하면 사진과 글이 따로 놀아 분석이 끝나기 전에는 저장을 막음
+    onFail: (message) => {
+      bounceRef.current({
+        title: "분석에 실패했어요",
+        description: message ?? ANALYZE_FAILED_FALLBACK,
+        retry: true,
+      });
+    },
+  });
   const upload = usePhotoUpload();
 
   // 저장 요청 하나를 가리키는 키, 이중 탭과 재시도가 제보를 두 건 만들지 않음
@@ -101,14 +125,6 @@ export function ReportForm() {
       url.searchParams.delete("step");
       window.history.replaceState({ step: 1 }, "", url);
     }
-
-    let alive = true;
-    void detectCamera().then((available) => {
-      if (alive) setCameraAvailable(available);
-    });
-    return () => {
-      alive = false;
-    };
   }, []);
 
   // 뒤로가기로 단계가 하나 되돌아가게 함
@@ -173,8 +189,27 @@ export function ReportForm() {
   const uploadsReady = uploadIds.length === photos.length && uploadIds.length > 0;
   // 동물이 안 보이는 사진은 등록을 막음. 어두운 사진은 막지 않고 안내만 함
   const notAnimal = analyze.advice === "not-animal";
+
+  // 동물이 없으면 2단계에서 할 일이 없어 사진 고르는 화면으로 되돌림
+  // 두 장을 한 요청으로 분석해 어느 쪽이 문제인지 알 수 없으므로 지우는 것은 사람이 고름
+  // 사진은 그대로 두고 칸마다 있는 삭제 단추로 뺄 수 있게 함
+  const bounce = useCallback(
+    (next: NonNullable<typeof block>) => {
+      goTo(1);
+      // 화면이 되돌아간 이유를 반드시 읽고 넘어가야 해 스스로 사라지는 스낵바 대신 알럿을 씀
+      setBlock(next);
+    },
+    [goTo],
+  );
+  // 분석 결과가 오는 순간 훅이 부름. 이펙트에서 화면을 옮기면 렌더가 한 번 더 도는 것을 린트가 막음
+  useEffect(() => {
+    bounceRef.current = bounce;
+  }, [bounce]);
+
+  // 초안을 못 받은 상태로는 저장하지 않음. 비동물과 분석 실패를 모두 막음
+  const analyzeBlocked = notAnimal || analyze.advice === "failed";
   const canSubmit =
-    uploadsReady && draft.locationToken !== null && draft.careSituation !== null && !notAnimal;
+    uploadsReady && draft.locationToken !== null && draft.careSituation !== null && !analyzeBlocked;
 
   const handleSubmit = useCallback(async () => {
     if (uploadIds.length === 0 || !draft.locationToken) return;
@@ -376,6 +411,34 @@ export function ReportForm() {
           </BottomSheetRoot>
         </>
       )}
+
+      {/* 사진을 비우고 1단계로 되돌린 이유를 알림. 확인 말고 고를 것이 없어 버튼 하나만 둠 */}
+      <AlertDialogRoot
+        open={block !== null}
+        onOpenChange={(open) => {
+          if (open) return;
+          // 실패는 같은 사진으로 다시 해 볼 수 있어 분석만 비워 다음 을 누르면 재시도가 돎
+          if (block?.retry) analyze.clear();
+          setBlock(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{block?.title ?? ""}</AlertDialogTitle>
+            <AlertDialogDescription>{block?.description ?? ""}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                if (block?.retry) analyze.clear();
+                setBlock(null);
+              }}
+            >
+              확인
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialogRoot>
     </Screen>
   );
 }

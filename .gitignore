@@ -6,6 +6,8 @@ node_modules/
 
 # builds
 .next/
+# 번들 실험용으로 next build -d 에 넘기는 대체 출력 경로
+.next-*/
 out/
 dist/
 build/
