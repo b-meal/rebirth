@@ -29,6 +29,8 @@ export type UseAnalyzePhotoOptions = {
     draft: AnalyzeResult;
     model: string | null;
     analyzedAt: string | null;
+    advice: AnalyzeAdviceState;
+    message: string | null;
   }) => void;
 };
 
@@ -99,6 +101,8 @@ export function useAnalyzePhoto({ onDone }: UseAnalyzePhotoOptions = {}): Analyz
           draft: payload.draft,
           model: payload.model ?? null,
           analyzedAt: payload.analyzedAt ?? null,
+          advice: payload.advice ?? "draft",
+          message: payload.message ?? null,
         });
       } catch {
         if (controller.signal.aborted) return;
