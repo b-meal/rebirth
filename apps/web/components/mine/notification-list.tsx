@@ -114,7 +114,7 @@ function AreaRow({ area }: { area: NotificationArea }) {
         </Text>
         {area.unread > 0 ? (
           <Text textStyle="t2Bold" color="fg.brand">
-            새 {area.unread}건
+            새 {area.unread > 99 ? "99+" : area.unread}건
           </Text>
         ) : null}
       </HStack>

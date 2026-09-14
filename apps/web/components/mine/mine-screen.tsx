@@ -96,6 +96,11 @@ export type MineScreenProps = {
   removePet: (form: FormData) => Promise<void>;
 };
 
+/** 구를 통째로 구독하면 세 자리가 넘어 배지가 줄을 밀어냄 */
+function unreadLabel(count: number): string {
+  return count > 99 ? "99+" : `${count}`;
+}
+
 function joinedLabel(value: Date | string): string {
   const date = new Date(value);
   // 아바타 옆 한 줄이라 길어지면 줄바꿈됨. 제공자 이름과 합쳐 22자 안에 둠
@@ -288,7 +293,7 @@ export function MineScreen({
                       알림
                     </Text>
                   </VStack>
-                  {unread > 0 ? <Badge label={`${unread}`} tone="brand" /> : null}
+                  {unread > 0 ? <Badge label={unreadLabel(unread)} tone="brand" /> : null}
                   <Icon svg={<IconChevronRightLine />} size="x5" color="fg.neutralSubtle" />
                 </Link>
               </HStack>
