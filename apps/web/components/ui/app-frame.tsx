@@ -6,6 +6,7 @@ import { Box, Flex } from "@seed-design/react";
 import { SnackbarAvoidOverlap } from "seed-design/ui/snackbar";
 
 import { BottomNav, isTabRoot } from "./bottom-nav";
+import { SplashOverlay } from "./splash-overlay";
 
 // Web 은 모바일 전용, 큰 화면에서도 같은 폭의 프레임에 같은 내용을 담음
 
@@ -39,6 +40,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
         className={reserve ? "rebirth-tab-space" : undefined}
       >
         {children}
+        <SplashOverlay maxWidth={FRAME_WIDTH} />
       </Box>
 
       {/* 알림이 탭바를 덮지 않도록 띠 높이를 재게 함 */}

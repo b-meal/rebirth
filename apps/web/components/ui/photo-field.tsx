@@ -270,7 +270,7 @@ export function PhotoField({
         <BottomSheetContent title="사진 가져오기">
           <BottomSheetBody>
             {/* 누를 수 있는 줄은 ListButtonItem 이라야 함
-                ListItem 은 li 라 SEED 의 hover 규칙(button·a 에만 걸림)이 붙지 않음 */}
+                ListItem 은 li 라 SEED 의 hover 규칙(button, a 에만 걸림)이 붙지 않음 */}
             <List>
               <ListButtonItem
                 prefix={<Icon svg={<IconCameraFill />} />}

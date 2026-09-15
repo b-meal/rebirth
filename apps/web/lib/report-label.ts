@@ -41,7 +41,7 @@ export function breedLabel(breedGuess: string | null): string | null {
   return breedGuess ? `${breedGuess} 계열 추정` : null;
 }
 
-// 있음·없음·모름 3값을 화면 문구로 옮김, null 이 모름이고 false 와 다름
+// 있음, 없음, 모름 3값을 화면 문구로 옮김, null 이 모름이고 false 와 다름
 export function triStateLabel(value: boolean | null, yes: string, no: string): string {
   if (value === true) return yes;
   if (value === false) return no;
@@ -50,7 +50,7 @@ export function triStateLabel(value: boolean | null, yes: string, no: string): s
 
 const RELATIVE = new Intl.RelativeTimeFormat("ko", { numeric: "auto" });
 
-/** 목격 시각을 방금·n분 전·n시간 전·n일 전으로 표기 */
+/** 목격 시각을 방금, n분 전, n시간 전, n일 전으로 표기 */
 export function sinceLabel(date: Date, now: Date = new Date()): string {
   const minutes = Math.round((date.getTime() - now.getTime()) / 60_000);
   // 시계 오차로 미래가 되면 방금으로 눌러 표시함

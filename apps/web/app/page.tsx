@@ -1,10 +1,10 @@
 import { createSignedThumbUrls } from "@rebirth/core/storage";
-import { listMapReports } from "@rebirth/db";
+import { countUnreadAreaReports, listMapReports } from "@rebirth/db";
 import { LIST_PERIOD_DAYS } from "@rebirth/types";
 
+import { getCurrentUser } from "@/lib/auth/session";
 import { sinceLabel } from "@/lib/report-label";
 import { HomeScreen, type MapMarker } from "@/components/home/home-screen";
-import { SplashOverlay } from "@/components/ui/splash-overlay";
 
 // 마커는 격자 좌표만 서버에서 읽어 넘김, 정확 좌표는 공개 응답과 이 화면에 넣지 않음
 
@@ -42,13 +42,20 @@ async function loadMarkers(): Promise<MapMarker[]> {
   }
 }
 
-export default function HomePage() {
-  // 기다리지 않고 약속만 넘김, 마커를 기다리느라 화면이 늦게 뜨면 덮개보다 로딩 표시가 먼저 보임
-  return (
-    <>
-      <HomeScreen markers={loadMarkers()} />
-      {/* 덮개가 걷히는 동안 아래에서 지도가 먼저 준비됨 */}
-      <SplashOverlay />
-    </>
-  );
+/** 알림 버튼에 찍을 점. 로그인 전이거나 구독이 없으면 0 */
+async function loadUnread(userId: string | undefined): Promise<number> {
+  if (!userId) return 0;
+  try {
+    return await countUnreadAreaReports(userId);
+  } catch {
+    return 0;
+  }
+}
+
+export default async function HomePage() {
+  // 쿠키 읽기는 렌더 중에 끝내야 함. 약속에 넣어 흘려보내면 요청 범위를 벗어나 실패함
+  const user = await getCurrentUser().catch(() => undefined);
+
+  // 질의만 약속으로 넘김, 마커를 기다리느라 화면이 늦게 뜨면 덮개보다 로딩 표시가 먼저 보임
+  return <HomeScreen markers={loadMarkers()} unread={loadUnread(user?.id)} />;
 }

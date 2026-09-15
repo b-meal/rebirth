@@ -106,7 +106,7 @@ export function PostCard({ item }: { item: PostCardItem }) {
             <HStack gap="x1_5" align="center" minWidth="0">
               <Avatar size="20" alt="" fallback={authorFallback(item.authorName)} />
               <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
-                {item.authorName ?? "알 수 없음"} · {sinceLabel(item.createdAt)}
+                {item.authorName ?? "알 수 없음"}, {sinceLabel(item.createdAt)}
               </Text>
             </HStack>
             <HStack gap="x3" align="center">

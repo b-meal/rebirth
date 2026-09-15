@@ -1,3 +1,5 @@
+import { serverError } from "@rebirth/core/http";
+
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   encodeMineCursor,
@@ -48,8 +50,8 @@ export async function GET(request: Request): Promise<Response> {
       items: page.items,
       nextCursor: encodeMineCursor(page.nextCursor),
     });
-  } catch {
-    // 원인을 그대로 내보내지 않음. 목록 실패는 화면이 재시도로 다룸
-    return Response.json({ message: "목록을 불러오지 못했습니다" }, { status: 500 });
+  } catch (error) {
+    // 원인은 로그에만 남김. 목록 실패는 화면이 재시도로 다룸
+    return serverError("mine.reports.list", error);
   }
 }

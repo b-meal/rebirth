@@ -7,6 +7,7 @@ import {
   findPublicReport,
   findReportCoarsePoint,
   hasReportInterest,
+  isReportAreaSubscribed,
   listMapReports,
   listReportComments,
 } from "@rebirth/db";
@@ -15,6 +16,7 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
+import { getCurrentUser } from "@/lib/auth/session";
 import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
 import { ReportDetail } from "@/components/report/report-detail";
 import type { ReportCardItem } from "@/components/report/report-card";
@@ -55,7 +57,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const title = report.appearance?.split("\n")[0] ?? "발견동물 제보";
   // 링크 미리보기에서 한눈에 판단할 값만 앞에 둠. 카카오톡은 두 줄 남짓만 보임
   const facts = [where, CARE_LABEL[report.careSituation], describeAnimal(report)].filter(Boolean);
-  const description = `${facts.join(" · ")} — 이 동물을 본 적 있나요?`;
+  const description = `${facts.join(", ")} — 이 동물을 본 적 있나요?`;
   const image = `${SITE}/r/${id}/card`;
 
   return {
@@ -116,7 +118,7 @@ async function loadNearby(currentId: string, origin: NearbyOrigin): Promise<Repo
   }
 }
 
-/** 근처 보호·구조 기관. 아직 시드되지 않았거나 조회가 실패하면 절을 감춤 */
+/** 근처 보호, 구조 기관. 아직 시드되지 않았거나 조회가 실패하면 절을 감춤 */
 async function loadShelters(origin: NearbyOrigin): Promise<ShelterItem[]> {
   if (!origin) return [];
   try {
@@ -154,6 +156,17 @@ async function loadInterest(reportId: string): Promise<{ count: number; mine: bo
   }
 }
 
+/** 구독 버튼의 시작 상태. 로그인 전이면 끈 상태로 두고 누를 때 로그인으로 보냄 */
+async function loadAreaSubscribed(reportId: string): Promise<boolean> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return false;
+    return await isReportAreaSubscribed(user.id, reportId);
+  } catch {
+    return false;
+  }
+}
+
 export default async function ReportDetailPage({ params }: Params) {
   const { id } = await params;
 
@@ -163,11 +176,12 @@ export default async function ReportDetailPage({ params }: Params) {
   const spot = await findReportCoarsePoint(id).catch(() => undefined);
   const point = spot?.coarsePoint ? { lat: spot.coarsePoint.y, lng: spot.coarsePoint.x } : null;
 
-  const [comments, nearby, shelters, interest] = await Promise.all([
+  const [comments, nearby, shelters, interest, areaSubscribed] = await Promise.all([
     loadComments(id),
     loadNearby(id, point),
     loadShelters(point),
     loadInterest(id),
+    loadAreaSubscribed(id),
   ]);
 
   return (
@@ -180,6 +194,7 @@ export default async function ReportDetailPage({ params }: Params) {
       nearby={nearby}
       shelters={shelters}
       interest={interest}
+      areaSubscribed={areaSubscribed}
     />
   );
 }

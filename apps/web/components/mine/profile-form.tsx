@@ -15,7 +15,7 @@ import { useFocusError } from "@/hooks/use-focus-error";
 import { saveProfile, type ActionState } from "@/app/mine/actions";
 
 // 프로필 수정. 사진은 제공자에서 온 값이라 여기서 바꾸지 않음
-// 이름은 커뮤니티 글·댓글의 작성자로 나가는 값. 제보는 익명이라 쓰이지 않음
+// 이름은 커뮤니티 글, 댓글의 작성자로 나가는 값. 제보는 익명이라 쓰이지 않음
 
 export type ProfileFormProps = {
   displayName: string;

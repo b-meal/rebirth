@@ -42,6 +42,7 @@ import {
 } from "@/lib/report-label";
 import { FeatureRow, Screen, SectionCard, SectionTitle } from "@/components/ui/screen";
 import { Badge } from "@/components/ui/badge";
+import { AreaSubscribeButton } from "@/components/report/area-subscribe-button";
 import { ReportBadges } from "@/components/report/report-badges";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
 import {
@@ -87,7 +88,7 @@ function formatAbsolute(value: Date | string): string {
 export type ReportDetailProps = {
   report: PublicReport;
   shareUrl: string;
-  /** 목격 시각을 방금·n시간 전으로 줄인 표기, 서버에서 계산해 넘김 */
+  /** 목격 시각을 방금, n시간 전으로 줄인 표기, 서버에서 계산해 넘김 */
   sinceLabel: string;
   /** 격자 스냅 좌표, 좌표가 없는 지역 선택 제보는 null */
   location: { point: LatLng; gridMeters: number } | null;
@@ -96,6 +97,8 @@ export type ReportDetailProps = {
   /** 격자 좌표에서 가까운 순으로 고른 공공데이터 기관, 좌표가 없으면 빈 배열 */
   shelters: ShelterItem[];
   interest: { count: number; mine: boolean };
+  /** 이 제보의 동네를 이미 구독했는지. 로그인 전이면 늘 false */
+  areaSubscribed: boolean;
 };
 
 export function ReportDetail({
@@ -107,6 +110,7 @@ export function ReportDetail({
   nearby,
   shelters,
   interest,
+  areaSubscribed,
 }: ReportDetailProps) {
   const router = useRouter();
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -255,7 +259,7 @@ export function ReportDetail({
               {describeAnimal(report)}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {report.areaName ?? "지역 미확인"} · {sinceLabel} 발견
+              {report.areaName ?? "지역 미확인"}, {sinceLabel} 발견
             </Text>
           </VStack>
 
@@ -323,6 +327,14 @@ export function ReportDetail({
               destinationName={report.areaName ?? "발견 위치"}
             />
           ) : null}
+          {/* 같은 동네 제보를 이어서 보려는 사람이 가장 많이 머무는 자리 */}
+          {report.areaName ? (
+            <AreaSubscribeButton
+              reportId={report.id}
+              areaName={report.areaName}
+              subscribed={areaSubscribed}
+            />
+          ) : null}
         </SectionCard>
 
         <ReportShelters items={shelters} />
@@ -356,7 +368,7 @@ export function ReportDetail({
 
         <SectionCard gap="x2" align="flex-start">
           <Text textStyle="t3Regular" color="fg.neutralSubtle">
-            댓글 {comments.length} · 공유 {report.shareCount}
+            댓글 {comments.length}, 공유 {report.shareCount}
           </Text>
           <ActionButton variant="ghost" size="small" onClick={() => setFlagOpen(true)}>
             이 제보 신고하기

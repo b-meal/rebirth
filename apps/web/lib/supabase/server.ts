@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 
 import { requireAuthConfig } from "./config";
 
-// 서버 컴포넌트·라우트 핸들러·서버 액션에서 쓰는 클라이언트
+// 서버 컴포넌트, 라우트 핸들러, 서버 액션에서 쓰는 클라이언트
 // 요청마다 새로 만듦. 모듈에 담아 두면 다른 사람의 세션이 섞임
 
 /**

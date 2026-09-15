@@ -98,7 +98,7 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
           {describeAnimal(item)}
         </Text>
         <Text textStyle="t2Regular" color="fg.neutralMuted" maxLines={1}>
-          {item.areaName ?? "지역 미확인"} · {item.sinceLabel} ·{" "}
+          {item.areaName ?? "지역 미확인"}, {item.sinceLabel} , {" "}
           {CARE_LABEL[item.careSituation] ?? ""}
         </Text>
 

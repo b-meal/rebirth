@@ -34,7 +34,7 @@ const SKELETON_ROWS = [0, 1];
 function withDistance(detail: string, meters: number | null): string {
   if (meters === null) return detail;
   const distance = meters < 1000 ? `${meters}m` : `${(meters / 1000).toFixed(1)}km`;
-  return detail ? `${detail} · ${distance}` : distance;
+  return detail ? `${detail}, ${distance}` : distance;
 }
 
 export function PlaceSearchField({

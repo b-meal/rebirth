@@ -1,0 +1,141 @@
+/* 선택한 원본의 비율과 글자 경계를 유지하는 이미지 좌표 */
+.root {
+  transform: translateX(-50%);
+  pointer-events: none;
+  animation: expire 1ms var(--splash-load-timeout) step-end forwards;
+}
+
+.root[data-ready="true"] {
+  animation: leave var(--splash-fade) var(--splash-visible) ease-out forwards;
+}
+
+.artwork {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 853 / 1844;
+  transform: translateY(-50%);
+  opacity: 0;
+  --join-delay: 520ms;
+  --join-duration: 680ms;
+  --join-end: calc(var(--join-delay) + var(--join-duration));
+}
+
+.root[data-ready="true"] .artwork {
+  opacity: 1;
+}
+
+.base,
+.word {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+}
+
+.word {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+
+.again {
+  clip-path: inset(52% 44.9% 41.7% 32.8%);
+}
+
+.home {
+  clip-path: inset(52% 33.3% 41.7% 55.4%);
+}
+
+.comma {
+  position: absolute;
+  top: 52.05%;
+  left: 52.4%;
+  transform: translateX(-50%);
+  visibility: hidden;
+}
+
+.root[data-ready="true"] .base {
+  animation: reveal var(--join-end) step-end both;
+}
+
+.root[data-ready="true"] .word {
+  visibility: visible;
+  animation:
+    join-again var(--join-duration) var(--join-delay) cubic-bezier(0.22, 1, 0.36, 1) both,
+    expire 1ms var(--join-end) step-end forwards;
+}
+
+.root[data-ready="true"] .home {
+  animation-name: join-home, expire;
+}
+
+.root[data-ready="true"] .comma {
+  visibility: visible;
+  animation: remove-comma 180ms 400ms ease-out both;
+}
+
+@keyframes reveal {
+  from {
+    clip-path: inset(0 0 48.2% 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+
+@keyframes join-again {
+  from {
+    transform: translateX(calc(var(--seed-dimension-x4) * -1));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes join-home {
+  from {
+    transform: translateX(var(--seed-dimension-x4));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes remove-comma {
+  to {
+    opacity: 0;
+    transform: translate(-50%, calc(var(--seed-dimension-x1) * -1));
+    visibility: hidden;
+  }
+}
+
+@keyframes expire {
+  to {
+    visibility: hidden;
+  }
+}
+
+@keyframes leave {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* 동작 줄이기에서는 완성 로고만 잠깐 표시한 뒤 즉시 해제 */
+@media (prefers-reduced-motion: reduce) {
+  .root[data-ready="true"] {
+    animation: expire 1ms 700ms step-end forwards;
+  }
+
+  .root[data-ready="true"] .base {
+    animation: none;
+  }
+
+  .root[data-ready="true"] .word,
+  .root[data-ready="true"] .comma {
+    display: none;
+  }
+}

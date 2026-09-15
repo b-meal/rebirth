@@ -23,7 +23,7 @@ const BUTTON_RADIUS = 12;
 const SYMBOL_SLOT = 22;
 const EDGE_PADDING = 16;
 
-/** 제공자가 정한 바탕·글자색. 브랜드 가이드라인 값이라 토큰으로 바꾸지 않음 */
+/** 제공자가 정한 바탕, 글자색. 브랜드 가이드라인 값이라 토큰으로 바꾸지 않음 */
 const BRAND = {
   kakao: {
     background: "#FEE500",

@@ -115,10 +115,13 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
   );
 }
 
-// 약속이 풀리기 전에는 빈 목록을 돌려줘 지도가 기다리지 않고 먼저 뜨게 함
+// 훅의 초기값. 렌더마다 새 배열을 넘기지 않도록 바깥에 둠
+const EMPTY_MARKERS: MapMarker[] = [];
+
+// 약속이 풀리기 전에는 빈 값을 돌려줘 지도가 기다리지 않고 먼저 뜨게 함
 // use 를 쓰면 화면 전체가 멈춰 덮개 뒤에서 지도가 준비되지 않음
-function useStreamed(promise: Promise<MapMarker[]>): MapMarker[] {
-  const [value, setValue] = useState<MapMarker[]>([]);
+function useStreamed<T>(promise: Promise<T>, initial: T): T {
+  const [value, setValue] = useState<T>(initial);
   useEffect(() => {
     let alive = true;
     promise.then((next) => {
@@ -135,11 +138,17 @@ export type HomeScreenProps = {
   // 화면을 먼저 띄우고 마커만 나중에 받도록 Promise 로 받음
   // 지도와 시트는 곧바로 그리고, 핀만 도착한 뒤에 얹힘
   markers: Promise<MapMarker[]>;
+  /** 구독한 동네의 안 읽은 제보 수. 로그인 전이면 0 */
+  unread: Promise<number>;
 };
 
-export function HomeScreen({ markers: markersPromise }: HomeScreenProps) {
+export function HomeScreen({
+  markers: markersPromise,
+  unread: unreadPromise,
+}: HomeScreenProps) {
   // 이 훅은 서버가 마커를 흘려보낼 때까지 기다리지만, 덮개 아래에서 지도는 이미 떠 있음
-  const markers = useStreamed(markersPromise);
+  const markers = useStreamed(markersPromise, EMPTY_MARKERS);
+  const unread = useStreamed(unreadPromise, 0);
 
   const router = useRouter();
   const snackbar = useSnackbarAdapter();
@@ -405,14 +414,43 @@ export function HomeScreen({ markers: markersPromise }: HomeScreenProps) {
             </HStack>
           </Link>
         </VStack>
-        <ContextualFloatingButton
-          variant="layer"
-          layout="iconOnly"
-          aria-label="알림"
-          onClick={() => notice("알림은 아직 준비 중입니다")}
-        >
-          <Icon svg={<IconBellLine />} />
-        </ContextualFloatingButton>
+        {/* SEED notification-badge large 사양. 지도 위라 테두리를 둘러 면을 끊음 */}
+        <Box position="relative">
+          <ContextualFloatingButton
+            variant="layer"
+            layout="iconOnly"
+            aria-label={unread > 0 ? `알림, 새 소식 ${unread > 99 ? "99개 이상" : `${unread}개`}` : "알림"}
+            asChild
+          >
+            <Link href="/mine/notifications">
+              <Icon svg={<IconBellLine />} />
+            </Link>
+          </ContextualFloatingButton>
+          {unread > 0 ? (
+            <HStack
+              position="absolute"
+              align="center"
+              justify="center"
+              px="x1"
+              borderRadius="full"
+              bg="bg.brandSolid"
+              borderColor="bg.layerDefault"
+              // 단추 테두리에 걸치게 빼야 원형 면에 묻히지 않음
+              style={{
+                top: "-4px",
+                right: "-4px",
+                minWidth: "18px",
+                height: "18px",
+                borderWidth: "2px",
+                pointerEvents: "none",
+              }}
+            >
+              <Text textStyle="t1Bold" color="palette.staticWhite">
+                {unread > 99 ? "99+" : unread}
+              </Text>
+            </HStack>
+          ) : null}
+        </Box>
       </HStack>
 
       {/* 이 묶음은 시트와 떠 있는 버튼의 자리만 잡음

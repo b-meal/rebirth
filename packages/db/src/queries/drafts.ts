@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, eq, inArray, isNull, lt, sql as raw } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
 import {
@@ -221,6 +221,26 @@ export function findAnalysisJobByUpload(input: {
       eq(analysisJobs.uploadId, input.uploadId),
       eq(analysisJobs.revision, input.revision),
     ),
+  })
+}
+
+/**
+ * 제보로 굳힐 때 쓸 분석 결과. 이 세션의 업로드 중 성공한 최신 작업 하나를 돌려줌
+ * 없으면 undefined. 분석을 건너뛰고 손으로 채운 제보가 있어 없는 것이 정상임
+ */
+export function findLatestSucceededAnalysis(input: {
+  sessionId: string
+  uploadIds: string[]
+}) {
+  if (input.uploadIds.length === 0) return Promise.resolve(undefined)
+  return db.query.analysisJobs.findFirst({
+    where: and(
+      eq(analysisJobs.sessionId, input.sessionId),
+      inArray(analysisJobs.uploadId, input.uploadIds),
+      eq(analysisJobs.status, 'succeeded'),
+    ),
+    orderBy: [desc(analysisJobs.finishedAt)],
+    columns: { result: true, model: true, finishedAt: true },
   })
 }
 

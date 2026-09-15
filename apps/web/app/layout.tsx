@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: "다시집",
-    template: "%s · 다시집",
+    template: "%s, 다시집",
   },
   description: "길에서 만난 보호자 없는 동물을 사진 한 장으로 제보합니다.",
   icons: { icon: "/logo/logo-mark-512.png" },

@@ -1,5 +1,6 @@
 export {
   ANALYZE_TIMEOUT_MS,
+  MOCK_MODEL,
   VISION_MODEL,
   VisionError,
   analyzePhoto,

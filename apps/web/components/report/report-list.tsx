@@ -91,7 +91,7 @@ function Card({ item }: { item: ListItem }) {
               {describeAnimal(item)}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
-              {item.areaName ?? "지역 미확인"} · {sinceLabel(item.occurredAt)}
+              {item.areaName ?? "지역 미확인"}, {sinceLabel(item.occurredAt)}
             </Text>
             {/* 상황은 색으로 먼저 읽히고 글자가 뜻을 확인해 줌 */}
             <HStack gap="x1" align="center" wrap>
