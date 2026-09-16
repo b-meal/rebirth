@@ -17,6 +17,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
+import { pets } from './accounts'
 import {
   animalSex,
   animalSize,
@@ -52,6 +53,11 @@ export const reports = pgTable(
 
     // 비로그인 제보 허용이라 nullable. Supabase auth.users.id 를 FK 없이 참조
     reporterId: uuid(),
+
+    // 미리 적어 둔 내 동물. 실종 신고만 채우고 이름과 품종을 화면이 여기서 읽음
+    // 동물 기록을 지워도 신고는 남아야 해 끊기만 함
+    // 등록번호는 여기로 넘기지 않음. 본인 화면에만 나오는 값임
+    petId: uuid().references(() => pets.id, { onDelete: 'set null' }),
     // 관리 토큰 해시. 원문은 발급 응답에서 한 번만 나가고 저장하지 않음
     manageTokenHash: text().unique(),
     manageTokenIssuedAt: timestamp({ withTimezone: true }),
@@ -146,6 +152,11 @@ export const reports = pgTable(
     check(
       'reports_ear_tip_only_for_cats',
       sql`${t.animalType} = 'cat' or ${t.earTip} is null`,
+    ),
+    // 발견 제보는 남의 동물이라 내 동물 기록에 묶이지 않음
+    check(
+      'reports_pet_only_for_lost',
+      sql`${t.kind} = 'lost' or ${t.petId} is null`,
     ),
   ],
 )
@@ -263,12 +274,14 @@ export const reportInterests = pgTable(
   ],
 )
 
-export const reportsRelations = relations(reports, ({ many }) => ({
+export const reportsRelations = relations(reports, ({ many, one }) => ({
   photos: many(reportPhotos),
   flags: many(reportFlags),
   comments: many(reportComments),
   matchesAsLost: many(matchScores, { relationName: 'lost' }),
   matchesAsSighting: many(matchScores, { relationName: 'sighting' }),
+  // 실종 신고에만 붙음. 화면이 이름과 품종을 여기서 읽음
+  pet: one(pets, { fields: [reports.petId], references: [pets.id] }),
 }))
 
 export const reportCommentsRelations = relations(reportComments, ({ one }) => ({
