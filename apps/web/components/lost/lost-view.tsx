@@ -115,28 +115,40 @@ function exchangeOnce(token: string): Promise<Response> {
   return request.then((response) => response.clone());
 }
 
-export function LostView() {
+export type LostViewProps = {
+  /**
+   * 이미 관리 세션이 있어 토큰 교환이 필요 없을 때 넘기는 신고 id
+   * 상세 화면의 관리 줄에서 넘어오는 길이고, 주소에 토큰이 없어 기록에도 남지 않음
+   */
+  reportId?: string;
+};
+
+export function LostView({ reportId }: LostViewProps = {}) {
   const params = useParams<{ token: string }>();
   const token = params?.token;
   const [state, setState] = useState<State>({ status: "loading" });
 
   const load = useCallback(async (): Promise<State> => {
-    if (!token) return { status: "invalid" };
+    if (!reportId && !token) return { status: "invalid" };
     try {
-      // 주소에 담긴 것은 관리 토큰이라 그대로 조회할 수 없음
-      // 먼저 교환해 신고 id 와 관리 세션 쿠키를 받고 그 id 로 후보를 읽음
-      const exchanged = await exchangeOnce(token);
-      // 없는 토큰은 404, 모양부터 틀린 토큰은 400. 둘 다 주소가 잘못된 것
-      if (exchanged.status === 404 || exchanged.status === 400) return { status: "invalid" };
-      // 짧은 사이에 여러 번 열면 잠김. 못 불러온 것과 달리 기다리면 풀림
-      if (exchanged.status === 429) {
-        const body = (await exchanged.json().catch(() => null)) as {
-          retryAfter?: number;
-        } | null;
-        return { status: "throttled", retryAt: Date.now() + (body?.retryAfter ?? 60) * 1000 };
+      let id = reportId;
+
+      if (!id) {
+        // 주소에 담긴 것은 관리 토큰이라 그대로 조회할 수 없음
+        // 먼저 교환해 신고 id 와 관리 세션 쿠키를 받고 그 id 로 후보를 읽음
+        const exchanged = await exchangeOnce(token!);
+        // 없는 토큰은 404, 모양부터 틀린 토큰은 400. 둘 다 주소가 잘못된 것
+        if (exchanged.status === 404 || exchanged.status === 400) return { status: "invalid" };
+        // 짧은 사이에 여러 번 열면 잠김. 못 불러온 것과 달리 기다리면 풀림
+        if (exchanged.status === 429) {
+          const body = (await exchanged.json().catch(() => null)) as {
+            retryAfter?: number;
+          } | null;
+          return { status: "throttled", retryAt: Date.now() + (body?.retryAfter ?? 60) * 1000 };
+        }
+        if (!exchanged.ok) return { status: "error" };
+        ({ id } = (await exchanged.json()) as { id: string });
       }
-      if (!exchanged.ok) return { status: "error" };
-      const { id } = (await exchanged.json()) as { id: string };
 
       const response = await fetch(`/api/lost/${id}/candidates`);
       if (response.status === 404) return { status: "invalid" };
@@ -149,7 +161,7 @@ export function LostView() {
     } catch {
       return { status: "error" };
     }
-  }, [token]);
+  }, [reportId, token]);
 
   const reload = useCallback(() => {
     setState({ status: "loading" });

@@ -24,7 +24,8 @@ export type ReportBadgesProps = {
   animalType: AnimalType;
   breedGuess: string | null;
   size: string;
-  careSituation: string;
+  /** 보호 상황. 실종 신고는 이 값을 쓰지 않아 비우면 배지를 빼고 그림 */
+  careSituation?: string | null;
   injury: boolean | null;
 };
 
@@ -37,7 +38,8 @@ export function ReportBadges({
 }: ReportBadgesProps) {
   const breed = breedLabel(breedGuess);
   const sizeLabel = SIZE_LABEL[size];
-  const careIcon = CARE_ICON[careSituation as keyof typeof CARE_ICON] ?? CARE_ICON.unknown;
+  const careIcon =
+    CARE_ICON[(careSituation ?? "unknown") as keyof typeof CARE_ICON] ?? CARE_ICON.unknown;
 
   return (
     <HStack gap="x1_5" wrap>
@@ -50,11 +52,13 @@ export function ReportBadges({
       {sizeLabel ? (
         <Badge label={sizeLabel} tone="neutral" icon={<IconArrowLeftBracketRightFill />} />
       ) : null}
-      <Badge
-        label={CARE_LABEL[careSituation] ?? "확인 중"}
-        tone={careSituation === "in_care" ? "informative" : "brand"}
-        icon={careIcon}
-      />
+      {careSituation ? (
+        <Badge
+          label={CARE_LABEL[careSituation] ?? "확인 중"}
+          tone={careSituation === "in_care" ? "informative" : "brand"}
+          icon={careIcon}
+        />
+      ) : null}
       {injury === true ? (
         <Badge
           label="다친 것으로 보임"

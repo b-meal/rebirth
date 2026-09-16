@@ -48,6 +48,32 @@ export function triStateLabel(value: boolean | null, yes: string, no: string): s
   return "모름";
 }
 
+/** 이름 끝소리에 받침이 있는지. 조사를 고르는 데만 씀 */
+function hasFinalConsonant(name: string): boolean {
+  const last = name.charCodeAt(name.length - 1);
+  // 한글 음절이 아니면 받침 없는 쪽으로 두어도 어색하지 않음
+  if (last < 0xac00 || last > 0xd7a3) return false;
+  return (last - 0xac00) % 28 !== 0;
+}
+
+/** 몰리를, 콩이를 처럼 목적격 조사를 붙임 */
+export function withObject(name: string): string {
+  return `${name}${hasFinalConsonant(name) ? "을" : "를"}`;
+}
+
+/** 몰리가, 콩이가 처럼 주격 조사를 붙임 */
+export function withSubject(name: string): string {
+  return `${name}${hasFinalConsonant(name) ? "이" : "가"}`;
+}
+
+/**
+ * 마지막 목격부터 지난 날수, 실종 신고가 며칠째인지 세는 값
+ * 서버에서 한 번 계산해 넘김. 화면에서 세면 다시 그릴 때마다 값이 흔들림
+ */
+export function searchingDays(date: Date, now: Date = new Date()): number {
+  return Math.max(Math.floor((now.getTime() - date.getTime()) / 86_400_000), 0);
+}
+
 const RELATIVE = new Intl.RelativeTimeFormat("ko", { numeric: "auto" });
 
 /** 목격 시각을 방금, n분 전, n시간 전, n일 전으로 표기 */
