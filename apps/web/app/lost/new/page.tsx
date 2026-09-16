@@ -1,9 +1,8 @@
 import { createSignedUrls } from "@rebirth/core/storage";
-import { findPet, listPetPhotos } from "@rebirth/db";
+import { listPetPhotos, listPets } from "@rebirth/db";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { breedLabel } from "@/lib/report-label";
-import { LostForm, type LostPrefill } from "@/components/lost/lost-form";
+import { LostForm, type LostFormPet } from "@/components/lost/lost-form";
 
 export const metadata = {
   title: "반려동물을 잃어버렸어요",
@@ -11,50 +10,55 @@ export const metadata = {
   robots: { index: false },
 };
 
-// petId 가 붙어 오면 등록해 둔 동물을 읽어 폼을 미리 채움
+// 적어 둔 동물 목록을 여기서 읽어 넘김. 폼이 직접 부르면 칸이 빈 채로 한 번 그려짐
 export const dynamic = "force-dynamic";
 
-// 우리 동물은 모름을 담을 수 있지만 실종 신고는 셋 중 하나를 골라야 함
-const ANIMAL_FALLBACK = "dog" as const;
-const SIZE_FALLBACK = "small" as const;
-
-/** 등록 정보를 실종 신고의 특징 한 문단으로 옮김. 무선식별번호는 공개 글이라 담지 않음 */
-function toAppearance(breedGuess: string | null, note: string | null): string {
-  return [breedLabel(breedGuess), note].filter(Boolean).join("\n\n");
+/** 사진은 비공개 버킷이라 서명해 넘김. 실패해도 목록은 그대로 보여 손으로 올릴 수 있음 */
+async function photoUrlsOf(petId: string): Promise<string[]> {
+  try {
+    const rows = await listPetPhotos(petId);
+    const signed = await createSignedUrls(rows.map((row) => row.storagePath));
+    return rows
+      .map((row) => signed.get(row.storagePath))
+      .filter((url): url is string => Boolean(url));
+  } catch {
+    return [];
+  }
 }
 
-// 주소로 들어오는 값이라 uuid 가 아닌 것이 올 수 있음. 그대로 질의하면 드라이버가 예외를 냄
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+async function loadPets(): Promise<LostFormPet[]> {
+  try {
+    const user = await getCurrentUser();
+    if (!user) return [];
 
-async function loadPrefill(petId: string): Promise<LostPrefill | undefined> {
-  if (!UUID.test(petId)) return undefined;
-
-  const user = await getCurrentUser();
-  if (!user) return undefined;
-
-  // 소유자가 아니면 없는 것으로 다룸. 남의 기록이 있다는 사실도 알리지 않음
-  const pet = await findPet({ id: petId, ownerId: user.id });
-  if (!pet) return undefined;
-
-  const rows = await listPetPhotos(petId);
-  const signed = await createSignedUrls(rows.map((row) => row.storagePath)).catch(
-    () => new Map<string, string>(),
-  );
-
-  return {
-    animalType: pet.animalType === "unknown" ? ANIMAL_FALLBACK : pet.animalType,
-    size: pet.size === "unknown" ? SIZE_FALLBACK : pet.size,
-    colors: pet.colors,
-    appearance: toAppearance(pet.breedGuess, pet.note),
-    photoUrls: rows
-      .map((row) => signed.get(row.storagePath))
-      .filter((url): url is string => Boolean(url)),
-  };
+    const rows = await listPets(user.id);
+    // 등록번호는 신고에 쓰지 않으므로 화면으로 내보내지 않음
+    return await Promise.all(
+      rows.map(async (row) => ({
+        id: row.id,
+        name: row.name,
+        animalType: row.animalType,
+        breedGuess: row.breedGuess,
+        size: row.size,
+        colors: row.colors,
+        note: row.note,
+        photoUrls: await photoUrlsOf(row.id),
+      })),
+    );
+  } catch {
+    // 목록을 못 읽어도 신고는 손으로 적어 마칠 수 있어야 함
+    return [];
+  }
 }
 
 export default async function LostNewPage({ searchParams }: PageProps<"/lost/new">) {
+  // 우리 동물 상세에서 바로 넘어오면 그 아이가 고른 상태로 시작함
   const { petId } = await searchParams;
-  const prefill = typeof petId === "string" ? await loadPrefill(petId) : undefined;
 
-  return <LostForm prefill={prefill} />;
+  return (
+    <LostForm
+      pets={await loadPets()}
+      initialPetId={typeof petId === "string" ? petId : undefined}
+    />
+  );
 }

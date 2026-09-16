@@ -157,27 +157,55 @@ function toLocalInput(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-/** 등록해 둔 우리 동물에서 옮겨 오는 값. 마지막 목격 위치와 시각은 그때마다 달라 담지 않음 */
-export type LostPrefill = {
-  animalType: "dog" | "cat" | "other";
-  size: "small" | "medium" | "large";
+/** 등록해 둔 우리 동물. 고르면 생김새와 사진이 옮겨 오고 이름이 신고에 남음 */
+export type LostFormPet = {
+  id: string;
+  name: string;
+  animalType: "dog" | "cat" | "other" | "unknown";
+  breedGuess: string | null;
+  size: "small" | "medium" | "large" | "unknown";
   colors: string[];
-  appearance: string;
+  /** 목줄 색이나 습관처럼 찾을 때 쓸 메모. 특징 칸의 첫 줄로 옮김 */
+  note: string | null;
   /** 서명 URL. 브라우저가 받아 폼의 사진 고르기에 그대로 태움 */
   photoUrls: string[];
 };
 
-export function LostForm({ prefill }: { prefill?: LostPrefill } = {}) {
+export type LostFormProps = {
+  /** 미리 적어 둔 내 동물. 비로그인이면 빈 배열이라 고르는 줄이 나오지 않음 */
+  pets?: LostFormPet[];
+  /** 우리 동물 상세에서 바로 넘어올 때 주소에 실려 오는 id */
+  initialPetId?: string;
+};
+
+export function LostForm({ pets = [], initialPetId }: LostFormProps) {
+  // 주소로 지정해 들어온 동물. 목록에 없으면 고르지 않은 것으로 둠
+  const initial = pets.find((pet) => pet.id === initialPetId);
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
+  // 우리 동물은 모름을 담을 수 있지만 실종 신고는 셋 중 하나를 골라야 함
   const [animalType, setAnimalType] = useState<"dog" | "cat" | "other">(
-    prefill?.animalType ?? "dog",
+    initial && initial.animalType !== "unknown" ? initial.animalType : "dog",
   );
-  const [size, setSize] = useState<"small" | "medium" | "large">(prefill?.size ?? "small");
-  const [colors, setColors] = useState<string[]>(prefill?.colors ?? []);
-  const [appearance, setAppearance] = useState(prefill?.appearance ?? "");
+  const [size, setSize] = useState<"small" | "medium" | "large">(
+    initial && initial.size !== "unknown" ? initial.size : "small",
+  );
+  const [colors, setColors] = useState<string[]>(initial?.colors ?? []);
+  // 품종은 pet 을 통해 읽으므로 특징 칸에는 메모만 옮김
+  const [appearance, setAppearance] = useState(initial?.note ?? "");
   const [collar, setCollar] = useState(false);
+  // 고른 내 동물. 이름과 품종은 이 id 로 서버가 다시 읽어 신고에 붙임
+  const [petId, setPetId] = useState<string | null>(initial?.id ?? null);
+
+  // 적어 둔 값으로 생김새를 채움. 모름으로 적힌 칸은 덮지 않아 고른 값이 지워지지 않음
+  const choosePet = useCallback((pet: LostFormPet) => {
+    setPetId(pet.id);
+    if (pet.animalType !== "unknown") setAnimalType(pet.animalType);
+    if (pet.size !== "unknown") setSize(pet.size);
+    if (pet.colors.length > 0) setColors(pet.colors);
+    setAppearance((current) => current || (pet.note ?? ""));
+  }, []);
   // 좌표 대신 서버가 발급한 참조만 들고 있는 POL-08
   const [areaName, setAreaName] = useState<string | null>(null);
   const [locationToken, setLocationToken] = useState<string | null>(null);
@@ -220,16 +248,16 @@ export function LostForm({ prefill }: { prefill?: LostPrefill } = {}) {
   });
 
   /**
-   * 우리 동물 사진을 폼의 사진 고르기에 그대로 태움
+   * 고른 우리 동물의 사진을 폼의 사진 고르기에 그대로 태움
    * 서버에서 옮겨 담지 않고 브라우저가 받아 넣어 재인코딩·업로드 경로가 평소와 같음
-   * 한 번만 돌게 잠가 둠. 지운 사진이 다시 들어오면 지운 뜻이 사라짐
+   * 한 마리당 한 번만 돌게 기억해 둠. 지운 사진이 다시 들어오면 지운 뜻이 사라짐
    */
-  const seeded = useRef(false);
+  const seeded = useRef<string | null>(null);
   const { addFiles } = picker;
   useEffect(() => {
-    const urls = prefill?.photoUrls;
-    if (!urls?.length || seeded.current) return;
-    seeded.current = true;
+    const urls = pets.find((pet) => pet.id === petId)?.photoUrls;
+    if (!petId || !urls?.length || seeded.current === petId) return;
+    seeded.current = petId;
 
     void (async () => {
       const files: File[] = [];
@@ -245,7 +273,7 @@ export function LostForm({ prefill }: { prefill?: LostPrefill } = {}) {
       }
       if (files.length > 0) await addFiles(files);
     })();
-  }, [prefill?.photoUrls, addFiles]);
+  }, [petId, pets, addFiles]);
 
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
@@ -401,6 +429,8 @@ export function LostForm({ prefill }: { prefill?: LostPrefill } = {}) {
       colors,
       size,
       collar,
+      // 남의 기록이면 서버가 떼어 냄. 신고 자체는 막지 않음
+      ...(petId ? { petId } : {}),
       uploadIds: upload.uploadIds,
       locationToken,
       occurredAt: occurredAt ? new Date(occurredAt).toISOString() : new Date().toISOString(),
@@ -465,6 +495,7 @@ export function LostForm({ prefill }: { prefill?: LostPrefill } = {}) {
     size,
     collar,
     occurredAt,
+    petId,
   ]);
 
   // 토큰이 발급되면 화면을 덮어 복사를 유도함
@@ -517,6 +548,38 @@ export function LostForm({ prefill }: { prefill?: LostPrefill } = {}) {
 
         {urlStep === 1 ? (
           <>
+            {/* 적어 둔 동물이 있으면 처음부터 다시 묻지 않음
+                이름을 신고에 남겨야 상세가 우리 아이 이름으로 열림 */}
+            {pets.length > 0 ? (
+              <Section>
+                <Text as="h2" textStyle="t5Bold" color="fg.neutral">
+                  누구를 찾고 있나요?
+                </Text>
+                <HStack gap="spacingX.betweenChips" wrap>
+                  {pets.map((pet) => (
+                    <Chip.Toggle
+                      key={pet.id}
+                      size="small"
+                      checked={petId === pet.id}
+                      onCheckedChange={() => choosePet(pet)}
+                    >
+                      <Chip.Label>{pet.name}</Chip.Label>
+                    </Chip.Toggle>
+                  ))}
+                  <Chip.Toggle
+                    size="small"
+                    checked={petId === null}
+                    onCheckedChange={() => setPetId(null)}
+                  >
+                    <Chip.Label>목록에 없어요</Chip.Label>
+                  </Chip.Toggle>
+                </HStack>
+                <Text textStyle="t2Regular" color="fg.neutralSubtle">
+                  고르면 생김새를 미리 채워 두고 이름으로 찾아요
+                </Text>
+              </Section>
+            ) : null}
+
             {/* 머리글이 이미 사진을 올려 달라고 해 이름은 장수 세는 자리로만 둠 */}
             <PhotoField
               picker={picker}

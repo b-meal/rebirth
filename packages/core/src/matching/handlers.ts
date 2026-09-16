@@ -8,6 +8,7 @@ import {
   findLostForScoring,
   findManagedReport,
   findMatchesForLost,
+  findPet,
   releaseIdempotencyKey,
   upsertMatchScores,
   type CandidateSighting,
@@ -74,6 +75,14 @@ export async function createLostHandler(
       return okPrivate({ pending: true }, { status: 202 });
     }
 
+    // 남의 동물 기록을 신고에 묶지 못하게 여기서 소유를 확인함
+    // 비로그인 신고이거나 내 기록이 아니면 조용히 떼어 냄. 신고 자체는 막지 않음
+    const petId =
+      input.petId && options.reporterId
+        ? ((await findPet({ id: input.petId, ownerId: options.reporterId }))?.id ??
+          undefined)
+        : undefined;
+
     const saved = await saveReport({
       // 실종 신고에는 보호 상황·상태 태그·AI 초안 단계가 없음
       input: {
@@ -88,6 +97,7 @@ export async function createLostHandler(
       careSituation: "unknown",
       conditionTags: [],
       reporterId: options.reporterId,
+      petId,
     });
     if ("error" in saved) {
       await releaseIdempotencyKey(input.idempotencyKey);

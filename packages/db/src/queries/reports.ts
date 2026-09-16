@@ -116,7 +116,12 @@ export function findPublicReport(id: string) {
       aiEditedFields: false,
       locationAccuracyM: false,
     },
-    with: { photos: publicPhotoSelection },
+    with: {
+      photos: publicPhotoSelection,
+      // 실종 신고에만 붙음. 이름과 품종은 찾는 데 쓰라고 공개하는 값임
+      // 등록번호와 메모는 본인 화면에만 나오므로 여기서 읽지 않음
+      pet: { columns: { name: true, breedGuess: true } },
+    },
   })
 }
 
@@ -297,6 +302,28 @@ export function listReportCards(ids: string[]) {
     .from(reports)
     .where(and(inArray(reports.id, ids), eq(reports.visibility, 'public')))
     .limit(ids.length)
+}
+
+/**
+ * 이 계정이 남긴 기록인지만 확인함
+ * 공개 조회는 reporterId 를 내주지 않아 화면이 소유 여부를 따로 물어야 함
+ * 수정 권한과는 별개임. 권한은 관리 세션에서만 나옴. POL-03
+ */
+export async function isReportReporter(input: {
+  reportId: string
+  userId: string
+}): Promise<boolean> {
+  const [row] = await db
+    .select({ id: reports.id })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.id, input.reportId),
+        eq(reports.reporterId, input.userId),
+      ),
+    )
+    .limit(1)
+  return Boolean(row)
 }
 
 /** 내가 남긴 제보. 로그인 계정으로 저장된 것만 찾음 */

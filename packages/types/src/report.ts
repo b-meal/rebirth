@@ -408,6 +408,9 @@ export type AdminReportQuery = z.infer<typeof adminReportQuery>
  * 목격 제보와 열을 공유하지만 필수 입력이 달라 스키마를 따로 둠
  */
 export const createLostReport = observedFields.extend({
+  // 미리 적어 둔 내 동물. 고르면 이름과 품종이 신고에 함께 남음
+  // 로그인 상태에서 내 기록일 때만 붙고, 아니면 서버가 조용히 떼어 냄
+  petId: z.uuid('반려동물 선택이 올바르지 않습니다').optional(),
   uploadIds: z
     .array(z.uuid('사진 참조가 올바르지 않습니다'))
     .min(1, '사진을 한 장 올려 주십시오')

@@ -186,6 +186,8 @@ type SaveInput = {
   conditionTags: string[];
   /** 로그인 상태면 계정 id, 비로그인 제보는 비움 */
   reporterId?: string;
+  /** 실종 신고에 묶는 내 동물. 호출부가 소유를 확인한 뒤에만 넘김 */
+  petId?: string;
 };
 
 /**
@@ -199,6 +201,7 @@ async function saveReport({
   careSituation,
   conditionTags,
   reporterId,
+  petId,
 }: SaveInput): Promise<
   | { error: Response }
   | {
@@ -262,6 +265,8 @@ async function saveReport({
       // 사진과 필수 입력이 모두 검증됐으므로 바로 공개 상태로 넣음
       visibility: "public",
       reporterId: reporterId ?? null,
+      // 발견 제보에는 붙지 않음. DB 체크 제약도 같은 것을 막고 있음
+      petId: kind === "lost" ? (petId ?? null) : null,
       lifecycle: INITIAL_LIFECYCLE[kind],
       careSituation,
       manageTokenHash: hashToken(manageToken),
