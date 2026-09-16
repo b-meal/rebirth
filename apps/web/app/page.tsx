@@ -1,5 +1,9 @@
 import { createSignedThumbUrls } from "@rebirth/core/storage";
-import { countUnreadAreaReports, listMapReports } from "@rebirth/db";
+import {
+  countUnreadAreaReports,
+  countUnreadMatchAlerts,
+  listMapReports,
+} from "@rebirth/db";
 import { LIST_PERIOD_DAYS } from "@rebirth/types";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -42,11 +46,16 @@ async function loadMarkers(): Promise<MapMarker[]> {
   }
 }
 
-/** 알림 버튼에 찍을 점. 로그인 전이거나 구독이 없으면 0 */
+/** 알림 버튼에 찍을 점. 로그인 전이거나 구독과 실종 신고가 없으면 0 */
 async function loadUnread(userId: string | undefined): Promise<number> {
   if (!userId) return 0;
   try {
-    return await countUnreadAreaReports(userId);
+    // 동네 새 제보와 내 신고에 닮은 제보를 한 숫자로 합침. 알림함이 한 화면이라 배지도 하나
+    const [areas, matches] = await Promise.all([
+      countUnreadAreaReports(userId),
+      countUnreadMatchAlerts(userId),
+    ]);
+    return areas + matches;
   } catch {
     return 0;
   }
