@@ -54,6 +54,12 @@ export const reports = pgTable(
     // 비로그인 제보 허용이라 nullable. Supabase auth.users.id 를 FK 없이 참조
     reporterId: uuid(),
 
+    // 닮은 제보가 올라오면 알림함에 띄울지. 실종 신고에만 뜻이 있음
+    // 알림 행을 만들지 않고 이 스위치와 아래 확인 시각으로 안 읽은 수를 셈
+    matchAlert: boolean().notNull().default(true),
+    // 이 시각 뒤에 올라온 제보가 안 읽음. 알림함을 열면 지금 시각으로 올라감
+    matchAlertReadAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+
     // 미리 적어 둔 내 동물. 실종 신고만 채우고 이름과 품종을 화면이 여기서 읽음
     // 동물 기록을 지워도 신고는 남아야 해 끊기만 함
     // 등록번호는 여기로 넘기지 않음. 본인 화면에만 나오는 값임

@@ -46,6 +46,8 @@ type PublicLostReport = {
   id: string;
   lifecycle: string;
   version: number;
+  /** 닮은 제보 알림을 켜 두었는지. 실종 신고에만 뜻이 있음 */
+  matchAlert: boolean;
   /** 미리 적어 둔 내 동물. 이름과 품종은 보호자가 아는 값이라 추정으로 부르지 않음 */
   pet: { name: string; breedGuess: string | null } | null;
   animalType: AnimalType;
@@ -203,6 +205,7 @@ export function LostDetail({
             lifecycle={report.lifecycle}
             canManage={ownership.canManage}
             name={name}
+            matchAlert={report.matchAlert}
           />
         ) : null}
 

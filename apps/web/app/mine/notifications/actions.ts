@@ -6,7 +6,9 @@ import {
   addAreaSubscription,
   findPublicReportArea,
   markAreaSubscriptionsRead,
+  markMatchAlertsRead,
   removeAreaSubscription,
+  setMatchAlert,
 } from "@rebirth/db";
 import { areaCodeSystem } from "@rebirth/types";
 
@@ -23,7 +25,31 @@ export async function markNotificationsRead() {
   const user = await getCurrentUser();
   if (!user) return;
 
-  await markAreaSubscriptionsRead(user.id);
+  // 동네와 닮은 제보를 함께 올림. 알림함은 한 화면이라 읽음도 한 번에 둠
+  await Promise.all([
+    markAreaSubscriptionsRead(user.id),
+    markMatchAlertsRead(user.id),
+  ]);
+}
+
+/**
+ * 실종 신고별 닮은 제보 알림을 켜고 끔
+ * 내 기록이 아니면 아무것도 바꾸지 않음. 상세와 배지가 함께 바뀌어야 해 둘 다 다시 그림
+ */
+export async function toggleMatchAlert(
+  reportId: string,
+  enabled: boolean,
+): Promise<boolean> {
+  const user = await getCurrentUser();
+  if (!user) return false;
+
+  const changed = await setMatchAlert({ reportId, userId: user.id, enabled });
+  if (!changed) return false;
+
+  revalidatePath(`/r/${reportId}`);
+  revalidatePath("/mine/notifications");
+  revalidatePath("/mine");
+  return true;
 }
 
 /** 동네 구독을 끊음. 목록과 배지가 함께 줄어야 해 마이페이지도 다시 그림 */

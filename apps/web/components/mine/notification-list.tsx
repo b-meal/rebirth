@@ -36,19 +36,28 @@ export type NotificationItem = {
   unread: boolean;
 };
 
+/** 내 실종 신고와 닮아 올라온 제보. 유사도일 뿐 같은 개체라는 뜻이 아님 */
+export type MatchAlertItem = NotificationItem & {
+  score: number;
+  lostId: string;
+  /** 보호자가 적어 둔 이름. 없으면 우리 아이 로 부름 */
+  lostName: string | null;
+};
+
 export type NotificationListProps = {
   areas: NotificationArea[];
   items: NotificationItem[];
+  matches: MatchAlertItem[];
 };
 
-export function NotificationList({ areas, items }: NotificationListProps) {
+export function NotificationList({ areas, items, matches }: NotificationListProps) {
   const [opened, setOpened] = useState<string[]>([]);
 
   // 목록을 그린 뒤에 읽음으로 올림. 이번에 본 점은 남고 다음에 들어오면 사라짐
   useEffect(() => {
-    if (areas.length === 0) return;
+    if (areas.length === 0 && matches.length === 0) return;
     void markNotificationsRead();
-  }, [areas.length]);
+  }, [areas.length, matches.length]);
 
   const markOpened = (id: string) =>
     setOpened((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -85,6 +94,31 @@ export function NotificationList({ areas, items }: NotificationListProps) {
             </VStack>
           )}
         </SectionCard>
+
+        {matches.length > 0 ? (
+          <SectionCard gap="x3">
+            <HStack justify="space-between" align="center">
+              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+                확인할 후보
+              </Text>
+              {/* 저울이 매긴 값일 뿐이라는 것을 절 제목 옆에서 한 번 밝힘 */}
+              <Text textStyle="t2Regular" color="fg.neutralSubtle">
+                확정 아님
+              </Text>
+            </HStack>
+            <VStack align="stretch" gap="x3">
+              {matches.map((item) => (
+                <NotificationRow
+                  key={item.id}
+                  item={item}
+                  unread={item.unread && !opened.includes(item.id)}
+                  onOpen={() => markOpened(item.id)}
+                  note={`${item.lostName ?? "우리 아이"} 신고와 ${item.score}점`}
+                />
+              ))}
+            </VStack>
+          </SectionCard>
+        ) : null}
 
         <SectionCard gap="x3" grow={1}>
           <Text as="h2" textStyle="t4Bold" color="fg.neutral">
@@ -146,10 +180,13 @@ function NotificationRow({
   item,
   unread,
   onOpen,
+  note,
 }: {
   item: NotificationItem;
   unread: boolean;
   onOpen: () => void;
+  /** 왜 이 줄이 올라왔는지. 닮은 제보 절에서만 채움 */
+  note?: string;
 }) {
   return (
     <HStack asChild gap="x3" align="center" minWidth="0">
@@ -173,7 +210,11 @@ function NotificationRow({
           <Text textStyle="t2Regular" color="fg.neutralMuted" maxLines={1}>
             {item.areaName ?? "지역 미확인"} · {sinceLabel(item.createdAt)}
           </Text>
-          {item.injury === true ? (
+          {note ? (
+            <Text textStyle="t2Bold" color="fg.brand" maxLines={1}>
+              {note}
+            </Text>
+          ) : item.injury === true ? (
             <Text textStyle="t2Regular" color="fg.critical">
               다친 것으로 보임
             </Text>

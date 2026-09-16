@@ -1,11 +1,18 @@
 import 'server-only'
 
-import { and, desc, eq, sql as raw } from 'drizzle-orm'
+import { and, desc, eq, gte, sql as raw } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 
 import type { AreaCodeSystem } from '@rebirth/types'
 
 import { db } from '../client'
-import { AREA_SUBSCRIPTION_LIMIT, areaSubscriptions, reports } from '../schema'
+import {
+  AREA_SUBSCRIPTION_LIMIT,
+  areaSubscriptions,
+  matchScores,
+  reports,
+} from '../schema'
+import { MATCH_ALERT_MIN_SCORE } from './lost'
 import { publicReportColumns, type PublicReport } from './reports'
 
 // 동네 구독과 안 읽은 수
@@ -194,4 +201,146 @@ export async function markAreaSubscriptionsRead(userId: string) {
     .update(areaSubscriptions)
     .set({ lastReadAt: new Date() })
     .where(eq(areaSubscriptions.userId, userId))
+}
+
+/* 닮은 제보 알림. 동네 구독과 같이 알림 행을 만들지 않고 셀 때 계산함 */
+
+// 한 표를 두 번 쓰므로 이름을 나눠 붙임
+const lost = alias(reports, 'lost')
+const sighting = alias(reports, 'sighting')
+
+/**
+ * 알림에 올릴 짝을 고르는 조건
+ * 알림을 켜 둔 내 찾는 중 신고만 보고, 확인 시각 뒤에 올라온 제보만 안 읽음으로 셈
+ * 점수는 제보가 들어올 때 캐시에 남으므로 여기서는 읽기만 함
+ */
+function unreadMatchWhere(userId: string) {
+  return and(
+    eq(lost.reporterId, userId),
+    eq(lost.kind, 'lost'),
+    eq(lost.visibility, 'public'),
+    eq(lost.lifecycle, 'searching'),
+    eq(lost.matchAlert, true),
+    gte(matchScores.score, MATCH_ALERT_MIN_SCORE),
+    eq(sighting.visibility, 'public'),
+    eq(sighting.lifecycle, 'active'),
+    raw`${sighting.createdAt} > ${lost.matchAlertReadAt}`,
+  )
+}
+
+/** 하단 배지에 더할 수. 실종 신고가 없으면 0 */
+export async function countUnreadMatchAlerts(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ unread: raw<number>`count(*)::int` })
+    .from(matchScores)
+    .innerJoin(lost, eq(lost.id, matchScores.lostId))
+    .innerJoin(sighting, eq(sighting.id, matchScores.sightingId))
+    .where(unreadMatchWhere(userId))
+
+  return row?.unread ?? 0
+}
+
+/** 알림함 한 줄. 어느 신고와 닮았는지 함께 넘겨 무엇과 견준 점수인지 밝힘 */
+export type MatchAlertRow = PublicReport & {
+  score: number
+  lostId: string
+  /** 보호자가 적어 둔 이름. 없으면 화면이 생김새로 부름 */
+  lostName: string | null
+  /** 이 시각 뒤에 올라온 제보가 안 읽음. 동네 알림과 같은 기준 */
+  lostReadAt: Date
+}
+
+/**
+ * 닮은 제보 목록. 점수가 높은 순
+ * 같은 제보가 여러 신고에 걸리면 가장 높은 점수 한 줄로만 보여 목록이 겹치지 않음
+ */
+export async function listMatchAlerts(
+  userId: string,
+  limit = 30,
+): Promise<MatchAlertRow[]> {
+  const rows = await db
+    .select({
+      ...publicReportColumns,
+      id: sighting.id,
+      kind: sighting.kind,
+      visibility: sighting.visibility,
+      lifecycle: sighting.lifecycle,
+      careSituation: sighting.careSituation,
+      animalType: sighting.animalType,
+      breedGuess: sighting.breedGuess,
+      appearance: sighting.appearance,
+      colors: sighting.colors,
+      size: sighting.size,
+      sex: sighting.sex,
+      neutered: sighting.neutered,
+      conditionTags: sighting.conditionTags,
+      collar: sighting.collar,
+      injury: sighting.injury,
+      earTip: sighting.earTip,
+      areaName: sighting.areaName,
+      landmarkNote: sighting.landmarkNote,
+      occurredAt: sighting.occurredAt,
+      shareCount: sighting.shareCount,
+      createdAt: sighting.createdAt,
+      score: matchScores.score,
+      lostId: lost.id,
+      lostReadAt: lost.matchAlertReadAt,
+      lostName: raw<string | null>`(
+        select p.name from pets p where p.id = lost.pet_id
+      )`,
+    })
+    .from(matchScores)
+    .innerJoin(lost, eq(lost.id, matchScores.lostId))
+    .innerJoin(sighting, eq(sighting.id, matchScores.sightingId))
+    .where(
+      and(
+        eq(lost.reporterId, userId),
+        eq(lost.kind, 'lost'),
+        eq(lost.visibility, 'public'),
+        eq(lost.lifecycle, 'searching'),
+        eq(lost.matchAlert, true),
+        gte(matchScores.score, MATCH_ALERT_MIN_SCORE),
+        eq(sighting.visibility, 'public'),
+        eq(sighting.lifecycle, 'active'),
+      ),
+    )
+    .orderBy(desc(matchScores.score), desc(sighting.createdAt))
+    .limit(limit)
+
+  // 한 제보가 여러 신고에 걸리면 첫 줄만 남김. 점수 높은 순으로 읽었으므로 첫 줄이 가장 높음
+  const seen = new Set<string>()
+  return rows.filter((row) => {
+    if (seen.has(row.id)) return false
+    seen.add(row.id)
+    return true
+  })
+}
+
+/** 알림함을 열면 전체를 읽음 처리함. 동네 구독과 같은 방식 */
+export async function markMatchAlertsRead(userId: string) {
+  await db
+    .update(reports)
+    .set({ matchAlertReadAt: new Date() })
+    .where(and(eq(reports.reporterId, userId), eq(reports.kind, 'lost')))
+}
+
+/** 신고별 알림 스위치. 내 기록이 아니면 아무것도 바꾸지 않고 false 를 돌려줌 */
+export async function setMatchAlert(input: {
+  reportId: string
+  userId: string
+  enabled: boolean
+}): Promise<boolean> {
+  const [row] = await db
+    .update(reports)
+    .set({ matchAlert: input.enabled })
+    .where(
+      and(
+        eq(reports.id, input.reportId),
+        eq(reports.reporterId, input.userId),
+        eq(reports.kind, 'lost'),
+      ),
+    )
+    .returning({ id: reports.id })
+
+  return Boolean(row)
 }

@@ -4,6 +4,7 @@ import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
   countReporterReportsByKind,
   countUnreadAreaReports,
+  countUnreadMatchAlerts,
   listPets,
 } from "@rebirth/db";
 
@@ -56,7 +57,11 @@ export default async function MinePage() {
     ? await Promise.all([
         listPets(user.id).then(toPetCards).catch((): PetCard[] => []),
         countReporterReportsByKind(user.id).catch(() => ({ sighting: 0, lost: 0 })),
-        countUnreadAreaReports(user.id).catch(() => 0),
+        // 동네 새 제보와 내 신고에 닮은 제보를 한 숫자로 합침
+        Promise.all([
+          countUnreadAreaReports(user.id).catch(() => 0),
+          countUnreadMatchAlerts(user.id).catch(() => 0),
+        ]).then(([areas, matches]) => areas + matches),
       ])
     : [[], { sighting: 0, lost: 0 }, 0];
 
