@@ -39,12 +39,18 @@ function registrationLabel(value: string): string {
 
 /** 뱃지에 다 담기 어려운 값을 제목 아래 한 줄로 줄임 */
 function summarize(pet: PetDetailItem): string {
-  const parts = [pet.colors.join(" "), SIZE_LABEL[pet.size], ANIMAL_LABEL[pet.animalType]];
+  const parts = [
+    pet.colors.join(" "),
+    SIZE_LABEL[pet.size],
+    pet.animalType === "unknown" ? "" : ANIMAL_LABEL[pet.animalType],
+  ];
   return parts.filter(Boolean).join(" ") || "적어 둔 생김새가 없어요";
 }
 
 export function PetDetail({ pet, photoUrls }: { pet: PetDetailItem; photoUrls: string[] }) {
-  const animal = ANIMAL_LABEL[pet.animalType];
+  // ANIMAL_LABEL 의 unknown 은 확인 어려움 임. 내가 적지 않은 칸을
+  // 앱이 못 알아본 것처럼 부르지 않게 여기서 갈라 둠
+  const animal = pet.animalType === "unknown" ? null : ANIMAL_LABEL[pet.animalType];
   const size = SIZE_LABEL[pet.size];
 
   return (
