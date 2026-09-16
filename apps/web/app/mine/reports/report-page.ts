@@ -48,6 +48,8 @@ export async function readMineReportPage({
 
   const items: MineReportItem[] = page.map((row) => ({
     id: row.id,
+    kind: row.kind === 'lost' ? ('lost' as const) : ('sighting' as const),
+    petName: row.petName,
     animalType: row.animalType,
     colors: row.colors,
     size: row.size,
