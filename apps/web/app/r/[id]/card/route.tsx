@@ -2,7 +2,7 @@ import { createSignedUrl } from "@rebirth/core/storage";
 import { findPublicReport, findReportPhotoPaths } from "@rebirth/db";
 import { ImageResponse } from "next/og";
 
-import { CARE_LABEL, SIZE_LABEL, breedLabel } from "@/lib/report-label";
+import { CARE_LABEL, SIZE_LABEL, breedLabel, searchingDays, withObject } from "@/lib/report-label";
 
 // 공유 카드. ratio=story 는 인스타 스토리용 9:16, 기본은 OG 이미지로 쓰는 4:5
 // 정확 좌표와 제보자 정보, 품종 확정 표현을 넣지 않음
@@ -50,11 +50,24 @@ export async function GET(
 
   const photoUrl = report ? await loadPhotoUrl(id) : null;
 
-  const headline = report?.appearance?.split("\n")[0] ?? "발견동물 제보";
+  const lost = report?.kind === "lost";
+  const name = report?.pet?.name ?? null;
+
+  // 이름을 아는 신고는 이름이 카드에서 가장 크게 읽혀야 함. 부르면 반응하는 것이 이름임
+  const headline = name
+    ? `${withObject(name)} 찾고 있어요`
+    : (report?.appearance?.split("\n")[0] ??
+      (lost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
   const where = report?.areaName ?? "위치 미확인";
-  const care = CARE_LABEL[report?.careSituation ?? "unknown"] ?? "확인 중";
+  // 실종은 보호 상황을 쓰지 않아 확인되지 않음 이 박히면 안 됨
+  const care =
+    lost && report
+      ? `찾는 중 ${searchingDays(report.occurredAt)}일째`
+      : (CARE_LABEL[report?.careSituation ?? "unknown"] ?? "확인 중");
+  // 보호자가 적어 둔 품종은 추정이 아니라 아는 값이라 계열 추정을 붙이지 않음
+  const breed = report?.pet?.breedGuess ?? breedLabel(report?.breedGuess ?? null);
   const chips = report
-    ? [SIZE_LABEL[report.size] ?? "", ...report.colors, breedLabel(report.breedGuess) ?? ""]
+    ? [SIZE_LABEL[report.size] ?? "", ...report.colors, breed ?? ""]
         .filter(Boolean)
         .slice(0, 4)
     : [];
@@ -140,13 +153,18 @@ export async function GET(
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ fontSize: 40, opacity: 0.75 }}>{where}</div>
-            {/* 보호자가 없는 개체도 있어 주인 대신 집으로 씀. 서비스명과도 맞음 */}
+            <div style={{ fontSize: 40, opacity: 0.75 }}>
+              {lost ? `${where}에서 마지막으로 봤어요` : where}
+            </div>
+            {/* 발견 제보는 보호자가 없는 개체도 있어 주인 대신 집으로 씀 */}
+            {/* 실종은 기다리는 사람이 있어 집이 아니라 그 사람에게 돌아가는 일임 */}
             <div style={{ fontSize: 52, fontWeight: 700, lineHeight: 1.3 }}>
-              집으로 돌아갈 수 있게 도와주세요
+              {lost
+                ? "가족이 기다리고 있어요"
+                : "집으로 돌아갈 수 있게 도와주세요"}
             </div>
             <div style={{ fontSize: 32, opacity: 0.62 }}>
-              이 동물을 봤다면 알려 주세요
+              {name ? `${withObject(name)} 봤다면 알려 주세요` : "이 동물을 봤다면 알려 주세요"}
             </div>
           </div>
         </div>

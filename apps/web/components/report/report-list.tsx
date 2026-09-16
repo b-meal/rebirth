@@ -31,6 +31,10 @@ export type ListItem = {
   occurredAt: Date;
   /** 대표 사진 축소본. 사진이 없거나 서명이 실패하면 null */
   photoUrl?: string | null;
+  /** 이 목록에는 발견 제보와 실종 신고가 함께 나와 부르는 말이 갈림 */
+  kind?: "sighting" | "lost";
+  /** 보호자가 적어 둔 이름. 실종 신고에만 있음 */
+  petName?: string | null;
 };
 
 /** 목록 API 응답. 날짜는 JSON 을 거치며 문자열이 됨 */
@@ -53,6 +57,10 @@ const TYPE_OPTIONS: { value: AnimalType; label: string }[] = [
 const THUMB = "88px";
 
 function Card({ item }: { item: ListItem }) {
+  const lost = item.kind === "lost";
+  // 이름을 아는 기록은 이름이 먼저 읽혀야 함
+  const title = item.petName || describeAnimal(item);
+
   return (
     <Box
       asChild
@@ -68,12 +76,7 @@ function Card({ item }: { item: ListItem }) {
         <HStack gap="x3" align="stretch" minWidth="0">
           {item.photoUrl ? (
             <Box width={THUMB} minWidth={THUMB}>
-              <ImageFrame
-                ratio={1}
-                src={item.photoUrl}
-                alt={describeAnimal(item)}
-                borderRadius="r2"
-              />
+              <ImageFrame ratio={1} src={item.photoUrl} alt={title} borderRadius="r2" />
             </Box>
           ) : (
             // 사진 없는 제보도 같은 자리를 차지해 줄이 들쭉날쭉해지지 않음
@@ -88,17 +91,24 @@ function Card({ item }: { item: ListItem }) {
 
           <VStack align="stretch" gap="x1" grow={1} minWidth="0" justify="center">
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
-              {describeAnimal(item)}
+              {title}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
+              {/* 이름이 제목을 차지했으면 생김새를 여기에 붙여 무엇을 찾는지 알림 */}
+              {item.petName ? `${describeAnimal(item)}, ` : ""}
               {item.areaName ?? "지역 미확인"}, {sinceLabel(item.occurredAt)}
             </Text>
             {/* 상황은 색으로 먼저 읽히고 글자가 뜻을 확인해 줌 */}
             <HStack gap="x1" align="center" wrap>
-              <Badge
-                label={CARE_LABEL[item.careSituation] ?? "확인되지 않음"}
-                tone={item.careSituation === "in_care" ? "informative" : "neutral"}
-              />
+              {/* 실종은 보호 상황을 쓰지 않아 확인되지 않음 이 박히면 안 됨 */}
+              {lost ? (
+                <Badge label="찾는 중" tone="brand" />
+              ) : (
+                <Badge
+                  label={CARE_LABEL[item.careSituation] ?? "확인되지 않음"}
+                  tone={item.careSituation === "in_care" ? "informative" : "neutral"}
+                />
+              )}
               {item.injury === true ? (
                 <Badge label="다친 것으로 보임" tone="critical" />
               ) : null}
