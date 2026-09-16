@@ -19,6 +19,7 @@ import { COMMENT_PAGE_SIZE, type ReportKind } from '@rebirth/types'
 import { db } from '../client'
 import {
   draftSessions,
+  pets,
   reportComments,
   reportFlags,
   reportInterests,
@@ -166,7 +167,13 @@ export function listPublicReports({
   limit = PUBLIC_LIST_LIMIT,
 }: PublicListOptions = {}) {
   return db
-    .select(publicReportColumns)
+    .select({
+      ...publicReportColumns,
+      // 적어 둔 이름. 실종 신고에만 값이 있고 카드가 이름으로 부르는 데 씀
+      petName: raw<string | null>`(
+        select p.name from ${pets} p where p.id = ${reports}.pet_id
+      )`,
+    })
     .from(reports)
     .where(
       and(
@@ -277,6 +284,7 @@ export async function findFirstPhotoPaths(reportIds: string[]) {
 // 카드에 쓸 첫 사진 경로를 함께 읽는 목록 컬럼
 const myReportColumns = {
   id: reports.id,
+  kind: reports.kind,
   animalType: reports.animalType,
   breedGuess: reports.breedGuess,
   colors: reports.colors,
@@ -287,6 +295,10 @@ const myReportColumns = {
   occurredAt: reports.occurredAt,
   visibility: reports.visibility,
   lifecycle: reports.lifecycle,
+  // 적어 둔 이름. 카드가 흰색 소형견 대신 우리 아이 이름으로 불림
+  petName: raw<string | null>`(
+    select p.name from ${pets} p where p.id = ${reports}.pet_id
+  )`,
   photoPath: raw<string | null>`(
     select p.storage_path from ${reportPhotos} p
     where p.report_id = ${reports}.id
