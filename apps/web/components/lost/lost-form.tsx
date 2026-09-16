@@ -198,13 +198,18 @@ export function LostForm({ pets = [], initialPetId }: LostFormProps) {
   // 고른 내 동물. 이름과 품종은 이 id 로 서버가 다시 읽어 신고에 붙임
   const [petId, setPetId] = useState<string | null>(initial?.id ?? null);
 
-  // 적어 둔 값으로 생김새를 채움. 모름으로 적힌 칸은 덮지 않아 고른 값이 지워지지 않음
+  /**
+   * 적어 둔 값으로 생김새를 채움
+   * 남기지 않고 갈아치움. 앞서 고른 아이의 메모와 털색이 남으면
+   * 그 아이 이야기가 다른 아이의 공개 신고에 그대로 실림
+   * 모름으로 적힌 칸만 신고의 기본값으로 떨어뜨림
+   */
   const choosePet = useCallback((pet: LostFormPet) => {
     setPetId(pet.id);
-    if (pet.animalType !== "unknown") setAnimalType(pet.animalType);
-    if (pet.size !== "unknown") setSize(pet.size);
-    if (pet.colors.length > 0) setColors(pet.colors);
-    setAppearance((current) => current || (pet.note ?? ""));
+    setAnimalType(pet.animalType === "unknown" ? "dog" : pet.animalType);
+    setSize(pet.size === "unknown" ? "small" : pet.size);
+    setColors(pet.colors);
+    setAppearance(pet.note ?? "");
   }, []);
   // 좌표 대신 서버가 발급한 참조만 들고 있는 POL-08
   const [areaName, setAreaName] = useState<string | null>(null);
@@ -250,14 +255,24 @@ export function LostForm({ pets = [], initialPetId }: LostFormProps) {
   /**
    * 고른 우리 동물의 사진을 폼의 사진 고르기에 그대로 태움
    * 서버에서 옮겨 담지 않고 브라우저가 받아 넣어 재인코딩·업로드 경로가 평소와 같음
-   * 한 마리당 한 번만 돌게 기억해 둠. 지운 사진이 다시 들어오면 지운 뜻이 사라짐
+   * 덧붙이지 않고 갈아치움. 다른 아이로 바꿨는데 앞 아이 사진이 남으면
+   * 그 아이 신고에 남의 사진이 섞인 채로 공개됨
+   * 마지막으로 태운 아이를 기억해 같은 아이에는 다시 태우지 않음. 지운 뜻이 사라지지 않게
    */
   const seeded = useRef<string | null>(null);
-  const { addFiles } = picker;
+  const { replaceFiles, clear } = picker;
   useEffect(() => {
-    const urls = pets.find((pet) => pet.id === petId)?.photoUrls;
-    if (!petId || !urls?.length || seeded.current === petId) return;
+    if (seeded.current === petId) return;
+    const previous = seeded.current;
     seeded.current = petId;
+
+    // 고르기를 풀면 태워 둔 사진도 거둠. 손으로 올린 사진만 있을 때는 건드리지 않음
+    if (!petId) {
+      if (previous) clear();
+      return;
+    }
+
+    const urls = pets.find((pet) => pet.id === petId)?.photoUrls ?? [];
 
     void (async () => {
       const files: File[] = [];
@@ -271,9 +286,11 @@ export function LostForm({ pets = [], initialPetId }: LostFormProps) {
           // 한 장을 못 받아도 나머지로 진행함. 전부 실패하면 직접 고르면 됨
         }
       }
-      if (files.length > 0) await addFiles(files);
+      if (files.length > 0) await replaceFiles(files);
+      // 사진을 적어 두지 않은 아이로 바꾼 경우. 앞 아이 사진이 남으면 안 됨
+      else if (previous) clear();
     })();
-  }, [petId, pets, addFiles]);
+  }, [petId, pets, replaceFiles, clear]);
 
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
