@@ -41,6 +41,9 @@ type State =
   | { status: "loading" }
   | { status: "invalid" }
   | { status: "error" }
+  // 관리 권한이 없는 상태. 세션은 이레를 쉬면 잠기는데 실종은 그보다 오래 이어짐
+  // 다시 시도해도 풀리지 않아 어디로 가야 하는지 대신 알림
+  | { status: "unauthorized" }
   // 너무 자주 열어 잠긴 상태. 다시 눌러도 소용없어 언제 풀리는지 알려야 함
   // 남은 초가 아니라 풀리는 시각을 들어야 다시 그려도 값이 흔들리지 않음
   | { status: "throttled"; retryAt: number }
@@ -152,6 +155,10 @@ export function LostView({ reportId }: LostViewProps = {}) {
 
       const response = await fetch(`/api/lost/${id}/candidates`);
       if (response.status === 404) return { status: "invalid" };
+      // 로그인만으로는 열리지 않음. 권한은 관리 주소를 교환한 세션에서만 나옴. POL-03
+      if (response.status === 401 || response.status === 403) {
+        return { status: "unauthorized" };
+      }
       if (!response.ok) return { status: "error" };
       const body = (await response.json()) as {
         lost: LostSummary;
@@ -220,6 +227,22 @@ export function LostView({ reportId }: LostViewProps = {}) {
             size="medium"
             title={`${formatRemaining(remaining)} 뒤에 다시 열려요`}
             description="짧은 사이에 여러 번 열어 잠시 막아 두었어요."
+          />
+        </ScreenBody>
+      </Screen>
+    );
+  }
+
+  if (state.status === "unauthorized") {
+    return (
+      <Screen>
+        <AppHeader title="확인할 후보" />
+        <ScreenBody>
+          {/* 다시 시도하기를 두지 않음. 눌러도 같은 벽에 부딪혀 헛손질이 됨 */}
+          <ResultSection
+            size="medium"
+            title="관리 주소로 들어와 주세요"
+            description={"후보는 신고할 때 받은 관리 주소로만 열려요.\n한동안 쓰지 않으면 잠기고 그 주소로 다시 들어오면 풀려요"}
           />
         </ScreenBody>
       </Screen>

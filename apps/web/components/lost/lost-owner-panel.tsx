@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { HStack, Icon, ResponsivePair, Text, VStack } from "@seed-design/react";
+import { Icon, ResponsivePair, Text, VStack } from "@seed-design/react";
 import {
   IconCheckmarkCircleFill,
   IconMagnifyingglassSparkleFill,
@@ -21,7 +21,7 @@ import {
 import { Callout } from "seed-design/ui/callout";
 
 import { withObject } from "@/lib/report-label";
-import { SectionCard } from "@/components/ui/screen";
+import { SectionCard, SectionTitle } from "@/components/ui/screen";
 
 // 내 신고에만 보이는 관리 줄
 // 소유와 권한이 다른 축이라 둘을 따로 받음. 로그인 계정은 내 기록임을 말하고
@@ -81,9 +81,7 @@ export function LostOwnerPanel({
   return (
     <SectionCard gap="x3">
       <VStack align="stretch" gap="x1">
-        <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-          내 신고 관리
-        </Text>
+        <SectionTitle>내 신고 관리</SectionTitle>
         <Text textStyle="t3Regular" color="fg.neutralMuted">
           {searching
             ? "비슷한 발견 제보를 모아 두었어요"
@@ -111,6 +109,7 @@ export function LostOwnerPanel({
               <Icon svg={<IconCheckmarkCircleFill />} />
               {name ? `${withObject(name)} 찾았어요` : "우리 아이를 찾았어요"}
             </ActionButton>
+            {/* 시트를 닫아도 남아 실패를 알림 */}
             {error ? <Callout tone="critical" description={error} /> : null}
           </VStack>
         ) : null
@@ -162,15 +161,6 @@ export function LostOwnerPanel({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialogRoot>
-
-      {/* 시트가 닫힌 뒤에도 실패를 알 수 있어야 함 */}
-      {error && !open ? (
-        <HStack>
-          <Text textStyle="t2Regular" color="fg.critical">
-            {error}
-          </Text>
-        </HStack>
-      ) : null}
     </SectionCard>
   );
 }
