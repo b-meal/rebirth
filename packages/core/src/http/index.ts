@@ -54,6 +54,7 @@ export {
   DRAFT_COOKIE_MAX_AGE,
   MANAGE_COOKIE_MAX_AGE,
   checkManageAccess,
+  peekManageAccess,
   createManageSession,
   ensureDraftSession,
   findDraftSession,

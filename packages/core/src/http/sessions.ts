@@ -4,6 +4,7 @@ import {
   DRAFT_TTL_HOURS,
   MANAGE_SESSION_IDLE_DAYS,
   hasManageAccess,
+  peekManageSession,
   insertDraftSession,
   insertManageSession,
   touchDraftSession,
@@ -83,6 +84,24 @@ export async function findManageSession(
   if (!existing) return undefined;
   const row = await touchManageSession(hashToken(existing));
   return row?.id;
+}
+
+/**
+ * 유휴 만료를 밀지 않고 관리 권한만 봄
+ * 공개 화면이 관리 줄을 보일지 정할 때만 씀. 실제로 고치는 경로는 checkManageAccess 를 씀
+ * 여기서 touch 를 하면 상세를 열어 보기만 해도 만료가 계속 밀려 유휴 만료가 사라짐
+ */
+export async function peekManageAccess(
+  request: Request,
+  reportId: string,
+): Promise<boolean> {
+  const existing = readCookie(request, MANAGE_COOKIE);
+  if (!existing) return false;
+
+  const row = await peekManageSession(hashToken(existing));
+  if (!row) return false;
+
+  return hasManageAccess({ sessionId: row.id, reportId });
 }
 
 export type AccessCheck =
