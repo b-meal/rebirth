@@ -157,7 +157,21 @@ function toLocalInput(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-export function LostForm() {
+export type LostFormPet = {
+  id: string;
+  name: string;
+  animalType: "dog" | "cat" | "other" | "unknown";
+  breedGuess: string | null;
+  size: "small" | "medium" | "large" | "unknown";
+  colors: string[];
+};
+
+export type LostFormProps = {
+  /** 미리 적어 둔 내 동물. 비로그인이면 빈 배열이라 고르는 줄이 나오지 않음 */
+  pets?: LostFormPet[];
+};
+
+export function LostForm({ pets = [] }: LostFormProps) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -166,6 +180,16 @@ export function LostForm() {
   const [colors, setColors] = useState<string[]>([]);
   const [appearance, setAppearance] = useState("");
   const [collar, setCollar] = useState(false);
+  // 고른 내 동물. 이름과 품종은 이 id 로 서버가 다시 읽어 신고에 붙임
+  const [petId, setPetId] = useState<string | null>(null);
+
+  // 적어 둔 값으로 생김새를 채움. 모름으로 적힌 칸은 덮지 않아 고른 값이 지워지지 않음
+  const choosePet = useCallback((pet: LostFormPet) => {
+    setPetId(pet.id);
+    if (pet.animalType !== "unknown") setAnimalType(pet.animalType);
+    if (pet.size !== "unknown") setSize(pet.size);
+    if (pet.colors.length > 0) setColors(pet.colors);
+  }, []);
   // 좌표 대신 서버가 발급한 참조만 들고 있는 POL-08
   const [areaName, setAreaName] = useState<string | null>(null);
   const [locationToken, setLocationToken] = useState<string | null>(null);
@@ -360,6 +384,8 @@ export function LostForm() {
       colors,
       size,
       collar,
+      // 남의 기록이면 서버가 떼어 냄. 신고 자체는 막지 않음
+      ...(petId ? { petId } : {}),
       uploadIds: upload.uploadIds,
       locationToken,
       occurredAt: occurredAt ? new Date(occurredAt).toISOString() : new Date().toISOString(),
@@ -424,6 +450,7 @@ export function LostForm() {
     size,
     collar,
     occurredAt,
+    petId,
   ]);
 
   // 토큰이 발급되면 화면을 덮어 복사를 유도함
@@ -476,6 +503,38 @@ export function LostForm() {
 
         {urlStep === 1 ? (
           <>
+            {/* 적어 둔 동물이 있으면 처음부터 다시 묻지 않음
+                이름을 신고에 남겨야 상세가 우리 아이 이름으로 열림 */}
+            {pets.length > 0 ? (
+              <Section>
+                <Text as="h2" textStyle="t5Bold" color="fg.neutral">
+                  누구를 찾고 있나요?
+                </Text>
+                <HStack gap="spacingX.betweenChips" wrap>
+                  {pets.map((pet) => (
+                    <Chip.Toggle
+                      key={pet.id}
+                      size="small"
+                      checked={petId === pet.id}
+                      onCheckedChange={() => choosePet(pet)}
+                    >
+                      <Chip.Label>{pet.name}</Chip.Label>
+                    </Chip.Toggle>
+                  ))}
+                  <Chip.Toggle
+                    size="small"
+                    checked={petId === null}
+                    onCheckedChange={() => setPetId(null)}
+                  >
+                    <Chip.Label>목록에 없어요</Chip.Label>
+                  </Chip.Toggle>
+                </HStack>
+                <Text textStyle="t2Regular" color="fg.neutralSubtle">
+                  고르면 생김새를 미리 채워 두고 이름으로 찾아요
+                </Text>
+              </Section>
+            ) : null}
+
             {/* 머리글이 이미 사진을 올려 달라고 해 이름은 장수 세는 자리로만 둠 */}
             <PhotoField
               picker={picker}

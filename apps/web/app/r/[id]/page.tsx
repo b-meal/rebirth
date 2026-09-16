@@ -1,4 +1,4 @@
-import { DRAFT_COOKIE, hashToken } from "@rebirth/core/http";
+import { DRAFT_COOKIE, checkManageAccess, hashToken } from "@rebirth/core/http";
 import { distanceKm } from "@rebirth/core/location/geo";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
@@ -8,22 +8,25 @@ import {
   findReportCoarsePoint,
   hasReportInterest,
   isReportAreaSubscribed,
+  isReportReporter,
   listMapReports,
   listReportComments,
 } from "@rebirth/db";
 import { LIST_PERIOD_DAYS } from "@rebirth/types";
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
+import { CARE_LABEL, describeAnimal, searchingDays, sinceLabel } from "@/lib/report-label";
+import { LostDetail } from "@/components/lost/lost-detail";
 import { ReportDetail } from "@/components/report/report-detail";
 import type { ReportCardItem } from "@/components/report/report-card";
 import type { ReportComment } from "@/components/report/report-comments";
 import type { ShelterItem } from "@/components/report/report-shelters";
 
 // 공유 링크를 받은 제3자용 화면, 정확 좌표와 제보자 정보와 품종 확정 표현 제외
+// 발견 제보와 실종 신고가 한 표에 담겨 있어 kind 로 화면을 갈라 그림
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -52,12 +55,21 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     return { title: "찾는 제보가 없습니다", robots: { index: false } };
   }
 
+  const isLost = report.kind === "lost";
   const where = report.areaName ?? "위치 미확인";
   // layout 의 title.template 이 서비스명을 붙이므로 여기서 넣지 않음
-  const title = report.appearance?.split("\n")[0] ?? "발견동물 제보";
+  const title =
+    report.appearance?.split("\n")[0] ?? (isLost ? "반려동물을 찾고 있어요" : "발견동물 제보");
   // 링크 미리보기에서 한눈에 판단할 값만 앞에 둠. 카카오톡은 두 줄 남짓만 보임
-  const facts = [where, CARE_LABEL[report.careSituation], describeAnimal(report)].filter(Boolean);
-  const description = `${facts.join(", ")} — 이 동물을 본 적 있나요?`;
+  // 실종 신고는 보호 상황을 쓰지 않아 그 자리를 비움
+  const facts = [
+    where,
+    isLost ? null : CARE_LABEL[report.careSituation],
+    describeAnimal(report),
+  ].filter(Boolean);
+  const description = isLost
+    ? `${facts.join(", ")} — 이 아이를 본 적 있나요?`
+    : `${facts.join(", ")} — 이 동물을 본 적 있나요?`;
   const image = `${SITE}/r/${id}/card`;
 
   return {
@@ -70,7 +82,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       siteName: "다시집",
       locale: "ko_KR",
       url: `${SITE}/r/${id}`,
-      images: [{ url: image, width: 1080, height: 1350, alt: `${where}에서 발견된 동물` }],
+      images: [
+        {
+          url: image,
+          width: 1080,
+          height: 1350,
+          alt: `${where}에서 ${isLost ? "잃어버린" : "발견된"} 동물`,
+        },
+      ],
     },
     twitter: { card: "summary_large_image", title, description, images: [image] },
   };
@@ -156,6 +175,29 @@ async function loadInterest(reportId: string): Promise<{ count: number; mine: bo
   }
 }
 
+/**
+ * 내 기록인지와 지금 이 브라우저가 관리할 수 있는지
+ * 두 값은 다른 축임. 로그인 계정은 소유를 말할 뿐이고 고치고 닫는 권한은
+ * 관리 주소를 교환해 받은 세션에서만 나옴. POL-03
+ */
+async function loadOwnership(
+  reportId: string,
+): Promise<{ mine: boolean; canManage: boolean }> {
+  try {
+    const user = await getCurrentUser();
+    const mine = user ? await isReportReporter({ reportId, userId: user.id }) : false;
+    // 서버 컴포넌트는 Request 를 받지 않아 쿠키를 헤더에서 되살려 관리 세션을 찾음
+    const cookie = (await headers()).get("cookie") ?? "";
+    const access = await checkManageAccess(
+      new Request("http://local", { headers: { cookie } }),
+      reportId,
+    );
+    return { mine, canManage: access.ok };
+  } catch {
+    return { mine: false, canManage: false };
+  }
+}
+
 /** 구독 버튼의 시작 상태. 로그인 전이면 끈 상태로 두고 누를 때 로그인으로 보냄 */
 async function loadAreaSubscribed(reportId: string): Promise<boolean> {
   try {
@@ -183,6 +225,27 @@ export default async function ReportDetailPage({ params }: Params) {
     loadInterest(id),
     loadAreaSubscribed(id),
   ]);
+
+  if (report.kind === "lost") {
+    // 발견 제보에는 관리 줄이 없어 실종일 때만 물음
+    const ownership = await loadOwnership(id);
+
+    return (
+      <LostDetail
+        report={report}
+        ownership={ownership}
+        shareUrl={`${SITE}/r/${id}`}
+        sinceLabel={sinceLabel(report.occurredAt)}
+        searchingDays={searchingDays(report.occurredAt)}
+        location={point ? { point, gridMeters: spot?.coarseGridM ?? 300 } : null}
+        comments={comments}
+        nearby={nearby}
+        shelters={shelters}
+        interest={interest}
+        areaSubscribed={areaSubscribed}
+      />
+    );
+  }
 
   return (
     <ReportDetail
