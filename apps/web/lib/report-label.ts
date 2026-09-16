@@ -74,6 +74,25 @@ export function searchingDays(date: Date, now: Date = new Date()): number {
   return Math.max(Math.floor((now.getTime() - date.getTime()) / 86_400_000), 0);
 }
 
+/**
+ * 목격 시각을 그대로 적음
+ * 시간대를 한국으로 못박음. 서버가 UTC 로 그리고 브라우저가 현지로 다시 그리면
+ * 첫 화면과 하이드레이션 뒤 값이 달라지고, 자바스크립트 없이 보는 쪽은 틀린 시각만 봄
+ */
+const ABSOLUTE = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
+export function formatAbsolute(value: Date | string): string {
+  return ABSOLUTE.format(new Date(value));
+}
+
 const RELATIVE = new Intl.RelativeTimeFormat("ko", { numeric: "auto" });
 
 /** 목격 시각을 방금, n분 전, n시간 전, n일 전으로 표기 */

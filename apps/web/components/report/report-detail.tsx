@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FLAG_REASON_LABEL, type AnimalType, type FlagReason } from "@rebirth/types";
+import type { AnimalType } from "@rebirth/types";
 import type { LatLng } from "@rebirth/core/location/geo";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Divider, HStack, Icon, Text, VStack } from "@seed-design/react";
 import {
   IconChevronRightLine,
@@ -11,21 +11,19 @@ import {
 } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
-import {
-  BottomSheetBody,
-  BottomSheetContent,
-  BottomSheetFooter,
-  BottomSheetRoot,
-} from "seed-design/ui/bottom-sheet";
 
-import { describeAnimal } from "@/lib/report-label";
-import { Screen, SectionCard } from "@/components/ui/screen";
+import { describeAnimal, formatAbsolute } from "@/lib/report-label";
+import { Screen, SectionCard, SectionTitle } from "@/components/ui/screen";
 import { Badge } from "@/components/ui/badge";
 import { AreaSubscribeButton } from "@/components/report/area-subscribe-button";
 import { DetailPhotoHero } from "@/components/report/detail-photo-hero";
 import { ReportBadges } from "@/components/report/report-badges";
 import { ReportFeatures } from "@/components/report/report-features";
-import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
+import {
+  NEARBY_CARD_WIDTH,
+  ReportCard,
+  type ReportCardItem,
+} from "@/components/report/report-card";
 import {
   CommentComposer,
   ReportComments,
@@ -34,6 +32,7 @@ import {
 import { ReportInterestButton } from "@/components/report/report-interest-button";
 import { ReportLocationMap } from "@/components/report/report-location-map";
 import { ReportShelters, type ShelterItem } from "@/components/report/report-shelters";
+import { ReportFlagSheet } from "@/components/report/report-flag-sheet";
 import { ReportShareSheet, useReportShare } from "@/components/share/report-share";
 import { rememberView } from "@/components/mine/recent-views";
 
@@ -56,23 +55,6 @@ type PublicReport = {
   occurredAt: Date | string;
   shareCount: number;
 };
-
-// 가로로 넘겨 보는 카드 폭, 두 장 반이 걸쳐 보여 더 있다는 것이 드러남
-const NEARBY_CARD_WIDTH = "136px";
-
-function formatAbsolute(value: Date | string): string {
-  const date = new Date(value);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-      {children}
-    </Text>
-  );
-}
 
 export type ReportDetailProps = {
   report: PublicReport;
@@ -102,7 +84,6 @@ export function ReportDetail({
   areaSubscribed,
 }: ReportDetailProps) {
   const [flagOpen, setFlagOpen] = useState(false);
-  const [flagSent, setFlagSent] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
   // 마이페이지의 최근 본 목록에 남김
@@ -116,21 +97,6 @@ export function ReportDetail({
     areaName: report.areaName,
   });
 
-  const sendFlag = useCallback(
-    async (reason: FlagReason) => {
-      try {
-        await fetch(`/api/reports/${report.id}/flag`, {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({ reason }),
-        });
-      } catch {
-        // 접수 실패도 사용자에게는 같은 안내로 닫음
-      }
-      setFlagSent(true);
-    },
-    [report.id],
-  );
 
   return (
     <Screen bg="bg.layerBasement">
@@ -296,46 +262,7 @@ export function ReportDetail({
         cardReady={cardReady}
       />
 
-      <BottomSheetRoot open={flagOpen} onOpenChange={(open) => setFlagOpen(open)}>
-        {/* 접수 뒤에는 한 문장만 남아 시트가 손대기 어려울 만큼 납작해짐 */}
-        <BottomSheetContent
-          title={flagSent ? "신고를 접수했습니다" : "신고 사유"}
-          className={flagSent ? "rebirth-sheet--floor" : undefined}
-        >
-          <BottomSheetBody>
-            {flagSent ? (
-              <Text textStyle="t5Regular" color="fg.neutral">
-                확인 후 조치합니다. 접수만으로 제보가 바로 숨겨지지는 않습니다
-              </Text>
-            ) : (
-              <VStack align="stretch" gap="x2">
-                {(Object.keys(FLAG_REASON_LABEL) as FlagReason[]).map((reason) => (
-                  <ActionButton
-                    key={reason}
-                    variant="neutralOutline"
-                    size="medium"
-                    onClick={() => void sendFlag(reason)}
-                  >
-                    {FLAG_REASON_LABEL[reason]}
-                  </ActionButton>
-                ))}
-              </VStack>
-            )}
-          </BottomSheetBody>
-          <BottomSheetFooter>
-            <ActionButton
-              variant="neutralOutline"
-              size="large"
-              onClick={() => {
-                setFlagOpen(false);
-                setFlagSent(false);
-              }}
-            >
-              닫기
-            </ActionButton>
-          </BottomSheetFooter>
-        </BottomSheetContent>
-      </BottomSheetRoot>
+      <ReportFlagSheet reportId={report.id} open={flagOpen} onOpenChange={setFlagOpen} />
     </Screen>
   );
 }

@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { eq, isNull, and, desc } from 'drizzle-orm'
+import { eq, inArray, isNull, and, desc } from 'drizzle-orm'
 
 import { db } from '../client'
 import { petPhotos, pets, userProfiles, type UserProfile } from '../schema'
@@ -170,6 +170,16 @@ export async function updatePetRecord(input: {
 }
 
 /** 한 마리에 붙은 사진 전부. 고른 순서대로 */
+/** 여러 마리의 사진을 한 번에. 한 마리씩 부르면 마리 수만큼 질의가 나감 */
+export function listPetPhotosFor(petIds: string[]) {
+  if (petIds.length === 0) return Promise.resolve([])
+  return db
+    .select({ petId: petPhotos.petId, storagePath: petPhotos.storagePath })
+    .from(petPhotos)
+    .where(inArray(petPhotos.petId, petIds))
+    .orderBy(petPhotos.petId, petPhotos.sortOrder)
+}
+
 export function listPetPhotos(petId: string) {
   return db
     .select({ storagePath: petPhotos.storagePath })

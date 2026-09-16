@@ -1,4 +1,5 @@
-import { VStack, type VStackProps } from "@seed-design/react";
+import { HStack, Text, VStack, type VStackProps } from "@seed-design/react";
+import type { ReactNode } from "react";
 
 // 화면 배치 프리미티브, 여백은 SEED 토큰만 쓰고 화면마다 다시 적지 않는 기준
 
@@ -40,5 +41,30 @@ export function SectionCard({ gap = "x3", ...props }: VStackProps) {
       bg="bg.layerDefault"
       {...props}
     />
+  );
+}
+
+/** 절의 제목 한 줄. 카드 안에서 내용과 같은 들여쓰기를 유지함 */
+export function SectionTitle({ children }: { children: ReactNode }) {
+  return (
+    <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+      {children}
+    </Text>
+  );
+}
+
+/** 라벨과 값을 한 줄에 둔 특징 행, 글 안에 섞지 않고 대조하기 쉽게 나눔 */
+export function FeatureRow({ label, value }: { label: string; value: string }) {
+  return (
+    <HStack justify="space-between" align="flex-start" gap="x4">
+      <Text textStyle="t4Regular" color="fg.neutralMuted">
+        {label}
+      </Text>
+      <VStack align="flex-end" minWidth="0">
+        <Text textStyle="t4Regular" color="fg.neutral">
+          {value}
+        </Text>
+      </VStack>
+    </HStack>
   );
 }

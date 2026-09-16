@@ -1,4 +1,4 @@
-import { DRAFT_COOKIE, checkManageAccess, hashToken } from "@rebirth/core/http";
+import { DRAFT_COOKIE, hashToken, peekManageAccess } from "@rebirth/core/http";
 import { distanceKm } from "@rebirth/core/location/geo";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
@@ -56,10 +56,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
 
   const isLost = report.kind === "lost";
+  // 끝난 신고는 링크 미리보기로도 목격을 부르지 않음. 카드가 계속 돌아다니기 때문
+  const isDone = isLost && report.lifecycle !== "searching";
   const where = report.areaName ?? "위치 미확인";
   // layout 의 title.template 이 서비스명을 붙이므로 여기서 넣지 않음
-  const title =
-    report.appearance?.split("\n")[0] ?? (isLost ? "반려동물을 찾고 있어요" : "발견동물 제보");
+  const petName = report.pet?.name ?? null;
+  const title = isDone
+    ? (petName ?? "끝난 신고")
+    : (petName ?? report.appearance?.split("\n")[0] ?? (isLost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
   // 링크 미리보기에서 한눈에 판단할 값만 앞에 둠. 카카오톡은 두 줄 남짓만 보임
   // 실종 신고는 보호 상황을 쓰지 않아 그 자리를 비움
   const facts = [
@@ -67,9 +71,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     isLost ? null : CARE_LABEL[report.careSituation],
     describeAnimal(report),
   ].filter(Boolean);
-  const description = isLost
-    ? `${facts.join(", ")} — 이 아이를 본 적 있나요?`
-    : `${facts.join(", ")} — 이 동물을 본 적 있나요?`;
+  const description = isDone
+    ? `${facts.join(", ")} — ${report.lifecycle === "resolved" ? "가족을 만났어요" : "끝난 신고예요"}`
+    : isLost
+      ? `${facts.join(", ")} — 이 아이를 본 적 있나요?`
+      : `${facts.join(", ")} — 이 동물을 본 적 있나요?`;
   const image = `${SITE}/r/${id}/card`;
 
   return {
@@ -187,12 +193,14 @@ async function loadOwnership(
     const user = await getCurrentUser();
     const mine = user ? await isReportReporter({ reportId, userId: user.id }) : false;
     // 서버 컴포넌트는 Request 를 받지 않아 쿠키를 헤더에서 되살려 관리 세션을 찾음
+    // 열람일 뿐이라 유휴 만료를 밀지 않는 쪽을 씀. 여기서 touch 하면 상세를 보기만 해도
+    // 만료가 계속 밀려 고치고 지우는 권한의 유휴 만료가 사라짐. POL-04
     const cookie = (await headers()).get("cookie") ?? "";
-    const access = await checkManageAccess(
+    const canManage = await peekManageAccess(
       new Request("http://local", { headers: { cookie } }),
       reportId,
     );
-    return { mine, canManage: access.ok };
+    return { mine, canManage };
   } catch {
     return { mine: false, canManage: false };
   }
@@ -218,18 +226,19 @@ export default async function ReportDetailPage({ params }: Params) {
   const spot = await findReportCoarsePoint(id).catch(() => undefined);
   const point = spot?.coarsePoint ? { lat: spot.coarsePoint.y, lng: spot.coarsePoint.x } : null;
 
-  const [comments, nearby, shelters, interest, areaSubscribed] = await Promise.all([
+  const isLost = report.kind === "lost";
+
+  const [comments, nearby, shelters, interest, areaSubscribed, ownership] = await Promise.all([
     loadComments(id),
     loadNearby(id, point),
     loadShelters(point),
     loadInterest(id),
     loadAreaSubscribed(id),
+    // 발견 제보에는 관리 줄이 없어 실종일 때만 물음
+    isLost ? loadOwnership(id) : Promise.resolve({ mine: false, canManage: false }),
   ]);
 
-  if (report.kind === "lost") {
-    // 발견 제보에는 관리 줄이 없어 실종일 때만 물음
-    const ownership = await loadOwnership(id);
-
+  if (isLost) {
     return (
       <LostDetail
         report={report}

@@ -52,17 +52,35 @@ export async function GET(
 
   const lost = report?.kind === "lost";
   const name = report?.pet?.name ?? null;
+  // 이미 찾았거나 닫힌 신고는 도움을 더 부르지 않음. 카드가 계속 돌아다니기 때문
+  const done = Boolean(lost && report && report.lifecycle !== "searching");
+  const found = report?.lifecycle === "resolved";
 
   // 이름을 아는 신고는 이름이 카드에서 가장 크게 읽혀야 함. 부르면 반응하는 것이 이름임
-  const headline = name
-    ? `${withObject(name)} 찾고 있어요`
-    : (report?.appearance?.split("\n")[0] ??
-      (lost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
+  const headline = done
+    ? name
+      ? found
+        ? `${name}, 집에 왔어요`
+        : `${withObject(name)} 찾지 않아요`
+      : found
+        ? "집으로 돌아왔어요"
+        : "끝난 신고예요"
+    : name
+      ? `${withObject(name)} 찾고 있어요`
+      : (report?.appearance?.split("\n")[0] ??
+        (lost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
   const where = report?.areaName ?? "위치 미확인";
   // 실종은 보호 상황을 쓰지 않아 확인되지 않음 이 박히면 안 됨
+  // 당일 실종은 0일째 로 적지 않음. 상세 화면과 같은 기준을 씀
   const care =
     lost && report
-      ? `찾는 중 ${searchingDays(report.occurredAt)}일째`
+      ? done
+        ? found
+          ? "찾았어요"
+          : "끝난 신고"
+        : searchingDays(report.occurredAt) < 1
+          ? "오늘 잃어버렸어요"
+          : `찾는 중 ${searchingDays(report.occurredAt)}일째`
       : (CARE_LABEL[report?.careSituation ?? "unknown"] ?? "확인 중");
   // 보호자가 적어 둔 품종은 추정이 아니라 아는 값이라 계열 추정을 붙이지 않음
   const breed = report?.pet?.breedGuess ?? breedLabel(report?.breedGuess ?? null);
@@ -154,18 +172,25 @@ export async function GET(
 
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ fontSize: 40, opacity: 0.75 }}>
-              {lost ? `${where}에서 마지막으로 봤어요` : where}
+              {lost && !done ? `${where}에서 마지막으로 봤어요` : where}
             </div>
             {/* 발견 제보는 보호자가 없는 개체도 있어 주인 대신 집으로 씀 */}
             {/* 실종은 기다리는 사람이 있어 집이 아니라 그 사람에게 돌아가는 일임 */}
             <div style={{ fontSize: 52, fontWeight: 700, lineHeight: 1.3 }}>
-              {lost
-                ? "가족이 기다리고 있어요"
-                : "집으로 돌아갈 수 있게 도와주세요"}
+              {done
+                ? found
+                  ? "도와주신 덕분이에요"
+                  : "더 찾지 않아요"
+                : lost
+                  ? "가족이 기다리고 있어요"
+                  : "집으로 돌아갈 수 있게 도와주세요"}
             </div>
-            <div style={{ fontSize: 32, opacity: 0.62 }}>
-              {name ? `${withObject(name)} 봤다면 알려 주세요` : "이 동물을 봤다면 알려 주세요"}
-            </div>
+            {/* 끝난 신고에는 목격을 부르지 않음. 헛걸음을 만들 뿐임 */}
+            {done ? null : (
+              <div style={{ fontSize: 32, opacity: 0.62 }}>
+                {name ? `${withObject(name)} 봤다면 알려 주세요` : "이 동물을 봤다면 알려 주세요"}
+              </div>
+            )}
           </div>
         </div>
       </div>

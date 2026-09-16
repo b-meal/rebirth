@@ -1,8 +1,8 @@
 import type { AnimalType } from "@rebirth/types";
-import { HStack, Text, VStack } from "@seed-design/react";
+import { VStack } from "@seed-design/react";
 
 import { ANIMAL_LABEL, SIZE_LABEL, breedLabel, triStateLabel } from "@/lib/report-label";
-import { SectionCard } from "@/components/ui/screen";
+import { FeatureRow, SectionCard, SectionTitle } from "@/components/ui/screen";
 
 // 관찰값을 라벨과 값으로 나란히 세운 절
 // 발견 제보와 실종 신고가 같은 항목을 같은 차례로 보여야 두 기록을 견줄 수 있음
@@ -32,22 +32,6 @@ export type ReportFeaturesProps = {
    */
   hideEmpty?: boolean;
 };
-
-/** 라벨과 값을 한 줄에 둔 특징 행, 글 안에 섞지 않고 대조하기 쉽게 나눔 */
-function FeatureRow({ label, value }: { label: string; value: string }) {
-  return (
-    <HStack justify="space-between" align="flex-start" gap="x4">
-      <Text textStyle="t4Regular" color="fg.neutralMuted">
-        {label}
-      </Text>
-      <VStack align="flex-end" minWidth="0">
-        <Text textStyle="t4Regular" color="fg.neutral">
-          {value}
-        </Text>
-      </VStack>
-    </HStack>
-  );
-}
 
 export function ReportFeatures({ report, breedText, hideEmpty }: ReportFeaturesProps) {
   const breed = breedText ?? breedLabel(report.breedGuess);
@@ -82,9 +66,7 @@ export function ReportFeatures({ report, breedText, hideEmpty }: ReportFeaturesP
 
   return (
     <SectionCard gap="x2_5">
-      <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-        특징
-      </Text>
+      <SectionTitle>특징</SectionTitle>
       <VStack align="stretch" gap="x2">
         {rows.map((row) => (
           <FeatureRow key={row.label} label={row.label} value={row.value} />

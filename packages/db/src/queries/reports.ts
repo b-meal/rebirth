@@ -116,6 +116,9 @@ export function findPublicReport(id: string) {
       aiRaw: false,
       aiEditedFields: false,
       locationAccuracyM: false,
+      // pets 행 id 는 내주지 않음. 여러 신고를 한 마리로 이어 볼 수 있게 됨
+      // 이름과 품종은 아래 pet 관계로만 내보냄. 0016 이 pets 직접 접근을 막아 둔 취지
+      petId: false,
     },
     with: {
       photos: publicPhotoSelection,
@@ -312,7 +315,14 @@ export function listReportCards(ids: string[]) {
   return db
     .select(myReportColumns)
     .from(reports)
-    .where(and(inArray(reports.id, ids), eq(reports.visibility, 'public')))
+    .where(
+      and(
+        inArray(reports.id, ids),
+        eq(reports.visibility, 'public'),
+        // 공개 목록과 같은 기준. 끝난 기록이 찾는 중 으로 남아 다시 도움을 부르지 않게 함
+        raw`${reports.lifecycle} in ('active', 'searching')`,
+      ),
+    )
     .limit(ids.length)
 }
 

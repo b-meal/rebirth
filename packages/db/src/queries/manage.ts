@@ -44,6 +44,26 @@ export async function touchManageSession(tokenHash: string) {
   return row
 }
 
+/**
+ * 유휴 만료를 밀지 않고 세션이 살아 있는지만 봄
+ * 공개 화면이 관리 줄을 보일지 정할 때 씀. touch 를 쓰면 열람만으로 만료가 계속 밀려
+ * 고치고 닫고 지우는 권한의 유휴 만료가 사실상 사라짐. POL-04
+ */
+export async function peekManageSession(tokenHash: string) {
+  const [row] = await db
+    .select({ id: manageSessions.id })
+    .from(manageSessions)
+    .where(
+      and(
+        eq(manageSessions.tokenHash, tokenHash),
+        isNull(manageSessions.revokedAt),
+        raw`${manageSessions.expiresAt} > now()`,
+      ),
+    )
+    .limit(1)
+  return row
+}
+
 export async function revokeManageSession(tokenHash: string) {
   const [row] = await db
     .update(manageSessions)

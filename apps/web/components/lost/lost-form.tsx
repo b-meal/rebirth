@@ -157,6 +157,7 @@ function toLocalInput(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+/** 등록해 둔 우리 동물. 고르면 생김새와 사진이 옮겨 오고 이름이 신고에 남음 */
 export type LostFormPet = {
   id: string;
   name: string;
@@ -164,31 +165,51 @@ export type LostFormPet = {
   breedGuess: string | null;
   size: "small" | "medium" | "large" | "unknown";
   colors: string[];
+  /** 목줄 색이나 습관처럼 찾을 때 쓸 메모. 특징 칸의 첫 줄로 옮김 */
+  note: string | null;
+  /** 서명 URL. 브라우저가 받아 폼의 사진 고르기에 그대로 태움 */
+  photoUrls: string[];
 };
 
 export type LostFormProps = {
   /** 미리 적어 둔 내 동물. 비로그인이면 빈 배열이라 고르는 줄이 나오지 않음 */
   pets?: LostFormPet[];
+  /** 우리 동물 상세에서 바로 넘어올 때 주소에 실려 오는 id */
+  initialPetId?: string;
 };
 
-export function LostForm({ pets = [] }: LostFormProps) {
+export function LostForm({ pets = [], initialPetId }: LostFormProps) {
+  // 주소로 지정해 들어온 동물. 목록에 없으면 고르지 않은 것으로 둠
+  const initial = pets.find((pet) => pet.id === initialPetId);
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
-  const [animalType, setAnimalType] = useState<"dog" | "cat" | "other">("dog");
-  const [size, setSize] = useState<"small" | "medium" | "large">("small");
-  const [colors, setColors] = useState<string[]>([]);
-  const [appearance, setAppearance] = useState("");
+  // 우리 동물은 모름을 담을 수 있지만 실종 신고는 셋 중 하나를 골라야 함
+  const [animalType, setAnimalType] = useState<"dog" | "cat" | "other">(
+    initial && initial.animalType !== "unknown" ? initial.animalType : "dog",
+  );
+  const [size, setSize] = useState<"small" | "medium" | "large">(
+    initial && initial.size !== "unknown" ? initial.size : "small",
+  );
+  const [colors, setColors] = useState<string[]>(initial?.colors ?? []);
+  // 품종은 pet 을 통해 읽으므로 특징 칸에는 메모만 옮김
+  const [appearance, setAppearance] = useState(initial?.note ?? "");
   const [collar, setCollar] = useState(false);
   // 고른 내 동물. 이름과 품종은 이 id 로 서버가 다시 읽어 신고에 붙임
-  const [petId, setPetId] = useState<string | null>(null);
+  const [petId, setPetId] = useState<string | null>(initial?.id ?? null);
 
-  // 적어 둔 값으로 생김새를 채움. 모름으로 적힌 칸은 덮지 않아 고른 값이 지워지지 않음
+  /**
+   * 적어 둔 값으로 생김새를 채움
+   * 남기지 않고 갈아치움. 앞서 고른 아이의 메모와 털색이 남으면
+   * 그 아이 이야기가 다른 아이의 공개 신고에 그대로 실림
+   * 모름으로 적힌 칸만 신고의 기본값으로 떨어뜨림
+   */
   const choosePet = useCallback((pet: LostFormPet) => {
     setPetId(pet.id);
-    if (pet.animalType !== "unknown") setAnimalType(pet.animalType);
-    if (pet.size !== "unknown") setSize(pet.size);
-    if (pet.colors.length > 0) setColors(pet.colors);
+    setAnimalType(pet.animalType === "unknown" ? "dog" : pet.animalType);
+    setSize(pet.size === "unknown" ? "small" : pet.size);
+    setColors(pet.colors);
+    setAppearance(pet.note ?? "");
   }, []);
   // 좌표 대신 서버가 발급한 참조만 들고 있는 POL-08
   const [areaName, setAreaName] = useState<string | null>(null);
@@ -230,6 +251,47 @@ export function LostForm({ pets = [] }: LostFormProps) {
         ),
       }),
   });
+
+  /**
+   * 고른 우리 동물의 사진을 폼의 사진 고르기에 그대로 태움
+   * 서버에서 옮겨 담지 않고 브라우저가 받아 넣어 재인코딩·업로드 경로가 평소와 같음
+   * 덧붙이지 않고 갈아치움. 다른 아이로 바꿨는데 앞 아이 사진이 남으면
+   * 그 아이 신고에 남의 사진이 섞인 채로 공개됨
+   * 마지막으로 태운 아이를 기억해 같은 아이에는 다시 태우지 않음. 지운 뜻이 사라지지 않게
+   */
+  const seeded = useRef<string | null>(null);
+  const { replaceFiles, clear } = picker;
+  useEffect(() => {
+    if (seeded.current === petId) return;
+    const previous = seeded.current;
+    seeded.current = petId;
+
+    // 고르기를 풀면 태워 둔 사진도 거둠. 손으로 올린 사진만 있을 때는 건드리지 않음
+    if (!petId) {
+      if (previous) clear();
+      return;
+    }
+
+    const urls = pets.find((pet) => pet.id === petId)?.photoUrls ?? [];
+
+    void (async () => {
+      const files: File[] = [];
+      for (const [index, url] of urls.entries()) {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) continue;
+          const blob = await response.blob();
+          files.push(new File([blob], `pet-${index + 1}.jpg`, { type: blob.type || "image/jpeg" }));
+        } catch {
+          // 한 장을 못 받아도 나머지로 진행함. 전부 실패하면 직접 고르면 됨
+        }
+      }
+      if (files.length > 0) await replaceFiles(files);
+      // 사진을 적어 두지 않은 아이로 바꾼 경우. 앞 아이 사진이 남으면 안 됨
+      else if (previous) clear();
+    })();
+  }, [petId, pets, replaceFiles, clear]);
+
   const position = useCurrentPosition();
   const geocode = useReverseGeocode(position.point);
   // 마지막으로 본 곳을 동 이름으로만 기억하지 않음. 강남역, 코엑스로도 찾게 함
