@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Icon, ResponsivePair, Text, VStack } from "@seed-design/react";
+import { HStack, Icon, ResponsivePair, Text, VStack } from "@seed-design/react";
 import {
   IconCheckmarkCircleFill,
   IconMagnifyingglassSparkleFill,
@@ -19,7 +19,9 @@ import {
   AlertDialogTitle,
 } from "seed-design/ui/alert-dialog";
 import { Callout } from "seed-design/ui/callout";
+import { Switch } from "seed-design/ui/switch";
 
+import { toggleMatchAlert } from "@/app/mine/notifications/actions";
 import { withObject } from "@/lib/report-label";
 import { SectionCard, SectionTitle } from "@/components/ui/screen";
 
@@ -36,6 +38,8 @@ export type LostOwnerPanelProps = {
   canManage: boolean;
   /** 적어 둔 이름. 내 아이 이름으로 물어야 남 얘기처럼 읽히지 않음 */
   name: string | null;
+  /** 닮은 제보가 올라오면 알림함에 띄울지 */
+  matchAlert: boolean;
 };
 
 export function LostOwnerPanel({
@@ -44,11 +48,15 @@ export function LostOwnerPanel({
   lifecycle,
   canManage,
   name,
+  matchAlert,
 }: LostOwnerPanelProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // 서버가 다시 그릴 때까지 스위치가 눌린 대로 보이게 화면이 먼저 값을 들고 있음
+  const [alertOn, setAlertOn] = useState(matchAlert);
+  const [alertPending, startAlert] = useTransition();
 
   const searching = lifecycle === "searching";
 
@@ -88,6 +96,32 @@ export function LostOwnerPanel({
             : "이미 마무리된 신고예요"}
         </Text>
       </VStack>
+
+      {/* 알림은 관리 권한이 아니라 계정에 묶여 있어 관리 주소 없이도 켜고 끌 수 있음 */}
+      {searching ? (
+        <HStack justify="space-between" align="center" gap="x3">
+          <VStack align="stretch" gap="x0_5" minWidth="0">
+            <Text textStyle="t4Regular" color="fg.neutral">
+              닮은 제보 알림
+            </Text>
+            <Text textStyle="t2Regular" color="fg.neutralSubtle">
+              많이 닮은 제보가 올라오면 알림함에 모아 드려요
+            </Text>
+          </VStack>
+          <Switch
+            checked={alertOn}
+            disabled={alertPending}
+            onCheckedChange={(next) => {
+              setAlertOn(next);
+              startAlert(async () => {
+                const ok = await toggleMatchAlert(reportId, next);
+                // 실패하면 눌리기 전으로 되돌려 화면과 서버가 어긋나지 않게 함
+                if (!ok) setAlertOn(!next);
+              });
+            }}
+          />
+        </HStack>
+      ) : null}
 
       {canManage ? (
         searching ? (
