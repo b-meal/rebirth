@@ -76,7 +76,13 @@ function Card({ item }: { item: ListItem }) {
         <HStack gap="x3" align="stretch" minWidth="0">
           {item.photoUrl ? (
             <Box width={THUMB} minWidth={THUMB}>
-              <ImageFrame ratio={1} src={item.photoUrl} alt={title} borderRadius="r2" />
+              {/* 이름은 옆 제목이 이미 읽어 줌. 사진은 생김새를 말해야 보탬이 됨 */}
+              <ImageFrame
+                ratio={1}
+                src={item.photoUrl}
+                alt={describeAnimal(item)}
+                borderRadius="r2"
+              />
             </Box>
           ) : (
             // 사진 없는 제보도 같은 자리를 차지해 줄이 들쭉날쭉해지지 않음

@@ -22,6 +22,9 @@ export type ReportCardItem = {
   petName?: string | null;
 };
 
+/** 가로로 넘겨 보는 카드 폭, 두 장 반이 걸쳐 보여 더 있다는 것이 드러남 */
+export const NEARBY_CARD_WIDTH = "136px";
+
 export function ReportCard({ item }: { item: ReportCardItem }) {
   const lost = item.kind === "lost";
   // 이름을 아는 기록은 이름이 먼저 읽혀야 함. 생김새는 아래 줄로 내림
@@ -31,7 +34,13 @@ export function ReportCard({ item }: { item: ReportCardItem }) {
     <VStack asChild align="stretch" gap="x1" minWidth="0">
       <Link href={`/r/${item.id}`}>
         {item.photoUrl ? (
-          <ImageFrame ratio={1} src={item.photoUrl} alt={title} borderRadius="r3" />
+          /* 이름은 옆 제목이 이미 읽어 줌. 사진은 생김새를 말해야 보탬이 됨 */
+          <ImageFrame
+            ratio={1}
+            src={item.photoUrl}
+            alt={describeAnimal(item)}
+            borderRadius="r3"
+          />
         ) : (
           <AspectRatio ratio={1} borderRadius="r3" bg="bg.neutralWeak">
             <Box />
