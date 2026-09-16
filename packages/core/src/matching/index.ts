@@ -30,3 +30,5 @@ export {
 export { runMatchReview, type RunReviewOutcome } from "./run-review";
 
 export { reviewMatchHandler } from "./review-handlers";
+
+export { scoreSightingAgainstLost } from "./alerts";

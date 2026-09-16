@@ -30,10 +30,89 @@ export function findReportByManageTokenHash(tokenHash: string) {
   })
 }
 
+/** 닮은 제보를 알림함에 올릴 점수 하한. 후보 목록보다 높게 두어 덜 시끄럽게 함 */
+export const MATCH_ALERT_MIN_SCORE = 55
+
+/**
+ * 새로 올라온 제보와 견줄 실종 신고
+ * 후보 모집의 반대 방향. 제보가 들어오는 순간 점수를 캐시에 남겨
+ * 보호자가 후보 화면을 열기 전에도 알림함이 셀 수 있게 함
+ * 알림을 끈 신고와 이미 끝난 신고는 계산하지 않음
+ */
+export async function findLostForSighting(input: {
+  sightingId: string
+  animalType: (typeof reports.animalType.enumValues)[number]
+  point: { lat: number; lng: number } | null
+  occurredAt: Date
+  limit?: number
+}) {
+  // 제보 시각보다 앞서 잃어버린 신고만 견줌. 하루 뒤까지는 실종 시점이 어림이라 함께 봄
+  const since = new Date(
+    input.occurredAt.getTime() - CANDIDATE_WINDOW_DAYS * 24 * 3_600_000,
+  )
+  const until = new Date(input.occurredAt.getTime() + 24 * 3_600_000)
+
+  const withinRadius = input.point
+    ? raw`ST_DWithin(${reports.coarsePoint}::geography, ST_SetSRID(ST_MakePoint(${input.point.lng}, ${input.point.lat}), 4326)::geography, ${CANDIDATE_RADIUS_M})`
+    : undefined
+
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      colors: reports.colors,
+      size: reports.size,
+      collar: reports.collar,
+      injury: reports.injury,
+      earTip: reports.earTip,
+      coarsePoint: reports.coarsePoint,
+      locationSource: reports.locationSource,
+      occurredAt: reports.occurredAt,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.kind, 'lost'),
+        eq(reports.visibility, 'public'),
+        eq(reports.lifecycle, 'searching'),
+        eq(reports.matchAlert, true),
+        ne(reports.id, input.sightingId),
+        input.animalType === 'unknown'
+          ? undefined
+          : raw`(${reports.animalType} = ${input.animalType} or ${reports.animalType} = 'unknown')`,
+        gte(reports.occurredAt, since),
+        lte(reports.occurredAt, until),
+        withinRadius,
+      ),
+    )
+    .orderBy(desc(reports.occurredAt))
+    .limit(input.limit ?? 50)
+}
+
 /**
  * 점수 계산에 쓸 실종 신고 값. 격자 좌표를 포함해 서버 안에서만 씀
  * 응답에 그대로 넣지 않음. 호출부가 점수만 뽑아 쓰는 것을 전제로 함
  */
+export function findReportForScoring(id: string) {
+  return db
+    .select({
+      id: reports.id,
+      kind: reports.kind,
+      animalType: reports.animalType,
+      colors: reports.colors,
+      size: reports.size,
+      collar: reports.collar,
+      injury: reports.injury,
+      earTip: reports.earTip,
+      coarsePoint: reports.coarsePoint,
+      locationSource: reports.locationSource,
+      occurredAt: reports.occurredAt,
+    })
+    .from(reports)
+    .where(eq(reports.id, id))
+    .limit(1)
+}
+
 export function findLostForScoring(id: string) {
   return db
     .select({
