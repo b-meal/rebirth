@@ -1,0 +1,1 @@
+CREATE INDEX "reports_pet_idx" ON "reports" USING btree ("pet_id");

@@ -137,6 +137,8 @@ export const reports = pgTable(
     ),
     index('reports_area_idx').on(t.areaCode),
     index('reports_reporter_idx').on(t.reporterId),
+    // 동물 기록을 지울 때 이 열을 비우려고 참조 행을 찾음. 없으면 신고 표를 통째로 훑음
+    index('reports_pet_idx').on(t.petId),
     // 발견에 resolved, 실종에 active 가 들어오는 것을 DB 가 거부함
     check(
       'reports_lifecycle_by_kind',
