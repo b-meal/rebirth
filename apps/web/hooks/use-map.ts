@@ -80,7 +80,12 @@ export function useMap(options: MapOptions = {}): MapState {
       const next = instance.getCenter();
       const point = { lat: next.lat, lng: next.lng };
       setCenter(point);
-      setRadiusKm(distanceKm(point, { lat: instance.getBounds().getNorth(), lng: point.lng }));
+      // getBounds 는 덮개에 가린 데까지 세는 컨테이너 전체라 중심과 기준이 달라짐
+      // 검색창과 시트를 뺀 구간의 모서리까지 재야 지도에 보이는 핀이 목록에서 빠지지 않음
+      const pad = instance.getPadding();
+      const { width } = instance.getContainer().getBoundingClientRect();
+      const corner = instance.unproject([width, pad.top ?? 0]);
+      setRadiusKm(distanceKm(point, { lat: corner.lat, lng: corner.lng }));
     };
     const handleMove = readView;
     let loaded = false;
