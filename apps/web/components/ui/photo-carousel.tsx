@@ -8,16 +8,17 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { Box, HStack, Icon, ImageFrame } from "@seed-design/react";
+import { Box, HStack, Icon, ImageFrame, VStack } from "@seed-design/react";
 import IconChevronLeftLine from "@karrotmarket/react-monochrome-icon/IconChevronLeftLine";
 import IconChevronRightLine from "@karrotmarket/react-monochrome-icon/IconChevronRightLine";
+import IconXmarkLine from "@karrotmarket/react-monochrome-icon/IconXmarkLine";
 import { ActionButton } from "seed-design/ui/action-button";
+import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-button";
 import useEmblaCarousel from "embla-carousel-react";
 
-import { FRAME_WIDTH } from "@/components/ui/app-frame";
-
-// 사진 여러 장을 옆으로 넘겨 보는 자리. 커뮤니티 글과 우리 동물이 함께 씀
+// 사진 여러 장을 옆으로 넘겨 보는 자리. 커뮤니티 글과 우리 동물, 제보 상세가 함께 씀
 // 한 장이 화면 폭을 다 쓰지 않아 다음 장이 옆에 걸쳐 더 있다는 것이 보임
+// 제보 상세 첫 화면은 사진이 폭을 꽉 채워야 해 fullBleed 로 걸침과 여백을 없앰
 // 누르면 같은 방식으로 넘기는 큰 화면이 열림
 
 // 브라우저 기본 가로 스크롤은 손가락과 휠에만 반응하고 마우스로 끄는 데는 반응하지 않음
@@ -82,7 +83,15 @@ function Dots({
   );
 }
 
-export function PhotoCarousel({ urls }: { urls: string[] }) {
+export type PhotoCarouselProps = {
+  urls: string[];
+  /** 켜면 폭을 꽉 채우고 걸침과 여백을 없앰. 점은 사진 위에 얹음 */
+  fullBleed?: boolean;
+  /** 화면 낭독기가 읽는 설명. 없으면 사진 으로 읽음 */
+  alt?: string;
+};
+
+export function PhotoCarousel({ urls, fullBleed = false, alt }: PhotoCarouselProps) {
   const many = urls.length > 1;
   // 한 장뿐이면 끌 것이 없어 Embla 를 멈춰 둠
   const [viewportRef, api] = useEmblaCarousel({
@@ -128,7 +137,7 @@ export function PhotoCarousel({ urls }: { urls: string[] }) {
 
   return (
     <>
-      <Box>
+      <Box position={fullBleed ? "relative" : undefined}>
         {/* Embla 는 뷰포트에 overflow: hidden, 안쪽 줄에 display: flex 를 요구함 */}
         <Box
           ref={viewportRef}
@@ -136,21 +145,47 @@ export function PhotoCarousel({ urls }: { urls: string[] }) {
           overflowY="hidden"
           onKeyDown={many ? onKeyDown : undefined}
         >
-          <HStack align="stretch" gap="x2">
+          <HStack align="stretch" gap={fullBleed ? undefined : "x2"}>
             {urls.map((url, index) => (
               <Box
-                key={url}
+                key={`${index}-${url}`}
                 // 줄어들면 모든 장이 한 화면에 들어가 넘칠 것이 없어짐
                 flexShrink={0}
-                width={many ? PEEK_BASIS : "full"}
+                width={many && !fullBleed ? PEEK_BASIS : "full"}
               >
-                <PhotoButton url={url} index={index} onOpen={open} />
+                <PhotoButton
+                  url={url}
+                  index={index}
+                  onOpen={open}
+                  fullBleed={fullBleed}
+                  alt={alt}
+                />
               </Box>
             ))}
           </HStack>
         </Box>
 
-        {many ? <Dots count={urls.length} active={active} /> : null}
+        {/* 전면일 때는 아래에 점 줄을 따로 두면 사진과 다음 절 사이가 벌어져 사진 위에 얹음
+            inset 에는 간격 토큰이 들어가지 않아 사진을 덮는 칸을 깔고 그 안에서 아래로 붙임
+            점은 보기만 하는 표시라 그 자리를 눌러도 사진이 열리게 손을 비켜 둠 */}
+        {many ? (
+          fullBleed ? (
+            <VStack
+              position="absolute"
+              top="0"
+              left="0"
+              right="0"
+              bottom="0"
+              justify="flex-end"
+              pb="x3"
+              style={{ pointerEvents: "none" }}
+            >
+              <Dots count={urls.length} active={active} onOverlay />
+            </VStack>
+          ) : (
+            <Dots count={urls.length} active={active} />
+          )
+        ) : null}
       </Box>
 
       {opened !== null ? (
@@ -164,10 +199,14 @@ function PhotoButton({
   url,
   index,
   onOpen,
+  fullBleed = false,
+  alt,
 }: {
   url: string;
   index: number;
   onOpen: (index: number) => void;
+  fullBleed?: boolean;
+  alt?: string;
 }) {
   return (
     // button 은 기본이 inline-block 이라 폭을 주지 않으면 안의 사진이 자리를 못 잡음
@@ -178,14 +217,14 @@ function PhotoButton({
       width="full"
       p="0"
       borderWidth={0}
-      borderRadius="r2"
+      borderRadius={fullBleed ? undefined : "r2"}
       overflowX="hidden"
       overflowY="hidden"
     >
       {/* 누르면 크게 열려 확대 커서를 씀. 끌 수 있다는 것은 옆에 걸친 다음 장이 알림 */}
       <button
         type="button"
-        aria-label={`사진 ${index + 1} 크게 보기`}
+        aria-label={`${alt ?? "사진"} ${index + 1} 크게 보기`}
         className="rebirth-zoomable"
         onClick={() => onOpen(index)}
       >
@@ -228,7 +267,7 @@ function StepButton({
 }
 
 /**
- * 크게 보는 화면. 사진만 남기고 나머지는 화면 가장자리로 물러남
+ * 크게 보는 화면. 창을 검게 덮어 사진만 남김
  * SEED 다이얼로그는 가운데 뜨는 흰 카드라 사진을 꽉 채우는 이 화면과 모양이 다름
  * 레시피가 면과 크기를 정해 두어 prop 으로 되돌리려면 전부 덮어써야 해 직접 겹침
  */
@@ -317,21 +356,42 @@ function PhotoViewer({
       position="fixed"
       top="0"
       bottom="0"
+      left="0"
+      right="0"
       zIndex={100}
-      bg="bg.overlay"
+      // 사진만 보는 화면이라 비치는 덮개 대신 창을 통째로 검게 덮음
+      // 세로 사진 옆에 남는 자리도 같은 검정이라 사진이 어디서 끝나는지가 또렷함
+      bg="palette.staticBlack"
       display="flex"
       flexDirection="column"
       // 사진과 점을 한 덩어리로 묶어 화면 가운데에 둠
       // 사진 칸만 늘리면 사진은 가운데, 점은 바닥이라 둘 사이가 벌어짐
       justifyContent="center"
-      // 프레임과 같은 폭으로 화면 가운데에 둠. 값은 AppFrame 이 정한 폭 하나를 따름
-      style={{
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "100%",
-        maxWidth: FRAME_WIDTH,
-      }}
     >
+      {/* 어두운 자리를 눌러도 닫히지만 닫는 곳이 눈에 보여야 함
+          isImage 가 button 을 사진 쪽으로 세어 이 단추 위에서는 덮개가 닫지 않음
+          Embla 가 사진 줄에 transform 을 걸어 그 줄이 층을 만들고 뒤에 그려짐
+          키보드로 닫기부터 닿게 DOM 에서는 앞에 두고 층으로 올려 가려지지 않게 함 */}
+      <HStack
+        className="rebirth-viewer-close"
+        position="absolute"
+        top="0"
+        left="0"
+        right="0"
+        zIndex={1}
+        px="spacingX.globalGutter"
+        justify="flex-end"
+      >
+        <ContextualFloatingButton
+          variant="layer"
+          layout="iconOnly"
+          aria-label="닫기"
+          onClick={onClose}
+        >
+          <Icon svg={<IconXmarkLine />} />
+        </ContextualFloatingButton>
+      </HStack>
+
       {/* 사진과 점을 한 덩어리로 세로로 쌓음
           점을 덮개 바닥에 따로 붙이면 사진 높이에 따라 둘 사이가 멀찍이 벌어짐 */}
       <Box
@@ -345,9 +405,9 @@ function PhotoViewer({
         overflowY="hidden"
       >
         <HStack align="stretch">
-          {urls.map((url) => (
+          {urls.map((url, index) => (
             <HStack
-              key={url}
+              key={`${index}-${url}`}
               flexShrink={0}
               // 안쪽 여백이 폭을 넘기지 않도록 테두리 기준으로 폭을 셈
               minWidth="0"
