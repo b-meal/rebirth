@@ -217,10 +217,10 @@ export function SearchScreen({ query, results, trending, nearby }: SearchScreenP
             {results.length === 0 ? (
               <VStack align="stretch" gap="x1">
                 <Text textStyle="t4Regular" color="fg.neutralMuted">
-                  조건과 맞는 제보가 없습니다
+                  조건과 맞는 제보가 없어요
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  털색이나 동네처럼 짧은 말로 다시 찾아 주십시오
+                  털색이나 동네처럼 짧은 말로 다시 찾아 주세요
                 </Text>
               </VStack>
             ) : (

@@ -124,10 +124,10 @@ export function NearbyList({ items, height }: NearbyListProps) {
       {items.length === 0 ? (
         <VStack py="x2" gap="x1" align="stretch">
           <Text textStyle="t4Regular" color="fg.neutralMuted">
-            이 지역에는 아직 제보가 없습니다
+            이 지역에는 아직 제보가 없어요
           </Text>
           <Text textStyle="t3Regular" color="fg.neutralSubtle">
-            지도를 옮기면 다른 지역의 제보를 볼 수 있습니다
+            지도를 옮기면 다른 지역의 제보를 볼 수 있어요
           </Text>
         </VStack>
       ) : (

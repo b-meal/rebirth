@@ -8,7 +8,7 @@ import { ImageResponse } from "next/og";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "다시집, 길에서 만난 보호자 없는 동물을 사진 한 장으로 제보합니다";
+export const alt = "다시집, 길에서 만난 보호자 없는 동물을 사진 한 장으로 제보해요";
 
 export default async function OpengraphImage() {
   const logo = await readFile(join(process.cwd(), "public/logo/logo-house.png"));
@@ -46,7 +46,7 @@ export default async function OpengraphImage() {
             }}
           >
             <div>길에서 만난 보호자 없는 동물을</div>
-            <div>사진 한 장으로 제보합니다</div>
+            <div>사진 한 장으로 제보해요</div>
           </div>
         </div>
       </div>

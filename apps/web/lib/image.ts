@@ -57,10 +57,10 @@ export async function processPhotoFile(
   const quality = options?.quality ?? DEFAULT_OPTIONS.quality;
 
   if (!isImageFile(file)) {
-    throw new PhotoProcessError("invalid-type", "이미지 파일만 올릴 수 있습니다");
+    throw new PhotoProcessError("invalid-type", "이미지 파일만 올릴 수 있어요");
   }
   if (file.size > MAX_SOURCE_BYTES) {
-    throw new PhotoProcessError("too-large", "25MB 이하의 사진만 올릴 수 있습니다");
+    throw new PhotoProcessError("too-large", "25MB 이하의 사진만 올릴 수 있어요");
   }
 
   const source = await decodeImage(file);
@@ -90,7 +90,7 @@ export function revokePhotoPreview(item: PhotoItem): void {
 
 export function describePhotoError(error: unknown): string {
   if (error instanceof PhotoProcessError) return error.message;
-  return "사진을 처리하지 못했습니다. 다른 사진을 선택하세요";
+  return "사진을 처리하지 못했어요. 다른 사진을 골라 주세요";
 }
 
 type DecodedImage = ImageBitmap | HTMLImageElement;
@@ -120,7 +120,7 @@ function decodeWithImageElement(file: File): Promise<HTMLImageElement> {
       reject(
         new PhotoProcessError(
           "decode-failed",
-          "사진을 읽을 수 없습니다. 다른 사진을 선택하거나 JPEG 로 저장해 다시 시도하세요",
+          "사진을 읽을 수 없어요. 다른 사진을 선택하거나 JPEG 로 저장해 다시 시도해 주세요",
         ),
       );
     };
@@ -160,7 +160,7 @@ function drawToJpeg(
   canvas.height = height;
   const context = canvas.getContext("2d");
   if (!context) {
-    throw new PhotoProcessError("decode-failed", "이 브라우저에서는 사진을 처리할 수 없습니다");
+    throw new PhotoProcessError("decode-failed", "이 브라우저에서는 사진을 처리할 수 없어요");
   }
   // 투명 PNG 의 알파 영역이 검게 남지 않도록 흰 배경 선채움
   context.fillStyle = "#ffffff";
@@ -171,7 +171,7 @@ function drawToJpeg(
     canvas.toBlob(
       (blob) => {
         if (blob) resolve(blob);
-        else reject(new PhotoProcessError("decode-failed", "사진을 저장 형식으로 바꾸지 못했습니다"));
+        else reject(new PhotoProcessError("decode-failed", "사진을 저장 형식으로 바꾸지 못했어요"));
       },
       "image/jpeg",
       quality,

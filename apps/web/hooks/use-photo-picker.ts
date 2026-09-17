@@ -130,7 +130,7 @@ export function usePhotoPicker({
       if (duplicates > 0) onDuplicateRef.current?.(duplicates);
 
       const notes: string[] = [];
-      if (list.length > room) notes.push(`사진은 최대 ${maxCount}장까지 올릴 수 있습니다`);
+      if (list.length > room) notes.push(`사진은 최대 ${maxCount}장까지 올릴 수 있어요`);
       if (failures.length === 1) notes.push(failures[0]);
       if (failures.length > 1) notes.push(`${failures[0]} (외 ${failures.length - 1}건)`);
       if (notes.length > 0) setError(notes.join(" "));

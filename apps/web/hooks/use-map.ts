@@ -90,7 +90,7 @@ export function useMap(options: MapOptions = {}): MapState {
     // 로드 뒤의 타일 실패는 지도를 접을 이유가 아니라 첫 로드 실패만 오류로 봄
     const handleError = () => {
       if (loaded) return;
-      setError("지도를 불러오지 못했습니다. 장소를 검색해 위치를 골라 주십시오");
+      setError("지도를 불러오지 못했어요. 장소를 검색해 위치를 골라 주세요");
     };
 
     instance.on("load", handleReady);

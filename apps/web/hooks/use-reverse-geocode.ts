@@ -60,7 +60,7 @@ export function useReverseGeocode(
           setResult(null);
           setError(
             body?.message ??
-              "현재 위치를 가져오지 못했습니다. 동이나 면을 직접 선택해 주십시오",
+              "현재 위치를 가져오지 못했어요. 동이나 면을 직접 선택해 주세요",
           );
           return;
         }
@@ -69,7 +69,7 @@ export function useReverseGeocode(
         // 지도를 계속 움직이면 앞 요청이 취소됨. 오류로 보지 않음
         if (cause instanceof DOMException && cause.name === "AbortError") return;
         setResult(null);
-        setError("현재 위치를 가져오지 못했습니다. 동이나 면을 직접 선택해 주십시오");
+        setError("현재 위치를 가져오지 못했어요. 동이나 면을 직접 선택해 주세요");
       } finally {
         if (inflight.current === controller) {
           inflight.current = null;
