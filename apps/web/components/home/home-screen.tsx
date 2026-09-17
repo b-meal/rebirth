@@ -11,12 +11,14 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { Box, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
+import { Box, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
 import {
   IconBellLine,
   IconChevronUpLine,
   IconCrosshairLine,
+  IconHospitalcrossShieldLine,
   IconMagnifyingglassLine,
+  IconMegaphoneLine,
   IconPawprintFill,
   IconPlusLine,
 } from "@karrotmarket/react-monochrome-icon";
@@ -71,12 +73,15 @@ const MY_LOCATION_DOT = [
 
 // 색은 상황만 알리고 무엇인지는 사진이 알림
 const PIN_TONE = {
+  lost: { bg: "bg.warningSolid", fg: "fg.warningContrast" },
   injured: { bg: "bg.criticalSolid", fg: "fg.criticalContrast" },
   inCare: { bg: "bg.informativeSolid", fg: "fg.informativeContrast" },
   roaming: { bg: "bg.brandSolid", fg: "fg.brandContrast" },
 } as const;
 
 function toneOf(item: MapMarker) {
+  // 실종이 먼저. 보호자가 찾는 중인 동물은 다른 상황 표시에 묻히면 안 됨
+  if (item.kind === "lost") return PIN_TONE.lost;
   if (item.injury === true) return PIN_TONE.injured;
   if (item.careSituation === "in_care") return PIN_TONE.inCare;
   return PIN_TONE.roaming;
@@ -104,7 +109,7 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
     >
       <button
         type="button"
-        aria-label={`${describeAnimal(item)} 제보 미리 보기`}
+        aria-label={`${item.petName || describeAnimal(item)} ${item.kind === "lost" ? "실종 신고" : "제보"} 미리 보기`}
         aria-pressed={selected}
         onClick={() => onSelect(item)}
       >
@@ -437,7 +442,7 @@ export function HomeScreen({
         </VStack>
       ) : null}
 
-      <HStack
+      <VStack
         ref={topBarRef}
         position="absolute"
         top="0"
@@ -447,8 +452,11 @@ export function HomeScreen({
         px="spacingX.globalGutter"
         pt="x3"
         gap="x2"
-        align="center"
+        align="stretch"
+        // 면이 없는 자리까지 탭을 먹으면 지도 위쪽에서 확대와 이동이 듣지 않음
+        style={{ pointerEvents: "none" }}
       >
+      <HStack gap="x2" align="center" style={{ pointerEvents: "auto" }}>
         {/* 지도 위에서는 입력을 받지 않고 검색 화면으로 넘김 */}
         <VStack
           asChild
@@ -506,6 +514,24 @@ export function HomeScreen({
           ) : null}
         </Box>
       </HStack>
+
+      {/* 첫 화면에서 무엇을 하는 곳인지 읽히도록 급한 일 둘을 지도 위에 올림
+          제보하기는 아래 떠 있는 단추가 이미 가지고 있어 여기서 빼둠 */}
+      <HStack gap="x2" align="center" width="fit-content" style={{ pointerEvents: "auto" }}>
+        <ContextualFloatingButton variant="layer" asChild>
+          <Link href="/lost/new">
+            <PrefixIcon svg={<IconMegaphoneLine />} />
+            우리 아이 찾기
+          </Link>
+        </ContextualFloatingButton>
+        <ContextualFloatingButton variant="layer" asChild>
+          <Link href="/guide/injured">
+            <PrefixIcon svg={<IconHospitalcrossShieldLine />} />
+            다친 동물
+          </Link>
+        </ContextualFloatingButton>
+      </HStack>
+      </VStack>
 
       {/* 이 묶음은 시트와 떠 있는 버튼의 자리만 잡음
           면이 없는 곳까지 탭을 먹으면 지도 아래 절반에서 확대와 이동이 듣지 않음 */}
@@ -593,9 +619,9 @@ export function HomeScreen({
           <HStack px="spacingX.globalGutter" justify="space-between" align="center" gap="x2">
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
               {!ready
-                ? "최근 발견 제보"
+                ? "최근 제보"
                 : widened
-                  ? "가까운 발견 제보"
+                  ? "가까운 제보"
                   : `${geocode.result?.areaName ?? "근처"} 반경 ${Math.max(1, Math.round(radiusKm))}km`}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted">

@@ -15,9 +15,9 @@ import {
   IconChevronRightLine,
   IconHeadsetLine,
   IconHospitalcrossShieldLine,
+  IconMegaphoneLine,
   IconPawprintLine,
   IconPersonFill,
-  IconPersonMagnifyingglassLine,
   IconWonShieldLine,
 } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -61,7 +61,7 @@ const LINKS: MineLink[] = [
 // 길에서 급히 찾는 일 셋. 로그인 전에도 여기서 바로 출발할 수 있어야 함
 const SHORTCUTS: MineLink[] = [
   { href: "/report", label: "제보하기", icon: <IconCameraLine /> },
-  { href: "/lost/new", label: "실종 신고", icon: <IconPersonMagnifyingglassLine /> },
+  { href: "/lost/new", label: "실종 신고", icon: <IconMegaphoneLine /> },
   { href: "/guide/injured", label: "다친 동물", icon: <IconHospitalcrossShieldLine /> },
 ];
 
@@ -285,7 +285,7 @@ export function MineScreen({
                   href="/mine/reports?kind=lost"
                   label="실종 신고"
                   value={counts.lost}
-                  icon={<IconPersonMagnifyingglassLine />}
+                  icon={<IconMegaphoneLine />}
                 />
               </HStack>
 

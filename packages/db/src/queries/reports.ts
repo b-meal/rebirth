@@ -223,6 +223,7 @@ export type MapListOptions = {
 /**
  * 홈 지도 마커. 격자 스냅 좌표만 고르고 exactPoint 는 선택하지 않음
  * 공개 응답은 POL-09 대로 좌표를 내주지 않으므로 서버 컴포넌트에서만 부름
+ * 발견과 실종을 함께 올림. 실종 동물은 길에서 알아보려면 평소에 눈에 익어야 함
  */
 export function listMapReports({
   fromOccurredAt,
@@ -240,6 +241,11 @@ export function listMapReports({
       occurredAt: reports.occurredAt,
       coarsePoint: reports.coarsePoint,
       coarseGridM: reports.coarseGridM,
+      kind: reports.kind,
+      // 보호자가 적어 둔 이름. 실종 신고에만 값이 있고 카드가 이름으로 부르는 데 씀
+      petName: raw<string | null>`(
+        select p.name from ${pets} p where p.id = ${reports}.pet_id
+      )`,
       // 카드에 쓸 첫 사진 경로. 서명 URL 은 호출자가 한 번에 만듦
       photoPath: raw<string | null>`(
         select p.storage_path from ${reportPhotos} p
@@ -250,9 +256,11 @@ export function listMapReports({
     .from(reports)
     .where(
       and(
-        eq(reports.kind, 'sighting'),
         eq(reports.visibility, 'public'),
-        eq(reports.lifecycle, 'active'),
+        // 보호소 입소는 찾아갈 곳이 정해져 지도에 찍지 않음
+        inArray(reports.kind, ['sighting', 'lost']),
+        // 발견은 active, 실종은 searching 이 살아 있는 상태
+        raw`${reports.lifecycle} in ('active', 'searching')`,
         // 지역만 고른 제보는 격자 좌표가 없어 마커로 찍지 않음
         isNotNull(reports.coarsePoint),
         fromOccurredAt ? gte(reports.occurredAt, fromOccurredAt) : undefined,
