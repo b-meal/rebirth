@@ -1,4 +1,5 @@
 import type { AnimalType } from "@rebirth/types";
+import { bareBreed } from "@rebirth/core/reports/breed";
 
 // 목록과 지도가 같은 문구를 쓰게 모아 둔 표기 규칙
 
@@ -38,7 +39,9 @@ export function describeAnimal({ animalType, colors, size }: AnimalLabelInput): 
 
 /** 품종은 단정하지 않음, AI 라벨링 값도 계열 추정으로만 부름 */
 export function breedLabel(breedGuess: string | null): string | null {
-  return breedGuess ? `${breedGuess} 계열 추정` : null;
+  // 꼬리말이 붙어 저장된 값이 남아 있어 두 번 붙이지 않음
+  const bare = bareBreed(breedGuess);
+  return bare ? `${bare} 계열 추정` : null;
 }
 
 // 있음, 없음, 모름 3값을 화면 문구로 옮김, null 이 모름이고 false 와 다름

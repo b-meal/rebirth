@@ -4,6 +4,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { analyzeResult, type AnalyzeResult } from "@rebirth/types";
 
+import { bareBreed } from "../reports/breed.ts";
+
 // 사진에서 외형 정보를 뽑아 제보 초안을 만듦
 // 품종을 맞히는 것이 목적이 아니라 제보를 빠르고 일관되게 정리하는 것이 목적
 
@@ -204,7 +206,7 @@ export async function analyzePhoto({
   }
 
   return {
-    result: parsed,
+    result: { ...parsed, breedGuess: bareBreed(parsed.breedGuess) },
     model: response.model,
     analyzedAt: new Date(),
   };
