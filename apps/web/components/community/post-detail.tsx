@@ -83,7 +83,7 @@ export function PostDetail({
           </HStack>
 
           <Text
-            as="h1"
+            as="h2"
             textStyle="t7Bold"
             color="fg.neutral"
             style={{ overflowWrap: "anywhere" }}

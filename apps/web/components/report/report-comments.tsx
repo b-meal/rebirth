@@ -43,7 +43,7 @@ export function ReportComments({ comments }: { comments: ReportComment[] }) {
     <VStack align="stretch" gap="x4">
       {comments.map((comment) => (
         <HStack key={comment.id} gap="x2_5" align="flex-start">
-          <Avatar size="24" fallback={<Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />} />
+          <Avatar size="24" alt="" fallback={<Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />} />
           <VStack align="stretch" gap="x0_5" minWidth="0">
             <HStack gap="x1_5" align="center">
               <Text textStyle="t3Bold" color="fg.neutral">

@@ -188,6 +188,7 @@ export function LostDetail({
           <HStack gap="x2" align="center">
             <Avatar
               size="24"
+              alt=""
               fallback={<Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />}
             />
             {/* 내 신고를 내가 열었을 때 보호자가 라고 쓰면 남이 적은 글처럼 읽힘 */}
