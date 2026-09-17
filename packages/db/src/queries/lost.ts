@@ -3,7 +3,7 @@ import 'server-only'
 import { and, desc, eq, gte, lte, ne, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
-import { matchScores, reportPhotos, reports } from '../schema'
+import { matchScores, pets, reportPhotos, reports } from '../schema'
 
 /* 실종 신고와 후보 조회. 연락처를 받지 않고 토큰으로만 접근 */
 
@@ -88,6 +88,48 @@ export async function findLostForSighting(input: {
     .orderBy(desc(reports.occurredAt))
     .limit(input.limit ?? 50)
 }
+
+/**
+ * 이 계정이 낸 실종 신고. 발견 제보 하나와 견주려고 읽음
+ * 후보 모집과 달리 반경과 기간으로 좁히지 않음
+ * 내 신고는 몇 건뿐이라 미리 걸러 내면 왜 빠졌는지 알 수 없는 빈 화면이 됨
+ * 끝난 신고는 뺌. 이미 만난 아이를 다시 견줄 대상으로 올리지 않음
+ */
+export function findMyLostForSighting(input: { userId: string; limit?: number }) {
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      colors: reports.colors,
+      size: reports.size,
+      collar: reports.collar,
+      injury: reports.injury,
+      earTip: reports.earTip,
+      coarsePoint: reports.coarsePoint,
+      locationSource: reports.locationSource,
+      areaName: reports.areaName,
+      occurredAt: reports.occurredAt,
+      // 적어 둔 이름. 보호자 화면이라 흰색 소형견 대신 이름으로 부름
+      petName: raw<string | null>`(
+        select p.name from ${pets} p where p.id = ${reports}.pet_id
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.reporterId, input.userId),
+        eq(reports.kind, 'lost'),
+        eq(reports.lifecycle, 'searching'),
+        ne(reports.visibility, 'deleted'),
+      ),
+    )
+    .orderBy(desc(reports.occurredAt))
+    .limit(input.limit ?? 20)
+}
+
+export type MyLostForSighting = Awaited<
+  ReturnType<typeof findMyLostForSighting>
+>[number]
 
 /**
  * 점수 계산에 쓸 실종 신고 값. 격자 좌표를 포함해 서버 안에서만 씀
