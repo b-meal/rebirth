@@ -25,6 +25,13 @@ const MIN_DEGREES = 1.5;
 // Safari 가 이보다 큰 오차를 말하면 방향을 감춤, 보정 전이거나 자석이 흔들리는 상태
 const MAX_ACCURACY_DEGREES = 50;
 
+// 나침반이 이 시간 안에 값을 주지 않으면 자력계가 없는 기기로 보고 위치 쪽으로 물러섬
+const COMPASS_WAIT_MS = 3000;
+
+// 걷기 시작으로 볼 속도와 멈춤으로 볼 속도, 둘을 벌려 경계에서 화살이 깜빡이지 않게 함
+const MOVING_MPS = 0.7;
+const STOPPED_MPS = 0.3;
+
 /** iOS 는 손가락이 닿은 순간에만 물어볼 수 있어 켜는 시점을 부르는 쪽이 정함 */
 function permissionApi(): PermissionApi | null {
   if (typeof DeviceOrientationEvent === "undefined") return null;
@@ -48,6 +55,21 @@ function readHeading(event: CompassEvent): number | null {
 /** 두 각도의 짧은 쪽 차이, 359도와 1도가 358도 차이로 읽히지 않게 함 */
 function difference(from: number, to: number): number {
   return ((to - from + 540) % 360) - 180;
+}
+
+/**
+ * 위치가 알려 주는 진행 방향. 나침반이 없는 기기에서 방향을 아는 길은 이것뿐
+ * 서 있으면 방향이 없어 null, 걷는 중에만 값이 있음
+ */
+function readCourse(coords: GeolocationCoordinates, walking: boolean): number | null {
+  const speed = coords.speed;
+  if (typeof speed === "number" && Number.isFinite(speed)) {
+    if (!(walking ? speed >= STOPPED_MPS : speed >= MOVING_MPS)) return null;
+  }
+  const course = coords.heading;
+  // 멈춰 있을 때 iOS 는 음수, 안드로이드는 지난 값을 그대로 두기도 함
+  if (typeof course !== "number" || !Number.isFinite(course) || course < 0) return null;
+  return course % 360;
 }
 
 export type DeviceHeadingOptions = {
@@ -119,15 +141,8 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
       latest.current(smoothed);
     };
 
-    // 두 이벤트가 같이 오는 기기가 있어 먼저 쓸 만한 값을 준 쪽만 계속 씀
-    let source: string | null = null;
-
-    // 센서는 초당 수십 번 올라와 한 프레임에 한 번만 반영함
-    const handle = (event: Event) => {
-      if (source !== null && event.type !== source) return;
-      const next = readHeading(event as CompassEvent);
+    const publish = (next: number | null) => {
       if (next === null) {
-        if (source === null) return;
         pending = null;
         smoothed = null;
         if (sent !== null) {
@@ -136,9 +151,56 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
         }
         return;
       }
-      source ??= event.type;
       pending = next;
       if (!frame) frame = requestAnimationFrame(flush);
+    };
+
+    // 두 이벤트가 같이 오는 기기가 있어 먼저 쓸 만한 값을 준 쪽만 계속 씀
+    let source: string | null = null;
+    let watch = 0;
+    let walking = false;
+
+    // 자력계가 없으면 나침반 이벤트는 와도 값이 비어 있음, 그때만 위치 쪽을 켬
+    const stopWatch = () => {
+      if (!watch) return;
+      navigator.geolocation.clearWatch(watch);
+      watch = 0;
+      walking = false;
+    };
+
+    const startWatch = () => {
+      if (watch || typeof navigator === "undefined" || !navigator.geolocation) return;
+      watch = navigator.geolocation.watchPosition(
+        ({ coords }) => {
+          // 나침반이 뒤늦게 살아나면 그쪽이 바라보는 방향을 알아 더 정확함
+          if (source !== null) {
+            stopWatch();
+            return;
+          }
+          const course = readCourse(coords, walking);
+          walking = course !== null;
+          publish(course);
+        },
+        () => {},
+        { enableHighAccuracy: true, maximumAge: 1000 },
+      );
+    };
+
+    const fallback = window.setTimeout(startWatch, COMPASS_WAIT_MS);
+
+    // 센서는 초당 수십 번 올라와 한 프레임에 한 번만 반영함
+    const handle = (event: Event) => {
+      if (source !== null && event.type !== source) return;
+      const next = readHeading(event as CompassEvent);
+      if (next === null) {
+        if (source === null) return;
+        publish(null);
+        return;
+      }
+      source ??= event.type;
+      window.clearTimeout(fallback);
+      stopWatch();
+      publish(next);
     };
 
     // 어느 쪽이 값을 주는지는 기기가 정함, 안드로이드는 절대 방향 쪽, Safari 는 기본 쪽
@@ -146,6 +208,8 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
     for (const type of types) window.addEventListener(type, handle);
     return () => {
       for (const type of types) window.removeEventListener(type, handle);
+      window.clearTimeout(fallback);
+      stopWatch();
       if (frame) cancelAnimationFrame(frame);
       latest.current(null);
     };
