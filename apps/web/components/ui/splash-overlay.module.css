@@ -118,10 +118,10 @@
   }
 }
 
+/* 덮개가 걷히는 동안 지도가 메인 스레드를 잡으므로 합성 단계에서 도는 opacity 만 둠 */
 @keyframes leave {
   to {
     opacity: 0;
-    visibility: hidden;
   }
 }
 
