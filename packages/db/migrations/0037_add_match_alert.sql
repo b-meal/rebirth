@@ -1,0 +1,2 @@
+ALTER TABLE "reports" ADD COLUMN "match_alert" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "reports" ADD COLUMN "match_alert_read_at" timestamp with time zone DEFAULT now() NOT NULL;

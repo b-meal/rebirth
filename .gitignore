@@ -6,10 +6,14 @@ node_modules/
 
 # builds
 .next/
+# 번들 실험용으로 next build -d 에 넘기는 대체 출력 경로
+.next-*/
 out/
 dist/
 build/
+storybook-static/
 *.tsbuildinfo
+next-env.d.ts
 
 # env
 .env
@@ -33,8 +37,34 @@ Thumbs.db
 !.vscode/extensions.json
 
 # local scratch
+.playwright-mcp/
 /tmp/
 /scratch/
+# 저장소 루트에 임시로 만드는 검증 스크립트와 화면 캡처
+/tmp-*
+/*.png
+/*.jpg
+/*.bak
+
+# swagger mcp 로컬 캐시
+.swagger-cache/
+.swagger-mcp
 
 # 로컬 이미지 작업 산출물
 generated-images/
+
+# next dev 가 앱마다 자동 생성. 프로젝트 규칙은 루트 CLAUDE.md 하나만 씀
+apps/*/AGENTS.md
+apps/*/CLAUDE.md
+
+# playwright 실행 산출물
+test-results/
+playwright-report/
+.femc/
+apps/web/public/maplibre/
+
+# 시드 스크립트 장소 캐시
+packages/db/scripts/.places-cache.json
+packages/db/scripts/.rescue-geo.json
+packages/db/scripts/.rescue-eval.json
+.env*

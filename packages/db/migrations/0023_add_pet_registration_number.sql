@@ -1,0 +1,1 @@
+ALTER TABLE "pets" ADD COLUMN "registration_number" text;

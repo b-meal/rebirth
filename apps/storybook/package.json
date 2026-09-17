@@ -1,0 +1,27 @@
+{
+  "name": "@rebirth/storybook",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
+  },
+  "dependencies": {
+    "@karrotmarket/react-monochrome-icon": "^1.26.0",
+    "@rebirth/core": "workspace:*",
+    "@seed-design/css": "^2.7.0",
+    "@seed-design/react": "^2.4.1",
+    "pretendard": "1.3.9",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@storybook/react-vite": "10.6.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5",
+    "storybook": "10.6.0",
+    "typescript": "^5",
+    "vite": "^8"
+  }
+}

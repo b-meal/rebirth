@@ -1,0 +1,21 @@
+{
+  "name": "rebirth",
+  "private": true,
+  "packageManager": "pnpm@11.0.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "e2e": "playwright test",
+    "clean:cache": "node scripts/clean-cache.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "turbo": "^2.10.12"
+  }
+}

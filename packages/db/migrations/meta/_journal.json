@@ -1,0 +1,272 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1788923311955,
+      "tag": "0000_enable_postgis",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788923314043,
+      "tag": "0001_init_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788923333451,
+      "tag": "0002_lock_down_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788933306708,
+      "tag": "0003_add_care_situation",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788935657752,
+      "tag": "0004_add_report_flags",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788935658752,
+      "tag": "0005_lock_down_flags_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788958564071,
+      "tag": "0006_add_manage_and_drafts",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788958565071,
+      "tag": "0007_lock_down_new_tables_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789023730291,
+      "tag": "0008_add_report_comments",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1789023731291,
+      "tag": "0009_lock_down_comments_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789025038224,
+      "tag": "0010_add_breed_guess",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789025462542,
+      "tag": "0011_add_report_interests",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789025463542,
+      "tag": "0012_lock_down_interests_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789025464542,
+      "tag": "0013_add_user_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1789184552310,
+      "tag": "0014_add_interest_user",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1789184972181,
+      "tag": "0015_add_pets",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1789184973181,
+      "tag": "0016_lock_down_pets_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1789201570066,
+      "tag": "0017_add_community",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1789201571066,
+      "tag": "0018_lock_down_community_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789205671014,
+      "tag": "0019_add_rescue_support_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789212260155,
+      "tag": "0020_add_community_area_idx",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1789225478666,
+      "tag": "0021_add_pet_photos",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1789225478667,
+      "tag": "0022_lock_down_pet_photos_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1789302953191,
+      "tag": "0023_add_pet_registration_number",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1789386161441,
+      "tag": "0024_add_shelters",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1789386162441,
+      "tag": "0025_lock_down_shelters_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1789388864408,
+      "tag": "0026_add_match_reviews",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1789388865408,
+      "tag": "0027_lock_down_match_reviews_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1789389678387,
+      "tag": "0028_add_report_embeddings",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1789389679387,
+      "tag": "0029_lock_down_report_embeddings_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1789394172283,
+      "tag": "0030_add_embedding_projection",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1789397399311,
+      "tag": "0031_add_gov_data",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1789397400311,
+      "tag": "0032_lock_down_gov_data_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1789398040419,
+      "tag": "0033_add_area_subscriptions",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1789398041419,
+      "tag": "0034_lock_down_area_subscriptions_rls",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1789549829422,
+      "tag": "0035_add_report_pet",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1789578537976,
+      "tag": "0036_add_report_pet_idx",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1789579931528,
+      "tag": "0037_add_match_alert",
+      "breakpoints": true
+    }
+  ]
+}
