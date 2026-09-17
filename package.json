@@ -12,6 +12,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "e2e": "playwright test",
+    "tunnel": "node scripts/tunnel.mjs",
     "clean:cache": "node scripts/clean-cache.mjs"
   },
   "devDependencies": {

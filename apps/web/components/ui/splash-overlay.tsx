@@ -8,11 +8,16 @@ import Link from "next/link";
 import { Box, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 
+import { releaseSplashGate } from "@/lib/splash-gate";
+
 import styles from "./splash-overlay.module.css";
 
 const FADE_MS = 240;
 const LOAD_TIMEOUT_MS = 3000;
-const SPLASH_IMAGE = "/splash/dasijip-splash-ribbon.png";
+// 쉼표를 그리는 글꼴을 기다리는 상한, 넘기면 덮개까지 늦어지므로 대체 글꼴로 시작
+const FONT_WAIT_MS = 1000;
+// 로고가 뜨는 시점은 이 파일이 도착한 순간이라 무게를 가장 먼저 줄임, PNG 563KB 대비 9KB
+const SPLASH_IMAGE = "/splash/dasijip-splash-ribbon.webp";
 
 const TIMING = {
   "--splash-fade": `${FADE_MS}ms`,
@@ -22,7 +27,25 @@ const TIMING = {
 export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
   // 공통 프레임의 마운트 상태로 문서 첫 진입과 내부 화면 이동 구분
   const [visible, setVisible] = useState(true);
-  const [ready, setReady] = useState(false);
+  const [imageReady, setImageReady] = useState(false);
+  const [fontReady, setFontReady] = useState(false);
+
+  // 쉼표만 웹폰트로 그려 글꼴이 늦게 닿으면 보이는 중에 글리프가 바뀌므로 로고 이미지와 함께 기다림
+  const ready = imageReady && fontReady;
+
+  useEffect(() => {
+    let alive = true;
+    const done = () => {
+      if (alive) setFontReady(true);
+    };
+    const timer = setTimeout(done, FONT_WAIT_MS);
+    // 글꼴 API 가 없는 브라우저는 상한 타이머만 남음
+    void document.fonts?.ready.then(done);
+    return () => {
+      alive = false;
+      clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (!visible || ready) return;
@@ -31,6 +54,11 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
     const timer = setTimeout(() => setVisible(false), LOAD_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [ready, visible]);
+
+  // 덮개가 걷힌 뒤에야 위치 권한 팝업이 뜨도록 알림
+  useEffect(() => {
+    if (!visible) releaseSplashGate();
+  }, [visible]);
 
   if (!visible) return null;
 
@@ -67,7 +95,7 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
           unoptimized
           draggable={false}
           className={styles.base}
-          onLoad={() => setReady(true)}
+          onLoad={() => setImageReady(true)}
           onError={() => setVisible(false)}
         />
         {/* 원본의 두 단어를 화면에서 잘라 이동한 뒤 전체 이미지로 전환 */}

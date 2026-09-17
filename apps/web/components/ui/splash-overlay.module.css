@@ -92,9 +92,10 @@
   animation-name: join-home, expire;
 }
 
+/* 왼쪽 글자와의 틈 3px 가 메워지는 30ms 뒤, 닿는 순간 자리를 내주고 빠짐 */
 .root[data-ready="true"] .comma {
   visibility: visible;
-  animation: remove-comma 180ms 400ms ease-out both;
+  animation: remove-comma 70ms calc(var(--join-delay) + 30ms) ease-out both;
 }
 
 @keyframes reveal {

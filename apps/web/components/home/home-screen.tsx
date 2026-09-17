@@ -11,16 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import {
-  Box,
-  Grid,
-  HStack,
-  Icon,
-  ImageFrame,
-  PrefixIcon,
-  Text,
-  VStack,
-} from "@seed-design/react";
+import { Box, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
 import {
   IconBellLine,
   IconChevronUpLine,
@@ -43,7 +34,8 @@ import { useCurrentPosition } from "@/hooks/use-current-position";
 import { useMap } from "@/hooks/use-map";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
-import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
+import { NearbyList } from "@/components/home/nearby-list";
+import type { ReportCardItem } from "@/components/report/report-card";
 
 // 지도가 맨 아래, 그 위에 시트, 맨 위에 떠 있는 내비게이션을 겹치는 첫 화면
 
@@ -51,9 +43,6 @@ export type MapMarker = ReportCardItem & {
   // 격자 스냅한 공개용 좌표, 정확한 목격 지점이 아님
   point: LatLng;
 };
-
-// 시트에 셀 반경, 지도 중심에서 이 거리 안의 제보만 셈
-const NEARBY_RADIUS_KM = 3;
 
 // 반경 안에 하나도 없을 때 대신 보여 줄 가까운 제보 수
 const NEARBY_FALLBACK_COUNT = 12;
@@ -125,7 +114,16 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
         onClick={() => onSelect(item)}
       >
         {item.photoUrl ? (
-          <ImageFrame ratio={1} width="full" src={item.photoUrl} alt="" borderRadius="full" />
+          // 지도에 얹힌 핀 수백 개가 한꺼번에 사진을 받지 않도록 화면에 든 것만 받음
+          <ImageFrame
+            ratio={1}
+            width="full"
+            src={item.photoUrl}
+            alt=""
+            borderRadius="full"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           // 사진이 없거나 서명이 만료되면 발자국으로 대체
           <VStack align="center" justify="center" height="full" borderRadius="full">
@@ -175,7 +173,7 @@ export function HomeScreen({
   const router = useRouter();
   const snackbar = useSnackbarAdapter();
   const position = useCurrentPosition({ immediate: true });
-  const { containerRef, status, error, center, moveTo, map } = useMap();
+  const { containerRef, status, error, center, radiusKm, moveTo, map } = useMap();
 
   const ready = status === "ready";
   // 지도 중심의 행정동을 카카오 로컬 API 로 확인해 시트 제목에 씀
@@ -186,6 +184,28 @@ export function HomeScreen({
       onClose: () => {},
       render: () => <Snackbar message={message} />,
     });
+
+  // 검색창과 시트가 지도를 덮어 그 사이만 실제로 보이는 구간
+  const topBarRef = useRef<HTMLDivElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+
+  // 지도 중심을 보이는 구간 한가운데로 옮겨 내 위치가 시트 쪽으로 밀려 내려가지 않게 함
+  useEffect(() => {
+    if (!map) return;
+    const apply = () => {
+      const height = window.innerHeight;
+      const top = topBarRef.current?.getBoundingClientRect().bottom ?? 0;
+      const sheetTop = sheetRef.current?.getBoundingClientRect().top ?? height;
+      // 시트를 펼친 채 화면이 바뀌면 여백이 지도보다 커져 남는 구간이 사라지므로 절반으로 묶음
+      const bottom = Math.max(Math.min(height - sheetTop, (height - top) / 2), 0);
+      map.setPadding({ top, bottom, left: 0, right: 0 });
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+    };
+  }, [map]);
 
   // 권한 응답이 늦게 와도 첫 도착에만 옮겨 사용자가 끌어 둔 화면을 되돌리지 않음
   const centered = useRef(false);
@@ -235,7 +255,7 @@ export function HomeScreen({
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
   const { nearby, widened } = useMemo(() => {
     if (!ready) return { nearby: markers, widened: false };
-    const inRadius = markers.filter((item) => distanceKm(center, item.point) <= NEARBY_RADIUS_KM);
+    const inRadius = markers.filter((item) => distanceKm(center, item.point) <= radiusKm);
     if (inRadius.length > 0) return { nearby: inRadius, widened: false };
     const sorted = [...markers]
       .map((item) => ({ item, km: distanceKm(center, item.point) }))
@@ -243,7 +263,7 @@ export function HomeScreen({
       .slice(0, NEARBY_FALLBACK_COUNT)
       .map((row) => row.item);
     return { nearby: sorted, widened: sorted.length > 0 };
-  }, [ready, center, markers]);
+  }, [ready, center, radiusKm, markers]);
 
   const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
@@ -423,6 +443,7 @@ export function HomeScreen({
       ) : null}
 
       <VStack
+        ref={topBarRef}
         position="absolute"
         top="0"
         left="0"
@@ -573,6 +594,7 @@ export function HomeScreen({
           </VStack>
         ) : (
         <VStack
+          ref={sheetRef}
           as="section"
           align="stretch"
           gap="x2"
@@ -600,32 +622,14 @@ export function HomeScreen({
                 ? "최근 제보"
                 : widened
                   ? "가까운 제보"
-                  : `${geocode.result?.areaName ?? "근처"} 반경 ${NEARBY_RADIUS_KM}km`}
+                  : `${geocode.result?.areaName ?? "근처"} 반경 ${Math.max(1, Math.round(radiusKm))}km`}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted">
               {nearby.length}건
             </Text>
           </HStack>
 
-          {/* 아래 여백은 떠 있는 내비게이션이 가리는 만큼 비워 두는 자리 */}
-          <Box height={`${Math.round(sheetRatio * 100)}dvh`} pb="x16" overflowY="auto">
-            {nearby.length === 0 ? (
-              <VStack px="spacingX.globalGutter" py="x2" gap="x1" align="stretch">
-                <Text textStyle="t4Regular" color="fg.neutralMuted">
-                  이 지역에는 아직 제보가 없습니다
-                </Text>
-                <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  지도를 옮기면 다른 지역의 제보를 볼 수 있습니다
-                </Text>
-              </VStack>
-            ) : (
-              <Grid columns={2} gap="x4" px="spacingX.globalGutter">
-                {nearby.map((item) => (
-                  <ReportCard key={item.id} item={item} />
-                ))}
-              </Grid>
-            )}
-          </Box>
+          <NearbyList items={nearby} height={`${Math.round(sheetRatio * 100)}dvh`} />
         </VStack>
         )}
       </VStack>
