@@ -11,11 +11,17 @@ import {
   Text,
   VStack,
 } from "@seed-design/react";
-import { IconCameraFill, IconPictureFill, IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
+import {
+  IconCameraFill,
+  IconExclamationmarkTriangleFill,
+  IconPictureFill,
+  IconXmarkFill,
+} from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
-import { DismissibleCallout } from "seed-design/ui/callout";
+import { Callout, DismissibleCallout } from "seed-design/ui/callout";
 
 import type { PhotoPickerState } from "@/hooks/use-photo-picker";
+import type { PhotoPrecheckState } from "@/hooks/use-photo-precheck";
 import { PhotoPickerInput, type PhotoPickerInputHandle } from "@/components/ui/photo-picker-input";
 import { ScreenBody, Section } from "@/components/ui/screen";
 import { ReportPhotoHero } from "./report-photo-hero";
@@ -26,8 +32,15 @@ import { ReportPhotoHero } from "./report-photo-hero";
 // 레퍼런스가 오면 이 문안 자리에 예시 이미지를 붙임
 const TIPS = ["얼굴이 보이게", "몸 전체가 들어오면 더 좋아요", "다가가지 말고 그 자리에서"];
 
+// 선검사가 동물을 못 찾았을 때. 막지 않고 알리기만 해 오판이 제보를 끊지 않게 함
+const NOT_ANIMAL_ONE = "이 사진에서 동물이 보이지 않아요. 다시 고르거나 그대로 진행할 수 있어요";
+const notAnimalMany = (count: number) =>
+  `사진 ${count}장에서 동물이 보이지 않아요. 다시 고르거나 그대로 진행할 수 있어요`;
+
 export type ReportCaptureProps = {
   picker: PhotoPickerState;
+  /** 고른 사진에 동물이 보이는지 1단계에서 미리 물어본 결과 */
+  precheck: PhotoPrecheckState;
   /** 장치 조회가 끝나기 전에는 null. 모바일이 기본이라 그동안 촬영으로 둠 */
   cameraAvailable: boolean | null;
   step: number;
@@ -38,6 +51,7 @@ export type ReportCaptureProps = {
 
 export function ReportCapture({
   picker,
+  precheck,
   cameraAvailable,
   step,
   total,
@@ -184,31 +198,56 @@ export function ReportCapture({
         </Section>
 
         <Grid columns={3} gap="x2">
-          {photos.map((photo, index) => (
-            // 한 장만 빼는 일이 잦아 사진마다 지우는 자리를 둠. 전체 비우기는 아래 버튼이 함
-            <ImageFrame
-              key={photo.id}
-              src={photo.previewUrl}
-              alt={index === 0 ? "대표 사진" : `사진 ${index + 1}`}
-              ratio={1}
-              width="full"
-              borderRadius="r3"
-              stroke
-            >
-              <ImageFrameFloater placement="top-end" offsetX="x2" offsetY="x2">
-                <ActionButton
-                  type="button"
-                  variant="neutralSolid"
-                  size="xsmall"
-                  layout="iconOnly"
-                  aria-label={`사진 ${index + 1} 삭제`}
-                  onClick={() => picker.removePhoto(photo.id)}
-                >
-                  <Icon svg={<IconXmarkFill />} />
-                </ActionButton>
-              </ImageFrameFloater>
-            </ImageFrame>
-          ))}
+          {photos.map((photo, index) => {
+            const flagged = precheck.verdictOf(photo.id) === "not-animal";
+            return (
+              // 한 장만 빼는 일이 잦아 사진마다 지우는 자리를 둠. 전체 비우기는 아래 버튼이 함
+              <ImageFrame
+                key={photo.id}
+                src={photo.previewUrl}
+                alt={index === 0 ? "대표 사진" : `사진 ${index + 1}`}
+                ratio={1}
+                width="full"
+                borderRadius="r3"
+                stroke
+              >
+                <ImageFrameFloater placement="top-end" offsetX="x2" offsetY="x2">
+                  <ActionButton
+                    type="button"
+                    variant="neutralSolid"
+                    size="xsmall"
+                    layout="iconOnly"
+                    aria-label={`사진 ${index + 1} 삭제`}
+                    onClick={() => picker.removePhoto(photo.id)}
+                  >
+                    <Icon svg={<IconXmarkFill />} />
+                  </ActionButton>
+                </ImageFrameFloater>
+
+                {/* 어느 사진이 걸렸는지 칸 위에서 바로 보이게 함. 아래 문구가 무엇을 하라는지 말함 */}
+                {flagged ? (
+                  <ImageFrameFloater placement="bottom-start" offsetX="x1_5" offsetY="x1_5">
+                    <VStack
+                      align="center"
+                      justify="center"
+                      width="x6"
+                      height="x6"
+                      borderRadius="full"
+                      bg="bg.warningSolid"
+                      role="img"
+                      aria-label={`사진 ${index + 1} 에서 동물이 보이지 않음`}
+                    >
+                      <Icon
+                        svg={<IconExclamationmarkTriangleFill />}
+                        size="x3_5"
+                        color="fg.warningContrast"
+                      />
+                    </VStack>
+                  </ImageFrameFloater>
+                ) : null}
+              </ImageFrame>
+            );
+          })}
           {isFull ? null : (
             <VStack
               asChild
@@ -233,6 +272,18 @@ export function ReportCapture({
             </VStack>
           )}
         </Grid>
+
+        {precheck.flagged.length > 0 ? (
+          <Callout
+            tone="warning"
+            prefixIcon={<IconExclamationmarkTriangleFill />}
+            description={
+              precheck.flagged.length === 1
+                ? NOT_ANIMAL_ONE
+                : notAnimalMany(precheck.flagged.length)
+            }
+          />
+        ) : null}
 
         {error ? (
           <DismissibleCallout tone="critical" description={error} onDismiss={dismissError} />

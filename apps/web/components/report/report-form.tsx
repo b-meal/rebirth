@@ -25,6 +25,7 @@ import {
 import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
 import { useCameraAvailable } from "@/hooks/use-camera-available";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
+import { usePhotoPrecheck } from "@/hooks/use-photo-precheck";
 import { usePhotoUpload } from "@/hooks/use-photo-upload";
 import { useReportDraft, type ReportDraft, type ReportStep } from "@/hooks/use-report-draft";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
@@ -117,6 +118,9 @@ export function ReportForm() {
       setUploadIds([]);
     },
   });
+
+  // 1단계에서 고르는 즉시 동물 유무만 물어봄. 2단계로 넘어가도 결과가 남게 여기에 둠
+  const precheck = usePhotoPrecheck(photos);
 
   useEffect(() => {
     // 사진은 File 이라 복원되지 않으므로 새로고침은 늘 1단계에서 다시 시작함
@@ -304,6 +308,7 @@ export function ReportForm() {
       {step === 1 ? (
         <ReportCapture
           picker={picker}
+          precheck={precheck}
           cameraAvailable={cameraAvailable}
           step={step}
           total={TOTAL_STEPS}

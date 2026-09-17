@@ -1,10 +1,16 @@
 // 브라우저 전용 이미지 처리. 캔버스 재인코딩으로 EXIF(GPS 포함) 제거와 용량 축소를 함께 수행
 // design-system-allow:color 캔버스 픽셀 값이라 CSS 토큰을 쓸 수 없음
 
+// 묶음 입구의 precheck 는 server-only 라 클라이언트에서 막힘
+// 축소 크기 상수만 쓰므로 파일을 곧장 가리킴
+import { PRECHECK_MAX_EDGE } from "@rebirth/core/vision/precheck-prompt";
+
 export type PhotoItem = {
   id: string;
   // 재인코딩된 JPEG. 업로드에 그대로 사용
   file: File;
+  // 1단계 선검사로 보내는 축소본. 같은 디코드에서 한 번 더 그려 따로 읽지 않음
+  precheckFile: File;
   // 고른 원본을 가리키는 열쇠. 같은 사진을 두 번 고르는지 보는 데만 씀
   // 재인코딩하면 이름이 바뀌어 file 로는 같은 사진인지 알 수 없음
   sourceKey?: string;
@@ -40,6 +46,9 @@ export type ProcessPhotoOptions = {
 
 const DEFAULT_OPTIONS: Required<ProcessPhotoOptions> = { maxEdge: 1600, quality: 0.85 };
 
+// 선검사 축소본 품질. 평가를 이 값으로 돌려 오거부 0% 를 확인함
+const PRECHECK_QUALITY = 0.85;
+
 // iOS 앨범의 HEIC 는 type 이 비어 오는 경우가 있어 확장자로 보조 판별
 const HEIC_EXTENSION = /\.(heic|heif)$/i;
 
@@ -68,13 +77,22 @@ export async function processPhotoFile(
     const { width: sourceWidth, height: sourceHeight } = sizeOf(source);
     const { width, height } = fitWithin(sourceWidth, sourceHeight, maxEdge);
     const blob = await drawToJpeg(source, width, height, quality);
-    const output = new File([blob], toJpegName(file.name), {
+    const name = toJpegName(file.name);
+    const output = new File([blob], name, {
       type: "image/jpeg",
       lastModified: Date.now(),
     });
+
+    const small = fitWithin(sourceWidth, sourceHeight, PRECHECK_MAX_EDGE);
+    const smallBlob = await drawToJpeg(source, small.width, small.height, PRECHECK_QUALITY);
+
     return {
       id: createId(),
       file: output,
+      precheckFile: new File([smallBlob], name, {
+        type: "image/jpeg",
+        lastModified: output.lastModified,
+      }),
       previewUrl: URL.createObjectURL(output),
       width,
       height,
