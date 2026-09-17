@@ -37,6 +37,9 @@ async function loadMarkers(): Promise<MapMarker[]> {
       careSituation: row.careSituation,
       injury: row.injury,
       areaName: row.areaName,
+      // 질의가 두 종류만 고르므로 보호소 입소는 여기 오지 않음
+      kind: row.kind as "sighting" | "lost",
+      petName: row.petName,
       sinceLabel: sinceLabel(row.occurredAt),
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
       point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
