@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { HStack, Icon, ResponsivePair, Text, VStack } from "@seed-design/react";
 import {
   IconCheckmarkCircleFill,
+  IconLockLine,
   IconMagnifyingglassSparkleFill,
 } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -21,6 +22,7 @@ import {
 import { Callout } from "seed-design/ui/callout";
 import { Switch } from "seed-design/ui/switch";
 
+import { startManaging } from "@/app/r/[id]/actions";
 import { toggleMatchAlert } from "@/app/mine/notifications/actions";
 import { withObject } from "@/lib/report-label";
 import { SectionCard, SectionTitle } from "@/components/ui/screen";
@@ -57,6 +59,7 @@ export function LostOwnerPanel({
   // 서버가 다시 그릴 때까지 스위치가 눌린 대로 보이게 화면이 먼저 값을 들고 있음
   const [alertOn, setAlertOn] = useState(matchAlert);
   const [alertPending, startAlert] = useTransition();
+  const [startPending, startManage] = useTransition();
 
   const searching = lifecycle === "searching";
 
@@ -148,11 +151,29 @@ export function LostOwnerPanel({
           </VStack>
         ) : null
       ) : (
-        // 로그인만으로는 고칠 수 없음. 어디로 가야 하는지만 알림
-        <Callout
-          tone="informative"
-          description="후보 확인과 상태 변경은 신고할 때 받은 관리 주소로 들어와야 열려요"
-        />
+        // 관리 주소를 잃어도 계정으로 다시 열 수 있음. 막다른 길을 두지 않음
+        <VStack align="stretch" gap="x2">
+          <Callout
+            tone="informative"
+            description="이 브라우저에는 관리 권한이 없어요. 내 신고가 맞으면 바로 열 수 있어요"
+          />
+          <ActionButton
+            variant="neutralSolid"
+            size="large"
+            loading={startPending}
+            onClick={() => {
+              setError(null);
+              startManage(async () => {
+                const ok = await startManaging(reportId);
+                if (!ok) setError("권한을 열지 못했어요. 로그인 상태를 확인해 주세요");
+              });
+            }}
+          >
+            <Icon svg={<IconLockLine />} />
+            내 신고 관리 열기
+          </ActionButton>
+          {error ? <Callout tone="critical" description={error} /> : null}
+        </VStack>
       )}
 
       <AlertDialogRoot
