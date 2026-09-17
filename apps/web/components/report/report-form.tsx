@@ -10,7 +10,7 @@ import {
   BottomSheetContent,
   BottomSheetRoot,
 } from "seed-design/ui/bottom-sheet";
-import { Callout } from "seed-design/ui/callout";
+import { ActionableCallout, Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import {
   AlertDialogAction,
@@ -46,6 +46,7 @@ const MAX_PHOTOS = 2;
 // 서버가 문구를 못 내려줬을 때만 쓰는 대비값. 평소에는 guidance 의 문구가 그대로 옴
 const NOT_ANIMAL_FALLBACK = "동물이 보이지 않아요. 동물이 담긴 사진으로 다시 찍어 주세요";
 const ANALYZE_FAILED_FALLBACK = "잠시 후 다시 시도해 주세요";
+const UPLOAD_FAILED_FALLBACK = "사진을 올리지 못했어요";
 
 const STEP_LABEL: Record<ReportStep, string> = {
   1: "사진",
@@ -72,6 +73,8 @@ export function ReportForm() {
   const cameraAvailable = useCameraAvailable();
   // 사진 순서대로 받은 참조. 훅은 한 장씩 올리므로 결과를 여기에 모음
   const [uploadIds, setUploadIds] = useState<string[]>([]);
+  // 올리기 재시도를 세는 값. 사진이 그대로라 이 값이 바뀌어야 이펙트가 다시 돎
+  const [uploadAttempt, setUploadAttempt] = useState(0);
   // 초안을 고칠 때만 여는 상세 입력
   const [formOpen, setFormOpen] = useState(false);
   // 1단계로 되돌린 이유를 알리는 알럿. null 이면 닫힘
@@ -176,11 +179,17 @@ export function ReportForm() {
       // 훅이 앞 요청을 취소하므로 순서대로 올림
       for (const photo of photos) {
         const id = await startUpload(photo.file);
-        if (id) ids.push(id);
+        // 한 장이라도 못 올리면 참조가 모자라 등록이 끝까지 막힘
+        // 열쇠를 풀어 두어 다시 시도가 같은 사진으로 처음부터 돌게 함
+        if (!id) {
+          uploadedKey.current = null;
+          return;
+        }
+        ids.push(id);
       }
       setUploadIds(ids);
     })();
-  }, [view, photos, startUpload]);
+  }, [view, photos, startUpload, uploadAttempt]);
 
   // 올린 사진을 모두 한 요청에 넣어 초안 하나를 받음. 호출은 사진 수와 무관하게 한 번
   const { status: analyzeStatus, start: startAnalyze } = analyze;
@@ -363,8 +372,14 @@ export function ReportForm() {
               </Text>
             ) : null}
 
+            {/* 올리다 멈추면 참조가 모자라 등록이 막히므로 그 자리에서 다시 올릴 길을 둠 */}
             {upload.status === "failed" ? (
-              <Callout tone="critical" description={upload.message ?? ""} />
+              <ActionableCallout
+                tone="critical"
+                title={upload.message ?? UPLOAD_FAILED_FALLBACK}
+                description="눌러서 다시 올리기"
+                onClick={() => setUploadAttempt((count) => count + 1)}
+              />
             ) : null}
 
             <ReportDraftCard
