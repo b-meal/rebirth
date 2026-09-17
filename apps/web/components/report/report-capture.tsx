@@ -353,16 +353,20 @@ export function ReportCapture({
         ) : null}
       </ScreenBody>
 
-      {/* 토스트가 아래 버튼 띠를 덮지 않도록 띠 높이를 재게 함 */}
+      {/* 토스트가 아래 버튼 띠를 덮지 않도록 띠 높이를 재게 함
+          SEED 는 띠의 화면 좌표로 띄울 높이를 재서 sticky 로 아래에 붙여 둬야 함
+          흐름에 그냥 두면 사진이 길어질 때 띠가 화면 밖으로 내려가 재는 대상에서 빠짐 */}
       <SnackbarAvoidOverlap>
         <VStack
           align="stretch"
+          position="sticky"
+          bottom="0"
           px="spacingX.globalGutter"
           pt="x3"
-          pb="x5"
           bg="bg.layerDefault"
           borderTopWidth="1px"
           borderColor="stroke.neutralMuted"
+          className="rebirth-bottom-bar"
         >
           {/* 동물이 안 보이는 사진을 안고 2단계로 가면 거기서 되돌려 보내 걸음만 늘어남 */}
           <ActionButton
