@@ -85,42 +85,42 @@
 
 ## Phase 1. `track.ts` 경로 공식 T1~T4
 
-- [ ] `packages/core/package.json` 의 `exports` 에 `"./matching/*": "./src/matching/*.ts"` 를 추가합니다
-  - [ ] `packages/core/package.json` 의 `"./matching": "./src/matching/index.ts"` 바로 아래 줄에 서브패스 항목을 넣습니다
-  - [ ] `grep -n '"./matching/\*"' packages/core/package.json` 이 한 줄을 내는지 확인합니다
-- [ ] `packages/core/src/matching/track.ts` 에 설계 상수와 입출력 타입을 정의합니다
-  - [ ] `packages/core/src/matching/track.ts` 를 만들고 `import { distanceKm, type LatLng } from "../location/geo.ts"` 로 시작합니다
-  - [ ] `V_MAX_KMH` `SIGMA_KM` `R_MIN_KM` `R_MAX_KM` `GPS_EPSILON_KM` `MIN_LEG_SCORE` `MIN_TRACK_NODES` `MAX_TRACK_NODES` 를 설계 상수 표 값 그대로 `export const` 로 둡니다
-  - [ ] `export type TrackNode = { id: string; point: LatLng; occurredAt: Date; score: number; areaName: string | null }` 를 둡니다
-  - [ ] `export type TrackLeg = { from: TrackNode; to: TrackNode; km: number; hours: number; feasibility: number }` 를 둡니다
-- [ ] `packages/core/src/matching/track.ts` 에 T1 연결 가능성 `legFeasibility` 를 넣습니다
-  - [ ] `legFeasibility(from, to, size)` 가 `distanceKm(from.point, to.point) / (V_MAX_KMH[size] * hours)` 를 반환하게 씁니다
-  - [ ] `hours` 가 `0` 이하이면 `Infinity` 를 돌려 같은 시각의 두 목격이 이어지지 않게 합니다
-  - [ ] `isFeasibleLeg` 를 `legFeasibility(...) <= 1` 로 두고 export 합니다
-- [ ] `packages/core/src/matching/track.ts` 에 T2 경로 구성 `buildTrack` 을 넣습니다
-  - [ ] `buildTrack({ nodes, size })` 가 `score >= MIN_LEG_SCORE` 인 노드만 남기고 `occurredAt` 오름차순으로 정렬하게 합니다
-  - [ ] `isFeasibleLeg` 가 거짓인 노드를 건너뛰며 잇고, 남은 노드가 `MIN_TRACK_NODES` 미만이면 `null` 을 반환합니다
-  - [ ] `MAX_TRACK_NODES` 를 넘으면 최근 것부터 잘라 담아 경로가 무한히 길어지지 않게 합니다
-  - [ ] `confidence` 를 `Math.round(min(node.score) * (1 - mean(leg.feasibility)))` 로 계산해 `{ nodes, legs, confidence }` 에 담습니다
-- [ ] `packages/core/src/matching/track.ts` 에 T3 방향성 `straightness` 를 넣습니다
-  - [ ] `leg` 마다 위경도 차이를 평면 벡터로 바꾸되 경도 성분에 `Math.cos(lat * RAD)` 보정을 겁니다
-  - [ ] `straightness(legs)` 가 `|Σv| / Σ|v|` 를 반환하고 `legs` 가 비면 `0` 을 돌려주게 합니다
-  - [ ] `Math.min(1, Math.max(0, ...))` 로 반환값을 `0` 이상 `1` 이하로 못박습니다
-- [ ] `packages/core/src/matching/track.ts` 에 T4 다음 목격 예측 `predictNext` 를 넣습니다
-  - [ ] `predictNext({ track, size, now })` 가 `h = (now - lastNode.occurredAt) / 3_600_000` 을 구하고 `h <= 0` 이면 `null` 을 돌려주게 합니다
-  - [ ] `center` 를 `lastPoint + κ * v_eff * h * û` 로 옮기고 `v_eff` 는 `Σkm / Σhours`, `û` 는 마지막 leg 의 단위 벡터로 둡니다
-  - [ ] `radiusKm` 을 `SIGMA_KM[size] * Math.sqrt(h) + GPS_EPSILON_KM` 로 구하고 `R_MIN_KM` 과 `R_MAX_KM` 로 자릅니다
-  - [ ] `{ center, radiusKm, straightness, hoursSinceLast, bearingDeg }` 를 반환하고 `bearingDeg` 는 `û` 의 방위각으로 둡니다
-- [ ] `packages/core/src/matching/track.test.ts` 에 공식별 회귀 검증을 넣습니다
-  - [ ] `isFeasibleLeg` 가 3시간 간격 2km 소형견에서 참, 30분 간격 10km 에서 거짓인 검증 2건을 씁니다
-  - [ ] `straightness` 가 한 방향 직선 3점에서 `0.95` 이상, 왕복 3점에서 `0.3` 이하인 검증 2건을 씁니다
-  - [ ] `predictNext` 반경이 경과 4시간보다 16시간에서 크고 `R_MAX_KM` 을 넘지 않는 검증 1건을 씁니다
-  - [ ] `buildTrack` 이 `MIN_TRACK_NODES` 미만 입력과 점수 미달 입력에서 `null` 인 검증 2건을 씁니다
-  - [ ] `pnpm --filter @rebirth/core test 2>&1 | tail -10` 을 돌려 `fail 0` 을 봅니다
-- [ ] `packages/core` 검증을 통과시키고 Phase 1 담당 경로만 커밋합니다
-  - [ ] `pnpm typecheck 2>&1 | tail -5` 를 돌려 `5 successful, 5 total` 을 봅니다
-  - [ ] `git add packages/core/src/matching/track.ts packages/core/src/matching/track.test.ts packages/core/package.json` 로 담습니다
-  - [ ] `git commit -m "feat: 목격 제보를 잇는 이동 경로와 다음 목격 예측 공식 추가"` 로 커밋하고 `exit 0` 을 확인합니다
+- [x] `packages/core/package.json` 의 `exports` 에 `"./matching/*": "./src/matching/*.ts"` 를 추가합니다
+  - [x] `packages/core/package.json` 의 `"./matching": "./src/matching/index.ts"` 바로 아래 줄에 서브패스 항목을 넣습니다
+  - [x] `grep -n '"./matching/\*"' packages/core/package.json` 이 한 줄을 내는지 확인합니다
+- [x] `packages/core/src/matching/track.ts` 에 설계 상수와 입출력 타입을 정의합니다
+  - [x] `packages/core/src/matching/track.ts` 를 만들고 `import { distanceKm, type LatLng } from "../location/geo.ts"` 로 시작합니다
+  - [x] `V_MAX_KMH` `SIGMA_KM` `R_MIN_KM` `R_MAX_KM` `GPS_EPSILON_KM` `MIN_LEG_SCORE` `MIN_TRACK_NODES` `MAX_TRACK_NODES` 를 설계 상수 표 값 그대로 `export const` 로 둡니다
+  - [x] `export type TrackNode = { id: string; point: LatLng; occurredAt: Date; score: number; areaName: string | null }` 를 둡니다
+  - [x] `export type TrackLeg = { from: TrackNode; to: TrackNode; km: number; hours: number; feasibility: number }` 를 둡니다
+- [x] `packages/core/src/matching/track.ts` 에 T1 연결 가능성 `legFeasibility` 를 넣습니다
+  - [x] `legFeasibility(from, to, size)` 가 `distanceKm(from.point, to.point) / (V_MAX_KMH[size] * hours)` 를 반환하게 씁니다
+  - [x] `hours` 가 `0` 이하이면 `Infinity` 를 돌려 같은 시각의 두 목격이 이어지지 않게 합니다
+  - [x] `isFeasibleLeg` 를 `legFeasibility(...) <= 1` 로 두고 export 합니다
+- [x] `packages/core/src/matching/track.ts` 에 T2 경로 구성 `buildTrack` 을 넣습니다
+  - [x] `buildTrack({ nodes, size })` 가 `score >= MIN_LEG_SCORE` 인 노드만 남기고 `occurredAt` 오름차순으로 정렬하게 합니다
+  - [x] `isFeasibleLeg` 가 거짓인 노드를 건너뛰며 잇고, 남은 노드가 `MIN_TRACK_NODES` 미만이면 `null` 을 반환합니다
+  - [x] `MAX_TRACK_NODES` 를 넘으면 최근 것부터 잘라 담아 경로가 무한히 길어지지 않게 합니다
+  - [x] `confidence` 를 `Math.round(min(node.score) * (1 - mean(leg.feasibility)))` 로 계산해 `{ nodes, legs, confidence }` 에 담습니다
+- [x] `packages/core/src/matching/track.ts` 에 T3 방향성 `straightness` 를 넣습니다
+  - [x] `leg` 마다 위경도 차이를 평면 벡터로 바꾸되 경도 성분에 `Math.cos(lat * RAD)` 보정을 겁니다
+  - [x] `straightness(legs)` 가 `|Σv| / Σ|v|` 를 반환하고 `legs` 가 비면 `0` 을 돌려주게 합니다
+  - [x] `Math.min(1, Math.max(0, ...))` 로 반환값을 `0` 이상 `1` 이하로 못박습니다
+- [x] `packages/core/src/matching/track.ts` 에 T4 다음 목격 예측 `predictNext` 를 넣습니다
+  - [x] `predictNext({ track, size, now })` 가 `h = (now - lastNode.occurredAt) / 3_600_000` 을 구하고 `h <= 0` 이면 `null` 을 돌려주게 합니다
+  - [x] `center` 를 `lastPoint + κ * v_eff * h * û` 로 옮기고 `v_eff` 는 `Σkm / Σhours`, `û` 는 마지막 leg 의 단위 벡터로 둡니다
+  - [x] `radiusKm` 을 `SIGMA_KM[size] * Math.sqrt(h) + GPS_EPSILON_KM` 로 구하고 `R_MIN_KM` 과 `R_MAX_KM` 로 자릅니다
+  - [x] `{ center, radiusKm, straightness, hoursSinceLast, bearingDeg }` 를 반환하고 `bearingDeg` 는 `û` 의 방위각으로 둡니다
+- [x] `packages/core/src/matching/track.test.ts` 에 공식별 회귀 검증을 넣습니다
+  - [x] `isFeasibleLeg` 가 3시간 간격 2km 소형견에서 참, 30분 간격 10km 에서 거짓인 검증 2건을 씁니다
+  - [x] `straightness` 가 한 방향 직선 3점에서 `0.95` 이상, 왕복 3점에서 `0.3` 이하인 검증 2건을 씁니다
+  - [x] `predictNext` 반경이 경과 4시간보다 16시간에서 크고 `R_MAX_KM` 을 넘지 않는 검증 1건을 씁니다
+  - [x] `buildTrack` 이 `MIN_TRACK_NODES` 미만 입력과 점수 미달 입력에서 `null` 인 검증 2건을 씁니다
+  - [x] `pnpm --filter @rebirth/core test 2>&1 | tail -10` 을 돌려 `fail 0` 을 봅니다
+- [x] `packages/core` 검증을 통과시키고 Phase 1 담당 경로만 커밋합니다
+  - [x] `pnpm typecheck 2>&1 | tail -5` 를 돌려 `5 successful, 5 total` 을 봅니다
+  - [x] `git add packages/core/src/matching/track.ts packages/core/src/matching/track.test.ts packages/core/package.json` 로 담습니다
+  - [x] `git commit -m "feat: 목격 제보를 잇는 이동 경로와 다음 목격 예측 공식 추가"` 로 커밋하고 `exit 0` 을 확인합니다
 
 ## Phase 6. 경로 조회와 API
 
@@ -188,6 +188,11 @@
 - Phase 0 74행 stash 는 추적 변경이 0건이라 실행하지 않았고 `git status --short` 가 `?? .claude/worklists/` 한 줄뿐인 것으로 목적 달성을 갈음함
 
 ### 실측 기록
+
+- `@rebirth/core` 테스트가 `pass 87` 에서 `pass 91` 로 4건 증가. 신규 4건 전부 `track.test.ts`
+- `comment-style.mjs` 훅은 `//` 2줄 연속도 차단해 파일 헤더 주석을 1줄로 씀. `/** */` JSDoc 은 검사 대상 밖
+- `package.json` 의 기존 `"./matching/embed-text"` 줄은 와일드카드 아래 그대로 둠. 정확 일치가 우선이라 동작 동일
+- `predictNext` 의 `κ` 는 `straightness` 값으로 적용. 설계 의도와 같음
 
 - 분기 지점 `ee81bd9` 는 `feat/map-cluster` 머지 커밋이라 `origin/develop` 이 직전 작업 브랜치 내용을 이미 포함함
 - `pnpm lint` 1 cached, `pnpm typecheck` 4 cached 로 일부 캐시 적중. 재측정 시 수치 동일

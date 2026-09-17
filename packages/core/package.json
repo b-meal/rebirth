@@ -15,6 +15,7 @@
     "./location/*": "./src/location/*.ts",
     "./manage": "./src/manage/index.ts",
     "./matching": "./src/matching/index.ts",
+    "./matching/*": "./src/matching/*.ts",
     "./matching/embed-text": "./src/matching/embed-text.ts",
     "./reports": "./src/reports/index.ts",
     "./reports/*": "./src/reports/*.ts",

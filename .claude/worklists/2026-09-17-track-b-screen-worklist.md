@@ -69,32 +69,32 @@
 
 ## Phase 2. 시간을 행동으로
 
-- [ ] `apps/web/lib/report-label.ts` 의 `CARE_LABEL` 을 주어 없는 상태 어휘로 바꿉니다
-  - [ ] `roaming: "배회 중"` 을 `roaming: "발견"` 으로, `in_care: "제보자가 보호 중"` 을 `in_care: "보호 중"` 으로 바꿉니다
-  - [ ] `unknown: "확인되지 않음"` 은 그대로 둡니다
-  - [ ] `grep -n "배회 중" apps/web/lib/report-label.ts` 가 아무 줄도 내지 않는 것을 확인합니다
-- [ ] `apps/web/lib/report-label.ts` 에 긴급도 등급 `urgencyLevel` 을 추가합니다
-  - [ ] `sinceLabel` 뒤에 `export type UrgencyLevel = "fresh" | "recent" | "stale" | "cold"` 를 둡니다
-  - [ ] `urgencyLevel(date, now)` 가 경과 시간으로 `6` `24` `72` 시간을 경계 삼아 네 등급을 반환하게 씁니다
-  - [ ] `fresh` 로 눌러 미래 시각이 들어와도 시계 오차가 등급을 뒤집지 않게 합니다
-- [ ] `apps/web/lib/report-label.ts` 에 등급별 행동 문구 `urgencyHint` 를 추가합니다
-  - [ ] `URGENCY_HINT` 를 `Record<UrgencyLevel, string>` 으로 두고 `fresh` 는 `지금 주변을 확인해 보세요` 로 씁니다
-  - [ ] `recent` 는 `주변 추가 제보를 확인해 보세요`, `stale` 은 `마지막 목격지 주변 이동 경로를 확인해 보세요` 로 씁니다
-  - [ ] `cold` 는 `이동 가능 지역을 넓혀 찾아보세요` 로 두고 등급 문구에 숫자를 넣지 않습니다
-  - [ ] `urgencyHint(date, now)` 가 `URGENCY_HINT[urgencyLevel(date, now)]` 를 반환하게 합니다
-- [ ] `apps/web/lib/report-label.ts` 에 제보 밀도 문구 `densityLine` 을 추가합니다
-  - [ ] `densityLine({ count, radiusKm })` 가 `count` 가 `0` 이면 `반경 {r}km 안에 새 제보가 없어요` 를 반환하게 씁니다
-  - [ ] `count` 가 `1` 이상이면 `반경 {r}km 안에 제보 {n}건` 을 반환하고 `r` 은 소수 첫째 자리까지만 적습니다
-- [ ] `apps/web/lib/report-label.test.ts` 에 등급 경계와 밀도 문구 검증을 넣습니다
-  - [ ] `urgencyLevel` 이 `5h59m` 과 `6h01m` 에서 `fresh` 와 `recent` 로 갈리는 검증 2건을 씁니다
-  - [ ] `urgencyLevel` 의 `23h59m` `24h01m` `71h` `73h` 네 지점 등급 검증 4건을 씁니다
-  - [ ] `urgencyHint` 반환에 숫자가 없는 검증 1건과 미래 시각이 `fresh` 인 검증 1건을 씁니다
-  - [ ] `densityLine` 이 `0` 과 `3` 에서 설계 상수 문구를 내는 검증 2건을 씁니다
-  - [ ] `pnpm --filter @rebirth/web test 2>&1 | tail -10` 을 돌려 `fail 0` 을 봅니다
-- [ ] `apps/web` 검증을 통과시키고 Phase 2 담당 경로만 커밋합니다
-  - [ ] `pnpm lint 2>&1 | tail -5` 와 `pnpm typecheck 2>&1 | tail -5` 를 돌려 `2 successful` 과 `5 successful` 을 봅니다
-  - [ ] `git add apps/web/lib/report-label.ts apps/web/lib/report-label.test.ts` 로 담습니다
-  - [ ] `git commit -m "feat: 목격 시각을 긴급도 등급·행동 문구·제보 밀도로 바꿈"` 으로 커밋하고 `exit 0` 을 확인합니다
+- [x] `apps/web/lib/report-label.ts` 의 `CARE_LABEL` 을 주어 없는 상태 어휘로 바꿉니다
+  - [x] `roaming: "배회 중"` 을 `roaming: "발견"` 으로, `in_care: "제보자가 보호 중"` 을 `in_care: "보호 중"` 으로 바꿉니다
+  - [x] `unknown: "확인되지 않음"` 은 그대로 둡니다
+  - [x] `grep -n "배회 중" apps/web/lib/report-label.ts` 가 아무 줄도 내지 않는 것을 확인합니다
+- [x] `apps/web/lib/report-label.ts` 에 긴급도 등급 `urgencyLevel` 을 추가합니다
+  - [x] `sinceLabel` 뒤에 `export type UrgencyLevel = "fresh" | "recent" | "stale" | "cold"` 를 둡니다
+  - [x] `urgencyLevel(date, now)` 가 경과 시간으로 `6` `24` `72` 시간을 경계 삼아 네 등급을 반환하게 씁니다
+  - [x] `fresh` 로 눌러 미래 시각이 들어와도 시계 오차가 등급을 뒤집지 않게 합니다
+- [x] `apps/web/lib/report-label.ts` 에 등급별 행동 문구 `urgencyHint` 를 추가합니다
+  - [x] `URGENCY_HINT` 를 `Record<UrgencyLevel, string>` 으로 두고 `fresh` 는 `지금 주변을 확인해 보세요` 로 씁니다
+  - [x] `recent` 는 `주변 추가 제보를 확인해 보세요`, `stale` 은 `마지막 목격지 주변 이동 경로를 확인해 보세요` 로 씁니다
+  - [x] `cold` 는 `이동 가능 지역을 넓혀 찾아보세요` 로 두고 등급 문구에 숫자를 넣지 않습니다
+  - [x] `urgencyHint(date, now)` 가 `URGENCY_HINT[urgencyLevel(date, now)]` 를 반환하게 합니다
+- [x] `apps/web/lib/report-label.ts` 에 제보 밀도 문구 `densityLine` 을 추가합니다
+  - [x] `densityLine({ count, radiusKm })` 가 `count` 가 `0` 이면 `반경 {r}km 안에 새 제보가 없어요` 를 반환하게 씁니다
+  - [x] `count` 가 `1` 이상이면 `반경 {r}km 안에 제보 {n}건` 을 반환하고 `r` 은 소수 첫째 자리까지만 적습니다
+- [x] `apps/web/lib/report-label.test.ts` 에 등급 경계와 밀도 문구 검증을 넣습니다
+  - [x] `urgencyLevel` 이 `5h59m` 과 `6h01m` 에서 `fresh` 와 `recent` 로 갈리는 검증 2건을 씁니다
+  - [x] `urgencyLevel` 의 `23h59m` `24h01m` `71h` `73h` 네 지점 등급 검증 4건을 씁니다
+  - [x] `urgencyHint` 반환에 숫자가 없는 검증 1건과 미래 시각이 `fresh` 인 검증 1건을 씁니다
+  - [x] `densityLine` 이 `0` 과 `3` 에서 설계 상수 문구를 내는 검증 2건을 씁니다
+  - [x] `pnpm --filter @rebirth/web test 2>&1 | tail -10` 을 돌려 `fail 0` 을 봅니다
+- [x] `apps/web` 검증을 통과시키고 Phase 2 담당 경로만 커밋합니다
+  - [x] `pnpm lint 2>&1 | tail -5` 와 `pnpm typecheck 2>&1 | tail -5` 를 돌려 `2 successful` 과 `5 successful` 을 봅니다
+  - [x] `git add apps/web/lib/report-label.ts apps/web/lib/report-label.test.ts` 로 담습니다
+  - [x] `git commit -m "feat: 목격 시각을 긴급도 등급·행동 문구·제보 밀도로 바꿈"` 으로 커밋하고 `exit 0` 을 확인합니다
 
 ## Phase 4. `search-spots.ts` 탐색 지점 T5
 
@@ -148,4 +148,9 @@
 
 ### 지시서 결함
 
+- Phase 2 테스트 항목은 등급 2+4건·힌트 2건·밀도 2건 총 10 assertion 을 요구하나 `test()` 블록 5개에 묶여 실행 단위는 5건
+
 ### 실측 기록
+
+- `@rebirth/web` 테스트가 기존 3건 + 신규 5건으로 `pass 8`. 설계 상수 표의 기준선 `pass 3` 은 Phase 2 이후 `pass 8` 로 읽어야 함
+- `densityLine` 반경은 정수도 `toFixed(1)` 로 통일해 `반경 2.0km` 로 출력. 테스트가 그 값으로 고정됨
