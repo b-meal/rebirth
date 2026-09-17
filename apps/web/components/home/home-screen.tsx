@@ -168,7 +168,8 @@ function ClusterPin({ count, onClick }: ClusterPinProps) {
     >
       <button type="button" aria-label={`제보 ${count}건 묶음, 눌러서 확대`} onClick={onClick}>
         <VStack align="center" justify="center" height="full">
-          <Text textStyle={count >= 100 ? "t3Bold" : "t2Bold"} color="fg.brandContrast">
+          {/* fg.brandContrast 는 bg.brandSolid 보다 한 단계 진한 같은 색이라 숫자가 묻힘 */}
+          <Text textStyle={count >= 100 ? "t3Bold" : "t2Bold"} color="palette.staticWhite">
             {count}
           </Text>
         </VStack>
