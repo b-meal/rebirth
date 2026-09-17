@@ -30,9 +30,8 @@ import { ReportPhotoHero } from "./report-photo-hero";
 // 레퍼런스가 오면 이 문안 자리에 예시 이미지를 붙임
 const TIPS = ["얼굴이 보이게", "몸 전체가 들어오면 더 좋아요", "다가가지 말고 그 자리에서"];
 
-// 선검사가 동물을 못 찾았을 때. 토스트로 한 번 알리고, 지울 자리를 그 안에 둠
+// 선검사가 동물을 못 찾았을 때. 지우는 자리는 칸 가운데 X 가 맡아 토스트는 알리기만 함
 const NOT_ANIMAL_TOAST = "동물이 보이지 않아요";
-const NOT_ANIMAL_ACTION = "지우기";
 
 // 토스트는 사라지므로 다음으로 못 넘어가는 이유는 이 줄이 계속 들고 있음
 const NOT_ANIMAL_HINT = "동물이 보이지 않는 사진을 지워 주세요";
@@ -184,16 +183,10 @@ export function ReportCapture({
       toasted.current.add(photo.id);
       snackbar.create({
         onClose: () => {},
-        render: () => (
-          <Snackbar
-            message={NOT_ANIMAL_TOAST}
-            actionLabel={NOT_ANIMAL_ACTION}
-            onAction={() => removePhoto(photo.id)}
-          />
-        ),
+        render: () => <Snackbar message={NOT_ANIMAL_TOAST} />,
       });
     }
-  }, [flagged, snackbar, removePhoto]);
+  }, [flagged, snackbar]);
 
   // capture 는 명세상 힌트라 카메라가 없는 기기는 알아서 파일 선택기로 떨어짐
   // 장치 조회로 가리면 권한 전에 videoinput 을 안 내놓는 브라우저에서 카메라가 안 열림
