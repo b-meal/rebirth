@@ -10,7 +10,9 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --experimental-strip-types --test lib/**/*.test.ts"
+    "test": "node --experimental-strip-types --test lib/**/*.test.ts",
+    "eval:animal": "node scripts/eval-animal-model.mjs",
+    "model:quantize": "node scripts/quantize-model.mjs"
   },
   "dependencies": {
     "@karrotmarket/react-monochrome-icon": "^1.26.0",
@@ -25,6 +27,9 @@
     "@seed-design/react-pagination": "^1.0.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
+    "@tensorflow/tfjs-backend-webgl": "^4.22.0",
+    "@tensorflow/tfjs-converter": "^4.22.0",
+    "@tensorflow/tfjs-core": "^4.22.0",
     "clsx": "^2.1.1",
     "embla-carousel-react": "^8.6.0",
     "maplibre-gl": "^6.8.0",
@@ -36,11 +41,13 @@
     "usehooks-ts": "^3.1.1"
   },
   "devDependencies": {
+    "@tensorflow/tfjs-backend-cpu": "^4.22.0",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.4",
+    "sharp": "^0.34.5",
     "typescript": "^5"
   }
 }
