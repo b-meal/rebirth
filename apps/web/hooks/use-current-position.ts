@@ -21,8 +21,11 @@ export type CurrentPositionState = {
   request: () => void;
 };
 
-// AI 분석 상한과 같은 8초. 넘으면 직접 입력으로 돌림
-const TIMEOUT_MS = 8000;
+// 고정밀 측위를 기다리는 시간, 데스크톱은 이 안에 못 잡는 일이 잦음
+const TIMEOUT_MS = 5000;
+
+// 고정밀이 늦을 때 대략 위치로 한 번 더 묻는 시간
+const COARSE_TIMEOUT_MS = 7000;
 
 // 권한을 주지 않아도 제보를 끝낼 수 있다는 점을 함께 알림
 const MESSAGE: Record<"denied" | "timeout" | "unavailable", string> = {
@@ -36,10 +39,7 @@ type Outcome =
   | { ok: true; point: LatLng; accuracyMeters: number | null }
   | { ok: false; status: "denied" | "timeout" | "unavailable" };
 
-function locate(): Promise<Outcome> {
-  if (typeof navigator === "undefined" || !navigator.geolocation) {
-    return Promise.resolve({ ok: false, status: "unavailable" });
-  }
+function ask(options: PositionOptions): Promise<Outcome> {
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
       (position) =>
@@ -61,8 +61,26 @@ function locate(): Promise<Outcome> {
           status: cause.code === cause.TIMEOUT ? "timeout" : "unavailable",
         });
       },
-      { enableHighAccuracy: true, timeout: TIMEOUT_MS, maximumAge: 30_000 },
+      options,
     );
+  });
+}
+
+/** 고정밀로 먼저 묻고 늦으면 대략 위치로 물러섬, 권한 거부는 다시 묻지 않음 */
+async function locate(): Promise<Outcome> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return { ok: false, status: "unavailable" };
+  }
+  const precise = await ask({
+    enableHighAccuracy: true,
+    timeout: TIMEOUT_MS,
+    maximumAge: 30_000,
+  });
+  if (precise.ok || precise.status === "denied") return precise;
+  return ask({
+    enableHighAccuracy: false,
+    timeout: COARSE_TIMEOUT_MS,
+    maximumAge: 300_000,
   });
 }
 

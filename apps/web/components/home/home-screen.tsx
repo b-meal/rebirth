@@ -14,6 +14,7 @@ import { createPortal } from "react-dom";
 import { Box, Grid, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
 import {
   IconBellLine,
+  IconChevronUpLine,
   IconCrosshairLine,
   IconMagnifyingglassLine,
   IconPawprintFill,
@@ -43,6 +44,9 @@ export type MapMarker = ReportCardItem & {
 // 시트에 셀 반경, 지도 중심에서 이 거리 안의 제보만 셈
 const NEARBY_RADIUS_KM = 3;
 
+// 반경 안에 하나도 없을 때 대신 보여 줄 가까운 제보 수
+const NEARBY_FALLBACK_COUNT = 12;
+
 // 핀을 고르면 당기는 축척, 주변 골목이 보이는 정도
 const PIN_ZOOM = 16;
 
@@ -50,8 +54,12 @@ const PIN_ZOOM = 16;
 const PIN_OFFSET: [number, number] = [0, 90];
 
 // 시트 높이는 화면 비율로 다루고 드래그는 min 과 max 사이에서만 움직임
-const SHEET = { collapsed: 0.27, expanded: 0.62, min: 0.14, max: 0.72 } as const;
+// hidden 은 시트를 걷고 손잡이만 남기는 단계, 지도만 보려는 사람의 자리
+const SHEET = { hidden: 0, min: 0.02, collapsed: 0.27, expanded: 0.62, max: 0.72 } as const;
 const SHEET_MID = (SHEET.collapsed + SHEET.expanded) / 2;
+
+// 손을 떼면 이 세 단계 중 이웃으로만 붙음
+const STOPS: number[] = [SHEET.hidden, SHEET.collapsed, SHEET.expanded];
 
 // 지도 오버레이는 React 밖에서 그려지므로 색은 SEED CSS 변수로만 참조
 const MY_LOCATION_DOT = [
@@ -210,13 +218,18 @@ export function HomeScreen({
   }, [map, myPoint]);
 
   // 지도를 못 띄우면 거리를 셀 기준이 없어 최근 제보를 그대로 보여줌
-  const nearby = useMemo(
-    () =>
-      ready
-        ? markers.filter((item) => distanceKm(center, item.point) <= NEARBY_RADIUS_KM)
-        : markers,
-    [ready, center, markers],
-  );
+  // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
+  const { nearby, widened } = useMemo(() => {
+    if (!ready) return { nearby: markers, widened: false };
+    const inRadius = markers.filter((item) => distanceKm(center, item.point) <= NEARBY_RADIUS_KM);
+    if (inRadius.length > 0) return { nearby: inRadius, widened: false };
+    const sorted = [...markers]
+      .map((item) => ({ item, km: distanceKm(center, item.point) }))
+      .sort((a, b) => a.km - b.km)
+      .slice(0, NEARBY_FALLBACK_COUNT)
+      .map((row) => row.item);
+    return { nearby: sorted, widened: sorted.length > 0 };
+  }, [ready, center, markers]);
 
   const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
@@ -236,7 +249,7 @@ export function HomeScreen({
       beforePreview.current = { point: { lat: at.lat, lng: at.lng }, zoom: map.getZoom() };
     }
     setSelectedId(item.id);
-    setSheetRatio(SHEET.min);
+    setSheetRatio(SHEET.hidden);
     moveTo(item.point, { animate: true, zoom: PIN_ZOOM, offset: PIN_OFFSET });
   };
 
@@ -294,6 +307,7 @@ export function HomeScreen({
   }, [map, closePreview]);
 
   const expanded = sheetRatio > SHEET_MID;
+  const hidden = sheetRatio === SHEET.hidden;
   const drag = useRef<{ startY: number; startRatio: number; moved: boolean } | null>(null);
 
   const startDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -313,17 +327,27 @@ export function HomeScreen({
     const current = drag.current;
     if (!current) return;
     drag.current = null;
-    // 움직이지 않았으면 탭으로 보고 두 단계를 오감
+    const at = Math.max(0, STOPS.indexOf(current.startRatio));
+    // 움직이지 않았으면 탭으로 보고 한 단 올리되 맨 위에서는 접음
     if (!current.moved) {
-      setSheetRatio(current.startRatio > SHEET_MID ? SHEET.collapsed : SHEET.expanded);
+      setSheetRatio(at === STOPS.length - 1 ? SHEET.collapsed : STOPS[at + 1]);
       return;
     }
-    // 끌어올렸으면 펼치고 내렸으면 접고, 거의 안 움직였으면 원래 높이로 되돌림
+    // 끌어올렸으면 한 단 올리고 내렸으면 한 단 내리고, 거의 안 움직였으면 되돌림
     setSheetRatio((value) => {
-      if (value > current.startRatio + 0.03) return SHEET.expanded;
-      if (value < current.startRatio - 0.03) return SHEET.collapsed;
+      if (value > current.startRatio + 0.03) return STOPS[Math.min(at + 1, STOPS.length - 1)];
+      if (value < current.startRatio - 0.03) return STOPS[Math.max(at - 1, 0)];
       return current.startRatio;
     });
+  };
+
+  // 손잡이는 걷었을 때와 펼쳤을 때 생김새만 다르고 동작은 하나
+  const handleProps = {
+    onPointerDown: startDrag,
+    onPointerMove: onDrag,
+    onPointerUp: endDrag,
+    onPointerCancel: endDrag,
+    style: { touchAction: "none", cursor: "grab" } as const,
   };
 
   const recenter = () => {
@@ -491,6 +515,28 @@ export function HomeScreen({
         </VStack>
         )}
 
+        {hidden ? (
+          // 시트를 걷으면 지도만 남고 탭바 위에 이 손잡이 하나만 떠 있음
+          <VStack align="center" className="rebirth-above-tabs" style={{ pointerEvents: "auto" }}>
+            <HStack
+              asChild
+              align="center"
+              gap="x1"
+              px="x4"
+              py="x2"
+              borderRadius="full"
+              bg="bg.layerFloating"
+              boxShadow="s2"
+            >
+              <button type="button" aria-expanded={false} aria-label="목록 펼치기" {...handleProps}>
+                <Icon svg={<IconChevronUpLine />} size="x4" color="fg.neutralSubtle" />
+                <Text textStyle="t2Bold" color="fg.neutral">
+                  제보 {nearby.length}건
+                </Text>
+              </button>
+            </HStack>
+          </VStack>
+        ) : (
         <VStack
           as="section"
           align="stretch"
@@ -507,11 +553,7 @@ export function HomeScreen({
               type="button"
               aria-expanded={expanded}
               aria-label={expanded ? "목록 접기" : "목록 펼치기"}
-              style={{ touchAction: "none", cursor: "grab" }}
-              onPointerDown={startDrag}
-              onPointerMove={onDrag}
-              onPointerUp={endDrag}
-              onPointerCancel={endDrag}
+              {...handleProps}
             >
               <Box width="x9" height="x1" borderRadius="full" bg="bg.neutralWeak" />
             </button>
@@ -519,9 +561,11 @@ export function HomeScreen({
 
           <HStack px="spacingX.globalGutter" justify="space-between" align="center" gap="x2">
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
-              {ready
-                ? `${geocode.result?.areaName ?? "근처"} 반경 ${NEARBY_RADIUS_KM}km`
-                : "최근 발견 제보"}
+              {!ready
+                ? "최근 발견 제보"
+                : widened
+                  ? "가까운 발견 제보"
+                  : `${geocode.result?.areaName ?? "근처"} 반경 ${NEARBY_RADIUS_KM}km`}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted">
               {nearby.length}건
@@ -548,6 +592,7 @@ export function HomeScreen({
             )}
           </Box>
         </VStack>
+        )}
       </VStack>
     </Box>
   );
