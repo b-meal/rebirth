@@ -39,7 +39,7 @@ import { isComparable, scoreMatch } from "./score";
 // 연락처를 저장하지 않고 관리 주소만 발급함. 주소를 잃으면 문의 경로로만 복구됨
 
 // 점수가 이 아래인 후보는 보여주지 않음. 근거가 약한 후보가 목록을 채우면 판단이 흐려짐
-const MIN_CANDIDATE_SCORE = 30;
+export const MIN_CANDIDATE_SCORE = 30;
 
 const NOT_FOUND = "찾는 신고가 없습니다. 관리 주소를 다시 확인해 주십시오";
 const NEED_AUTH = "관리 주소로 다시 들어와 주십시오";

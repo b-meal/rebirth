@@ -6,8 +6,9 @@ import { ResultSection } from "seed-design/ui/result-section";
 import { ScreenBody } from "@/components/ui/screen";
 import { ANIMAL_LABEL, SIZE_LABEL, formatAbsolute } from "@/lib/report-label";
 
-// 발견 제보 하나를 내 실종 신고들과 견준 결과
-// 점수는 유사도일 뿐이라 확정 아님 을 항상 함께 냄. 어느 쪽이 내 아이인지 정하는 일은 보호자가 함
+// 발견 제보 하나를 실종 신고들과 견준 결과
+// 점수는 유사도일 뿐이라 확정 아님 을 항상 함께 냄. 어느 쪽이 그 아이인지 정하는 일은 사람이 함
+// 로그인하지 않았으면 가까운 공개 신고를 둘러봄. 없는 기록을 지어내지 않고 올라온 신고만 씀
 
 export type SightingMatchItem = {
   lostId: string;
@@ -23,6 +24,7 @@ export type SightingMatchItem = {
 export type SightingMatchListProps = {
   /** 돌아갈 발견 제보 */
   reportId: string;
+  mode: "mine" | "public";
   items: SightingMatchItem[];
 };
 
@@ -32,22 +34,33 @@ function lostLabel(item: SightingMatchItem): string {
   return [ANIMAL_LABEL[item.animalType], SIZE_LABEL[item.size]].filter(Boolean).join(", ");
 }
 
-export function SightingMatchList({ reportId, items }: SightingMatchListProps) {
+const EMPTY = {
+  mine: {
+    title: "견줄 수 있는 신고가 없어요",
+    description: "찾는 중인 신고와 종이 달라요. 다른 신고를 쓰면 여기에 나와요",
+  },
+  public: {
+    title: "닮은 실종 신고가 없어요",
+    description: "가까운 곳에 올라온 신고 중에는 닮은 기록이 없어요",
+  },
+} as const;
+
+export function SightingMatchList({ reportId, mode, items }: SightingMatchListProps) {
+  const empty = EMPTY[mode];
+
   return (
     <>
       <ScreenBody gap="x4">
         {items.length === 0 ? (
-          <ResultSection
-            size="medium"
-            title="견줄 수 있는 신고가 없어요"
-            description="찾는 중인 신고와 종이 달라요. 다른 신고를 쓰면 여기에 나와요"
-          />
+          <ResultSection size="medium" title={empty.title} description={empty.description} />
         ) : (
           <>
             {/* 무엇과 무엇을 견줬는지 먼저 밝힘
                 점수만 늘어놓으면 어느 쪽이 기준인지 몰라 숫자를 거꾸로 읽음 */}
             <Text textStyle="t4Regular" color="fg.neutralMuted">
-              이 제보를 찾는 중인 내 신고 {items.length}건과 견줬어요
+              {mode === "mine"
+                ? `이 제보를 찾는 중인 내 신고 ${items.length}건과 견줬어요`
+                : "이 제보와 가까운 곳에서 올라온 실종 신고예요"}
             </Text>
 
             <VStack align="stretch" gap="x3">
@@ -76,7 +89,7 @@ export function SightingMatchList({ reportId, items }: SightingMatchListProps) {
                     {item.reason}
                   </Text>
 
-                  {/* 내 신고가 언제 어디서 난 것인지. 같은 이름의 신고가 여럿일 때 가름 */}
+                  {/* 그 신고가 언제 어디서 난 것인지. 같은 이름의 신고가 여럿일 때 가름 */}
                   <Text textStyle="t2Regular" color="fg.neutralSubtle">
                     {[item.areaName ?? "위치 미확인", formatAbsolute(item.occurredAt)].join(
                       ", ",
@@ -88,6 +101,14 @@ export function SightingMatchList({ reportId, items }: SightingMatchListProps) {
             </VStack>
           </>
         )}
+
+        {/* 둘러보는 사람에게 다음 걸음을 한 줄로만 알림
+            비어 있을 때도 둠. 닮은 기록이 없다는 말만 남으면 할 일이 없어짐 */}
+        {mode === "public" ? (
+          <Text textStyle="t3Regular" color="fg.neutralSubtle">
+            로그인하면 내 실종 신고와 견줄 수 있어요
+          </Text>
+        ) : null}
       </ScreenBody>
 
       {/* 이 화면에서 할 일은 제보를 다시 들여다보는 것 하나뿐임

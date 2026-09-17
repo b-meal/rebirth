@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
-import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
 import { listSightingLostMatches } from "@rebirth/core/matching";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -9,11 +8,11 @@ import { Screen } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
 import { SightingMatchList } from "@/components/report/sighting-match-list";
 
-// 발견 제보를 내 실종 신고들과 견주는 화면. 제보 상세의 내 가족 같아요 가 여기로 옴
-// 견줄 기준은 내 실종 신고라 하나도 없으면 신고 작성으로 보냄
-// 남의 신고는 읽지 않음. 계정에 묶인 신고만 견주므로 관리 주소 없이도 열림
+// 발견 제보를 실종 신고들과 견주는 화면. 제보 상세의 내 가족 같아요 가 여기로 옴
+// 로그인하면 내 신고와 견주고, 아니면 가까운 공개 신고를 둘러봄
+// 로그인 벽을 세우지 않음. 이 제품에서 보여 줄 것이 매칭이라 계정부터 물으면 아무것도 못 봄
 
-export const metadata: Metadata = { title: "내 신고와 견주기", robots: { index: false } };
+export const metadata: Metadata = { title: "닮은 실종 신고", robots: { index: false } };
 
 export const dynamic = "force-dynamic";
 
@@ -21,22 +20,20 @@ export default async function SightingMatchPage({ params }: PageProps<"/r/[id]/m
   const { id } = await params;
 
   const user = await getCurrentUser();
-  if (!user) {
-    redirect(`${SIGN_IN_PATH}?${NEXT_PARAM}=${encodeURIComponent(`/r/${id}/match`)}`);
-  }
 
   // 없는 제보와 실종 신고는 둘 다 여기서 걸림. 실종끼리는 서로 견주지 않음
-  const result = await listSightingLostMatches({ sightingId: id, userId: user.id });
+  const result = await listSightingLostMatches({ sightingId: id, userId: user?.id });
   if (!result) notFound();
 
-  // 찾는 중인 신고가 없으면 견줄 기준부터 만들어야 함
-  if (result.total === 0) redirect("/lost/new");
+  // 로그인은 했는데 찾는 중인 신고가 없으면 견줄 기준부터 만들어야 함
+  if (result.mode === "mine" && result.total === 0) redirect("/lost/new");
 
   return (
     <Screen>
-      <AppHeader title="내 신고와 견주기" />
+      <AppHeader title={result.mode === "mine" ? "내 신고와 견주기" : "닮은 실종 신고"} />
       <SightingMatchList
         reportId={id}
+        mode={result.mode}
         items={result.matches.map((match) => ({
           lostId: match.lostId,
           petName: match.petName,

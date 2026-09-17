@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Box,
   Grid,
@@ -11,17 +11,15 @@ import {
   Text,
   VStack,
 } from "@seed-design/react";
-import {
-  IconCameraFill,
-  IconExclamationmarkTriangleFill,
-  IconPictureFill,
-  IconXmarkFill,
-} from "@karrotmarket/react-monochrome-icon";
+import { IconCameraFill, IconPictureFill, IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
-import { Callout, DismissibleCallout } from "seed-design/ui/callout";
+import { DismissibleCallout } from "seed-design/ui/callout";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
+import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
+import type { PhotoItem } from "@/lib/image";
 import type { PhotoPickerState } from "@/hooks/use-photo-picker";
-import type { PhotoPrecheckState } from "@/hooks/use-photo-precheck";
+import type { PhotoPrecheckState, PhotoVerdict } from "@/hooks/use-photo-precheck";
 import { PhotoPickerInput, type PhotoPickerInputHandle } from "@/components/ui/photo-picker-input";
 import { ScreenBody, Section } from "@/components/ui/screen";
 import { ReportPhotoHero } from "./report-photo-hero";
@@ -32,10 +30,118 @@ import { ReportPhotoHero } from "./report-photo-hero";
 // 레퍼런스가 오면 이 문안 자리에 예시 이미지를 붙임
 const TIPS = ["얼굴이 보이게", "몸 전체가 들어오면 더 좋아요", "다가가지 말고 그 자리에서"];
 
-// 선검사가 동물을 못 찾았을 때. 막지 않고 알리기만 해 오판이 제보를 끊지 않게 함
-const NOT_ANIMAL_ONE = "이 사진에서 동물이 보이지 않아요. 다시 고르거나 그대로 진행할 수 있어요";
-const notAnimalMany = (count: number) =>
-  `사진 ${count}장에서 동물이 보이지 않아요. 다시 고르거나 그대로 진행할 수 있어요`;
+// 선검사가 동물을 못 찾았을 때. 지우는 자리는 칸 가운데 X 가 맡아 토스트는 알리기만 함
+const NOT_ANIMAL_TOAST = "동물이 보이지 않아요";
+
+// 토스트는 사라지므로 다음으로 못 넘어가는 이유는 이 줄이 계속 들고 있음
+const NOT_ANIMAL_HINT = "동물이 보이지 않는 사진을 지워 주세요";
+
+// 살펴보는 중에는 덮개가 지우는 단추를 가리지 않게 손가락을 통과시킴
+const SCANNING = { pointerEvents: "none" } as const;
+
+// 이만큼 지나도 판정이 안 오면 살펴보는 중을 보임. 기기 판정은 이 전에 끝남
+const CHECKING_DELAY_MS = 150;
+
+type PhotoTileProps = {
+  photo: PhotoItem;
+  index: number;
+  verdict: PhotoVerdict;
+  onRemove: (photoId: string) => void;
+};
+
+/** 사진 한 칸. 살펴보는 동안과 걸렸을 때를 사진 위에 덮어 어느 칸인지 바로 보이게 함 */
+function PhotoTile({ photo, index, verdict, onRemove }: PhotoTileProps) {
+  const rejected = verdict === "not-animal";
+
+  // 기기 판정은 15ms 에 끝나 곧바로 그리면 덮개가 한 프레임만 번쩍임
+  // 서버로 갈 때는 700ms 쯤 걸려 이 늦춤 뒤에도 충분히 보임
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    if (verdict !== "checking") return;
+    const timer = setTimeout(() => setWaited(true), CHECKING_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [verdict]);
+  const checking = verdict === "checking" && waited;
+
+  return (
+    // 한 장만 빼는 일이 잦아 사진마다 지우는 자리를 둠
+    <ImageFrame
+      src={photo.previewUrl}
+      alt={index === 0 ? "대표 사진" : `사진 ${index + 1}`}
+      ratio={1}
+      width="full"
+      borderRadius="r3"
+      stroke
+    >
+      {/* 살펴보는 동안. 지우는 단추가 이 위로 와야 해 먼저 두고 손가락은 통과시킴 */}
+      {checking ? (
+        <VStack
+          position="absolute"
+          top="0"
+          right="0"
+          bottom="0"
+          left="0"
+          align="center"
+          justify="center"
+          bg="palette.staticBlackAlpha400"
+          style={SCANNING}
+          role="img"
+          aria-label={`사진 ${index + 1} 살펴보는 중`}
+        >
+          <ProgressCircle size="24" tone="staticWhite" />
+        </VStack>
+      ) : null}
+
+      {/* 걸린 칸은 이 X 하나만 둠. 오른쪽 위 지우는 단추와 겹쳐 보이지 않게 함 */}
+      {/* 표시와 지우기를 한 자리에 둬 누를 곳을 찾지 않아도 되게 함 */}
+      {rejected ? (
+        <VStack
+          asChild
+          position="absolute"
+          top="0"
+          right="0"
+          bottom="0"
+          left="0"
+          align="center"
+          justify="center"
+          bg="palette.staticBlackAlpha500"
+        >
+          <button
+            type="button"
+            aria-label={`사진 ${index + 1} 에서 동물이 보이지 않음, 눌러서 지우기`}
+            onClick={() => onRemove(photo.id)}
+          >
+            <VStack
+              align="center"
+              justify="center"
+              width="x9"
+              height="x9"
+              borderRadius="full"
+              bg="bg.criticalSolid"
+            >
+              <Icon svg={<IconXmarkFill />} size="x6" color="fg.criticalContrast" />
+            </VStack>
+          </button>
+        </VStack>
+      ) : null}
+
+      {rejected ? null : (
+        <ImageFrameFloater placement="top-end" offsetX="x2" offsetY="x2">
+          <ActionButton
+            type="button"
+            variant="neutralSolid"
+            size="xsmall"
+            layout="iconOnly"
+            aria-label={`사진 ${index + 1} 삭제`}
+            onClick={() => onRemove(photo.id)}
+          >
+            <Icon svg={<IconXmarkFill />} />
+          </ActionButton>
+        </ImageFrameFloater>
+      )}
+    </ImageFrame>
+  );
+}
 
 export type ReportCaptureProps = {
   picker: PhotoPickerState;
@@ -64,6 +170,23 @@ export function ReportCapture({
   // 조회가 끝나기 전에는 촬영으로 둠. 폰이 기본이라 그동안 글이 덜 바뀜
   const camera = cameraAvailable !== false;
   const { photos, maxCount, isFull, processing, error, addFiles, dismissError } = picker;
+
+  const snackbar = useSnackbarAdapter();
+  const { flagged } = precheck;
+  const { removePhoto } = picker;
+
+  // 걸린 사진마다 한 번만 알림. 같은 사진에 두 번 띄우지 않게 표시를 남김
+  const toasted = useRef(new Set<string>());
+  useEffect(() => {
+    for (const photo of flagged) {
+      if (toasted.current.has(photo.id)) continue;
+      toasted.current.add(photo.id);
+      snackbar.create({
+        onClose: () => {},
+        render: () => <Snackbar message={NOT_ANIMAL_TOAST} />,
+      });
+    }
+  }, [flagged, snackbar]);
 
   // capture 는 명세상 힌트라 카메라가 없는 기기는 알아서 파일 선택기로 떨어짐
   // 장치 조회로 가리면 권한 전에 videoinput 을 안 내놓는 브라우저에서 카메라가 안 열림
@@ -171,64 +294,28 @@ export function ReportCapture({
           <Text as="h2" textStyle="t7Bold" color="fg.neutral">
             이 사진으로 할까요
           </Text>
-          <Text textStyle="t4Regular" color="fg.neutralMuted">
-            {isFull
-              ? `사진 ${photos.length}장을 함께 분석해요`
-              : "한 장 더 있으면 AI 가 더 정확해져요"}
+          <Text
+            textStyle="t4Regular"
+            color={flagged.length > 0 ? "fg.critical" : "fg.neutralMuted"}
+          >
+            {flagged.length > 0
+              ? NOT_ANIMAL_HINT
+              : isFull
+                ? `사진 ${photos.length}장을 함께 분석해요`
+                : "한 장 더 있으면 AI 가 더 정확해져요"}
           </Text>
         </Section>
 
         <Grid columns={3} gap="x2">
-          {photos.map((photo, index) => {
-            const flagged = precheck.verdictOf(photo.id) === "not-animal";
-            return (
-              // 한 장만 빼는 일이 잦아 사진마다 지우는 자리를 둠. 전체 비우기는 아래 버튼이 함
-              <ImageFrame
-                key={photo.id}
-                src={photo.previewUrl}
-                alt={index === 0 ? "대표 사진" : `사진 ${index + 1}`}
-                ratio={1}
-                width="full"
-                borderRadius="r3"
-                stroke
-              >
-                <ImageFrameFloater placement="top-end" offsetX="x2" offsetY="x2">
-                  <ActionButton
-                    type="button"
-                    variant="neutralSolid"
-                    size="xsmall"
-                    layout="iconOnly"
-                    aria-label={`사진 ${index + 1} 삭제`}
-                    onClick={() => picker.removePhoto(photo.id)}
-                  >
-                    <Icon svg={<IconXmarkFill />} />
-                  </ActionButton>
-                </ImageFrameFloater>
-
-                {/* 어느 사진이 걸렸는지 칸 위에서 바로 보이게 함. 아래 문구가 무엇을 하라는지 말함 */}
-                {flagged ? (
-                  <ImageFrameFloater placement="bottom-start" offsetX="x1_5" offsetY="x1_5">
-                    <VStack
-                      align="center"
-                      justify="center"
-                      width="x6"
-                      height="x6"
-                      borderRadius="full"
-                      bg="bg.warningSolid"
-                      role="img"
-                      aria-label={`사진 ${index + 1} 에서 동물이 보이지 않음`}
-                    >
-                      <Icon
-                        svg={<IconExclamationmarkTriangleFill />}
-                        size="x3_5"
-                        color="fg.warningContrast"
-                      />
-                    </VStack>
-                  </ImageFrameFloater>
-                ) : null}
-              </ImageFrame>
-            );
-          })}
+          {photos.map((photo, index) => (
+            <PhotoTile
+              key={photo.id}
+              photo={photo}
+              index={index}
+              verdict={precheck.verdictOf(photo.id)}
+              onRemove={removePhoto}
+            />
+          ))}
           {isFull ? null : (
             <VStack
               asChild
@@ -254,45 +341,37 @@ export function ReportCapture({
           )}
         </Grid>
 
-        {precheck.flagged.length > 0 ? (
-          <Callout
-            tone="warning"
-            prefixIcon={<IconExclamationmarkTriangleFill />}
-            description={
-              precheck.flagged.length === 1
-                ? NOT_ANIMAL_ONE
-                : notAnimalMany(precheck.flagged.length)
-            }
-          />
-        ) : null}
-
         {error ? (
           <DismissibleCallout tone="critical" description={error} onDismiss={dismissError} />
         ) : null}
       </ScreenBody>
 
-      <HStack
-        gap="x2"
-        px="spacingX.globalGutter"
-        pt="x3"
-        pb="x5"
-        bg="bg.layerDefault"
-        borderTopWidth="1px"
-        borderColor="stroke.neutralMuted"
-      >
-        <ActionButton variant="neutralOutline" size="large" onClick={picker.clear}>
-          다시 찍기
-        </ActionButton>
-        <ActionButton
-          variant="brandSolid"
-          size="large"
-          flexGrow={1}
-          disabled={processing}
-          onClick={onNext}
+      {/* 토스트가 아래 버튼 띠를 덮지 않도록 띠 높이를 재게 함
+          SEED 는 띠의 화면 좌표로 띄울 높이를 재서 sticky 로 아래에 붙여 둬야 함
+          흐름에 그냥 두면 사진이 길어질 때 띠가 화면 밖으로 내려가 재는 대상에서 빠짐 */}
+      <SnackbarAvoidOverlap>
+        <VStack
+          align="stretch"
+          position="sticky"
+          bottom="0"
+          px="spacingX.globalGutter"
+          pt="x3"
+          bg="bg.layerDefault"
+          borderTopWidth="1px"
+          borderColor="stroke.neutralMuted"
+          className="rebirth-bottom-bar"
         >
-          다음
-        </ActionButton>
-      </HStack>
+          {/* 동물이 안 보이는 사진을 안고 2단계로 가면 거기서 되돌려 보내 걸음만 늘어남 */}
+          <ActionButton
+            variant="brandSolid"
+            size="large"
+            disabled={processing || flagged.length > 0}
+            onClick={onNext}
+          >
+            다음
+          </ActionButton>
+        </VStack>
+      </SnackbarAvoidOverlap>
       {hidden}
     </>
   );

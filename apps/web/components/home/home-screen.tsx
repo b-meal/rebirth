@@ -31,7 +31,6 @@ import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { describeAnimal } from "@/lib/report-label";
 import { useCurrentPosition } from "@/hooks/use-current-position";
-import { useDeviceHeading } from "@/hooks/use-device-heading";
 import { useMap } from "@/hooks/use-map";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
@@ -72,35 +71,14 @@ const MY_LOCATION_DOT = [
   "box-shadow:0 0 0 6px var(--seed-color-bg-brand-weak)",
 ].join(";");
 
-// 점을 한가운데 둔 정사각, 지도가 이 요소를 돌려 화살이 점을 축으로 돎
-const MY_LOCATION_WRAP = [
-  "position:relative",
-  "width:36px",
-  "height:36px",
-  "display:flex",
-  "align-items:center",
-  "justify-content:center",
-].join(";");
-
-// 기기가 바라보는 쪽을 가리키는 화살, 나침반을 못 읽으면 감춤
-const MY_LOCATION_CONE = [
-  "position:absolute",
-  "top:0",
-  "left:50%",
-  "margin-left:-6px",
-  "width:0",
-  "height:0",
-  "border-left:6px solid transparent",
-  "border-right:6px solid transparent",
-  "border-bottom:9px solid var(--seed-color-fg-brand)",
-].join(";");
-
 // 색은 상황만 알리고 무엇인지는 사진이 알림
+// 단색 위 글자와 아이콘은 SEED 가 제 컴포넌트에서 쓰는 대로 흰색, 노랑만 검정
+// fg.*Contrast 는 같은 색조의 한 단계 진한 색이라 단색 위에 올리면 묻힘
 const PIN_TONE = {
-  lost: { bg: "bg.warningSolid", fg: "fg.warningContrast" },
-  injured: { bg: "bg.criticalSolid", fg: "fg.criticalContrast" },
-  inCare: { bg: "bg.informativeSolid", fg: "fg.informativeContrast" },
-  roaming: { bg: "bg.brandSolid", fg: "fg.brandContrast" },
+  lost: { bg: "bg.warningSolid", fg: "palette.staticBlackAlpha900" },
+  injured: { bg: "bg.criticalSolid", fg: "palette.staticWhite" },
+  inCare: { bg: "bg.informativeSolid", fg: "palette.staticWhite" },
+  roaming: { bg: "bg.brandSolid", fg: "palette.staticWhite" },
 } as const;
 
 function toneOf(item: MapMarker) {
@@ -109,6 +87,17 @@ function toneOf(item: MapMarker) {
   if (item.injury === true) return PIN_TONE.injured;
   if (item.careSituation === "in_care") return PIN_TONE.inCare;
   return PIN_TONE.roaming;
+}
+
+type PinTone = (typeof PIN_TONE)[keyof typeof PIN_TONE];
+
+// ImageFrame 은 사진이 닿기 전과 실패했을 때 img 를 지워 자리가 비므로 그동안 세울 것
+function PawFallback({ tone }: { tone: PinTone }) {
+  return (
+    <VStack align="center" justify="center" height="full" borderRadius="full">
+      <Icon svg={<IconPawprintFill />} size="x4" color={tone.fg} />
+    </VStack>
+  );
 }
 
 type ReportPinProps = {
@@ -138,21 +127,19 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
         onClick={() => onSelect(item)}
       >
         {item.photoUrl ? (
-          // 지도에 얹힌 핀 수백 개가 한꺼번에 사진을 받지 않도록 화면에 든 것만 받음
+          // 지도는 화면에 든 것만 핀으로 만들어 이미 걸러져 있음
+          // lazy 를 걸면 마커가 transform 으로 얹혀 있어 브라우저가 화면에 든 줄 모르고 사진을 안 받음
           <ImageFrame
             ratio={1}
             width="full"
             src={item.photoUrl}
             alt=""
             borderRadius="full"
-            loading="lazy"
             decoding="async"
+            fallback={<PawFallback tone={tone} />}
           />
         ) : (
-          // 사진이 없거나 서명이 만료되면 발자국으로 대체
-          <VStack align="center" justify="center" height="full" borderRadius="full">
-            <Icon svg={<IconPawprintFill />} size="x4" color={tone.fg} />
-          </VStack>
+          <PawFallback tone={tone} />
         )}
       </button>
     </Box>
@@ -173,38 +160,83 @@ const CLUSTER_RADIUS_PX = 56;
 
 type ClusterPinProps = {
   count: number;
+  /** 묶음을 대표할 제보. 지도에서 사진이 사라지지 않게 한 장을 세움 */
+  item: MapMarker | null;
   onClick: () => void;
 };
 
-function ClusterPin({ count, onClick }: ClusterPinProps) {
+function ClusterPin({ count, item, onClick }: ClusterPinProps) {
   // 묶인 수가 많을수록 크게 그려 어디에 몰려 있는지 축척을 바꾸기 전에 보이게 함
   const size = count >= 100 ? "x14" : count >= 10 ? "x12" : "x10";
+  const tone = item ? toneOf(item) : PIN_TONE.roaming;
   return (
-    <Box
-      asChild
-      width={size}
-      height={size}
-      borderRadius="full"
-      borderWidth="2px"
-      borderColor="bg.layerFloating"
-      bg="bg.brandSolid"
-      boxShadow="s2"
-    >
-      <button type="button" aria-label={`제보 ${count}건 묶음, 눌러서 확대`} onClick={onClick}>
-        <VStack align="center" justify="center" height="full">
-          <Text textStyle={count >= 100 ? "t3Bold" : "t2Bold"} color="fg.brandContrast">
-            {count}
-          </Text>
-        </VStack>
-      </button>
+    <Box position="relative" width={size} height={size}>
+      <Box
+        asChild
+        width="full"
+        height="full"
+        p="x0_5"
+        borderRadius="full"
+        borderWidth="2px"
+        borderColor="bg.layerFloating"
+        bg={tone.bg}
+        boxShadow="s2"
+      >
+        <button type="button" aria-label={`제보 ${count}건 묶음, 눌러서 확대`} onClick={onClick}>
+          {item?.photoUrl ? (
+            <ImageFrame
+              ratio={1}
+              width="full"
+              src={item.photoUrl}
+              alt=""
+              borderRadius="full"
+              decoding="async"
+              fallback={<PawFallback tone={tone} />}
+            />
+          ) : (
+            <PawFallback tone={tone} />
+          )}
+        </button>
+      </Box>
+      {/* 겹쳐 있는 수는 사진을 가리지 않게 모서리에 작게 붙임 */}
+      <HStack
+        position="absolute"
+        align="center"
+        justify="center"
+        px="x1"
+        borderRadius="full"
+        bg="bg.brandSolid"
+        borderColor="bg.layerFloating"
+        style={{
+          top: "-4px",
+          right: "-4px",
+          minWidth: "18px",
+          height: "18px",
+          borderWidth: "2px",
+          pointerEvents: "none",
+        }}
+      >
+        <Text textStyle="t1Bold" color="palette.staticWhite">
+          {count > 99 ? "99+" : count}
+        </Text>
+      </HStack>
     </Box>
   );
 }
 
-// 화면에 실제로 그릴 것. 낱개는 사진 핀, 묶음은 숫자 핀
+// 화면에 실제로 그릴 것. 낱개도 묶음도 사진 핀, 묶음에만 수 배지가 붙음
 type Pin =
   | { kind: "report"; key: string; el: HTMLElement; item: MapMarker }
-  | { kind: "cluster"; key: string; el: HTMLElement; id: number; count: number; at: LatLng };
+  | {
+      kind: "cluster";
+      key: string;
+      el: HTMLElement;
+      id: number;
+      count: number;
+      at: LatLng;
+      // 대표 제보는 지도에 물어봐야 알 수 있어 그린 뒤에 채움
+      item: MapMarker | null;
+    };
 
 // 훅의 초기값. 렌더마다 새 배열을 넘기지 않도록 바깥에 둠
 const EMPTY_MARKERS: MapMarker[] = [];
@@ -349,6 +381,7 @@ export function HomeScreen({
             id: props.cluster_id as number,
             count: props.point_count as number,
             at: { lat, lng },
+            item: null,
           });
           continue;
         }
@@ -357,6 +390,30 @@ export function HomeScreen({
       }
       // 마커 요소는 지도가 만든 뒤에야 존재해 포털 대상은 마운트 후 넣음
       setPins(next);
+      void fillClusterPhotos(next);
+    };
+
+    // 묶음에 세울 사진은 지도에게 물어봐야 알 수 있어 핀을 그린 뒤에 채움
+    let turn = 0;
+    const fillClusterPhotos = async (pins: Pin[]) => {
+      const clusters = pins.filter((pin) => pin.kind === "cluster");
+      if (clusters.length === 0) return;
+      const clustered = map.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
+      if (!clustered) return;
+
+      const mine = ++turn;
+      await Promise.all(
+        clusters.map(async (pin) => {
+          // 사진 없는 제보가 앞에 설 수 있어 몇 장 받아 첫 사진을 고름
+          const leaves = await clustered.getClusterLeaves(pin.id, 4, 0).catch(() => []);
+          const items = leaves
+            .map((leaf) => byId.get(leaf.properties?.id as string))
+            .filter((item): item is MapMarker => Boolean(item));
+          pin.item = items.find((item) => item.photoUrl) ?? items[0] ?? null;
+        }),
+      );
+      // 그사이 지도가 움직였으면 이미 다른 핀이 올라와 있음
+      if (mine === turn) setPins([...pins]);
     };
 
     // 묶음은 축척과 위치에 따라 다시 계산돼 화면이 멈출 때마다 새로 읽음
@@ -389,42 +446,18 @@ export function HomeScreen({
   );
 
   const myPoint = position.point;
-  // 나침반 값은 초당 수십 번 바뀌어 상태로 들면 핀 수백 개가 같이 다시 그려짐
-  const myMarker = useRef<Marker | null>(null);
-  const myCone = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!map || !myPoint) return;
-    const wrap = document.createElement("div");
-    wrap.setAttribute("style", MY_LOCATION_WRAP);
-    const cone = document.createElement("div");
-    cone.setAttribute("style", MY_LOCATION_CONE);
-    cone.hidden = true;
     const dot = document.createElement("div");
     dot.setAttribute("style", MY_LOCATION_DOT);
-    wrap.append(cone, dot);
-
-    // 방향은 세상 기준이라 지도를 돌리면 화살도 같이 돌아야 함
-    const marker = new Marker({ element: wrap, anchor: "center", rotationAlignment: "map" })
+    const marker = new Marker({ element: dot, anchor: "center" })
       .setLngLat([myPoint.lng, myPoint.lat])
       .addTo(map);
-    myMarker.current = marker;
-    myCone.current = cone;
 
     return () => {
       marker.remove();
-      myMarker.current = null;
-      myCone.current = null;
     };
   }, [map, myPoint]);
-
-  const showHeading = useCallback((heading: number | null) => {
-    const cone = myCone.current;
-    if (!cone) return;
-    cone.hidden = heading === null;
-    if (heading !== null) myMarker.current?.setRotation(heading);
-  }, []);
-
-  const compass = useDeviceHeading({ enabled: Boolean(myPoint), onChange: showHeading });
 
   // 지도를 못 띄우면 거리를 셀 기준이 없어 최근 제보를 그대로 보여줌
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
@@ -560,8 +593,6 @@ export function HomeScreen({
   };
 
   const recenter = () => {
-    // iOS 는 탭 처리 안에서만 나침반을 물어볼 수 있어 이 단추를 계기로 씀
-    compass.request();
     if (position.point) {
       moveTo(position.point, { animate: true });
       return;
@@ -592,7 +623,11 @@ export function HomeScreen({
       {pins.map((pin) =>
         createPortal(
           pin.kind === "cluster" ? (
-            <ClusterPin count={pin.count} onClick={() => expandCluster(pin.id, pin.at)} />
+            <ClusterPin
+              count={pin.count}
+              item={pin.item}
+              onClick={() => expandCluster(pin.id, pin.at)}
+            />
           ) : (
             <ReportPin
               item={pin.item}
