@@ -168,6 +168,28 @@ export function HomeScreen({
       render: () => <Snackbar message={message} />,
     });
 
+  // 검색창과 시트가 지도를 덮어 그 사이만 실제로 보이는 구간
+  const topBarRef = useRef<HTMLDivElement | null>(null);
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+
+  // 지도 중심을 보이는 구간 한가운데로 옮겨 내 위치가 시트 쪽으로 밀려 내려가지 않게 함
+  useEffect(() => {
+    if (!map) return;
+    const apply = () => {
+      const height = window.innerHeight;
+      const top = topBarRef.current?.getBoundingClientRect().bottom ?? 0;
+      const sheetTop = sheetRef.current?.getBoundingClientRect().top ?? height;
+      // 시트를 펼친 채 화면이 바뀌면 여백이 지도보다 커져 남는 구간이 사라지므로 절반으로 묶음
+      const bottom = Math.max(Math.min(height - sheetTop, (height - top) / 2), 0);
+      map.setPadding({ top, bottom, left: 0, right: 0 });
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+    };
+  }, [map]);
+
   // 권한 응답이 늦게 와도 첫 도착에만 옮겨 사용자가 끌어 둔 화면을 되돌리지 않음
   const centered = useRef(false);
   useEffect(() => {
@@ -393,6 +415,7 @@ export function HomeScreen({
       ) : null}
 
       <HStack
+        ref={topBarRef}
         position="absolute"
         top="0"
         left="0"
@@ -500,6 +523,7 @@ export function HomeScreen({
         )}
 
         <VStack
+          ref={sheetRef}
           as="section"
           align="stretch"
           gap="x2"
