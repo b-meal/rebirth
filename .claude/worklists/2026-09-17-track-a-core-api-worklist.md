@@ -138,10 +138,10 @@
   - [x] `createCatchAll` 의 `GET` 표에 `":id/track": getLostTrackHandler` 한 줄을 넣습니다
   - [x] `import { getLostTrackHandler } from "@rebirth/core/matching/track-handlers"` 로 서브패스에서 가져옵니다
   - [x] `grep -n "track" "apps/web/app/api/lost/[...path]/route.ts"` 가 두 줄을 내는지 확인합니다
-- [ ] `packages/core/src/matching/track-handlers.ts` 의 정상·오류 경로를 호출해 확인합니다
+- [x] `packages/core/src/matching/track-handlers.ts` 의 정상·오류 경로를 호출해 확인합니다
   - [x] `pnpm --filter @rebirth/web dev` 를 띄우고 관리 세션 없이 `/api/lost/<uuid>/track` 을 불러 `401` 또는 `403` 을 봅니다
   - [x] `/api/lost/00000000-0000-0000-0000-000000000000/track` 을 불러 `404` 를 봅니다
-  - [ ] `/api/lost/<내 신고 id>/track` 을 관리 주소로 연 세션에서 불러 `200` 과 `track` `density` 키를 확인합니다
+  - [x] `/api/lost/<내 신고 id>/track` 을 관리 주소로 연 세션에서 불러 `200` 과 `track` `density` 키를 확인합니다
   - [x] `grep -c "exactPoint"` 로 응답 본문을 검사해 `0` 인 것을 확인합니다
 - [x] `pnpm typecheck` 와 `pnpm lint` 를 통과시키고 Phase 6 담당 경로만 커밋한 뒤 B 에게 알립니다
   - [x] `pnpm typecheck 2>&1 | tail -5` 와 `pnpm lint 2>&1 | tail -5` 를 돌려 `5 successful` 과 `2 successful` 을 봅니다
@@ -197,6 +197,8 @@
 - Phase 0 74행 stash 는 추적 변경이 0건이라 실행하지 않았고 `git status --short` 가 `?? .claude/worklists/` 한 줄뿐인 것으로 목적 달성을 갈음함
 
 ### 실측 기록
+
+- Phase 6 이 못 한 `200` 경로 확인은 Phase 9 가 `## 추가 항목` 으로 처리함. 신규 신고를 등록해 관리 쿠키를 받아 `200 track=null density=null` 을 봄
 
 - `reviewTrack` 첫 줄에서 `client()` 를 먼저 불러 키가 없으면 `loadTrackPhotos` 에 닿지 않음. `no-config` 메시지는 `review.ts` 와 동일
 - `@rebirth/core` 테스트가 `pass 100` 에서 `pass 101` 로 1건 증가
