@@ -47,8 +47,8 @@ export function DesignSystem() {
             SEED 디자인 시스템
           </Text>
           <Text textStyle="t5Regular" color="fg.neutralMuted">
-            다시집 web 은 당근 SEED 하나만 씁니다. 아래 값과 컴포넌트는 설치된
-            @seed-design/css 와 seed-design/ui 스니펫에서 그대로 읽어 그립니다
+            다시집 web 은 당근 SEED 하나만 써요. 아래 값과 컴포넌트는 설치된
+            @seed-design/css 와 seed-design/ui 스니펫에서 그대로 읽어 그려요
           </Text>
           <HStack gap="x3" wrap>
             <a href={SEED_DOCS_ORIGIN} target="_blank" rel="noreferrer noopener">

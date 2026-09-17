@@ -49,7 +49,7 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
       setError(null);
       const uploadId = await upload.upload(next);
       if (!uploadId) {
-        setError("사진을 올리지 못했습니다. 다시 골라 주십시오");
+        setError("사진을 올리지 못했어요. 다시 골라 주세요");
         return;
       }
       analyze.start([uploadId]);
@@ -91,7 +91,7 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
         <BottomSheetBody>
           <VStack align="stretch" gap="x4">
             <Text textStyle="t4Regular" color="fg.neutralMuted">
-              사진 속 동물의 종류와 털색, 크기로 비슷한 제보를 찾습니다. 품종은 추정으로만 씁니다
+              사진 속 동물의 종류와 털색, 크기로 비슷한 제보를 찾아요. 품종은 추정으로만 써요
             </Text>
 
             {photo ? (
@@ -108,7 +108,7 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
                     <HStack gap="x2" align="center">
                       <ProgressCircle size="24" />
                       <Text textStyle="t4Regular" color="fg.neutralMuted">
-                        사진을 살펴보고 있습니다
+                        사진을 살펴보고 있어요
                       </Text>
                     </HStack>
                   ) : found ? (
@@ -117,16 +117,16 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
                         {found}
                       </Text>
                       <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                        이 조건으로 최근 제보를 찾습니다
+                        이 조건으로 최근 제보를 찾아요
                       </Text>
                     </>
                   ) : analyze.status === "failed" ? (
                     <Text textStyle="t4Regular" color="fg.neutralMuted">
-                      사진을 살펴보지 못했습니다. 글자로 검색하거나 잠시 후 다시 시도해 주십시오
+                      사진을 살펴보지 못했어요. 글자로 검색하거나 잠시 후 다시 시도해 주세요
                     </Text>
                   ) : (
                     <Text textStyle="t4Regular" color="fg.neutralMuted">
-                      사진에서 동물을 찾지 못했습니다. 다른 사진을 골라 주십시오
+                      사진에서 동물을 찾지 못했어요. 다른 사진을 골라 주세요
                     </Text>
                   )}
                 </VStack>

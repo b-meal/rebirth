@@ -109,8 +109,8 @@ export function CatalogPatterns() {
         <Stage>
           <ResultSection
             size="medium"
-            title="조건에 맞는 제보가 없습니다"
-            description="조건을 줄이면 더 많은 제보를 볼 수 있습니다"
+            title="조건에 맞는 제보가 없어요"
+            description="조건을 줄이면 더 많은 제보를 볼 수 있어요"
             primaryActionProps={{ children: "전체 보기" }}
             secondaryActionProps={{ children: "조건 다시 고르기" }}
           />
@@ -121,7 +121,7 @@ export function CatalogPatterns() {
         <Row>
           <HelpBubbleTrigger
             title="유사도 점수"
-            description="거리와 시간과 외형을 합친 값이며 동일 개체 확정이 아닙니다"
+            description="거리와 시간과 외형을 합친 값이며 동일 개체 확정이 아니에요"
           >
             <ActionButton variant="neutralOutline" size="small">
               도움말 열기
@@ -141,7 +141,7 @@ export function CatalogPatterns() {
             <DialogContent title="제보 안내" description="화면을 덮는 안내 자리">
               <DialogBody>
                 <Text textStyle="t4Regular" color="fg.neutral">
-                  본문이 들어가는 자리입니다
+                  본문이 들어가는 자리예요
                 </Text>
               </DialogBody>
               <DialogFooter>
@@ -164,7 +164,7 @@ export function CatalogPatterns() {
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogTitle>제보를 삭제할까요</AlertDialogTitle>
-              <AlertDialogDescription>되돌릴 수 없습니다</AlertDialogDescription>
+              <AlertDialogDescription>되돌릴 수 없어요</AlertDialogDescription>
               <AlertDialogFooter>
                 <AlertDialogAction variant="neutralWeak">취소</AlertDialogAction>
                 <AlertDialogAction variant="criticalSolid">삭제</AlertDialogAction>
@@ -246,7 +246,7 @@ export function CatalogPatterns() {
             <SidePanelContent title="설정">
               <SidePanelBody>
                 <Text textStyle="t4Regular" color="fg.neutral">
-                  옆에서 밀려 나오는 화면입니다
+                  옆에서 밀려 나오는 화면이에요
                 </Text>
               </SidePanelBody>
             </SidePanelContent>

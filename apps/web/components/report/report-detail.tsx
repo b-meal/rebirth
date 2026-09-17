@@ -145,7 +145,7 @@ export function ReportDetail({
             <Badge label="AI 초안, 수정 가능" tone="neutral" />
           </HStack>
           <Text textStyle="articleBody" color="fg.neutral" whiteSpace="pre-wrap">
-            {report.appearance ?? "외형 설명이 없습니다"}
+            {report.appearance ?? "외형 설명이 없어요"}
           </Text>
         </SectionCard>
 

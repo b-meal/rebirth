@@ -89,7 +89,7 @@ export function usePlaceSearch({
         const body = await response.json().catch(() => null);
         if (!response.ok) {
           setItems([]);
-          setError(body?.message ?? "검색에 실패했습니다. 잠시 후에 다시 시도해 주십시오");
+          setError(body?.message ?? "검색에 실패했어요. 잠시 후에 다시 시도해 주세요");
           return;
         }
         setItems(body?.items ?? []);
@@ -97,7 +97,7 @@ export function usePlaceSearch({
         // 새 입력이 들어와 취소된 요청은 오류가 아님
         if (cause instanceof DOMException && cause.name === "AbortError") return;
         setItems([]);
-        setError("검색에 실패했습니다. 잠시 후에 다시 시도해 주십시오");
+        setError("검색에 실패했어요. 잠시 후에 다시 시도해 주세요");
       } finally {
         // 새 입력에 밀려 취소된 요청은 조회를 마친 것으로 보지 않음
         if (inflight.current === controller) {

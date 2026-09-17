@@ -110,7 +110,7 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
 
         {detail ? (
           <Text textStyle="t3Regular" color="fg.neutral" maxLines={2}>
-            {detail.appearance ?? "외형 설명이 없습니다"}
+            {detail.appearance ?? "외형 설명이 없어요"}
           </Text>
         ) : (
           <Skeleton width="full" height="x8" radius="8" />

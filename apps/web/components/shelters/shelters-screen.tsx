@@ -139,8 +139,8 @@ export function SheltersScreen({ regions }: { regions: string[] }) {
             tone="neutral"
             description={
               failed
-                ? "기관을 불러오지 못했습니다. 잠시 후에 다시 시도해 주십시오"
-                : "이 지역에 등록된 기관이 없습니다"
+                ? "기관을 불러오지 못했어요. 잠시 후에 다시 시도해 주세요"
+                : "이 지역에 등록된 기관이 없어요"
             }
           />
         ) : null}

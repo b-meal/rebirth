@@ -20,7 +20,7 @@ type UploadResponse = {
   message?: string;
 };
 
-const FAILED = "사진을 올리지 못했습니다. 다시 골라 주십시오";
+const FAILED = "사진을 올리지 못했어요. 다시 골라 주세요";
 
 export function usePhotoUpload(): UploadState {
   const [status, setStatus] = useState<UploadState["status"]>("idle");
