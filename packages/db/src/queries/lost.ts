@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, gte, lte, ne, sql as raw } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, lte, ne, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
 import { matchScores, reportPhotos, reports } from '../schema'
@@ -250,6 +250,34 @@ export async function findMatchesForLost(lostId: string, limit = 30) {
       desc(reports.id),
     )
     .limit(limit)
+}
+
+/**
+ * 경로에 이을 목격 제보. 점수 하한을 넘고 좌표 근거가 있는 것만 시간순으로 냄
+ * 수동 지역 제보는 격자 좌표가 제보자가 고른 지역 중심이라 이동 근거로 쓰지 못함
+ * 정확 좌표는 고르지 않음. 경로·예측은 전부 격자 좌표로만 계산함
+ */
+export async function findTrackSightings(lostId: string, minScore: number) {
+  return db
+    .select({
+      id: reports.id,
+      score: matchScores.score,
+      coarsePoint: reports.coarsePoint,
+      occurredAt: reports.occurredAt,
+      areaName: reports.areaName,
+      locationSource: reports.locationSource,
+    })
+    .from(matchScores)
+    .innerJoin(reports, eq(matchScores.sightingId, reports.id))
+    .where(
+      and(
+        eq(matchScores.lostId, lostId),
+        eq(reports.visibility, 'public'),
+        gte(matchScores.score, minScore),
+        ne(reports.locationSource, 'manual_area'),
+      ),
+    )
+    .orderBy(asc(reports.occurredAt))
 }
 
 export { CANDIDATE_RADIUS_M, CANDIDATE_WINDOW_DAYS }

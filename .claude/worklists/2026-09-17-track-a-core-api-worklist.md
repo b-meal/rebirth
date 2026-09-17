@@ -124,29 +124,29 @@
 
 ## Phase 6. 경로 조회와 API
 
-- [ ] `packages/db/src/queries/lost.ts` 에 경로용 목격 조회 `findTrackSightings` 를 추가합니다
-  - [ ] `findMatchesForLost` 아래에 `findTrackSightings(lostId, minScore)` 를 만들고 `matchScores` 와 `reports` 를 조인합니다
-  - [ ] `id` `score` `coarsePoint` `occurredAt` `areaName` `locationSource` 만 고르고 `exactPoint` 는 고르지 않습니다
-  - [ ] `visibility` 가 `public` 이고 `score >= minScore` 이며 `locationSource <> 'manual_area'` 인 행만 `occurredAt` 오름차순으로 반환합니다
-- [ ] `packages/core/src/matching/track-handlers.ts` 에 경로 조회 핸들러 `getLostTrackHandler` 를 만듭니다
-  - [ ] `handlers.ts` 의 `loadOwnLost` 와 같은 순서로 `isUuid` `checkManageAccess` `findManagedReport` 를 거치고 실패 시 `notFound` `unauthorized` `forbidden` 을 돌려줍니다
-  - [ ] `findTrackSightings` 결과를 `TrackNode` 로 옮기되 `coarsePoint` 의 `y` 를 `lat`, `x` 를 `lng` 로 넣습니다
-  - [ ] `buildTrack` 과 `predictNext` 를 `./track.ts` 상대 경로로 부르고 `size` 는 실종 신고의 `size` 를 씁니다
-  - [ ] `density` 를 예측 중심에서 `radiusKm` 안에 든 노드 수와 가장 최근 노드의 경과 시간으로 계산해 `{ count, radiusKm, newestHoursAgo }` 로 담습니다
-  - [ ] `okPrivate({ track, prediction, density, gridMeters })` 로 응답하고 경로가 `null` 이면 `track` `prediction` `density` 를 전부 `null` 로 둡니다
-- [ ] `apps/web/app/api/lost/[...path]/route.ts` 에 경로 조회 경로를 답니다
-  - [ ] `createCatchAll` 의 `GET` 표에 `":id/track": getLostTrackHandler` 한 줄을 넣습니다
-  - [ ] `import { getLostTrackHandler } from "@rebirth/core/matching/track-handlers"` 로 서브패스에서 가져옵니다
-  - [ ] `grep -n "track" "apps/web/app/api/lost/[...path]/route.ts"` 가 두 줄을 내는지 확인합니다
+- [x] `packages/db/src/queries/lost.ts` 에 경로용 목격 조회 `findTrackSightings` 를 추가합니다
+  - [x] `findMatchesForLost` 아래에 `findTrackSightings(lostId, minScore)` 를 만들고 `matchScores` 와 `reports` 를 조인합니다
+  - [x] `id` `score` `coarsePoint` `occurredAt` `areaName` `locationSource` 만 고르고 `exactPoint` 는 고르지 않습니다
+  - [x] `visibility` 가 `public` 이고 `score >= minScore` 이며 `locationSource <> 'manual_area'` 인 행만 `occurredAt` 오름차순으로 반환합니다
+- [x] `packages/core/src/matching/track-handlers.ts` 에 경로 조회 핸들러 `getLostTrackHandler` 를 만듭니다
+  - [x] `handlers.ts` 의 `loadOwnLost` 와 같은 순서로 `isUuid` `checkManageAccess` `findManagedReport` 를 거치고 실패 시 `notFound` `unauthorized` `forbidden` 을 돌려줍니다
+  - [x] `findTrackSightings` 결과를 `TrackNode` 로 옮기되 `coarsePoint` 의 `y` 를 `lat`, `x` 를 `lng` 로 넣습니다
+  - [x] `buildTrack` 과 `predictNext` 를 `./track.ts` 상대 경로로 부르고 `size` 는 실종 신고의 `size` 를 씁니다
+  - [x] `density` 를 예측 중심에서 `radiusKm` 안에 든 노드 수와 가장 최근 노드의 경과 시간으로 계산해 `{ count, radiusKm, newestHoursAgo }` 로 담습니다
+  - [x] `okPrivate({ track, prediction, density, gridMeters })` 로 응답하고 경로가 `null` 이면 `track` `prediction` `density` 를 전부 `null` 로 둡니다
+- [x] `apps/web/app/api/lost/[...path]/route.ts` 에 경로 조회 경로를 답니다
+  - [x] `createCatchAll` 의 `GET` 표에 `":id/track": getLostTrackHandler` 한 줄을 넣습니다
+  - [x] `import { getLostTrackHandler } from "@rebirth/core/matching/track-handlers"` 로 서브패스에서 가져옵니다
+  - [x] `grep -n "track" "apps/web/app/api/lost/[...path]/route.ts"` 가 두 줄을 내는지 확인합니다
 - [ ] `packages/core/src/matching/track-handlers.ts` 의 정상·오류 경로를 호출해 확인합니다
-  - [ ] `pnpm --filter @rebirth/web dev` 를 띄우고 관리 세션 없이 `/api/lost/<uuid>/track` 을 불러 `401` 또는 `403` 을 봅니다
-  - [ ] `/api/lost/00000000-0000-0000-0000-000000000000/track` 을 불러 `404` 를 봅니다
+  - [x] `pnpm --filter @rebirth/web dev` 를 띄우고 관리 세션 없이 `/api/lost/<uuid>/track` 을 불러 `401` 또는 `403` 을 봅니다
+  - [x] `/api/lost/00000000-0000-0000-0000-000000000000/track` 을 불러 `404` 를 봅니다
   - [ ] `/api/lost/<내 신고 id>/track` 을 관리 주소로 연 세션에서 불러 `200` 과 `track` `density` 키를 확인합니다
-  - [ ] `grep -c "exactPoint"` 로 응답 본문을 검사해 `0` 인 것을 확인합니다
-- [ ] `pnpm typecheck` 와 `pnpm lint` 를 통과시키고 Phase 6 담당 경로만 커밋한 뒤 B 에게 알립니다
-  - [ ] `pnpm typecheck 2>&1 | tail -5` 와 `pnpm lint 2>&1 | tail -5` 를 돌려 `5 successful` 과 `2 successful` 을 봅니다
-  - [ ] `git add packages/db/src/queries/lost.ts packages/core/src/matching/track-handlers.ts "apps/web/app/api/lost/[...path]/route.ts"` 로 담습니다
-  - [ ] `git commit -m "feat: 실종 신고의 목격 경로·다음 목격 예측·제보 밀도 조회 API 추가"` 로 커밋하고 `exit 0` 을 확인합니다
+  - [x] `grep -c "exactPoint"` 로 응답 본문을 검사해 `0` 인 것을 확인합니다
+- [x] `pnpm typecheck` 와 `pnpm lint` 를 통과시키고 Phase 6 담당 경로만 커밋한 뒤 B 에게 알립니다
+  - [x] `pnpm typecheck 2>&1 | tail -5` 와 `pnpm lint 2>&1 | tail -5` 를 돌려 `5 successful` 과 `2 successful` 을 봅니다
+  - [x] `git add packages/db/src/queries/lost.ts packages/core/src/matching/track-handlers.ts "apps/web/app/api/lost/[...path]/route.ts"` 로 담습니다
+  - [x] `git commit -m "feat: 실종 신고의 목격 경로·다음 목격 예측·제보 밀도 조회 API 추가"` 로 커밋하고 `exit 0` 을 확인합니다
 
 ## Phase 9. 배선과 최종 게이트
 
@@ -178,9 +178,14 @@
 
 ## 추가 항목
 
+- [ ] `POST /api/lost` 로 실종 신고 1건을 등록해 관리 쿠키를 받은 뒤 `GET /api/lost/:id/track` 이 `200` 과 `track`·`density` 키를 내는지 확인합니다
+
 ## 참고
 
 ### 지시서 결함
+
+- Phase 6 의 존재하지 않는 uuid `404` 확인은 실제로 `401` 이 나옴. 권한 확인이 행 조회보다 앞서는 기존 설계이고 `/candidates` 도 같음. `not-a-uuid` 로 `404` 를 대신 확인함
+- Phase 6 은 관리 세션이 있는 실종 신고를 전제하나 관리 토큰은 발급 시 1회만 나가고 해시만 저장돼 기존 신고로는 `200` 경로를 확인할 수 없음
 
 - Phase 0 의 `git stash push -u` 는 미추적 `.claude/worklists/` 까지 치워 에이전트가 읽을 지시서 3개를 사라지게 함. 트리가 깨끗하면 건너뛰어야 함
 - Phase 0 78행은 `pnpm test 2>&1 | tail -20` 으로 `fail 0` 과 `2 successful` 을 보라 하나 tail -20 이 core 출력만 냄. web `pass 3` 은 별도 확인 필요
@@ -188,6 +193,11 @@
 - Phase 0 74행 stash 는 추적 변경이 0건이라 실행하지 않았고 `git status --short` 가 `?? .claude/worklists/` 한 줄뿐인 것으로 목적 달성을 갈음함
 
 ### 실측 기록
+
+- `handlers.ts` 의 `loadOwnLost` 가 export 돼 있지 않아 `track-handlers.ts` 에 같은 3단계를 복제함
+- `findManagedReport` 가 `coarseGridM` 과 `size` 를 이미 내주어 별도 행 조회 없이 그 값을 씀
+- `density` 는 `track.nodes` 가 아니라 조회한 제보 전체 기준. 밀도 문구가 제보 n건 이라 경로에서 걸러진 제보도 셈
+- `@rebirth/core/matching/track-handlers` 서브패스와 `./track.ts` 확장자 import 가 Turbopack dev 에서 정상 번들됨
 
 - `@rebirth/core` 테스트가 `pass 87` 에서 `pass 91` 로 4건 증가. 신규 4건 전부 `track.test.ts`
 - `comment-style.mjs` 훅은 `//` 2줄 연속도 차단해 파일 헤더 주석을 1줄로 씀. `/** */` JSDoc 은 검사 대상 밖
