@@ -4,17 +4,17 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import Image from "next/image";
-import { Box, Text } from "@seed-design/react";
+import Link from "next/link";
+import { Box, Text, VStack } from "@seed-design/react";
+import { ActionButton } from "seed-design/ui/action-button";
 
 import styles from "./splash-overlay.module.css";
 
-const VISIBLE_MS = 1900;
 const FADE_MS = 240;
 const LOAD_TIMEOUT_MS = 3000;
 const SPLASH_IMAGE = "/splash/dasijip-splash-ribbon.png";
 
 const TIMING = {
-  "--splash-visible": `${VISIBLE_MS}ms`,
   "--splash-fade": `${FADE_MS}ms`,
   "--splash-load-timeout": `${LOAD_TIMEOUT_MS}ms`,
 } as CSSProperties;
@@ -25,17 +25,16 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || ready) return;
 
-    // 이미지 로딩과 애니메이션 종료 이벤트가 실패해도 덮개 해제
-    const timer = setTimeout(
-      () => setVisible(false),
-      ready ? VISIBLE_MS + FADE_MS : LOAD_TIMEOUT_MS,
-    );
+    // 이미지가 끝내 안 오면 덮개를 걷어 뒤 화면을 막지 않음
+    const timer = setTimeout(() => setVisible(false), LOAD_TIMEOUT_MS);
     return () => clearTimeout(timer);
   }, [ready, visible]);
 
   if (!visible) return null;
+
+  const dismiss = () => setVisible(false);
 
   return (
     <Box
@@ -53,12 +52,11 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
       style={TIMING}
       data-splash=""
       data-ready={ready}
-      aria-hidden
       onAnimationEnd={(event) => {
         if (event.target === event.currentTarget) setVisible(false);
       }}
     >
-      <Box className={styles.artwork}>
+      <Box className={styles.artwork} aria-hidden>
         <Image
           src={SPLASH_IMAGE}
           alt=""
@@ -104,6 +102,21 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
           ,
         </Text>
       </Box>
+
+      {/* 로고가 올라간 자리 아래. 진입한 사람이 곧바로 할 일 하나만 둠 */}
+      <VStack className={styles.actions} align="stretch" gap="x3" px="spacingX.globalGutter">
+        <ActionButton size="large" asChild onClick={dismiss}>
+          <Link href="/report">제보하기</Link>
+        </ActionButton>
+        <VStack asChild align="center">
+          <button type="button" onClick={dismiss}>
+            <Text textStyle="t4Bold" color="fg.neutralSubtle">
+              지도 둘러보기
+            </Text>
+          </button>
+        </VStack>
+      </VStack>
+
       <noscript>
         <style>{"[data-splash] { display: none; }"}</style>
       </noscript>
