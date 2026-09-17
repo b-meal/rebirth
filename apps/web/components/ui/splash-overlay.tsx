@@ -13,7 +13,8 @@ import styles from "./splash-overlay.module.css";
 const VISIBLE_MS = 1900;
 const FADE_MS = 240;
 const LOAD_TIMEOUT_MS = 3000;
-const SPLASH_IMAGE = "/splash/dasijip-splash-ribbon.png";
+// 로고가 뜨는 시점은 이 파일이 도착한 순간이라 무게를 가장 먼저 줄임, PNG 563KB 대비 9KB
+const SPLASH_IMAGE = "/splash/dasijip-splash-ribbon.webp";
 
 const TIMING = {
   "--splash-visible": `${VISIBLE_MS}ms`,
