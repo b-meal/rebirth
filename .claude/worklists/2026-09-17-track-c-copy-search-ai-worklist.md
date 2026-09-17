@@ -93,27 +93,27 @@
 
 ## Phase 5. 검색 목적 분리
 
-- [ ] `packages/db/src/queries/reports.ts` 의 `listPublicReports` 검색어 매칭에 반려동물 이름을 더합니다
-  - [ ] `packages/db/src/queries/reports.ts:187-193` 의 `q` 조건 `or exists (...)` 뒤에 `or exists (select 1 from ${pets} p where p.id = ${reports}.pet_id and p.name ilike ${'%' + q + '%'})` 를 넣습니다
-  - [ ] `pets` 가 이미 같은 파일에서 import 되어 있는지 `grep -n "pets" packages/db/src/queries/reports.ts | head -3` 으로 확인합니다
-  - [ ] `pnpm --filter @rebirth/db typecheck 2>&1 | tail -3` 을 돌려 오류 없이 끝나는 것을 봅니다
-- [ ] `apps/web/app/search/page.tsx` 가 `kind` 쿼리를 읽어 목록 종류를 고르게 합니다
-  - [ ] `loadResults` 의 `listQuery.safeParse` 입력에 `...(first(params.kind) && { kind: first(params.kind) })` 를 더합니다
-  - [ ] `listPublicReports({ kind: "sighting", ... })` 의 고정값을 `kind: parsed.data.kind ?? "sighting"` 으로 바꿉니다
-  - [ ] `SearchScreen` 에 `kind={parsed.data.kind ?? "sighting"}` 를 넘기도록 props 를 하나 더합니다
-- [ ] `apps/web/components/search/search-screen.tsx` 에 검색 목적 선택을 둡니다
-  - [ ] `SHORTCUTS` 카드 위에 `Chip.Button` 두 개 `발견 제보 찾기` `실종 신고 찾기` 를 두고 현재 `kind` 인 쪽만 선택 상태로 그립니다
-  - [ ] `TextFieldInput` 의 `placeholder` 를 `kind` 에 따라 설계 상수 표의 두 문구로 갈라 씁니다
-  - [ ] `submit` 이 `router.push` 하는 주소에 `kind` 를 붙이고 `SHORTCUTS` 클릭 주소에도 같은 `kind` 를 유지합니다
-  - [ ] `실종 신고 찾기` 모드에서 결과 카드가 `petName` 이 있으면 이름을 먼저 부르는지 `ReportCard` 의 기존 동작으로 확인합니다
-- [ ] `apps/web/components/search/search-screen.tsx` 의 빈 결과 문구를 모드별로 갈라 씁니다
-  - [ ] `발견 제보 찾기` 는 기존 문구를 유지하고 `실종 신고 찾기` 는 `이름이나 특징으로 다시 찾아보세요` 로 둡니다
-  - [ ] `grep -n "kind" apps/web/components/search/search-screen.tsx | wc -l` 이 `4` 이상인지 확인합니다
-- [ ] `apps/web` 검증을 통과시키고 Phase 5 담당 경로만 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web dev` 를 띄우고 `/search?kind=lost&q=몰리` 를 열어 `200` 과 실종 신고 카드만 나오는지 확인합니다
-  - [ ] `pnpm lint 2>&1 | tail -5` 와 `pnpm typecheck 2>&1 | tail -5` 를 돌려 `2 successful` 과 `5 successful` 을 봅니다
-  - [ ] `git add packages/db/src/queries/reports.ts apps/web/app/search/page.tsx apps/web/components/search/search-screen.tsx` 로 담습니다
-  - [ ] `git commit -m "feat: 검색을 발견 제보 찾기와 실종 신고 찾기로 나누고 이름 검색을 더함"` 으로 커밋하고 `exit 0` 을 확인합니다
+- [x] `packages/db/src/queries/reports.ts` 의 `listPublicReports` 검색어 매칭에 반려동물 이름을 더합니다
+  - [x] `packages/db/src/queries/reports.ts:187-193` 의 `q` 조건 `or exists (...)` 뒤에 `or exists (select 1 from ${pets} p where p.id = ${reports}.pet_id and p.name ilike ${'%' + q + '%'})` 를 넣습니다
+  - [x] `pets` 가 이미 같은 파일에서 import 되어 있는지 `grep -n "pets" packages/db/src/queries/reports.ts | head -3` 으로 확인합니다
+  - [x] `pnpm --filter @rebirth/db typecheck 2>&1 | tail -3` 을 돌려 오류 없이 끝나는 것을 봅니다
+- [x] `apps/web/app/search/page.tsx` 가 `kind` 쿼리를 읽어 목록 종류를 고르게 합니다
+  - [x] `loadResults` 의 `listQuery.safeParse` 입력에 `...(first(params.kind) && { kind: first(params.kind) })` 를 더합니다
+  - [x] `listPublicReports({ kind: "sighting", ... })` 의 고정값을 `kind: parsed.data.kind ?? "sighting"` 으로 바꿉니다
+  - [x] `SearchScreen` 에 `kind={parsed.data.kind ?? "sighting"}` 를 넘기도록 props 를 하나 더합니다
+- [x] `apps/web/components/search/search-screen.tsx` 에 검색 목적 선택을 둡니다
+  - [x] `SHORTCUTS` 카드 위에 `Chip.Button` 두 개 `발견 제보 찾기` `실종 신고 찾기` 를 두고 현재 `kind` 인 쪽만 선택 상태로 그립니다
+  - [x] `TextFieldInput` 의 `placeholder` 를 `kind` 에 따라 설계 상수 표의 두 문구로 갈라 씁니다
+  - [x] `submit` 이 `router.push` 하는 주소에 `kind` 를 붙이고 `SHORTCUTS` 클릭 주소에도 같은 `kind` 를 유지합니다
+  - [x] `실종 신고 찾기` 모드에서 결과 카드가 `petName` 이 있으면 이름을 먼저 부르는지 `ReportCard` 의 기존 동작으로 확인합니다
+- [x] `apps/web/components/search/search-screen.tsx` 의 빈 결과 문구를 모드별로 갈라 씁니다
+  - [x] `발견 제보 찾기` 는 기존 문구를 유지하고 `실종 신고 찾기` 는 `이름이나 특징으로 다시 찾아보세요` 로 둡니다
+  - [x] `grep -n "kind" apps/web/components/search/search-screen.tsx | wc -l` 이 `4` 이상인지 확인합니다
+- [x] `apps/web` 검증을 통과시키고 Phase 5 담당 경로만 커밋합니다
+  - [x] `pnpm --filter @rebirth/web dev` 를 띄우고 `/search?kind=lost&q=몰리` 를 열어 `200` 과 실종 신고 카드만 나오는지 확인합니다
+  - [x] `pnpm lint 2>&1 | tail -5` 와 `pnpm typecheck 2>&1 | tail -5` 를 돌려 `2 successful` 과 `5 successful` 을 봅니다
+  - [x] `git add packages/db/src/queries/reports.ts apps/web/app/search/page.tsx apps/web/components/search/search-screen.tsx` 로 담습니다
+  - [x] `git commit -m "feat: 검색을 발견 제보 찾기와 실종 신고 찾기로 나누고 이름 검색을 더함"` 으로 커밋하고 `exit 0` 을 확인합니다
 
 ## Phase 7. 경로 해석 모델과 사진 대조
 
@@ -148,9 +148,17 @@
 
 ### 지시서 결함
 
+- Phase 5 의 3·4번 부모도 첫 20자가 `` `apps/web/components `` 로 같아 보고에서 구분 불가
+
 - Phase 3 네 부모의 첫 20자가 모두 `` `apps/web/components `` 로 같아 보고에서 부모를 구분할 수 없음. 파일명으로 갈라야 함
 
 ### 실측 기록
+
+- `Chip.Button` 에 선택 상태 prop 이 없어 `variant` solid/outlineWeak 와 `aria-pressed` 로 현재 모드를 표시함
+- `page.tsx` 결과 매핑에 `kind` 와 `petName` 을 더해 `ReportCard` 가 이름을 먼저 부르게 함
+- `reports.kind` 에 `sheltered` 가 있어 카드 `kind` 는 `lost` 아니면 `sighting` 으로 좁혀 넘김
+- 포트 3000 을 다른 세션 dev 서버가 점유해 `PORT=3002` 로 띄워 확인하고 종료함
+- 개발 DB 에 이름 `몰리` 인 실종 신고가 실제로 있어 `kind=lost` 결과 카드를 눈으로 확인함
 
 - `apps/web/components` 에 남은 `찾는 중` 4건은 전부 주석(`place-search-field.tsx:47` `home-screen.tsx:83` `lost-form.tsx:422,424`)이라 상태 어휘 아님
 - `report-detail.tsx:220` 주석의 `구조 요청` 은 부상 제보 분기 근거 서술이라 CTA 문구 참조가 아니어서 유지

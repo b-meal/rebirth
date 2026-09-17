@@ -190,6 +190,10 @@ export function listPublicReports({
               or exists (
                 select 1 from unnest(${reports.colors}) as color
                 where color ilike ${'%' + q + '%'}
+              )
+              or exists (
+                select 1 from ${pets} p
+                where p.id = ${reports}.pet_id and p.name ilike ${'%' + q + '%'}
               ))`
           : undefined,
         includeClosed
