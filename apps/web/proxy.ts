@@ -7,7 +7,7 @@ import {
   NEXT_PARAM,
   SIGN_IN_PATH,
   isIdleExpired,
-  isPublicPath,
+  isProtectedPath,
   shouldRefreshSeenAt,
 } from "@rebirth/core/auth";
 
@@ -60,7 +60,7 @@ export async function proxy(request: NextRequest) {
     return expired;
   }
 
-  if (!data?.claims && !isPublicPath(pathname)) {
+  if (!data?.claims && isProtectedPath(pathname)) {
     const target = request.nextUrl.clone();
     target.pathname = SIGN_IN_PATH;
     target.search = "";

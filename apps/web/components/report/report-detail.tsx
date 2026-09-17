@@ -130,6 +130,7 @@ export function ReportDetail({
           <HStack gap="x2" align="center">
             <Avatar
               size="24"
+              alt=""
               fallback={<Icon svg={<IconPersonFill />} color="fg.neutralSubtle" />}
             />
             <Text textStyle="t3Regular" color="fg.neutralMuted">

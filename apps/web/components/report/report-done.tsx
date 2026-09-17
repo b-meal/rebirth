@@ -42,7 +42,7 @@ export function ReportDone({ id, areaName, shareUrl }: ReportDoneProps) {
       <ScreenBody gap="x6" justify="center">
         <VStack align="center" gap="x3">
           <Icon svg={<IconCheckmarkCircleFill />} size="x12" color="fg.brand" />
-          <Text as="h1" textStyle="t8Bold" color="fg.neutral" align="center">
+          <Text as="h2" textStyle="t8Bold" color="fg.neutral" align="center">
             제보가 등록됐어요
           </Text>
           <Text textStyle="t5Regular" color="fg.neutralMuted" align="center">
