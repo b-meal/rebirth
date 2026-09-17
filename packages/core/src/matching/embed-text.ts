@@ -1,8 +1,11 @@
 // 임베딩에 넣을 문장을 만듦. 외부 호출이 없어 스크립트와 서버 양쪽에서 그대로 씀
 // 같은 개체를 다르게 쓴 두 제보가 가까워지도록 구조화 값과 자유 문장을 함께 넣음
 
-/** 벡터를 만든 모델. 바꾸면 저장된 벡터를 전부 다시 만들어야 함 */
-export const EMBEDDING_MODEL = "Xenova/paraphrase-multilingual-MiniLM-L12-v2";
+/** 벡터를 만드는 모델. 바꾸면 저장된 벡터를 전부 다시 만들어야 함 */
+export const EMBEDDING_MODEL = "openai/text-embedding-3-small";
+
+/** report_embeddings 의 vector 열과 같은 값이라 한쪽만 바꾸면 저장이 막힘 */
+export const EMBEDDING_DIMENSIONS = 384;
 
 export type EmbedSource = {
   animalType: string;
