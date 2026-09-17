@@ -28,7 +28,7 @@ import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
 import { AppHeader } from "@/components/ui/app-header";
 import { Badge } from "@/components/ui/badge";
 import { Screen, SectionCard } from "@/components/ui/screen";
-import { ANIMAL_LABEL, SIZE_LABEL, breedLabel } from "@/lib/report-label";
+import { ANIMAL_LABEL, SIZE_LABEL } from "@/lib/report-label";
 import { RecentReports } from "./recent-reports";
 import { DeletePetButton } from "./delete-pet-button";
 
@@ -181,8 +181,9 @@ function Shortcut({ href, label, icon }: MineLink) {
 }
 
 /** 등록한 동물 한 줄. 사진과 이름, 특징 요약을 함께 보여 줌 */
+// 보호자가 적어 둔 품종은 아는 값이라 계열 추정을 붙이지 않음. 우리 동물 상세와 같은 표기를 씀
 function PetRow({ pet, removePet }: { pet: PetCard; removePet: (form: FormData) => Promise<void> }) {
-  const detail = [ANIMAL_LABEL[pet.animalType] ?? "", breedLabel(pet.breedGuess) ?? "", SIZE_LABEL[pet.size] ?? ""]
+  const detail = [ANIMAL_LABEL[pet.animalType] ?? "", pet.breedGuess ?? "", SIZE_LABEL[pet.size] ?? ""]
     .filter(Boolean)
     .concat(pet.colors)
     .join(", ");
