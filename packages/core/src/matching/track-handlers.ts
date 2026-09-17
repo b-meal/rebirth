@@ -15,11 +15,14 @@ import {
   type RouteContext,
 } from "../http";
 import { distanceKm } from "../location/geo.ts";
+import { searchSpots, type Spot } from "./search-spots.ts";
+import { reviewTrack, type TrackReview } from "./track-review.ts";
 import {
   MIN_LEG_SCORE,
   buildTrack,
   predictNext,
   type Prediction,
+  type Track,
   type TrackNode,
 } from "./track.ts";
 
@@ -47,6 +50,46 @@ function densityAround(
     newestHoursAgo: newest
       ? (now.getTime() - newest.getTime()) / 3_600_000
       : prediction.hoursSinceLast,
+  };
+}
+
+/**
+ * 탐색 지점 조회와 모델 해석을 나란히 돌림
+ * 둘 다 외부 호출이라 한쪽이 실패해도 경로·예측·밀도 응답을 막지 않음
+ * 모델 입력 타입에 지점 이름 자리가 없어 경로와 예측만 넘김
+ */
+async function loadAssist(
+  track: Track,
+  prediction: Prediction | null,
+): Promise<{ spots: Spot[]; interpretation: TrackReview | null }> {
+  const [spots, review] = await Promise.allSettled([
+    prediction
+      ? searchSpots({
+          center: prediction.center,
+          radiusKm: prediction.radiusKm,
+        })
+      : Promise.resolve<Spot[]>([]),
+    reviewTrack({
+      nodes: track.nodes.map((node) => ({
+        reportId: node.id,
+        areaName: node.areaName,
+        occurredAt: node.occurredAt,
+      })),
+      confidence: track.confidence,
+      prediction: prediction
+        ? {
+            radiusKm: prediction.radiusKm,
+            straightness: prediction.straightness,
+            hoursSinceLast: prediction.hoursSinceLast,
+            bearingDeg: prediction.bearingDeg,
+          }
+        : null,
+    }),
+  ]);
+
+  return {
+    spots: spots.status === "fulfilled" ? spots.value : [],
+    interpretation: review.status === "fulfilled" ? review.value.review : null,
   };
 }
 
@@ -98,6 +141,8 @@ export async function getLostTrackHandler(
         track: null,
         prediction: null,
         density: null,
+        spots: [],
+        interpretation: null,
         gridMeters,
       });
     }
@@ -105,8 +150,16 @@ export async function getLostTrackHandler(
     const now = new Date();
     const prediction = predictNext({ track, size, now });
     const density = prediction ? densityAround(nodes, prediction, now) : null;
+    const { spots, interpretation } = await loadAssist(track, prediction);
 
-    return okPrivate({ track, prediction, density, gridMeters });
+    return okPrivate({
+      track,
+      prediction,
+      density,
+      spots,
+      interpretation,
+      gridMeters,
+    });
   } catch (error) {
     return serverError("lost.track", error);
   }

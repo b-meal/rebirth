@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Text, VStack } from "@seed-design/react";
 import type { LatLng } from "@rebirth/core/location/geo";
 
+import { Callout } from "seed-design/ui/callout";
+
 import { densityLine, sinceLabel, urgencyHint } from "@/lib/report-label";
 import { SectionCard, SectionTitle } from "@/components/ui/screen";
 import { TrackMap } from "./track-map";
@@ -33,6 +35,14 @@ type TrackResponse = {
   } | null;
   prediction: { center: LatLng; radiusKm: number; bearingDeg: number } | null;
   density: { count: number; radiusKm: number } | null;
+  // 탐색 지점과 모델 해석은 외부 호출이라 빠진 채 올 수 있음
+  spots?: { name: string }[] | null;
+  interpretation?: {
+    movement: string;
+    photoConsistency: "consistent" | "mixed" | "unclear";
+    searchOrder: string[];
+    caution: string | null;
+  } | null;
   gridMeters: number;
 };
 
@@ -99,10 +109,22 @@ export function TrackSection({ reportId }: TrackSectionProps) {
   const nodes = view.track.nodes;
   const last = nodes[nodes.length - 1]!;
   const lastSeen = new Date(last.occurredAt);
+  const interpretation = view.interpretation ?? null;
+  // 모델이 순서를 적었으면 그것을 쓰고 없을 때만 지점 이름으로 채움
+  const searchOrder =
+    interpretation && interpretation.searchOrder.length > 0
+      ? interpretation.searchOrder
+      : (view.spots ?? []).map((spot) => spot.name);
 
   return (
     <SectionCard gap="x3">
       <SectionTitle>목격이 이어진 길</SectionTitle>
+
+      {interpretation ? (
+        <Text textStyle="t3Regular" color="fg.neutral">
+          {interpretation.movement}
+        </Text>
+      ) : null}
 
       <TrackMap nodes={nodes} prediction={view.prediction} gridMeters={view.gridMeters} />
 
@@ -123,6 +145,32 @@ export function TrackSection({ reportId }: TrackSectionProps) {
       {view.prediction ? (
         <Text textStyle="t3Regular" color="fg.neutralMuted">
           마지막 이동이 {bearingWord(view.prediction.bearingDeg)}쪽이라 그 방향부터 살펴보세요
+        </Text>
+      ) : null}
+
+      {searchOrder.length > 0 ? (
+        <VStack align="stretch" gap="x1">
+          <Text textStyle="t4Bold" color="fg.neutral">
+            여기부터 찾아보세요
+          </Text>
+          {searchOrder.map((place, index) => (
+            <Text key={place} textStyle="t3Regular" color="fg.neutralMuted">
+              {index + 1}. {place}
+            </Text>
+          ))}
+        </VStack>
+      ) : null}
+
+      {interpretation?.photoConsistency === "mixed" ? (
+        <Callout
+          tone="warning"
+          description="사진 특징이 서로 달라 다른 개체일 수 있어요"
+        />
+      ) : null}
+
+      {interpretation ? (
+        <Text textStyle="t2Regular" color="fg.neutralSubtle">
+          AI 초안, 수정 가능
         </Text>
       ) : null}
 

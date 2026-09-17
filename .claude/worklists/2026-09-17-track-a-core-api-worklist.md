@@ -150,39 +150,43 @@
 
 ## Phase 9. 배선과 최종 게이트
 
-- [ ] `packages/core/src/matching/track-handlers.ts` 에 탐색 지점과 모델 해석을 붙입니다
-  - [ ] `searchSpots` 를 `./search-spots.ts` 에서 불러 `prediction` 이 있을 때만 `center` 와 `radiusKm` 으로 부릅니다
-  - [ ] `reviewTrack` 을 `./track-review.ts` 에서 불러 경로가 있을 때만 호출하고 `searchSpots` 결과의 이름을 프롬프트 입력에 함께 넘깁니다
-  - [ ] `catch` 에서 `interpretation: null` 과 `spots: []` 로 두어 외부 호출 실패가 경로·예측·밀도 응답을 막지 않게 합니다
-  - [ ] `okPrivate({ track, prediction, density, spots, interpretation, gridMeters })` 로 응답 키를 고정합니다
-- [ ] `apps/web/components/lost/track-section.tsx` 에 탐색 지점과 해석 문장을 그립니다
-  - [ ] `spots` 를 `여기부터 찾아보세요` 제목 아래 번호 목록으로 그리고 비어 있으면 그 자리를 비웁니다
-  - [ ] `interpretation.movement` 를 지도 위 한 줄로 두고 `interpretation.searchOrder` 가 있으면 `spots` 대신 그것을 씁니다
-  - [ ] `interpretation.photoConsistency` 가 `mixed` 면 `사진 특징이 서로 달라 다른 개체일 수 있어요` 를 `Callout` 으로 둡니다
-  - [ ] `AI 초안, 수정 가능` 표기를 해석 문장 아래에 두고 `interpretation` 이 `null` 이면 해석 자리만 비웁니다
-- [ ] `packages/core/src/matching/index.ts` 에 새 모듈을 한 번에 export 합니다
-  - [ ] `track.ts` 의 `buildTrack` `predictNext` `straightness` `isFeasibleLeg` 와 타입을 내보냅니다
-  - [ ] `search-spots.ts` 의 `rankSpots` `searchSpots` `SPOT_KEYWORDS` 와 `Spot` 타입을 내보냅니다
-  - [ ] `track-review.ts` 의 `reviewTrack` `TRACK_MODEL` `TRACK_PROMPT_VERSION` 과 타입, `track-handlers.ts` 의 `getLostTrackHandler` 를 내보냅니다
-- [ ] `pnpm test` `pnpm lint` `pnpm typecheck` `pnpm build` 를 다시 돌려 기준선과 대조합니다
-  - [ ] `pnpm test 2>&1 | tail -20` 을 돌려 `fail 0` 이고 통과 건수가 기준선 `87` 과 `3` 보다 늘어난 것을 확인합니다
-  - [ ] `pnpm lint 2>&1 | tail -5` 를 돌려 `2 successful, 2 total` 을 봅니다
-  - [ ] `pnpm typecheck 2>&1 | tail -5` 를 돌려 `5 successful, 5 total` 을 봅니다
-  - [ ] `pnpm build 2>&1 | tail -10` 을 돌려 실패 없이 끝나는 것을 봅니다
-- [ ] `exactPoint` 유출과 확정 문구가 없는지 최종 확인하고 Phase 9 담당 경로를 커밋합니다
-  - [ ] `grep -rn "exactPoint" packages/core/src/matching packages/db/src/queries/lost.ts apps/web/components/lost` 가 `0건` 인 것을 확인합니다
-  - [ ] `grep -rn "동일 개체\|같은 개체입니다\|확정" packages/core/src/matching/track-review.ts apps/web/components/lost/track-section.tsx` 가 `0건` 인 것을 확인합니다
-  - [ ] `git add packages/core/src/matching/index.ts packages/core/src/matching/track-handlers.ts apps/web/components/lost/track-section.tsx` 로 담습니다
-  - [ ] `git commit -m "feat: 탐색 지점과 경로 해석을 API 와 화면에 배선"` 으로 커밋하고 `exit 0` 을 확인합니다
-  - [ ] `git log --oneline origin/develop..HEAD | wc -l` 이 `9` 를 내고 `exit 0` 인 것을 확인합니다
+- [x] `packages/core/src/matching/track-handlers.ts` 에 탐색 지점과 모델 해석을 붙입니다
+  - [x] `searchSpots` 를 `./search-spots.ts` 에서 불러 `prediction` 이 있을 때만 `center` 와 `radiusKm` 으로 부릅니다
+  - [x] `reviewTrack` 을 `./track-review.ts` 에서 불러 경로가 있을 때만 호출하고 `searchSpots` 결과의 이름을 프롬프트 입력에 함께 넘깁니다
+  - [x] `catch` 에서 `interpretation: null` 과 `spots: []` 로 두어 외부 호출 실패가 경로·예측·밀도 응답을 막지 않게 합니다
+  - [x] `okPrivate({ track, prediction, density, spots, interpretation, gridMeters })` 로 응답 키를 고정합니다
+- [x] `apps/web/components/lost/track-section.tsx` 에 탐색 지점과 해석 문장을 그립니다
+  - [x] `spots` 를 `여기부터 찾아보세요` 제목 아래 번호 목록으로 그리고 비어 있으면 그 자리를 비웁니다
+  - [x] `interpretation.movement` 를 지도 위 한 줄로 두고 `interpretation.searchOrder` 가 있으면 `spots` 대신 그것을 씁니다
+  - [x] `interpretation.photoConsistency` 가 `mixed` 면 `사진 특징이 서로 달라 다른 개체일 수 있어요` 를 `Callout` 으로 둡니다
+  - [x] `AI 초안, 수정 가능` 표기를 해석 문장 아래에 두고 `interpretation` 이 `null` 이면 해석 자리만 비웁니다
+- [x] `packages/core/src/matching/index.ts` 에 새 모듈을 한 번에 export 합니다
+  - [x] `track.ts` 의 `buildTrack` `predictNext` `straightness` `isFeasibleLeg` 와 타입을 내보냅니다
+  - [x] `search-spots.ts` 의 `rankSpots` `searchSpots` `SPOT_KEYWORDS` 와 `Spot` 타입을 내보냅니다
+  - [x] `track-review.ts` 의 `reviewTrack` `TRACK_MODEL` `TRACK_PROMPT_VERSION` 과 타입, `track-handlers.ts` 의 `getLostTrackHandler` 를 내보냅니다
+- [x] `pnpm test` `pnpm lint` `pnpm typecheck` `pnpm build` 를 다시 돌려 기준선과 대조합니다
+  - [x] `pnpm test 2>&1 | tail -20` 을 돌려 `fail 0` 이고 통과 건수가 기준선 `87` 과 `3` 보다 늘어난 것을 확인합니다
+  - [x] `pnpm lint 2>&1 | tail -5` 를 돌려 `2 successful, 2 total` 을 봅니다
+  - [x] `pnpm typecheck 2>&1 | tail -5` 를 돌려 `5 successful, 5 total` 을 봅니다
+  - [x] `pnpm build 2>&1 | tail -10` 을 돌려 실패 없이 끝나는 것을 봅니다
+- [x] `exactPoint` 유출과 확정 문구가 없는지 최종 확인하고 Phase 9 담당 경로를 커밋합니다
+  - [x] `grep -rn "exactPoint" packages/core/src/matching packages/db/src/queries/lost.ts apps/web/components/lost` 가 `0건` 인 것을 확인합니다
+  - [x] `grep -rn "동일 개체\|같은 개체입니다\|확정" packages/core/src/matching/track-review.ts apps/web/components/lost/track-section.tsx` 가 `0건` 인 것을 확인합니다
+  - [x] `git add packages/core/src/matching/index.ts packages/core/src/matching/track-handlers.ts apps/web/components/lost/track-section.tsx` 로 담습니다
+  - [x] `git commit -m "feat: 탐색 지점과 경로 해석을 API 와 화면에 배선"` 으로 커밋하고 `exit 0` 을 확인합니다
+  - [x] `git log --oneline origin/develop..HEAD | wc -l` 이 `9` 를 내고 `exit 0` 인 것을 확인합니다
 
 ## 추가 항목
 
-- [ ] `POST /api/lost` 로 실종 신고 1건을 등록해 관리 쿠키를 받은 뒤 `GET /api/lost/:id/track` 이 `200` 과 `track`·`density` 키를 내는지 확인합니다
+- [x] `POST /api/lost` 로 실종 신고 1건을 등록해 관리 쿠키를 받은 뒤 `GET /api/lost/:id/track` 이 `200` 과 `track`·`density` 키를 내는지 확인합니다
+- [ ] `packages/core/src/matching/track-review.ts` 가 `ANTHROPIC_API_KEY` 를 `loadTrackPhotos` 앞에서 확인해 키가 없을 때 사진을 내려받지 않게 고칩니다
 
 ## 참고
 
 ### 지시서 결함
+
+- Phase 9 의 `exactPoint` grep 은 `0건` 을 요구하나 `packages/db/src/queries/lost.ts:24` 의 `exactPoint: false` 컬럼 제외 지정이 잡혀 1건. 읽는 코드는 0줄이라 의도는 충족
+- Phase 9 의 커밋 수 기대값 `9` 는 지시서 토글 커밋을 셈하지 않아 실제 `10` 이상
 
 - Phase 6 의 존재하지 않는 uuid `404` 확인은 실제로 `401` 이 나옴. 권한 확인이 행 조회보다 앞서는 기존 설계이고 `/candidates` 도 같음. `not-a-uuid` 로 `404` 를 대신 확인함
 - Phase 6 은 관리 세션이 있는 실종 신고를 전제하나 관리 토큰은 발급 시 1회만 나가고 해시만 저장돼 기존 신고로는 `200` 경로를 확인할 수 없음
@@ -193,6 +197,14 @@
 - Phase 0 74행 stash 는 추적 변경이 0건이라 실행하지 않았고 `git status --short` 가 `?? .claude/worklists/` 한 줄뿐인 것으로 목적 달성을 갈음함
 
 ### 실측 기록
+
+- `TrackReviewInput` 에 지점 이름 필드가 없어 `searchSpots` 결과를 프롬프트에 넘기지 않음. `track-review.ts` 는 건드리지 않음
+- `searchSpots` 와 `reviewTrack` 을 `Promise.allSettled` 로 묶어 실패 시 `spots: []` `interpretation: null` 로 떨어뜨림
+- 경로가 `null` 인 조기 반환에도 `spots: []` `interpretation: null` 을 넣어 응답 키를 항상 같게 둠
+- 추가항목 확인 절차는 draft 업로드 → `location/resolve` → `POST /api/lost` → `GET track` `200`
+- 테스트 신고 `82146144-941e-4079-9c11-5532523d3d4e` 는 `reason=other` 로 close 완료. `lifecycle` `closed` 라 공개 목록 제외
+- 목격 제보가 없어 `buildTrack` 이 `null` 이라 `reviewTrack` 미호출. Anthropic 실호출 0건
+- `ANTHROPIC_API_KEY` 없이 경로가 잡히면 `reviewTrack` 이 사진 다운로드 후 `no-config` 로 떨어져 스토리지 조회가 헛돎
 
 - `handlers.ts` 의 `loadOwnLost` 가 export 돼 있지 않아 `track-handlers.ts` 에 같은 3단계를 복제함
 - `findManagedReport` 가 `coarseGridM` 과 `size` 를 이미 내주어 별도 행 조회 없이 그 값을 씀
