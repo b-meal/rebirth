@@ -3,6 +3,8 @@
 import type { LatLng } from "@rebirth/core/location/geo";
 import { useCallback, useEffect, useState } from "react";
 
+import { whenSplashGone } from "@/lib/splash-gate";
+
 // 브라우저 위치 조회. 권한 거부와 실패에서 폼이 멈추지 않도록 상태를 나눠 돌려줌
 
 export type CurrentPositionStatus =
@@ -84,6 +86,17 @@ async function locate(): Promise<Outcome> {
   });
 }
 
+/** 팝업이 뜰 차례인지. 이미 허용했거나 막아 둔 브라우저는 화면을 가리지 않아 기다릴 일이 없음 */
+async function willPrompt(): Promise<boolean> {
+  if (typeof navigator === "undefined" || !navigator.permissions) return true;
+  try {
+    const permission = await navigator.permissions.query({ name: "geolocation" });
+    return permission.state === "prompt";
+  } catch {
+    return true;
+  }
+}
+
 export function useCurrentPosition({
   immediate = false,
 }: { immediate?: boolean } = {}): CurrentPositionState {
@@ -116,9 +129,13 @@ export function useCurrentPosition({
     if (!immediate) return;
     let cancelled = false;
     // 권한 팝업 응답은 비동기라 effect 본문에서 상태를 바꾸지 않음
-    void locate().then((outcome) => {
+    // 팝업이 스플래시를 덮으면 그사이에도 덮개의 시간이 흘러 로고가 지나가 버려 걷힌 뒤에 물음
+    void (async () => {
+      if (await willPrompt()) await whenSplashGone();
+      if (cancelled) return;
+      const outcome = await locate();
       if (!cancelled) apply(outcome);
-    });
+    })();
     return () => {
       cancelled = true;
     };
