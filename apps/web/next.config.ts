@@ -23,12 +23,15 @@ const nextConfig: NextConfig = {
   // 없으면 dev 서버가 다른 오리진으로 보고 내부 요청을 막아 지도와 목록이 비어 옴
   // 배포는 한 오리진이라 이 목록과 무관함
   // 와일드카드는 점 하나짜리 자리만 맞아 ts.net 같은 여러 단계 호스트는 전체를 적어야 함
+  // trycloudflare 는 pnpm tunnel 이 띄우는 https 주소, 실행할 때마다 앞단이 바뀌어 와일드카드로 둠
   allowedDevOrigins: [
     "192.168.75.130",
     "192.168.75.168",
     "192.168.25.51",
     "192.168.25.2",
+    "192.168.45.139",
     "macbookpro.tail4b2f55.ts.net",
+    "*.trycloudflare.com",
   ],
 };
 
