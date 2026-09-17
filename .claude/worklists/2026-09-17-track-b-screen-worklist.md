@@ -121,26 +121,26 @@
 
 ## Phase 8. 경로 지도와 예측 원
 
-- [ ] `apps/web/components/lost/track-map.tsx` 에 경로선과 예측 원을 그리는 컴포넌트를 만듭니다
-  - [ ] `useMap` 을 `interactive: false` 로 불러 `report-location-map.tsx` 와 같은 `160px` 높이 상수를 씁니다
-  - [ ] `map.addSource` 로 `LineString` 을 넣고 `addLayer` 로 경로선을 그리되 색은 `var(--seed-color-bg-brand-solid)` 만 씁니다
-  - [ ] `Polygon` 64각형으로 예측 원을 만들어 `fill-opacity` 낮은 레이어로 깔고 색은 `var(--seed-color-bg-brand-weak)` 만 씁니다
-  - [ ] `Marker` 를 노드마다 찍고 순서 번호를 넣어 어느 것이 최근인지 보이게 합니다
-  - [ ] `Text` 로 지도 아래에 격자 좌표와 추정이라는 것을 알리는 한 줄을 둡니다
-- [ ] `apps/web/components/lost/track-section.tsx` 에 경로 요약 카드를 만듭니다
-  - [ ] `/api/lost/${id}/track` 을 불러 `loading` `empty` `ready` 세 상태만 그립니다
-  - [ ] `ready` 에서 `lastSeenLine` `densityLine` `urgencyHint` 를 `@/lib/report-label` 에서 불러 세 줄로 쌓고 개체 동일성 확정이 아님을 함께 적습니다
-  - [ ] `empty` 에서는 `아직 이을 만한 목격이 없어요` 를 그리고 지도를 그리지 않습니다
-  - [ ] `bearingDeg` 를 `북` `북동` `동` `남동` `남` `남서` `서` `북서` 여덟 낱말로 옮기는 표를 두고 숫자를 화면에 내보내지 않습니다
-- [ ] `apps/web/components/lost/lost-detail.tsx` 에 경로 카드를 답니다
-  - [ ] `마지막으로 본 곳` `SectionCard` 바로 아래에 `TrackSection` 을 넣습니다
-  - [ ] `location` 이 `null` 이거나 `lifecycle` 이 `searching` 이 아니면 렌더하지 않습니다
-  - [ ] `ownership.mine` 여부와 무관하게 보이게 해 이웃도 경로를 보고 찾을 곳을 알 수 있게 합니다
-- [ ] `apps/web` 검증을 통과시키고 Phase 8 담당 경로만 커밋한 뒤 A 에게 알립니다
-  - [ ] `pnpm build 2>&1 | tail -10` 을 돌려 실패 없이 끝나는 것을 봅니다
-  - [ ] `pnpm lint 2>&1 | tail -5` 와 `pnpm typecheck 2>&1 | tail -5` 를 돌려 `2 successful` 과 `5 successful` 을 봅니다
-  - [ ] `git add apps/web/components/lost/track-map.tsx apps/web/components/lost/track-section.tsx apps/web/components/lost/lost-detail.tsx` 로 담습니다
-  - [ ] `git commit -m "feat: 실종 신고 상세에 이동 경로·예측 원·제보 밀도 지도 추가"` 로 커밋하고 `exit 0` 을 확인합니다
+- [x] `apps/web/components/lost/track-map.tsx` 에 경로선과 예측 원을 그리는 컴포넌트를 만듭니다
+  - [x] `useMap` 을 `interactive: false` 로 불러 `report-location-map.tsx` 와 같은 `160px` 높이 상수를 씁니다
+  - [x] `map.addSource` 로 `LineString` 을 넣고 `addLayer` 로 경로선을 그리되 색은 `var(--seed-color-bg-brand-solid)` 만 씁니다
+  - [x] `Polygon` 64각형으로 예측 원을 만들어 `fill-opacity` 낮은 레이어로 깔고 색은 `var(--seed-color-bg-brand-weak)` 만 씁니다
+  - [x] `Marker` 를 노드마다 찍고 순서 번호를 넣어 어느 것이 최근인지 보이게 합니다
+  - [x] `Text` 로 지도 아래에 격자 좌표와 추정이라는 것을 알리는 한 줄을 둡니다
+- [x] `apps/web/components/lost/track-section.tsx` 에 경로 요약 카드를 만듭니다
+  - [x] `/api/lost/${id}/track` 을 불러 `loading` `empty` `ready` 세 상태만 그립니다
+  - [x] `ready` 에서 `lastSeenLine` `densityLine` `urgencyHint` 를 `@/lib/report-label` 에서 불러 세 줄로 쌓고 개체 동일성 확정이 아님을 함께 적습니다
+  - [x] `empty` 에서는 `아직 이을 만한 목격이 없어요` 를 그리고 지도를 그리지 않습니다
+  - [x] `bearingDeg` 를 `북` `북동` `동` `남동` `남` `남서` `서` `북서` 여덟 낱말로 옮기는 표를 두고 숫자를 화면에 내보내지 않습니다
+- [x] `apps/web/components/lost/lost-detail.tsx` 에 경로 카드를 답니다
+  - [x] `마지막으로 본 곳` `SectionCard` 바로 아래에 `TrackSection` 을 넣습니다
+  - [x] `location` 이 `null` 이거나 `lifecycle` 이 `searching` 이 아니면 렌더하지 않습니다
+  - [x] `ownership.mine` 여부와 무관하게 보이게 해 이웃도 경로를 보고 찾을 곳을 알 수 있게 합니다
+- [x] `apps/web` 검증을 통과시키고 Phase 8 담당 경로만 커밋한 뒤 A 에게 알립니다
+  - [x] `pnpm build 2>&1 | tail -10` 을 돌려 실패 없이 끝나는 것을 봅니다
+  - [x] `pnpm lint 2>&1 | tail -5` 와 `pnpm typecheck 2>&1 | tail -5` 를 돌려 `2 successful` 과 `5 successful` 을 봅니다
+  - [x] `git add apps/web/components/lost/track-map.tsx apps/web/components/lost/track-section.tsx apps/web/components/lost/lost-detail.tsx` 로 담습니다
+  - [x] `git commit -m "feat: 실종 신고 상세에 이동 경로·예측 원·제보 밀도 지도 추가"` 로 커밋하고 `exit 0` 을 확인합니다
 
 ## 추가 항목
 
@@ -148,11 +148,20 @@
 
 ### 지시서 결함
 
+- Phase 8 은 이웃도 경로를 보게 하라 하나 Phase 6 의 `getLostTrackHandler` 가 `checkManageAccess` 로 작성자만 허용함. 경로가 `match_scores` 로 만들어지고 후보 목록은 POL-03 이 작성자 전용으로 못박아 작성자 전용을 유지함
+
+- Phase 8 은 `lastSeenLine` 을 `@/lib/report-label` 에서 부르라 하나 Phase 2 가 그 함수를 만들지 않음. `sinceLabel` 과 `areaName` 을 직접 엮어 갈음함
+
 - Phase 4 는 `searchSpots` 의 인자 모양을 정하지 않아 `rankSpots` 와 맞춰 `{ center, radiusKm }` 객체 인자로 둠
 
 - Phase 2 테스트 항목은 등급 2+4건·힌트 2건·밀도 2건 총 10 assertion 을 요구하나 `test()` 블록 5개에 묶여 실행 단위는 5건
 
 ### 실측 기록
+
+- `TrackSection` 은 `ownership.mine` 을 보지 않고 API 응답에만 반응함. 403 이면 `hidden` 상태로 카드를 감춰 비작성자에게 거짓 문구를 보이지 않음
+- MapLibre 가 CSS 변수를 못 읽어 `getComputedStyle` 로 `--seed-color-bg-brand-solid` 와 `-weak` 를 읽어 넘김
+- 예측 반경이 `0.4`~`8`km 로 변해 고정 zoom 이면 원이 잘림. `map.fitBounds` 에 `FIT_PADDING=24` `FIT_MAX_ZOOM=15` 사용
+- `BEARING_WORD` 배열을 `track-section.tsx` 에 둠. Phase 9 가 같은 파일에 덧붙일 자리 있음
 
 - `kakao-local.ts` 가 `import "server-only"` 로 시작해 Node 테스트에서 모듈 로드 즉시 throw. 정적 import 불가
 - `searchSpots` 안에서 `await import("../location/kakao-local.ts")` 로 호출 시점 동적 import, 타입만 정적 import

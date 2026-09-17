@@ -38,6 +38,7 @@ import { ReportFlagSheet } from "@/components/report/report-flag-sheet";
 import { ReportShareSheet, useReportShare } from "@/components/share/report-share";
 import { rememberView } from "@/components/mine/recent-views";
 import { LostOwnerPanel } from "./lost-owner-panel";
+import { TrackSection } from "./track-section";
 
 // 실종 신고 상세. 발견 제보와 같은 표에 담기지만 읽는 사람도 다음 행동도 달라 화면을 따로 둠
 // 보호자가 적은 기록이라 AI 초안 표시가 없고, 보는 사람이 할 일은 목격 제보임
@@ -245,6 +246,10 @@ export function LostDetail({
             />
           ) : null}
         </SectionCard>
+
+        {/* 마지막으로 본 곳 바로 다음이 다음에 갈 곳이라 경로를 이어 붙임 */}
+        {/* 내 신고인지와 무관하게 보여 이웃도 어디를 찾을지 알게 함 */}
+        {location && searching ? <TrackSection reportId={report.id} /> : null}
 
         {/* 실종 신고에서 보호소는 맡길 곳이 아니라 찾아볼 곳임 */}
         <ReportShelters
