@@ -43,6 +43,7 @@ async function loadResults(
   params: Record<string, string | string[] | undefined>,
 ): Promise<ReportCardItem[] | null> {
   const parsed = listQuery.safeParse({
+    ...(first(params.kind) && { kind: first(params.kind) }),
     ...(first(params.q) && { q: first(params.q) }),
     ...(first(params.animalType) && { animalType: first(params.animalType) }),
     ...(first(params.size) && { size: first(params.size) }),
@@ -57,7 +58,7 @@ async function loadResults(
 
   try {
     const rows = await listPublicReports({
-      kind: "sighting",
+      kind: parsed.data.kind ?? "sighting",
       q,
       animalType,
       size,
@@ -81,6 +82,9 @@ async function loadResults(
         areaName: row.areaName,
         sinceLabel: sinceLabel(row.occurredAt),
         photoUrl: path ? (signed.get(path) ?? null) : null,
+        // 카드는 발견과 실종 두 갈래만 그려 sheltered 는 대상 밖
+        kind: row.kind === "lost" ? ("lost" as const) : ("sighting" as const),
+        petName: row.petName,
       };
     });
   } catch {
@@ -156,6 +160,7 @@ export default async function SearchPage({ searchParams }: SearchParams) {
   return (
     <SearchScreen
       query={first(params.q) ?? ""}
+      kind={first(params.kind) === "lost" ? "lost" : "sighting"}
       results={results}
       trending={{ interest, help }}
       nearby={nearby}

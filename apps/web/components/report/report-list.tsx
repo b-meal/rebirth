@@ -108,7 +108,7 @@ function Card({ item }: { item: ListItem }) {
             <HStack gap="x1" align="center" wrap>
               {/* 실종은 보호 상황을 쓰지 않아 확인되지 않음 이 박히면 안 됨 */}
               {lost ? (
-                <Badge label="찾는 중" tone="brand" />
+                <Badge label="실종" tone="brand" />
               ) : (
                 <Badge
                   label={CARE_LABEL[item.careSituation] ?? "확인되지 않음"}

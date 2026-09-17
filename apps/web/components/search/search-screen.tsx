@@ -36,6 +36,14 @@ const SHORTCUTS = [
   { label: "갈색", params: "colors=%EA%B0%88%EC%83%89" },
 ] as const;
 
+// 발견 제보와 실종 신고는 찾는 말이 달라 목록과 문구를 가르는 기준
+const SEARCH_KINDS = [
+  { key: "sighting", label: "발견 제보 찾기", placeholder: "동물 특징이나 동네로 검색" },
+  { key: "lost", label: "실종 신고 찾기", placeholder: "이름, 특징, 동네로 검색" },
+] as const;
+
+type SearchKind = (typeof SEARCH_KINDS)[number]["key"];
+
 const CHARTS = [
   { key: "interest", label: "관심 많은 제보" },
   { key: "help", label: "도움이 급한 제보" },
@@ -81,13 +89,14 @@ const NEARBY_FALLBACK = 6;
 
 export type SearchScreenProps = {
   query: string;
+  kind: SearchKind;
   /** 조건이 없으면 null, 조건이 있고 결과가 없으면 빈 배열 */
   results: ReportCardItem[] | null;
   trending: Record<ChartKey, TrendingItem[]>;
   nearby: NearbyItem[];
 };
 
-export function SearchScreen({ query, results, trending, nearby }: SearchScreenProps) {
+export function SearchScreen({ query, kind, results, trending, nearby }: SearchScreenProps) {
   const router = useRouter();
   const position = useCurrentPosition({ immediate: true });
   const [keyword, setKeyword] = useState(query);
@@ -104,12 +113,15 @@ export function SearchScreen({ query, results, trending, nearby }: SearchScreenP
     }
   }, [stored]);
 
+  // 목적이 바뀌어도 조건을 잃지 않게 주소마다 kind 를 끌고 감
+  const mode = SEARCH_KINDS.find((item) => item.key === kind) ?? SEARCH_KINDS[0];
+
   const submit = (next: string) => {
     const text = next.trim();
     if (!text) return;
 
     writeRecent([text, ...recent.filter((item) => item !== text)].slice(0, RECENT_MAX));
-    router.push(`/search?q=${encodeURIComponent(text)}`);
+    router.push(`/search?kind=${kind}&q=${encodeURIComponent(text)}`);
   };
 
   const dropRecent = (text: string) => {
@@ -162,7 +174,7 @@ export function SearchScreen({ query, results, trending, nearby }: SearchScreenP
             onValueChange={(next) => setKeyword(next.value)}
           >
             <TextFieldInput
-              placeholder="동물 특징이나 동네로 검색"
+              placeholder={mode.placeholder}
               aria-label="검색어 입력"
               enterKeyHint="search"
               autoFocus
@@ -188,13 +200,32 @@ export function SearchScreen({ query, results, trending, nearby }: SearchScreenP
 
       <VStack align="stretch" gap="x2" pb="x10">
         <SectionCard gap="x3">
+          <HStack gap="spacingX.betweenChips">
+            {SEARCH_KINDS.map((item) => (
+              <Chip.Button
+                key={item.key}
+                size="medium"
+                // Chip.Button 에 선택 상태 prop 이 없어 variant 와 aria-pressed 로 대신함
+                variant={item.key === kind ? "solid" : "outlineWeak"}
+                aria-pressed={item.key === kind}
+                onClick={() =>
+                  router.push(
+                    `/search?kind=${item.key}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
+                  )
+                }
+              >
+                <Chip.Label>{item.label}</Chip.Label>
+              </Chip.Button>
+            ))}
+          </HStack>
+
           <Box className="rebirth-scroll-row" mx="-x4" px="x4">
             <HStack gap="spacingX.betweenChips">
               {SHORTCUTS.map((item) => (
                 <Chip.Button
                   key={item.label}
                   size="medium"
-                  onClick={() => router.push(`/search?${item.params}`)}
+                  onClick={() => router.push(`/search?kind=${kind}&${item.params}`)}
                 >
                   <Chip.Label>{item.label}</Chip.Label>
                 </Chip.Button>
@@ -220,7 +251,9 @@ export function SearchScreen({ query, results, trending, nearby }: SearchScreenP
                   조건과 맞는 제보가 없어요
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  털색이나 동네처럼 짧은 말로 다시 찾아 주세요
+                  {kind === "lost"
+                    ? "이름이나 특징으로 다시 찾아보세요"
+                    : "털색이나 동네처럼 짧은 말로 다시 찾아 주세요"}
                 </Text>
               </VStack>
             ) : (
