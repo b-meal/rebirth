@@ -24,6 +24,7 @@ const DRAFT = {
   warnings: [],
 };
 
+const JOB_ID = "00000000-0000-4000-8000-000000000001";
 const NOT_ANIMAL_MESSAGE = "동물이 보이지 않아요. 동물이 담긴 사진으로 다시 찍어 주세요";
 
 async function stubAnalyze(page: Page, advice: "draft" | "not-animal") {
@@ -32,7 +33,7 @@ async function stubAnalyze(page: Page, advice: "draft" | "not-animal") {
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
-        jobId: "00000000-0000-4000-8000-000000000001",
+        jobId: JOB_ID,
         status: "succeeded",
         uploadId: "00000000-0000-4000-8000-000000000002",
         revision: 1,
@@ -92,6 +93,43 @@ test("사진을 지운 뒤 앞으로가기로 2단계에 가지 못한다", asyn
   await expect(page).not.toHaveURL(/step=2/);
   await expect(page.getByText("사진을 정리하고 있어요")).toHaveCount(0);
   await expect(page.getByText("발견한 동물을 찍어 주세요")).toBeVisible();
+});
+
+test("분석에 실패하면 알리고 다음 을 누르면 다시 분석한다", async ({ page }) => {
+  // 사진은 이미 올라가 있어 다시 올리지 않고 분석만 다시 함
+  let calls = 0;
+  await page.route("**/api/draft/analyze", async (route) => {
+    calls += 1;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(
+        calls === 1
+          ? { jobId: JOB_ID, status: "failed", advice: "failed", message: "잠시 후 다시 시도해 주세요" }
+          : {
+              jobId: JOB_ID,
+              status: "succeeded",
+              draft: DRAFT,
+              advice: "draft",
+              message: null,
+              model: "claude-sonnet-5",
+              analyzedAt: new Date().toISOString(),
+            },
+      ),
+    });
+  });
+
+  await goToDetailStep(page);
+
+  await expect(page.getByRole("heading", { name: "분석에 실패했어요" })).toBeVisible({
+    timeout: 20_000,
+  });
+  await page.getByRole("button", { name: "확인" }).click();
+  await expect(page).toHaveURL(/step=1/);
+
+  // 같은 사진으로 다시 걸어 들어감
+  await page.getByRole("button", { name: "다음" }).click();
+  await expect(page.getByText("AI 초안")).toBeVisible({ timeout: 20_000 });
 });
 
 test("사진이 안 올라가도 그 자리에서 다시 올린다", async ({ page }) => {
