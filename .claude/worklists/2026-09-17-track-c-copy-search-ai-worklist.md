@@ -117,30 +117,30 @@
 
 ## Phase 7. 경로 해석 모델과 사진 대조
 
-- [ ] `packages/core/src/matching/track-review.ts` 에 해석 스키마와 시스템 프롬프트를 둡니다
-  - [ ] `review.ts` 를 본떠 `TRACK_MODEL` `TRACK_TIMEOUT_MS` `TRACK_PROMPT_VERSION` `TRACK_PHOTO_MAX` 를 설계 상수 값으로 둡니다
-  - [ ] `trackReview` 를 `z.object({ movement: z.string(), photoConsistency: z.enum(["consistent", "mixed", "unclear"]), searchOrder: z.array(z.string()).max(3), caution: z.string().nullable() })` 로 씁니다
-  - [ ] `SYSTEM` 에 개체 동일성을 확정하지 않고 품종을 단정하지 않으며 점수를 다시 매기지 않는다는 원칙을 넣습니다
-  - [ ] `SYSTEM` 에 사진은 털색·크기·목줄 같은 눈에 보이는 특징이 서로 어긋나는지만 보고 같은 개체라고 말하지 말라는 지시를 넣습니다
-  - [ ] `SYSTEM` 에 좌표 숫자를 그대로 쓰지 말고 지역명과 방향으로만 말하라는 지시를 넣습니다
-- [ ] `packages/core/src/matching/track-review.ts` 에 사진 블록을 만드는 `loadTrackPhotos` 를 넣습니다
-  - [ ] `findFirstPhotoPaths` 를 `@rebirth/db` 에서, `downloadPhoto` 를 `../storage/supabase-storage.ts` 에서 불러 최근 노드부터 `TRACK_PHOTO_MAX` 장을 받습니다
-  - [ ] `vision/analyze.ts:140-145` 와 같은 모양으로 `{ type: "image", source: { type: "base64", media_type, data } }` 블록을 만듭니다
-  - [ ] `Promise.allSettled` 로 받아 한 장 실패가 나머지를 막지 않게 하고 사진이 0장이면 빈 배열을 돌려 텍스트만으로 해석합니다
-- [ ] `packages/core/src/matching/track-review.ts` 에 `describeTrack` 과 `reviewTrack` 호출부를 넣습니다
-  - [ ] `describeTrack(input)` 이 노드별 지역명과 시각, `confidence`, `straightness`, `bearingDeg` 를 방향 낱말로 바꾼 값, 예측 반경만 문장에 담고 좌표 숫자는 담지 않게 씁니다
-  - [ ] `reviewTrack` 이 `messages.parse` 와 `zodOutputFormat` 을 `review.ts` 와 같은 방식으로 쓰고 `content` 를 `[...photoBlocks, { type: "text", text }]` 로 넣습니다
-  - [ ] `TrackReviewError` 를 `ReviewError` 와 같은 분류 `no-config` `timeout` `rate-limit` `api` `parse` 로 둡니다
-  - [ ] `stop_reason` 이 `refusal` 이면 오류로 던지고 호출부가 경로만 그리게 합니다
-- [ ] `packages/core/src/matching/track-review.test.ts` 에 API 호출 없는 검증을 넣습니다
-  - [ ] `SYSTEM` 문자열에 `확정` 이 없고 원칙 다섯 줄의 핵심 낱말이 모두 들어 있는 검증 1건을 씁니다
-  - [ ] `trackReview` 스키마가 `searchOrder` 4개와 `photoConsistency: "same"` 을 거부하는 검증 2건을 씁니다
-  - [ ] `describeTrack` 이 좌표 숫자를 문장에 넣지 않는 검증 1건을 씁니다
-  - [ ] `pnpm --filter @rebirth/core test 2>&1 | tail -10` 을 돌려 `fail 0` 을 봅니다
-- [ ] `packages/core` 검증을 통과시키고 Phase 7 담당 경로만 커밋한 뒤 A 에게 알립니다
-  - [ ] `pnpm typecheck 2>&1 | tail -5` 를 돌려 `5 successful, 5 total` 을 봅니다
-  - [ ] `git add packages/core/src/matching/track-review.ts packages/core/src/matching/track-review.test.ts` 로 담습니다
-  - [ ] `git commit -m "feat: 이동 경로와 노드 사진을 읽어 탐색 순서를 적는 모델 해석 추가"` 로 커밋하고 `exit 0` 을 확인합니다
+- [x] `packages/core/src/matching/track-review.ts` 에 해석 스키마와 시스템 프롬프트를 둡니다
+  - [x] `review.ts` 를 본떠 `TRACK_MODEL` `TRACK_TIMEOUT_MS` `TRACK_PROMPT_VERSION` `TRACK_PHOTO_MAX` 를 설계 상수 값으로 둡니다
+  - [x] `trackReview` 를 `z.object({ movement: z.string(), photoConsistency: z.enum(["consistent", "mixed", "unclear"]), searchOrder: z.array(z.string()).max(3), caution: z.string().nullable() })` 로 씁니다
+  - [x] `SYSTEM` 에 개체 동일성을 확정하지 않고 품종을 단정하지 않으며 점수를 다시 매기지 않는다는 원칙을 넣습니다
+  - [x] `SYSTEM` 에 사진은 털색·크기·목줄 같은 눈에 보이는 특징이 서로 어긋나는지만 보고 같은 개체라고 말하지 말라는 지시를 넣습니다
+  - [x] `SYSTEM` 에 좌표 숫자를 그대로 쓰지 말고 지역명과 방향으로만 말하라는 지시를 넣습니다
+- [x] `packages/core/src/matching/track-review.ts` 에 사진 블록을 만드는 `loadTrackPhotos` 를 넣습니다
+  - [x] `findFirstPhotoPaths` 를 `@rebirth/db` 에서, `downloadPhoto` 를 `../storage/supabase-storage.ts` 에서 불러 최근 노드부터 `TRACK_PHOTO_MAX` 장을 받습니다
+  - [x] `vision/analyze.ts:140-145` 와 같은 모양으로 `{ type: "image", source: { type: "base64", media_type, data } }` 블록을 만듭니다
+  - [x] `Promise.allSettled` 로 받아 한 장 실패가 나머지를 막지 않게 하고 사진이 0장이면 빈 배열을 돌려 텍스트만으로 해석합니다
+- [x] `packages/core/src/matching/track-review.ts` 에 `describeTrack` 과 `reviewTrack` 호출부를 넣습니다
+  - [x] `describeTrack(input)` 이 노드별 지역명과 시각, `confidence`, `straightness`, `bearingDeg` 를 방향 낱말로 바꾼 값, 예측 반경만 문장에 담고 좌표 숫자는 담지 않게 씁니다
+  - [x] `reviewTrack` 이 `messages.parse` 와 `zodOutputFormat` 을 `review.ts` 와 같은 방식으로 쓰고 `content` 를 `[...photoBlocks, { type: "text", text }]` 로 넣습니다
+  - [x] `TrackReviewError` 를 `ReviewError` 와 같은 분류 `no-config` `timeout` `rate-limit` `api` `parse` 로 둡니다
+  - [x] `stop_reason` 이 `refusal` 이면 오류로 던지고 호출부가 경로만 그리게 합니다
+- [x] `packages/core/src/matching/track-review.test.ts` 에 API 호출 없는 검증을 넣습니다
+  - [x] `SYSTEM` 문자열에 `확정` 이 없고 원칙 다섯 줄의 핵심 낱말이 모두 들어 있는 검증 1건을 씁니다
+  - [x] `trackReview` 스키마가 `searchOrder` 4개와 `photoConsistency: "same"` 을 거부하는 검증 2건을 씁니다
+  - [x] `describeTrack` 이 좌표 숫자를 문장에 넣지 않는 검증 1건을 씁니다
+  - [x] `pnpm --filter @rebirth/core test 2>&1 | tail -10` 을 돌려 `fail 0` 을 봅니다
+- [x] `packages/core` 검증을 통과시키고 Phase 7 담당 경로만 커밋한 뒤 A 에게 알립니다
+  - [x] `pnpm typecheck 2>&1 | tail -5` 를 돌려 `5 successful, 5 total` 을 봅니다
+  - [x] `git add packages/core/src/matching/track-review.ts packages/core/src/matching/track-review.test.ts` 로 담습니다
+  - [x] `git commit -m "feat: 이동 경로와 노드 사진을 읽어 탐색 순서를 적는 모델 해석 추가"` 로 커밋하고 `exit 0` 을 확인합니다
 
 ## 추가 항목
 
@@ -148,11 +148,18 @@
 
 ### 지시서 결함
 
+- Phase 7 의 `trackReview` 스키마는 `.max(3)` 만 지정해 `searchOrder` 빈 배열이 통과함. `.min` 은 지시에 없어 두지 않음
+
 - Phase 5 의 3·4번 부모도 첫 20자가 `` `apps/web/components `` 로 같아 보고에서 구분 불가
 
 - Phase 3 네 부모의 첫 20자가 모두 `` `apps/web/components `` 로 같아 보고에서 부모를 구분할 수 없음. 파일명으로 갈라야 함
 
 ### 실측 기록
+
+- `readonly kind` 생성자 파라미터 프로퍼티는 node strip-only 모드에서 `SyntaxError`. `analyze.ts` 의 `VisionError` 처럼 필드 대입으로 씀
+- `review.ts` 가 같은 문법을 쓰지만 테스트가 없어 드러나지 않았음. core 에 테스트를 붙일 모듈은 이 문법을 피해야 함
+- `describeTrack` 시각은 `toISOString` 대신 분 단위 절삭. `00.000Z` 가 좌표 모양 정규식에 걸리기 때문
+- `@rebirth/core` 테스트가 `pass 94` 에서 `pass 100` 으로 6건 증가
 
 - `Chip.Button` 에 선택 상태 prop 이 없어 `variant` solid/outlineWeak 와 `aria-pressed` 로 현재 모드를 표시함
 - `page.tsx` 결과 매핑에 `kind` 와 `petName` 을 더해 `ReportCard` 가 이름을 먼저 부르게 함
