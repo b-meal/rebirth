@@ -69,45 +69,40 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
     latest.current = onChange;
   });
 
-  // 물어볼 것이 없는 브라우저는 곧바로 듣기 시작함
-  const [granted, setGranted] = useState(
-    () => typeof window !== "undefined" && permissionApi() === null,
-  );
+  // 허락을 받은 뒤 센서를 다시 붙이는 계기, iOS 는 허락 전에 건 것으로는 값이 오지 않음
+  const [attempt, setAttempt] = useState(0);
 
   const request = useCallback(() => {
     const api = permissionApi();
     if (!api?.requestPermission) return;
     void api
       .requestPermission()
-      .then((state) => setGranted(state === "granted"))
+      .then((state) => {
+        if (state === "granted") setAttempt((count) => count + 1);
+      })
       .catch(() => {});
   }, []);
 
   // 이미 허용해 둔 기기는 탭을 기다릴 이유가 없어 한 번 물어봄
   // 손가락이 닿지 않은 요청은 prompt 나 거절로 돌아오고 그때는 단추를 기다림
   useEffect(() => {
-    if (!enabled || granted) return;
+    if (!enabled) return;
     const api = permissionApi();
     if (!api?.requestPermission) return;
     let alive = true;
     void api
       .requestPermission()
       .then((state) => {
-        if (alive && state === "granted") setGranted(true);
+        if (alive && state === "granted") setAttempt((count) => count + 1);
       })
       .catch(() => {});
     return () => {
       alive = false;
     };
-  }, [enabled, granted]);
+  }, [enabled]);
 
   useEffect(() => {
-    if (!enabled || !granted || typeof window === "undefined") return;
-
-    // 절대 방향을 주는 쪽이 있으면 그것을 듣고, 없으면 Safari 가 쓰는 쪽을 들음
-    const type = "ondeviceorientationabsolute" in window
-      ? "deviceorientationabsolute"
-      : "deviceorientation";
+    if (!enabled || typeof window === "undefined") return;
 
     let frame = 0;
     let pending: number | null = null;
@@ -124,10 +119,15 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
       latest.current(smoothed);
     };
 
+    // 두 이벤트가 같이 오는 기기가 있어 먼저 쓸 만한 값을 준 쪽만 계속 씀
+    let source: string | null = null;
+
     // 센서는 초당 수십 번 올라와 한 프레임에 한 번만 반영함
     const handle = (event: Event) => {
+      if (source !== null && event.type !== source) return;
       const next = readHeading(event as CompassEvent);
       if (next === null) {
+        if (source === null) return;
         pending = null;
         smoothed = null;
         if (sent !== null) {
@@ -136,17 +136,20 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
         }
         return;
       }
+      source ??= event.type;
       pending = next;
       if (!frame) frame = requestAnimationFrame(flush);
     };
 
-    window.addEventListener(type, handle);
+    // 어느 쪽이 값을 주는지는 기기가 정함, 안드로이드는 절대 방향 쪽, Safari 는 기본 쪽
+    const types = ["deviceorientationabsolute", "deviceorientation"] as const;
+    for (const type of types) window.addEventListener(type, handle);
     return () => {
-      window.removeEventListener(type, handle);
+      for (const type of types) window.removeEventListener(type, handle);
       if (frame) cancelAnimationFrame(frame);
       latest.current(null);
     };
-  }, [enabled, granted]);
+  }, [enabled, attempt]);
 
   return { request };
 }
