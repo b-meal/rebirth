@@ -22,7 +22,11 @@ function chunk(type, data) {
   return Buffer.concat([length, typed, crc]);
 }
 
-/** 단색에 가까운 200x200 PNG. 동물이 없는 사진이라 비동물 폴백도 함께 확인됨 */
+/**
+ * 단색에 가까운 200x200 PNG
+ * 동물이 없는 사진이라 분석이 비동물로 판정하고 흐름이 1단계로 되돌아감
+ * 초안이 뜨는 것을 기다리는 테스트는 이 픽스처로 통과할 수 없음
+ */
 export function makePng(width = 200, height = 200) {
   const raw = Buffer.alloc((width * 3 + 1) * height);
   let offset = 0;

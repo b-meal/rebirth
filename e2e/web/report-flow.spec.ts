@@ -4,6 +4,13 @@ import { makePng } from "./fixtures/make-photo.mjs";
 import { dismissSplash } from "./fixtures/splash";
 
 // 제보 2단계와 상세, 공유 카드를 실제 브라우저로 확인하는 자리
+//
+// AI 초안 을 기다리는 3건은 2026-09-18 현재 실패함. 덮개나 시간 초과가 아니라 픽스처 때문
+// makePng 은 회색 노이즈라 분석이 비동물로 맞게 판정하고, 그러면 흐름이 1단계로 되돌아가
+// 초안 카드가 영영 안 뜸. 픽스처는 되돌림 기능이 생기기 전에 쓰여 그때는 통과했음
+// 고치는 길은 분석을 가로채거나 진짜 동물 사진을 픽스처로 두는 것이고 둘 다 제품 판단이라 남겨 둠
+// 가로채면 빠르지만 실제 AI 경로를 안 밟고, 사진을 두면 외부 이미지를 저장소에 두지 않는 방침과 부딪힘
+// 화면 제어만 보는 회귀 테스트는 분석을 가로채는 쪽으로 report-recovery.spec.ts 에 따로 있음
 
 const PHOTO = { name: "sighting.png", mimeType: "image/png", buffer: makePng() };
 
