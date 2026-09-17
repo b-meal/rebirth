@@ -91,8 +91,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       images: [
         {
           url: image,
-          width: 1080,
-          height: 1350,
+          width: 1200,
+          height: 630,
           alt: `${where}에서 ${isLost ? "잃어버린" : "발견된"} 동물`,
         },
       ],
