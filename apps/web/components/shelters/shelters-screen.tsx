@@ -85,7 +85,7 @@ export function SheltersScreen({ regions }: { regions: string[] }) {
       <AppHeader title="보호, 구조 기관" />
       <ScreenBody gap="x5">
         <VStack align="stretch" gap="x2">
-          <Text as="h1" textStyle="t8Bold" color="fg.neutral">
+          <Text as="h2" textStyle="t8Bold" color="fg.neutral">
             어디에 맡겨야 할지 모르겠나요
           </Text>
           <Text textStyle="t4Regular" color="fg.neutralMuted">

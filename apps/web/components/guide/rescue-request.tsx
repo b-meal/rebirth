@@ -86,7 +86,7 @@ export function RescueRequest() {
       <AppHeader title="구조 요청" />
       <ScreenBody gap="x6">
         <VStack align="stretch" gap="x2">
-          <Text as="h1" textStyle="t8Bold" color="fg.neutral">
+          <Text as="h2" textStyle="t8Bold" color="fg.neutral">
             다친 동물을 보셨나요
           </Text>
           <Text textStyle="t4Regular" color="fg.neutralMuted">

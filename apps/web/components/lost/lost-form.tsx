@@ -551,7 +551,7 @@ export function LostForm({ pets = [], initialPetId }: LostFormProps) {
       <ScreenBody gap="x6">
         {/* 이 걸음에서 무엇을 묻는지 먼저 말함. 화면마다 한 가지만 물음 */}
         <VStack align="stretch" gap="x1">
-          <Text as="h1" textStyle="t7Bold" color="fg.neutral">
+          <Text as="h2" textStyle="t7Bold" color="fg.neutral">
             {STEP_HEADING[urlStep]}
           </Text>
           {STEP_HINT[urlStep] ? (

@@ -48,7 +48,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
       <ScreenBody justify="center" gap="x8">
         <VStack align="center" gap="x3">
           <Image src="/logo/logo-mark-512.png" alt="" width={72} height={72} priority />
-          <Text as="h1" textStyle="screenTitle" color="fg.neutral" align="center">
+          <Text as="h2" textStyle="screenTitle" color="fg.neutral" align="center">
             다시집
           </Text>
           <Text textStyle="t5Regular" color="fg.neutralMuted" align="center">

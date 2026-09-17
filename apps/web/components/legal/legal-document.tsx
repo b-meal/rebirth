@@ -61,7 +61,7 @@ export function LegalNotPublished({ label }: { label: string }) {
     <Screen>
       <AppHeader title={label} />
       <ScreenBody pt="x12" gap="x4">
-        <Text as="h1" textStyle="t8Bold" color="fg.neutral">
+        <Text as="h2" textStyle="t8Bold" color="fg.neutral">
           아직 준비하고 있어요
         </Text>
         <Text textStyle="t5Regular" color="fg.neutralMuted">
