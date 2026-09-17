@@ -15,7 +15,6 @@ import { IconCameraFill, IconPictureFill, IconXmarkFill } from "@karrotmarket/re
 import { ActionButton } from "seed-design/ui/action-button";
 import { DismissibleCallout } from "seed-design/ui/callout";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
-import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import type { PhotoItem } from "@/lib/image";
 import type { PhotoPickerState } from "@/hooks/use-photo-picker";
@@ -30,10 +29,7 @@ import { ReportPhotoHero } from "./report-photo-hero";
 // 레퍼런스가 오면 이 문안 자리에 예시 이미지를 붙임
 const TIPS = ["얼굴이 보이게", "몸 전체가 들어오면 더 좋아요", "다가가지 말고 그 자리에서"];
 
-// 선검사가 동물을 못 찾았을 때. 지우는 자리는 칸 가운데 X 가 맡아 토스트는 알리기만 함
-const NOT_ANIMAL_TOAST = "동물이 보이지 않아요";
-
-// 토스트는 사라지므로 다음으로 못 넘어가는 이유는 이 줄이 계속 들고 있음
+// 선검사가 동물을 못 찾았을 때. 칸 위의 X 와 함께 다음으로 못 넘어가는 이유를 들고 있음
 const NOT_ANIMAL_HINT = "동물이 보이지 않는 사진을 지워 주세요";
 
 // 살펴보는 중에는 덮개가 지우는 단추를 가리지 않게 손가락을 통과시킴
@@ -171,22 +167,8 @@ export function ReportCapture({
   const camera = cameraAvailable !== false;
   const { photos, maxCount, isFull, processing, error, addFiles, dismissError } = picker;
 
-  const snackbar = useSnackbarAdapter();
   const { flagged } = precheck;
   const { removePhoto } = picker;
-
-  // 걸린 사진마다 한 번만 알림. 같은 사진에 두 번 띄우지 않게 표시를 남김
-  const toasted = useRef(new Set<string>());
-  useEffect(() => {
-    for (const photo of flagged) {
-      if (toasted.current.has(photo.id)) continue;
-      toasted.current.add(photo.id);
-      snackbar.create({
-        onClose: () => {},
-        render: () => <Snackbar message={NOT_ANIMAL_TOAST} />,
-      });
-    }
-  }, [flagged, snackbar]);
 
   // capture 는 명세상 힌트라 카메라가 없는 기기는 알아서 파일 선택기로 떨어짐
   // 장치 조회로 가리면 권한 전에 videoinput 을 안 내놓는 브라우저에서 카메라가 안 열림
@@ -346,32 +328,28 @@ export function ReportCapture({
         ) : null}
       </ScreenBody>
 
-      {/* 토스트가 아래 버튼 띠를 덮지 않도록 띠 높이를 재게 함
-          SEED 는 띠의 화면 좌표로 띄울 높이를 재서 sticky 로 아래에 붙여 둬야 함
-          흐름에 그냥 두면 사진이 길어질 때 띠가 화면 밖으로 내려가 재는 대상에서 빠짐 */}
-      <SnackbarAvoidOverlap>
-        <VStack
-          align="stretch"
-          position="sticky"
-          bottom="0"
-          px="spacingX.globalGutter"
-          pt="x3"
-          bg="bg.layerDefault"
-          borderTopWidth="1px"
-          borderColor="stroke.neutralMuted"
-          className="rebirth-bottom-bar"
+      {/* 실종신고와 같이 화면 아래에 붙여 둠. 아래 여백은 기기 안전 영역까지 함께 들어감 */}
+      <VStack
+        align="stretch"
+        position="sticky"
+        bottom="0"
+        px="spacingX.globalGutter"
+        pt="x3"
+        bg="bg.layerDefault"
+        borderTopWidth="1px"
+        borderColor="stroke.neutralMuted"
+        className="rebirth-bottom-bar"
+      >
+        {/* 동물이 안 보이는 사진을 안고 2단계로 가면 거기서 되돌려 보내 걸음만 늘어남 */}
+        <ActionButton
+          variant="brandSolid"
+          size="large"
+          disabled={processing || flagged.length > 0}
+          onClick={onNext}
         >
-          {/* 동물이 안 보이는 사진을 안고 2단계로 가면 거기서 되돌려 보내 걸음만 늘어남 */}
-          <ActionButton
-            variant="brandSolid"
-            size="large"
-            disabled={processing || flagged.length > 0}
-            onClick={onNext}
-          >
-            다음
-          </ActionButton>
-        </VStack>
-      </SnackbarAvoidOverlap>
+          다음
+        </ActionButton>
+      </VStack>
       {hidden}
     </>
   );
