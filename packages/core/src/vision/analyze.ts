@@ -10,7 +10,7 @@ import { analyzeResult, type AnalyzeResult } from "@rebirth/types";
 export const VISION_MODEL = "claude-sonnet-5";
 
 // 사용자가 위치를 정하는 동안 끝나야 함. 넘으면 수동 입력으로 돌림
-export const ANALYZE_TIMEOUT_MS = 8_000;
+export const ANALYZE_TIMEOUT_MS = 20_000;
 
 export type VisionErrorKind = "no-config" | "timeout" | "rate-limit" | "api" | "parse";
 
