@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 import { makePng } from "./fixtures/make-photo.mjs";
+import { dismissSplash } from "./fixtures/splash";
 
 // 제보 2단계와 상세, 공유 카드를 실제 브라우저로 확인하는 자리
 
@@ -14,6 +15,7 @@ test.use({
 /** 1단계에서 앨범 입력으로 사진을 올리고 2단계까지 보냄 */
 async function goToDetailStep(page: import("@playwright/test").Page) {
   await page.goto("/report");
+  await dismissSplash(page);
   await page.locator("input[type=file]:not([capture])").setInputFiles(PHOTO);
   await expect(page.getByText("이 사진으로 할까요")).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "다음" }).click();
@@ -28,6 +30,7 @@ async function pickCare(page: import("@playwright/test").Page, label: string) {
 test("1단계에 촬영과 앨범이 모두 있다", async ({ page }) => {
   // 길에서 찍지 않는 사람도 저장된 사진으로 제보할 수 있어야 함
   await page.goto("/report");
+  await dismissSplash(page);
   await expect(page.getByRole("button", { name: "사진 촬영" })).toBeVisible();
   await expect(page.getByRole("button", { name: "앨범에서 선택" })).toBeVisible();
   await expect(page.locator("input[type=file][capture]")).toHaveCount(1);
@@ -63,6 +66,7 @@ test("사진에서 제보 완료까지 끝낸다", async ({ page }) => {
 
   const id = page.url().split("/r/")[1]!.split("/")[0]!;
   await page.goto(`/r/${id}`);
+  await dismissSplash(page);
   await expect(page.getByText("AI 초안, 수정 가능")).toBeVisible();
   await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
   await expect(page.getByText("계열 추정 계열 추정")).toHaveCount(0);
@@ -92,6 +96,7 @@ test("공유 카드는 1080x1350 PNG 로 나온다", async ({ page, request }) =
 test("없는 주소는 로그인 대신 404 를 보여 준다", async ({ page }) => {
   // 로그인 벽이 404 를 가리면 오타를 친 사람이 로그인 화면을 봄
   const response = await page.goto("/not-a-real-page");
+  await dismissSplash(page);
   expect(response?.status()).toBe(404);
   await expect(page.getByText("찾을 수 없는 주소입니다")).toBeVisible();
   await expect(page).not.toHaveURL(/sign-in/);
