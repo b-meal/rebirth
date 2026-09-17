@@ -98,26 +98,26 @@
 
 ## Phase 4. `search-spots.ts` 탐색 지점 T5
 
-- [ ] `packages/core/src/matching/search-spots.ts` 에 설계 상수와 순수 배점 `rankSpots` 를 넣습니다
-  - [ ] `packages/core/src/matching/search-spots.ts` 를 만들고 `import "server-only"` 없이 시작해 `rankSpots` 가 테스트에서 돌게 합니다
-  - [ ] `SPOT_KEYWORDS` 와 `SPOT_LIMIT` 을 설계 상수 표 값 그대로 `export const` 로 둡니다
-  - [ ] `export type Spot = { name: string; point: LatLng; keyword: keyof typeof SPOT_KEYWORDS; priority: number }` 를 둡니다
-  - [ ] `rankSpots({ candidates, center, radiusKm })` 가 후보마다 `w / (1 + Math.abs(distanceKm(center, point) - radiusKm) / radiusKm)` 를 매기게 씁니다
-  - [ ] `rankSpots` 가 이름이 같은 후보를 하나로 합치고 `priority` 내림차순 상위 `SPOT_LIMIT` 개만 반환하게 합니다
-- [ ] `packages/core/src/matching/search-spots.ts` 에 Kakao 호출 래퍼 `searchSpots` 를 넣습니다
-  - [ ] `searchKeyword` 를 `../location/kakao-local.ts` 에서 불러 `SPOT_KEYWORDS` 의 키마다 `{ center, radiusMeters: radiusKm * 1000, size: 5 }` 로 부릅니다
-  - [ ] `Promise.allSettled` 로 다섯 호출을 묶고 실패한 키는 건너뛰어 한 호출 실패가 전체를 비우지 않게 합니다
-  - [ ] `KakaoLocalError` 를 포함한 모든 예외에서 `[]` 를 돌려 경로 화면이 탐색 지점 없이도 그려지게 합니다
-  - [ ] `// ponytail: 요청마다 Kakao 5회 호출, 느려지면 격자 키로 캐시` 한 줄을 래퍼 위에 둡니다
-- [ ] `packages/core/src/matching/search-spots.test.ts` 에 배점 회귀 검증을 넣습니다
-  - [ ] `rankSpots` 가 예측 반경 위에 있는 공원을 중심에 붙은 학교보다 앞에 두는 검증 1건을 씁니다
-  - [ ] `rankSpots` 가 이름이 같은 후보 둘을 하나로 합치는 검증 1건을 씁니다
-  - [ ] `rankSpots` 가 후보 10개를 넣어도 `SPOT_LIMIT` 개만 돌려주는 검증 1건을 씁니다
-  - [ ] `pnpm --filter @rebirth/core test 2>&1 | tail -10` 을 돌려 `fail 0` 을 봅니다
-- [ ] `packages/core` 검증을 통과시키고 Phase 4 담당 경로만 커밋합니다
-  - [ ] `pnpm typecheck 2>&1 | tail -5` 를 돌려 `5 successful, 5 total` 을 봅니다
-  - [ ] `git add packages/core/src/matching/search-spots.ts packages/core/src/matching/search-spots.test.ts` 로 담습니다
-  - [ ] `git commit -m "feat: 예측 원 안 공원·하천·산책로를 탐색 우선순위로 매기는 공식 추가"` 로 커밋하고 `exit 0` 을 확인합니다
+- [x] `packages/core/src/matching/search-spots.ts` 에 설계 상수와 순수 배점 `rankSpots` 를 넣습니다
+  - [x] `packages/core/src/matching/search-spots.ts` 를 만들고 `import "server-only"` 없이 시작해 `rankSpots` 가 테스트에서 돌게 합니다
+  - [x] `SPOT_KEYWORDS` 와 `SPOT_LIMIT` 을 설계 상수 표 값 그대로 `export const` 로 둡니다
+  - [x] `export type Spot = { name: string; point: LatLng; keyword: keyof typeof SPOT_KEYWORDS; priority: number }` 를 둡니다
+  - [x] `rankSpots({ candidates, center, radiusKm })` 가 후보마다 `w / (1 + Math.abs(distanceKm(center, point) - radiusKm) / radiusKm)` 를 매기게 씁니다
+  - [x] `rankSpots` 가 이름이 같은 후보를 하나로 합치고 `priority` 내림차순 상위 `SPOT_LIMIT` 개만 반환하게 합니다
+- [x] `packages/core/src/matching/search-spots.ts` 에 Kakao 호출 래퍼 `searchSpots` 를 넣습니다
+  - [x] `searchKeyword` 를 `../location/kakao-local.ts` 에서 불러 `SPOT_KEYWORDS` 의 키마다 `{ center, radiusMeters: radiusKm * 1000, size: 5 }` 로 부릅니다
+  - [x] `Promise.allSettled` 로 다섯 호출을 묶고 실패한 키는 건너뛰어 한 호출 실패가 전체를 비우지 않게 합니다
+  - [x] `KakaoLocalError` 를 포함한 모든 예외에서 `[]` 를 돌려 경로 화면이 탐색 지점 없이도 그려지게 합니다
+  - [x] `// ponytail: 요청마다 Kakao 5회 호출, 느려지면 격자 키로 캐시` 한 줄을 래퍼 위에 둡니다
+- [x] `packages/core/src/matching/search-spots.test.ts` 에 배점 회귀 검증을 넣습니다
+  - [x] `rankSpots` 가 예측 반경 위에 있는 공원을 중심에 붙은 학교보다 앞에 두는 검증 1건을 씁니다
+  - [x] `rankSpots` 가 이름이 같은 후보 둘을 하나로 합치는 검증 1건을 씁니다
+  - [x] `rankSpots` 가 후보 10개를 넣어도 `SPOT_LIMIT` 개만 돌려주는 검증 1건을 씁니다
+  - [x] `pnpm --filter @rebirth/core test 2>&1 | tail -10` 을 돌려 `fail 0` 을 봅니다
+- [x] `packages/core` 검증을 통과시키고 Phase 4 담당 경로만 커밋합니다
+  - [x] `pnpm typecheck 2>&1 | tail -5` 를 돌려 `5 successful, 5 total` 을 봅니다
+  - [x] `git add packages/core/src/matching/search-spots.ts packages/core/src/matching/search-spots.test.ts` 로 담습니다
+  - [x] `git commit -m "feat: 예측 원 안 공원·하천·산책로를 탐색 우선순위로 매기는 공식 추가"` 로 커밋하고 `exit 0` 을 확인합니다
 
 ## Phase 8. 경로 지도와 예측 원
 
@@ -148,9 +148,15 @@
 
 ### 지시서 결함
 
+- Phase 4 는 `searchSpots` 의 인자 모양을 정하지 않아 `rankSpots` 와 맞춰 `{ center, radiusKm }` 객체 인자로 둠
+
 - Phase 2 테스트 항목은 등급 2+4건·힌트 2건·밀도 2건 총 10 assertion 을 요구하나 `test()` 블록 5개에 묶여 실행 단위는 5건
 
 ### 실측 기록
+
+- `kakao-local.ts` 가 `import "server-only"` 로 시작해 Node 테스트에서 모듈 로드 즉시 throw. 정적 import 불가
+- `searchSpots` 안에서 `await import("../location/kakao-local.ts")` 로 호출 시점 동적 import, 타입만 정적 import
+- `@rebirth/core` 테스트가 `pass 91` 에서 `pass 94` 로 3건 증가. 설계 상수 표의 `pass 87` 은 Phase 4 이후 `pass 94` 로 읽어야 함
 
 - `@rebirth/web` 테스트가 기존 3건 + 신규 5건으로 `pass 8`. 설계 상수 표의 기준선 `pass 3` 은 Phase 2 이후 `pass 8` 로 읽어야 함
 - `densityLine` 반경은 정수도 `toFixed(1)` 로 통일해 `반경 2.0km` 로 출력. 테스트가 그 값으로 고정됨
