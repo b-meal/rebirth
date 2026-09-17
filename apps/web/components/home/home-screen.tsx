@@ -106,7 +106,16 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
         onClick={() => onSelect(item)}
       >
         {item.photoUrl ? (
-          <ImageFrame ratio={1} width="full" src={item.photoUrl} alt="" borderRadius="full" />
+          // 지도에 얹힌 핀 수백 개가 한꺼번에 사진을 받지 않도록 화면에 든 것만 받음
+          <ImageFrame
+            ratio={1}
+            width="full"
+            src={item.photoUrl}
+            alt=""
+            borderRadius="full"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           // 사진이 없거나 서명이 만료되면 발자국으로 대체
           <VStack align="center" justify="center" height="full" borderRadius="full">
