@@ -212,8 +212,8 @@ export function listPublicReports({
     .limit(limit)
 }
 
-/** 홈 지도 마커 상한. 한 화면에 그릴 수 있는 수를 넘기지 않음 */
-const MAP_LIMIT = 500
+/** 홈 지도 마커 상한. 화면에 그리는 수는 묶음이 줄이므로 조회는 넉넉히 가져옴 */
+const MAP_LIMIT = 2000
 
 export type MapListOptions = {
   fromOccurredAt?: Date

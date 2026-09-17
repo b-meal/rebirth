@@ -27,7 +27,6 @@ export default async function OpengraphImage() {
           color: "#14311f",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={`data:image/png;base64,${logo.toString("base64")}`}
           width={300}
