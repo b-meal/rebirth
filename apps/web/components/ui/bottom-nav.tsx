@@ -6,8 +6,8 @@ import { HStack, Icon, Text, VStack } from "@seed-design/react";
 import {
   IconHouseFill,
   IconHouseLine,
-  IconMagnifyingglassFill,
-  IconMagnifyingglassLine,
+  IconMegaphoneFill,
+  IconMegaphoneLine,
   IconPawprintFill,
   IconPawprintLine,
   IconPerson2Fill,
@@ -32,6 +32,7 @@ type NavItem = {
   activeIcon: typeof IconHouseLine;
 };
 
+// 실종신고는 확성기, 지도 위 검색창이 돋보기를 이미 써 아이콘이 겹치면 역할이 섞임
 const NAV: NavItem[] = [
   { label: "홈", href: "/", icon: IconHouseLine, activeIcon: IconHouseFill },
   {
@@ -43,8 +44,8 @@ const NAV: NavItem[] = [
   {
     label: "실종신고",
     href: "/lost/new",
-    icon: IconMagnifyingglassLine,
-    activeIcon: IconMagnifyingglassFill,
+    icon: IconMegaphoneLine,
+    activeIcon: IconMegaphoneFill,
   },
   {
     label: "발견제보",
