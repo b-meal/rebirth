@@ -17,10 +17,18 @@ const COLOR_SCHEME_SCRIPT = `try{var m=window.matchMedia("(prefers-color-scheme:
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "다시집",
+    default: "다시집 | Rebirth",
     template: "%s, 다시집",
   },
   description: "길에서 만난 보호자 없는 동물을 사진 한 장으로 제보합니다.",
+  openGraph: {
+    title: "다시집 | Rebirth",
+    description: "길에서 만난 보호자 없는 동물을 사진 한 장으로 제보합니다.",
+    siteName: "다시집",
+    locale: "ko_KR",
+    type: "website",
+    url: siteUrl,
+  },
   icons: { icon: "/logo/logo-mark-512.png" },
 };
 
