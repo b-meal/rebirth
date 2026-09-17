@@ -11,7 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { Box, Grid, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
+import { Box, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
 import {
   IconBellLine,
   IconCrosshairLine,
@@ -31,7 +31,8 @@ import { useCurrentPosition } from "@/hooks/use-current-position";
 import { useMap } from "@/hooks/use-map";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
-import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
+import { NearbyList } from "@/components/home/nearby-list";
+import type { ReportCardItem } from "@/components/report/report-card";
 
 // 지도가 맨 아래, 그 위에 시트, 맨 위에 떠 있는 내비게이션을 겹치는 첫 화면
 
@@ -571,25 +572,7 @@ export function HomeScreen({
             </Text>
           </HStack>
 
-          {/* 아래 여백은 떠 있는 내비게이션이 가리는 만큼 비워 두는 자리 */}
-          <Box height={`${Math.round(sheetRatio * 100)}dvh`} pb="x16" overflowY="auto">
-            {nearby.length === 0 ? (
-              <VStack px="spacingX.globalGutter" py="x2" gap="x1" align="stretch">
-                <Text textStyle="t4Regular" color="fg.neutralMuted">
-                  이 지역에는 아직 제보가 없습니다
-                </Text>
-                <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  지도를 옮기면 다른 지역의 제보를 볼 수 있습니다
-                </Text>
-              </VStack>
-            ) : (
-              <Grid columns={2} gap="x4" px="spacingX.globalGutter">
-                {nearby.map((item) => (
-                  <ReportCard key={item.id} item={item} />
-                ))}
-              </Grid>
-            )}
-          </Box>
+          <NearbyList items={nearby} height={`${Math.round(sheetRatio * 100)}dvh`} />
         </VStack>
       </VStack>
     </Box>
