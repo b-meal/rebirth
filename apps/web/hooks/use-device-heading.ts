@@ -32,6 +32,15 @@ const COMPASS_WAIT_MS = 3000;
 const MOVING_MPS = 0.7;
 const STOPPED_MPS = 0.3;
 
+/**
+ * 손에 드는 기기인지. 데스크탑은 나침반이 없어 화살이 뜰 일이 없는데
+ * 위치 감시만 계속 돌아 주소창에 위치 사용 표시가 남음
+ */
+function handheld(): boolean {
+  if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+  return window.matchMedia("(pointer: coarse)").matches;
+}
+
 /** iOS 는 손가락이 닿은 순간에만 물어볼 수 있어 켜는 시점을 부르는 쪽이 정함 */
 function permissionApi(): PermissionApi | null {
   if (typeof DeviceOrientationEvent === "undefined") return null;
@@ -94,7 +103,12 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
   // 허락을 받은 뒤 센서를 다시 붙이는 계기, iOS 는 허락 전에 건 것으로는 값이 오지 않음
   const [attempt, setAttempt] = useState(0);
 
+  // 첫 렌더에서 한 번만 봄, 서버에서는 알 수 없어 켜지 않음
+  const [active] = useState(handheld);
+  const on = enabled && active;
+
   const request = useCallback(() => {
+    if (!active) return;
     const api = permissionApi();
     if (!api?.requestPermission) return;
     void api
@@ -103,12 +117,12 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
         if (state === "granted") setAttempt((count) => count + 1);
       })
       .catch(() => {});
-  }, []);
+  }, [active]);
 
   // 이미 허용해 둔 기기는 탭을 기다릴 이유가 없어 한 번 물어봄
   // 손가락이 닿지 않은 요청은 prompt 나 거절로 돌아오고 그때는 단추를 기다림
   useEffect(() => {
-    if (!enabled) return;
+    if (!on) return;
     const api = permissionApi();
     if (!api?.requestPermission) return;
     let alive = true;
@@ -121,10 +135,10 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
     return () => {
       alive = false;
     };
-  }, [enabled]);
+  }, [on]);
 
   useEffect(() => {
-    if (!enabled || typeof window === "undefined") return;
+    if (!on || typeof window === "undefined") return;
 
     let frame = 0;
     let pending: number | null = null;
@@ -213,7 +227,7 @@ export function useDeviceHeading({ enabled, onChange }: DeviceHeadingOptions): D
       if (frame) cancelAnimationFrame(frame);
       latest.current(null);
     };
-  }, [enabled, attempt]);
+  }, [on, attempt]);
 
   return { request };
 }
