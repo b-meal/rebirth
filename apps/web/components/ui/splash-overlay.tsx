@@ -136,13 +136,10 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
         <ActionButton size="large" asChild onClick={dismiss}>
           <Link href="/report">제보하기</Link>
         </ActionButton>
-        <VStack asChild align="center">
-          <button type="button" onClick={dismiss}>
-            <Text textStyle="t4Bold" color="fg.neutralSubtle">
-              지도 둘러보기
-            </Text>
-          </button>
-        </VStack>
+        {/* ghost 는 마우스가 있는 기기에만 호버 면을 깔고 터치에서는 누르는 동안만 반응함 */}
+        <ActionButton variant="ghost" size="large" color="fg.neutralSubtle" onClick={dismiss}>
+          지도 둘러보기
+        </ActionButton>
       </VStack>
 
       <noscript>

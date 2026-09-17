@@ -32,7 +32,8 @@ import {
   type RouteContext,
 } from "../http";
 import { saveReport } from "../reports/handlers";
-import { isComparable, scoreMatch, type MatchInput } from "./score";
+import { toMatchInput } from "./row";
+import { isComparable, scoreMatch } from "./score";
 
 // 실종 신고와 확인할 후보
 // 연락처를 저장하지 않고 관리 주소만 발급함. 주소를 잃으면 문의 경로로만 복구됨
@@ -133,31 +134,6 @@ export async function createLostHandler(
 }
 
 /* GET /api/lost/[id]/candidates  내 신고와 확인할 후보 */
-
-function toMatchInput(row: {
-  animalType: MatchInput["animalType"];
-  colors: string[];
-  size: MatchInput["size"];
-  collar: boolean | null;
-  injury: boolean | null;
-  earTip: boolean | null;
-  coarsePoint: { x: number; y: number } | null;
-  occurredAt: Date;
-}): MatchInput {
-  return {
-    animalType: row.animalType,
-    colors: row.colors,
-    size: row.size,
-    collar: row.collar,
-    injury: row.injury,
-    earTip: row.earTip,
-    // 격자 좌표로만 계산함. 정확 좌표는 읽지 않음
-    point: row.coarsePoint
-      ? { lat: row.coarsePoint.y, lng: row.coarsePoint.x }
-      : null,
-    occurredAt: row.occurredAt,
-  };
-}
 
 type LostRow = NonNullable<Awaited<ReturnType<typeof findManagedReport>>>;
 

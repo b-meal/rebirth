@@ -251,7 +251,9 @@ export function ReportDetail({
             size="medium"
             asChild
           >
-            <Link href="/lost/new">내 가족 같아요</Link>
+            {/* 내 실종 신고와 이 제보의 유사도를 먼저 보여 줌
+                신고가 없는 사람만 그 화면이 작성으로 넘김 */}
+            <Link href={`/r/${report.id}/match`}>내 가족 같아요</Link>
           </ActionButton>
         </HStack>
       </HStack>
