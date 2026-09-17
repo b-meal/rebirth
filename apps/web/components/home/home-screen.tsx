@@ -31,7 +31,6 @@ import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { describeAnimal } from "@/lib/report-label";
 import { useCurrentPosition } from "@/hooks/use-current-position";
-import { useDeviceHeading } from "@/hooks/use-device-heading";
 import { useMap } from "@/hooks/use-map";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
@@ -70,29 +69,6 @@ const MY_LOCATION_DOT = [
   "background:var(--seed-color-fg-brand)",
   "border:2px solid var(--seed-color-bg-layer-floating)",
   "box-shadow:0 0 0 6px var(--seed-color-bg-brand-weak)",
-].join(";");
-
-// 점을 한가운데 둔 정사각, 지도가 이 요소를 돌려 화살이 점을 축으로 돎
-const MY_LOCATION_WRAP = [
-  "position:relative",
-  "width:36px",
-  "height:36px",
-  "display:flex",
-  "align-items:center",
-  "justify-content:center",
-].join(";");
-
-// 기기가 바라보는 쪽을 가리키는 화살, 나침반을 못 읽으면 감춤
-const MY_LOCATION_CONE = [
-  "position:absolute",
-  "top:0",
-  "left:50%",
-  "margin-left:-6px",
-  "width:0",
-  "height:0",
-  "border-left:6px solid transparent",
-  "border-right:6px solid transparent",
-  "border-bottom:9px solid var(--seed-color-fg-brand)",
 ].join(";");
 
 // 색은 상황만 알리고 무엇인지는 사진이 알림
@@ -398,42 +374,18 @@ export function HomeScreen({
   );
 
   const myPoint = position.point;
-  // 나침반 값은 초당 수십 번 바뀌어 상태로 들면 핀 수백 개가 같이 다시 그려짐
-  const myMarker = useRef<Marker | null>(null);
-  const myCone = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!map || !myPoint) return;
-    const wrap = document.createElement("div");
-    wrap.setAttribute("style", MY_LOCATION_WRAP);
-    const cone = document.createElement("div");
-    cone.setAttribute("style", MY_LOCATION_CONE);
-    cone.hidden = true;
     const dot = document.createElement("div");
     dot.setAttribute("style", MY_LOCATION_DOT);
-    wrap.append(cone, dot);
-
-    // 방향은 세상 기준이라 지도를 돌리면 화살도 같이 돌아야 함
-    const marker = new Marker({ element: wrap, anchor: "center", rotationAlignment: "map" })
+    const marker = new Marker({ element: dot, anchor: "center" })
       .setLngLat([myPoint.lng, myPoint.lat])
       .addTo(map);
-    myMarker.current = marker;
-    myCone.current = cone;
 
     return () => {
       marker.remove();
-      myMarker.current = null;
-      myCone.current = null;
     };
   }, [map, myPoint]);
-
-  const showHeading = useCallback((heading: number | null) => {
-    const cone = myCone.current;
-    if (!cone) return;
-    cone.hidden = heading === null;
-    if (heading !== null) myMarker.current?.setRotation(heading);
-  }, []);
-
-  const compass = useDeviceHeading({ enabled: Boolean(myPoint), onChange: showHeading });
 
   // 지도를 못 띄우면 거리를 셀 기준이 없어 최근 제보를 그대로 보여줌
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
@@ -569,8 +521,6 @@ export function HomeScreen({
   };
 
   const recenter = () => {
-    // iOS 는 탭 처리 안에서만 나침반을 물어볼 수 있어 이 단추를 계기로 씀
-    compass.request();
     if (position.point) {
       moveTo(position.point, { animate: true });
       return;
