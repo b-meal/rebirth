@@ -67,6 +67,14 @@ a {
   text-decoration: none;
 }
 
+/* 지도는 스스로 쌓임 맥락을 만듦
+   MapLibre 가 컨트롤 컨테이너에 z-index 2 를 주는데 지도 상자가 쌓임 맥락이 아니면
+   그 값이 바깥 층과 겨루어 출처 표기 i 가 아래 버튼 띠 위로 올라옴
+   격리하면 2 는 지도 안에서만 뜻을 가지고 지도 안 순서는 그대로임 */
+.maplibregl-map {
+  isolation: isolate;
+}
+
 /* 지도 말풍선은 SEED 카드로 그려서 SDK 기본 면과 꼬리를 지움 */
 .rebirth-map-popup .maplibregl-popup-content {
   padding: 0;
