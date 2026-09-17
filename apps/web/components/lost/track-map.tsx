@@ -28,6 +28,7 @@ const FIT_PADDING = 24;
 const FIT_MAX_ZOOM = 15;
 
 const CIRCLE_ID = "track-circle";
+const CIRCLE_EDGE_ID = "track-circle-edge";
 const LINE_ID = "track-line";
 
 /** 지도 오버레이는 React 밖에서 그려져 색을 SEED CSS 변수로만 참조 */
@@ -108,6 +109,13 @@ export function TrackMap({ nodes, prediction, gridMeters }: TrackMapProps) {
         source: CIRCLE_ID,
         paint: { "fill-color": weak, "fill-opacity": 0.55 },
       });
+      // 채우기만 두면 연한 배경지도에 경계가 묻혀 반경이 어디까지인지 안 보임
+      map.addLayer({
+        id: CIRCLE_EDGE_ID,
+        type: "line",
+        source: CIRCLE_ID,
+        paint: { "line-color": solid, "line-width": 2, "line-opacity": 0.7 },
+      });
       for (const coordinate of ring) bounds.extend(coordinate);
     }
 
@@ -151,6 +159,7 @@ export function TrackMap({ nodes, prediction, gridMeters }: TrackMapProps) {
       for (const marker of markers) marker.remove();
       if (map.getLayer(LINE_ID)) map.removeLayer(LINE_ID);
       if (map.getSource(LINE_ID)) map.removeSource(LINE_ID);
+      if (map.getLayer(CIRCLE_EDGE_ID)) map.removeLayer(CIRCLE_EDGE_ID);
       if (map.getLayer(CIRCLE_ID)) map.removeLayer(CIRCLE_ID);
       if (map.getSource(CIRCLE_ID)) map.removeSource(CIRCLE_ID);
     };
