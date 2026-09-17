@@ -11,12 +11,23 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { Box, Grid, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
+import {
+  Box,
+  Grid,
+  HStack,
+  Icon,
+  ImageFrame,
+  PrefixIcon,
+  Text,
+  VStack,
+} from "@seed-design/react";
 import {
   IconBellLine,
   IconChevronUpLine,
   IconCrosshairLine,
+  IconHospitalcrossShieldLine,
   IconMagnifyingglassLine,
+  IconMegaphoneLine,
   IconPawprintFill,
   IconPlusLine,
 } from "@karrotmarket/react-monochrome-icon";
@@ -411,7 +422,7 @@ export function HomeScreen({
         </VStack>
       ) : null}
 
-      <HStack
+      <VStack
         position="absolute"
         top="0"
         left="0"
@@ -420,8 +431,11 @@ export function HomeScreen({
         px="spacingX.globalGutter"
         pt="x3"
         gap="x2"
-        align="center"
+        align="stretch"
+        // 면이 없는 자리까지 탭을 먹으면 지도 위쪽에서 확대와 이동이 듣지 않음
+        style={{ pointerEvents: "none" }}
       >
+      <HStack gap="x2" align="center" style={{ pointerEvents: "auto" }}>
         {/* 지도 위에서는 입력을 받지 않고 검색 화면으로 넘김 */}
         <VStack
           asChild
@@ -479,6 +493,24 @@ export function HomeScreen({
           ) : null}
         </Box>
       </HStack>
+
+      {/* 첫 화면에서 무엇을 하는 곳인지 읽히도록 급한 일 둘을 지도 위에 올림
+          제보하기는 아래 떠 있는 단추가 이미 가지고 있어 여기서 빼둠 */}
+      <HStack gap="x2" align="center" width="fit-content" style={{ pointerEvents: "auto" }}>
+        <ContextualFloatingButton variant="layer" asChild>
+          <Link href="/lost/new">
+            <PrefixIcon svg={<IconMegaphoneLine />} />
+            우리 아이 찾기
+          </Link>
+        </ContextualFloatingButton>
+        <ContextualFloatingButton variant="layer" asChild>
+          <Link href="/guide/injured">
+            <PrefixIcon svg={<IconHospitalcrossShieldLine />} />
+            다친 동물
+          </Link>
+        </ContextualFloatingButton>
+      </HStack>
+      </VStack>
 
       {/* 이 묶음은 시트와 떠 있는 버튼의 자리만 잡음
           면이 없는 곳까지 탭을 먹으면 지도 아래 절반에서 확대와 이동이 듣지 않음 */}
