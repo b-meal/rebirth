@@ -179,7 +179,7 @@
 ## 추가 항목
 
 - [x] `POST /api/lost` 로 실종 신고 1건을 등록해 관리 쿠키를 받은 뒤 `GET /api/lost/:id/track` 이 `200` 과 `track`·`density` 키를 내는지 확인합니다
-- [ ] `packages/core/src/matching/track-review.ts` 가 `ANTHROPIC_API_KEY` 를 `loadTrackPhotos` 앞에서 확인해 키가 없을 때 사진을 내려받지 않게 고칩니다
+- [x] `packages/core/src/matching/track-review.ts` 가 `ANTHROPIC_API_KEY` 를 `loadTrackPhotos` 앞에서 확인해 키가 없을 때 사진을 내려받지 않게 고칩니다
 
 ## 참고
 
@@ -197,6 +197,9 @@
 - Phase 0 74행 stash 는 추적 변경이 0건이라 실행하지 않았고 `git status --short` 가 `?? .claude/worklists/` 한 줄뿐인 것으로 목적 달성을 갈음함
 
 ### 실측 기록
+
+- `reviewTrack` 첫 줄에서 `client()` 를 먼저 불러 키가 없으면 `loadTrackPhotos` 에 닿지 않음. `no-config` 메시지는 `review.ts` 와 동일
+- `@rebirth/core` 테스트가 `pass 100` 에서 `pass 101` 로 1건 증가
 
 - `TrackReviewInput` 에 지점 이름 필드가 없어 `searchSpots` 결과를 프롬프트에 넘기지 않음. `track-review.ts` 는 건드리지 않음
 - `searchSpots` 와 `reviewTrack` 을 `Promise.allSettled` 로 묶어 실패 시 `spots: []` `interpretation: null` 로 떨어뜨림

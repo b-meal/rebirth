@@ -3,8 +3,10 @@ import { test } from "node:test";
 
 import {
   SYSTEM,
+  TrackReviewError,
   bearingWord,
   describeTrack,
+  reviewTrack,
   trackReview,
   type TrackReviewInput,
 } from "./track-review.ts";
@@ -92,4 +94,19 @@ test("bearingWord 가 여덟 방향으로 나눈다", () => {
   assert.equal(bearingWord(181), "남");
   assert.equal(bearingWord(359), "북");
   assert.equal(bearingWord(-90), "서");
+});
+
+test("reviewTrack 이 키가 없으면 no-config 로 던진다", async () => {
+  const 원래키 = process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
+  try {
+    await assert.rejects(reviewTrack(입력), (error: unknown) => {
+      assert.ok(error instanceof TrackReviewError);
+      assert.equal(error.kind, "no-config");
+      return true;
+    });
+  } finally {
+    if (원래키 === undefined) delete process.env.ANTHROPIC_API_KEY;
+    else process.env.ANTHROPIC_API_KEY = 원래키;
+  }
 });

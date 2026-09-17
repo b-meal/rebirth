@@ -185,12 +185,14 @@ export async function reviewTrack(input: TrackReviewInput): Promise<{
   review: TrackReview;
   model: string;
 }> {
+  // 키 확인이 뒤로 가면 사진 다운로드가 통째로 헛돌아 먼저 만듦
+  const anthropic = client();
   // 사진을 못 읽어도 경로 문장만으로 해석 가능
   const photoBlocks = await loadTrackPhotos(input.nodes).catch(() => []);
 
   let response;
   try {
-    response = await client().messages.parse(
+    response = await anthropic.messages.parse(
       {
         model: TRACK_MODEL,
         max_tokens: 1024,
