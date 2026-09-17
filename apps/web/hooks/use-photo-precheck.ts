@@ -13,6 +13,10 @@ export type PhotoVerdict = "checking" | "animal" | "not-animal" | "unknown";
 // 서버가 2500ms 에서 끊지만 응답이 오는 길이 막히면 그대로 남아 이쪽에서도 끊음
 const CLIENT_TIMEOUT_MS = 4000;
 
+// 시간이 다 돼 끊은 것과 사진이 빠져 끊은 것을 가르는 표
+// 앞은 판정 없음으로 확정해야 하고 뒤는 쓸 곳이 없어 버림
+const TIMED_OUT = Symbol("precheck-timeout");
+
 export type PhotoPrecheckState = {
   /** 아직 묻지 않은 사진은 checking. 화면은 checking 에 아무 표시도 하지 않아도 됨 */
   verdictOf: (photoId: string) => PhotoVerdict;
@@ -63,13 +67,14 @@ export function usePhotoPrecheck(photos: PhotoItem[]): PhotoPrecheckState {
       asked.current.add(photo.id);
 
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), CLIENT_TIMEOUT_MS);
+      const timer = setTimeout(() => controller.abort(TIMED_OUT), CLIENT_TIMEOUT_MS);
       inflight.current.set(photo.id, controller);
 
       void ask(photo, controller.signal).then((verdict) => {
         clearTimeout(timer);
         inflight.current.delete(photo.id);
-        if (controller.signal.aborted) return;
+        // 시간 초과를 여기서 버리면 판정이 영영 checking 에 머물러 기다리는 표시가 안 걷힘
+        if (controller.signal.aborted && controller.signal.reason !== TIMED_OUT) return;
         setResults((previous) => ({ ...previous, [photo.id]: verdict }));
       });
     }
