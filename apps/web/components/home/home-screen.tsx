@@ -41,9 +41,6 @@ export type MapMarker = ReportCardItem & {
   point: LatLng;
 };
 
-// 시트에 셀 반경, 지도 중심에서 이 거리 안의 제보만 셈
-const NEARBY_RADIUS_KM = 3;
-
 // 반경 안에 하나도 없을 때 대신 보여 줄 가까운 제보 수
 const NEARBY_FALLBACK_COUNT = 12;
 
@@ -161,7 +158,7 @@ export function HomeScreen({
   const router = useRouter();
   const snackbar = useSnackbarAdapter();
   const position = useCurrentPosition({ immediate: true });
-  const { containerRef, status, error, center, moveTo, map } = useMap();
+  const { containerRef, status, error, center, radiusKm, moveTo, map } = useMap();
 
   const ready = status === "ready";
   // 지도 중심의 행정동을 카카오 로컬 API 로 확인해 시트 제목에 씀
@@ -221,7 +218,7 @@ export function HomeScreen({
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
   const { nearby, widened } = useMemo(() => {
     if (!ready) return { nearby: markers, widened: false };
-    const inRadius = markers.filter((item) => distanceKm(center, item.point) <= NEARBY_RADIUS_KM);
+    const inRadius = markers.filter((item) => distanceKm(center, item.point) <= radiusKm);
     if (inRadius.length > 0) return { nearby: inRadius, widened: false };
     const sorted = [...markers]
       .map((item) => ({ item, km: distanceKm(center, item.point) }))
@@ -229,7 +226,7 @@ export function HomeScreen({
       .slice(0, NEARBY_FALLBACK_COUNT)
       .map((row) => row.item);
     return { nearby: sorted, widened: sorted.length > 0 };
-  }, [ready, center, markers]);
+  }, [ready, center, radiusKm, markers]);
 
   const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
@@ -565,7 +562,7 @@ export function HomeScreen({
                 ? "최근 발견 제보"
                 : widened
                   ? "가까운 발견 제보"
-                  : `${geocode.result?.areaName ?? "근처"} 반경 ${NEARBY_RADIUS_KM}km`}
+                  : `${geocode.result?.areaName ?? "근처"} 반경 ${Math.max(1, Math.round(radiusKm))}km`}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted">
               {nearby.length}건
