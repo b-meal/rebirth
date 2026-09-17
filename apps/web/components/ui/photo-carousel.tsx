@@ -11,10 +11,10 @@ import { createPortal } from "react-dom";
 import { Box, HStack, Icon, ImageFrame, VStack } from "@seed-design/react";
 import IconChevronLeftLine from "@karrotmarket/react-monochrome-icon/IconChevronLeftLine";
 import IconChevronRightLine from "@karrotmarket/react-monochrome-icon/IconChevronRightLine";
+import IconXmarkLine from "@karrotmarket/react-monochrome-icon/IconXmarkLine";
 import { ActionButton } from "seed-design/ui/action-button";
+import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-button";
 import useEmblaCarousel from "embla-carousel-react";
-
-import { FRAME_WIDTH } from "@/components/ui/app-frame";
 
 // 사진 여러 장을 옆으로 넘겨 보는 자리. 커뮤니티 글과 우리 동물, 제보 상세가 함께 씀
 // 한 장이 화면 폭을 다 쓰지 않아 다음 장이 옆에 걸쳐 더 있다는 것이 보임
@@ -267,7 +267,7 @@ function StepButton({
 }
 
 /**
- * 크게 보는 화면. 사진만 남기고 나머지는 화면 가장자리로 물러남
+ * 크게 보는 화면. 창을 검게 덮어 사진만 남김
  * SEED 다이얼로그는 가운데 뜨는 흰 카드라 사진을 꽉 채우는 이 화면과 모양이 다름
  * 레시피가 면과 크기를 정해 두어 prop 으로 되돌리려면 전부 덮어써야 해 직접 겹침
  */
@@ -356,21 +356,41 @@ function PhotoViewer({
       position="fixed"
       top="0"
       bottom="0"
+      left="0"
+      right="0"
       zIndex={100}
-      bg="bg.overlay"
+      // 사진만 보는 화면이라 비치는 덮개 대신 창을 통째로 검게 덮음
+      // 세로 사진 옆에 남는 자리도 같은 검정이라 사진이 어디서 끝나는지가 또렷함
+      bg="palette.staticBlack"
       display="flex"
       flexDirection="column"
       // 사진과 점을 한 덩어리로 묶어 화면 가운데에 둠
       // 사진 칸만 늘리면 사진은 가운데, 점은 바닥이라 둘 사이가 벌어짐
       justifyContent="center"
-      // 프레임과 같은 폭으로 화면 가운데에 둠. 값은 AppFrame 이 정한 폭 하나를 따름
-      style={{
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "100%",
-        maxWidth: FRAME_WIDTH,
-      }}
     >
+      {/* 어두운 자리를 눌러도 닫히지만 닫는 곳이 눈에 보여야 함
+          isImage 가 button 을 사진 쪽으로 세어 이 단추 위에서는 덮개가 닫지 않음
+          Embla 가 사진 줄에 transform 을 걸어 그 줄이 층을 만들고 뒤에 그려짐
+          키보드로 닫기부터 닿게 DOM 에서는 앞에 두고 층으로 올려 가려지지 않게 함 */}
+      <HStack
+        className="rebirth-viewer-close"
+        position="absolute"
+        top="0"
+        left="0"
+        right="0"
+        zIndex={1}
+        px="spacingX.globalGutter"
+        justify="flex-end"
+      >
+        <ContextualFloatingButton
+          variant="layer"
+          layout="iconOnly"
+          aria-label="닫기"
+          onClick={onClose}
+        >
+          <Icon svg={<IconXmarkLine />} />
+        </ContextualFloatingButton>
+      </HStack>
 
       {/* 사진과 점을 한 덩어리로 세로로 쌓음
           점을 덮개 바닥에 따로 붙이면 사진 높이에 따라 둘 사이가 멀찍이 벌어짐 */}
