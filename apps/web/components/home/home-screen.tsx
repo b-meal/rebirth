@@ -111,6 +111,17 @@ function toneOf(item: MapMarker) {
   return PIN_TONE.roaming;
 }
 
+type PinTone = (typeof PIN_TONE)[keyof typeof PIN_TONE];
+
+// ImageFrame 은 사진이 닿기 전과 실패했을 때 img 를 지워 자리가 비므로 그동안 세울 것
+function PawFallback({ tone }: { tone: PinTone }) {
+  return (
+    <VStack align="center" justify="center" height="full" borderRadius="full">
+      <Icon svg={<IconPawprintFill />} size="x4" color={tone.fg} />
+    </VStack>
+  );
+}
+
 type ReportPinProps = {
   item: MapMarker;
   selected: boolean;
@@ -147,12 +158,10 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
             borderRadius="full"
             loading="lazy"
             decoding="async"
+            fallback={<PawFallback tone={tone} />}
           />
         ) : (
-          // 사진이 없거나 서명이 만료되면 발자국으로 대체
-          <VStack align="center" justify="center" height="full" borderRadius="full">
-            <Icon svg={<IconPawprintFill />} size="x4" color={tone.fg} />
-          </VStack>
+          <PawFallback tone={tone} />
         )}
       </button>
     </Box>
