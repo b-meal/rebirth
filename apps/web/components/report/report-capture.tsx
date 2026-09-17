@@ -15,7 +15,7 @@ import { IconCameraFill, IconPictureFill, IconXmarkFill } from "@karrotmarket/re
 import { ActionButton } from "seed-design/ui/action-button";
 import { DismissibleCallout } from "seed-design/ui/callout";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
-import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
+import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import type { PhotoItem } from "@/lib/image";
 import type { PhotoPickerState } from "@/hooks/use-photo-picker";
@@ -353,25 +353,28 @@ export function ReportCapture({
         ) : null}
       </ScreenBody>
 
-      <VStack
-        align="stretch"
-        px="spacingX.globalGutter"
-        pt="x3"
-        pb="x5"
-        bg="bg.layerDefault"
-        borderTopWidth="1px"
-        borderColor="stroke.neutralMuted"
-      >
-        {/* 동물이 안 보이는 사진을 안고 2단계로 가면 거기서 되돌려 보내 걸음만 늘어남 */}
-        <ActionButton
-          variant="brandSolid"
-          size="large"
-          disabled={processing || flagged.length > 0}
-          onClick={onNext}
+      {/* 토스트가 아래 버튼 띠를 덮지 않도록 띠 높이를 재게 함 */}
+      <SnackbarAvoidOverlap>
+        <VStack
+          align="stretch"
+          px="spacingX.globalGutter"
+          pt="x3"
+          pb="x5"
+          bg="bg.layerDefault"
+          borderTopWidth="1px"
+          borderColor="stroke.neutralMuted"
         >
-          다음
-        </ActionButton>
-      </VStack>
+          {/* 동물이 안 보이는 사진을 안고 2단계로 가면 거기서 되돌려 보내 걸음만 늘어남 */}
+          <ActionButton
+            variant="brandSolid"
+            size="large"
+            disabled={processing || flagged.length > 0}
+            onClick={onNext}
+          >
+            다음
+          </ActionButton>
+        </VStack>
+      </SnackbarAvoidOverlap>
       {hidden}
     </>
   );
