@@ -122,6 +122,11 @@ export function ReportForm() {
   // 1단계에서 고르는 즉시 동물 유무만 물어봄. 2단계로 넘어가도 결과가 남게 여기에 둠
   const precheck = usePhotoPrecheck(photos);
 
+  // 사진 없는 2단계는 올릴 것도 분석할 것도 없어 아무 이펙트도 돌지 않는 막다른 화면
+  // popstate 가 그 단계를 만들지 않지만 그리는 자리에서도 막아 다른 길이 생겨도 되살아나지 않게 함
+  // 이펙트로 되돌리면 그 한 프레임이 먼저 그려지고 걸음이 하나 더 쌓임
+  const view: ReportStep = step === 2 && photos.length > 0 ? 2 : 1;
+
   useEffect(() => {
     // 사진은 File 이라 복원되지 않으므로 새로고침은 늘 1단계에서 다시 시작함
     const url = new URL(window.location.href);
@@ -131,9 +136,27 @@ export function ReportForm() {
     }
   }, []);
 
+  // popstate 는 그 순간의 사진을 봐야 해 최신 목록을 참조로 들고 있음
+  const photosRef = useRef(photos);
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
+
   // 뒤로가기로 단계가 하나 되돌아가게 함
   useEffect(() => {
-    const onPop = () => setStep(readStepFromUrl());
+    const onPop = () => {
+      const next = readStepFromUrl();
+      // 사진을 지운 뒤 앞으로가기로 돌아온 2단계. 주소까지 1단계로 맞춰
+      // 다음 사진을 고르는 순간 확인 화면을 건너뛰지 않게 함
+      if (next === 2 && photosRef.current.length === 0) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("step", "1");
+        window.history.replaceState({ step: 1 }, "", url);
+        setStep(1);
+        return;
+      }
+      setStep(next);
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
@@ -143,7 +166,7 @@ export function ReportForm() {
   const uploadedKey = useRef<string | null>(null);
   const { upload: startUpload } = upload;
   useEffect(() => {
-    if (step !== 2 || photos.length === 0) return;
+    if (view !== 2 || photos.length === 0) return;
     const key = photos.map((photo) => photo.id).join(",");
     if (uploadedKey.current === key) return;
     uploadedKey.current = key;
@@ -157,20 +180,24 @@ export function ReportForm() {
       }
       setUploadIds(ids);
     })();
-  }, [step, photos, startUpload]);
+  }, [view, photos, startUpload]);
 
   // 올린 사진을 모두 한 요청에 넣어 초안 하나를 받음. 호출은 사진 수와 무관하게 한 번
   const { status: analyzeStatus, start: startAnalyze } = analyze;
   useEffect(() => {
-    if (step !== 2 || uploadIds.length === 0) return;
+    if (view !== 2 || uploadIds.length === 0) return;
     if (analyzeStatus === "idle") startAnalyze(uploadIds);
-  }, [step, uploadIds, analyzeStatus, startAnalyze]);
+  }, [view, uploadIds, analyzeStatus, startAnalyze]);
 
-  const goTo = useCallback((next: ReportStep) => {
+  // 되돌림은 새 걸음이 아니라 걸음 취소라 replace 로 씀
+  // push 로 쌓으면 되돌린 자리 바로 뒤에 갈 수 없는 단계가 남아 뒤로가기가 그리로 감
+  const goTo = useCallback((next: ReportStep, replace = false) => {
     setStep(next);
     const url = new URL(window.location.href);
     url.searchParams.set("step", String(next));
-    window.history.pushState({ step: next }, "", url);
+    const state = { step: next };
+    if (replace) window.history.replaceState(state, "", url);
+    else window.history.pushState(state, "", url);
     window.scrollTo({ top: 0 });
   }, []);
 
@@ -199,7 +226,7 @@ export function ReportForm() {
   // 사진은 그대로 두고 칸마다 있는 삭제 단추로 뺄 수 있게 함
   const bounce = useCallback(
     (next: NonNullable<typeof block>) => {
-      goTo(1);
+      goTo(1, true);
       // 화면이 되돌아간 이유를 반드시 읽고 넘어가야 해 스스로 사라지는 스낵바 대신 알럿을 씀
       setBlock(next);
     },
@@ -298,30 +325,34 @@ export function ReportForm() {
     }
   }, [uploadIds, draft, reset, router]);
 
+  // idle 은 아직 아무것도 시작하지 않았다는 뜻이라 그것만으로 로딩을 그리면
+  // 시작할 이펙트가 없는 자리에서 스켈레톤이 끝나지 않음
+  // 올린 참조가 있는데 분석이 아직 idle 인 한 프레임만 진행 중으로 봄
   const loadingDraft =
-    upload.status !== "failed" &&
-    (analyze.status === "loading" || analyze.status === "idle");
+    upload.status === "uploading" ||
+    analyze.status === "loading" ||
+    (uploadIds.length > 0 && analyze.status === "idle");
 
   return (
     <Screen>
       <AppHeader title="제보하기" />
-      {step === 1 ? (
+      {view === 1 ? (
         <ReportCapture
           picker={picker}
           precheck={precheck}
           cameraAvailable={cameraAvailable}
-          step={step}
+          step={view}
           total={TOTAL_STEPS}
-          label={STEP_LABEL[step]}
+          label={STEP_LABEL[view]}
           onNext={() => goTo(2)}
         />
       ) : (
         <>
           <ReportPhotoHero
             photos={photos}
-            step={step}
+            step={view}
             total={TOTAL_STEPS}
-            label={STEP_LABEL[step]}
+            label={STEP_LABEL[view]}
             onRetake={() => goTo(1)}
           />
 
