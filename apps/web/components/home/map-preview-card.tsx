@@ -79,7 +79,13 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
           </AspectRatio>
         )}
         <Box position="absolute" top="0" right="0" p="x1_5">
-          <ActionButton variant="neutralWeak" size="xsmall" layout="iconOnly" onClick={onClose}>
+          <ActionButton
+            variant="neutralWeak"
+            size="xsmall"
+            layout="iconOnly"
+            aria-label="미리 보기 닫기"
+            onClick={onClose}
+          >
             <Icon svg={<IconXmarkLine />} />
           </ActionButton>
         </Box>
