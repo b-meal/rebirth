@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Icon, VStack } from "@seed-design/react";
 import { IconPersonFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -30,6 +30,10 @@ export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
   const errors = state.errors ?? {};
   const formRef = useRef<HTMLFormElement>(null);
   useFocusError(formRef, state);
+
+  // TextField 는 글자 수를 세느라 안에서 value 를 쥐고 있어 defaultValue 가 묻힘
+  // 지금 이름이 처음부터 들어와 있어야 고치는 화면이 되므로 이 화면이 값을 쥠
+  const [name, setName] = useState(displayName);
 
   // 저장했다는 말은 잠깐 알리고 사라지면 됨. 화면에 남겨 두면 다음에 눌러도 이미 떠 있어 바뀐 줄 모름
   // 액션이 부를 때마다 새 객체를 돌려줘 같은 결과가 또 와도 다시 알림
@@ -72,8 +76,9 @@ export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
                 name="displayName"
                 size="medium"
                 description="커뮤니티 글과 댓글에 보여요"
-                defaultValue={displayName}
                 maxGraphemeCount={20}
+                value={name}
+                onValueChange={(next) => setName(next.slicedValue)}
                 errorMessage={errors.displayName}
                 invalid={Boolean(errors.displayName)}
               >
