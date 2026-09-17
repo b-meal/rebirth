@@ -60,7 +60,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
           <Callout
             // 만료와 취소는 고장이 아니라 안내라 경고 톤을 씀
             tone={INFORMATIVE_CODES.has(error) ? "warning" : "critical"}
-            description={ERROR_MESSAGES[error] ?? "로그인에 실패했습니다. 다시 시도해 주십시오"}
+            description={ERROR_MESSAGES[error] ?? "로그인에 실패했어요. 다시 시도해 주세요"}
           />
         ) : null}
 

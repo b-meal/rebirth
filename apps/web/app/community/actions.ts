@@ -92,7 +92,7 @@ export async function createPost(
     id = await insertCommunityPost({ authorId, ...parsed.data, photoPaths });
   } catch {
     // 원인을 그대로 내보내지 않음. 화면에 DB 오류가 새면 안 됨
-    return { message: "글을 저장하지 못했습니다. 잠시 후 다시 시도해 주십시오" };
+    return { message: "글을 저장하지 못했어요. 잠시 후 다시 시도해 주세요" };
   }
 
   revalidatePath(FEED_PATH);
@@ -106,19 +106,19 @@ export async function createComment(
   formData: FormData,
 ): Promise<CommentFormState> {
   const postId = formData.get("postId")?.toString();
-  if (!postId) return { message: "글을 찾지 못했습니다" };
+  if (!postId) return { message: "글을 찾지 못했어요" };
 
   const authorId = await requireUserId(`${FEED_PATH}/${postId}`);
 
   const parsed = communityCommentInput.safeParse({ body: formData.get("body") });
   if (!parsed.success) {
-    return { message: fieldErrors(parsed.error).body ?? "댓글을 입력해 주십시오" };
+    return { message: fieldErrors(parsed.error).body ?? "댓글을 입력해 주세요" };
   }
 
   try {
     await insertCommunityComment({ postId, authorId, body: parsed.data.body });
   } catch {
-    return { message: "댓글을 남기지 못했습니다. 잠시 후 다시 시도해 주십시오" };
+    return { message: "댓글을 남기지 못했어요. 잠시 후 다시 시도해 주세요" };
   }
 
   revalidatePath(`${FEED_PATH}/${postId}`);

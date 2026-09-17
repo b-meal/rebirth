@@ -293,13 +293,13 @@ export function CommunityFeed({
                 {areaName}
               </Text>
               <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
-                이웃 글을 먼저 보여 줍니다
+                이웃 글을 먼저 보여 줘요
               </Text>
             </HStack>
           ) : (
             <HStack grow={1} minWidth="0">
               <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
-                위치를 켜면 우리 동네 글부터 보입니다
+                위치를 켜면 우리 동네 글부터 보여요
               </Text>
             </HStack>
           )}
