@@ -6,6 +6,8 @@ import { useEffect, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import { Box, Text } from "@seed-design/react";
 
+import { releaseSplashGate } from "@/lib/splash-gate";
+
 import styles from "./splash-overlay.module.css";
 
 const VISIBLE_MS = 1900;
@@ -34,6 +36,11 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
     );
     return () => clearTimeout(timer);
   }, [ready, visible]);
+
+  // 덮개가 걷힌 뒤에야 위치 권한 팝업이 뜨도록 알림
+  useEffect(() => {
+    if (!visible) releaseSplashGate();
+  }, [visible]);
 
   if (!visible) return null;
 
