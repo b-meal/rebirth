@@ -60,7 +60,7 @@ const SINGLE_RATIO = 4 / 3;
 export function PhotoField({
   picker,
   label = "사진",
-  hint = "사진을 촬영하거나 앨범에서 선택하세요",
+  hint = "사진을 촬영하거나 앨범에서 골라 주세요",
   uploading = false,
   disabled = false,
   cameraAvailable = true,

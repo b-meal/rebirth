@@ -179,7 +179,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
       setCursor(data.nextCursor);
     } catch {
       // 자동으로 다시 부르지 않고 사용자가 누를 때만 재시도함
-      setLoadError("더 불러오지 못했습니다. 다시 시도해 주십시오");
+      setLoadError("더 불러오지 못했어요. 다시 시도해 주세요");
     } finally {
       setLoadingMore(false);
     }
@@ -236,8 +236,8 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
         {rows.length === 0 ? (
           <ResultSection
             size="medium"
-            title="조건에 맞는 제보가 없습니다"
-            description="조건을 줄이면 더 많은 제보를 볼 수 있습니다"
+            title="조건에 맞는 제보가 없어요"
+            description="조건을 줄이면 더 많은 제보를 볼 수 있어요"
             {...(filtered && {
               primaryActionProps: {
                 children: "전체 보기",
@@ -271,7 +271,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
           </ActionButton>
         ) : rows.length > 0 ? (
           <Text textStyle="t2Regular" color="fg.neutralSubtle" align="center">
-            마지막 제보까지 모두 보셨습니다
+            마지막 제보까지 다 봤어요
           </Text>
         ) : null}
       </ScreenBody>

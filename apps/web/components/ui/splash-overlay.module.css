@@ -92,10 +92,10 @@
   animation-name: join-home, expire;
 }
 
-/* 왼쪽 글자와의 틈 3px 가 메워지는 30ms 뒤, 닿는 순간 자리를 내주고 빠짐 */
+/* 왼쪽 글자가 닿기 직전에 자리를 비우도록 두 단어가 모이기 시작하는 520ms 보다 조금 앞에 둠 */
 .root[data-ready="true"] .comma {
   visibility: visible;
-  animation: remove-comma 70ms calc(var(--join-delay) + 30ms) ease-out both;
+  animation: remove-comma 70ms 500ms ease-out both;
 }
 
 @keyframes reveal {
@@ -148,11 +148,11 @@
   }
 }
 
+/* visibility 를 섞으면 합성 단계로 넘어가지 못해 지도가 메인 스레드를 잡는 동안 쉼표만 늦게 빠짐 */
 @keyframes remove-comma {
   to {
     opacity: 0;
-    transform: translate(-50%, calc(var(--seed-dimension-x1) * -1));
-    visibility: hidden;
+    transform: translate(-50%, -4px);
   }
 }
 

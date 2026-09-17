@@ -39,8 +39,8 @@ export async function GET(request: Request): Promise<Response> {
   if (raw && !cursor) {
     return Response.json(
       {
-        message: "목록을 처음부터 다시 불러와 주십시오",
-        fields: { cursor: "커서가 올바르지 않습니다" },
+        message: "목록을 처음부터 다시 불러와 주세요",
+        fields: { cursor: "커서가 올바르지 않아요" },
       },
       { status: 400 },
     );

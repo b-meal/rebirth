@@ -32,6 +32,12 @@ export { runMatchReview, type RunReviewOutcome } from "./run-review";
 export { reviewMatchHandler } from "./review-handlers";
 
 export { scoreSightingAgainstLost } from "./alerts";
+export {
+  listSightingLostMatches,
+  type SightingLostMatch,
+  type SightingLostMatches,
+} from "./sighting-matches";
+
 
 export {
   buildTrack,

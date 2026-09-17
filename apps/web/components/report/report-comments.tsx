@@ -30,10 +30,10 @@ export function ReportComments({ comments }: { comments: ReportComment[] }) {
     return (
       <VStack align="stretch" gap="x1">
         <Text textStyle="t4Regular" color="fg.neutralMuted">
-          아직 댓글이 없습니다
+          아직 댓글이 없어요
         </Text>
         <Text textStyle="t3Regular" color="fg.neutralSubtle">
-          같은 동물을 보셨거나 도울 방법을 알고 있다면 알려 주십시오
+          같은 동물을 보셨거나 도울 방법을 알고 있다면 알려 주세요
         </Text>
       </VStack>
     );
@@ -88,14 +88,14 @@ export function CommentComposer({ reportId }: { reportId: string }) {
       });
       if (!response.ok) {
         const error = (await response.json().catch(() => null)) as { message?: string } | null;
-        notice(error?.message ?? "댓글을 남기지 못했습니다. 잠시 후 다시 시도해 주십시오");
+        notice(error?.message ?? "댓글을 남기지 못했어요. 잠시 후 다시 시도해 주세요");
         return;
       }
       setBody("");
       // 서버가 목록을 다시 렌더하게 함, 낙관적 추가와 실제 순서가 어긋나지 않음
       router.refresh();
     } catch {
-      notice("연결이 끊겼습니다. 잠시 후 다시 시도해 주십시오");
+      notice("연결이 끊겼어요. 잠시 후 다시 시도해 주세요");
     } finally {
       setSending(false);
     }
@@ -113,7 +113,7 @@ export function CommentComposer({ reportId }: { reportId: string }) {
           onValueChange={(next) => setBody(next.value)}
         >
           <TextFieldInput
-            placeholder="목격 정보나 도울 방법을 남겨 주십시오"
+            placeholder="목격 정보나 도울 방법을 남겨 주세요"
             aria-label="댓글 입력"
             onKeyDown={(event) => {
               if (event.key !== "Enter" || event.nativeEvent.isComposing) return;

@@ -3,7 +3,7 @@ import 'server-only'
 import { and, asc, desc, eq, gte, lte, ne, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
-import { matchScores, reportPhotos, reports } from '../schema'
+import { matchScores, pets, reportPhotos, reports } from '../schema'
 
 /* 실종 신고와 후보 조회. 연락처를 받지 않고 토큰으로만 접근 */
 
@@ -88,6 +88,107 @@ export async function findLostForSighting(input: {
     .orderBy(desc(reports.occurredAt))
     .limit(input.limit ?? 50)
 }
+
+/**
+ * 이 발견 제보와 견줄 공개 실종 신고. 로그인하지 않은 사람이 둘러볼 때 씀
+ * matchAlert 로 거르지 않음. 그 값은 알림함 스위치라 공개 노출의 뜻이 아니고
+ * 알림을 꺼 둔 보호자가 목록에서 사라지면 찾을 기회만 줄어듦
+ * 내주는 값은 제보 상세가 이미 공개하는 항목뿐. 정확 좌표는 읽지 않음
+ */
+export function findPublicLostForSighting(input: {
+  sightingId: string
+  animalType: (typeof reports.animalType.enumValues)[number]
+  point: { lat: number; lng: number } | null
+  occurredAt: Date
+  limit?: number
+}) {
+  const since = new Date(
+    input.occurredAt.getTime() - CANDIDATE_WINDOW_DAYS * 24 * 3_600_000,
+  )
+  const until = new Date(input.occurredAt.getTime() + 24 * 3_600_000)
+
+  const withinRadius = input.point
+    ? raw`ST_DWithin(${reports.coarsePoint}::geography, ST_SetSRID(ST_MakePoint(${input.point.lng}, ${input.point.lat}), 4326)::geography, ${CANDIDATE_RADIUS_M})`
+    : undefined
+
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      colors: reports.colors,
+      size: reports.size,
+      collar: reports.collar,
+      injury: reports.injury,
+      earTip: reports.earTip,
+      coarsePoint: reports.coarsePoint,
+      locationSource: reports.locationSource,
+      areaName: reports.areaName,
+      occurredAt: reports.occurredAt,
+      // 이름은 찾는 데 쓰라고 공개하는 값. 제보 상세도 같은 값을 보여 줌
+      petName: raw<string | null>`(
+        select p.name from ${pets} p where p.id = ${reports}.pet_id
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.kind, 'lost'),
+        eq(reports.visibility, 'public'),
+        eq(reports.lifecycle, 'searching'),
+        ne(reports.id, input.sightingId),
+        input.animalType === 'unknown'
+          ? undefined
+          : raw`(${reports.animalType} = ${input.animalType} or ${reports.animalType} = 'unknown')`,
+        gte(reports.occurredAt, since),
+        lte(reports.occurredAt, until),
+        withinRadius,
+      ),
+    )
+    .orderBy(desc(reports.occurredAt))
+    .limit(input.limit ?? 50)
+}
+
+/**
+ * 이 계정이 낸 실종 신고. 발견 제보 하나와 견주려고 읽음
+ * 후보 모집과 달리 반경과 기간으로 좁히지 않음
+ * 내 신고는 몇 건뿐이라 미리 걸러 내면 왜 빠졌는지 알 수 없는 빈 화면이 됨
+ * 끝난 신고는 뺌. 이미 만난 아이를 다시 견줄 대상으로 올리지 않음
+ */
+export function findMyLostForSighting(input: { userId: string; limit?: number }) {
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      colors: reports.colors,
+      size: reports.size,
+      collar: reports.collar,
+      injury: reports.injury,
+      earTip: reports.earTip,
+      coarsePoint: reports.coarsePoint,
+      locationSource: reports.locationSource,
+      areaName: reports.areaName,
+      occurredAt: reports.occurredAt,
+      // 적어 둔 이름. 보호자 화면이라 흰색 소형견 대신 이름으로 부름
+      petName: raw<string | null>`(
+        select p.name from ${pets} p where p.id = ${reports}.pet_id
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.reporterId, input.userId),
+        eq(reports.kind, 'lost'),
+        eq(reports.lifecycle, 'searching'),
+        ne(reports.visibility, 'deleted'),
+      ),
+    )
+    .orderBy(desc(reports.occurredAt))
+    .limit(input.limit ?? 20)
+}
+
+export type MyLostForSighting = Awaited<
+  ReturnType<typeof findMyLostForSighting>
+>[number]
 
 /**
  * 점수 계산에 쓸 실종 신고 값. 격자 좌표를 포함해 서버 안에서만 씀

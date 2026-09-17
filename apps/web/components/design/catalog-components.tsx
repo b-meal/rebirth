@@ -165,7 +165,7 @@ export function CatalogComponents() {
           <TextField label="여러 줄 입력" maxGraphemeCount={100}>
             <TextFieldTextarea placeholder="털이 길고 엉킴" />
           </TextField>
-          <TextField label="오류" invalid errorMessage="필수 입력입니다">
+          <TextField label="오류" invalid errorMessage="필수 입력이에요">
             <TextFieldInput placeholder="비어 있음" />
           </TextField>
         </VStack>
@@ -217,8 +217,8 @@ export function CatalogComponents() {
       <Spec section={SECTIONS.checkbox}>
         <CheckboxGroup>
           <VStack align="stretch" gap="x2">
-            <Checkbox defaultChecked>필수 약관에 동의합니다</Checkbox>
-            <Checkbox>선택 약관에 동의합니다</Checkbox>
+            <Checkbox defaultChecked>필수 약관에 동의해요</Checkbox>
+            <Checkbox>선택 약관에 동의해요</Checkbox>
             <Checkbox disabled>비활성</Checkbox>
           </VStack>
         </CheckboxGroup>
@@ -267,7 +267,7 @@ export function CatalogComponents() {
 
       <Spec section={SECTIONS["field-button"]}>
         <FieldButton label="목격 지역">
-          <FieldButtonPlaceholder>지역을 골라 주십시오</FieldButtonPlaceholder>
+          <FieldButtonPlaceholder>지역을 골라 주세요</FieldButtonPlaceholder>
         </FieldButton>
       </Spec>
 
@@ -369,13 +369,13 @@ export function CatalogComponents() {
           <AccordionItem value="first">
             <AccordionTrigger title="사진은 어디에 저장됩니까" />
             <AccordionContent>
-              비공개 버킷에 저장하고 서명 주소로만 잠시 노출합니다
+              비공개 버킷에 저장하고 서명 주소로만 잠시 노출해요
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="second">
             <AccordionTrigger title="정확한 좌표가 공개됩니까" />
             <AccordionContent>
-              공개 응답에는 행정동까지만 담기고 좌표는 담기지 않습니다
+              공개 응답에는 행정동까지만 담기고 좌표는 담기지 않아요
             </AccordionContent>
           </AccordionItem>
         </Accordion>

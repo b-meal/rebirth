@@ -145,7 +145,7 @@ export function ReportDetail({
             <Badge label="AI 초안, 수정 가능" tone="neutral" />
           </HStack>
           <Text textStyle="articleBody" color="fg.neutral" whiteSpace="pre-wrap">
-            {report.appearance ?? "외형 설명이 없습니다"}
+            {report.appearance ?? "외형 설명이 없어요"}
           </Text>
         </SectionCard>
 
@@ -251,7 +251,9 @@ export function ReportDetail({
             size="medium"
             asChild
           >
-            <Link href="/lost/new">우리 아이인지 확인</Link>
+            {/* 내 실종 신고와 이 제보의 유사도를 먼저 보여 줌
+                신고가 없는 사람만 그 화면이 작성으로 넘김 */}
+            <Link href={`/r/${report.id}/match`}>우리 아이인지 확인</Link>
           </ActionButton>
         </HStack>
       </HStack>

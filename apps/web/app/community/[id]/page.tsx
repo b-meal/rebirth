@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     return { title: "커뮤니티", robots: { index: false } };
   }
 
-  if (!post) return { title: "찾는 글이 없습니다", robots: { index: false } };
+  if (!post) return { title: "찾는 글이 없어요", robots: { index: false } };
 
   return {
     title: post.title,

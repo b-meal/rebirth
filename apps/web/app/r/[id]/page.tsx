@@ -52,7 +52,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
 
   if (!report) {
-    return { title: "찾는 제보가 없습니다", robots: { index: false } };
+    return { title: "찾는 제보가 없어요", robots: { index: false } };
   }
 
   const isLost = report.kind === "lost";

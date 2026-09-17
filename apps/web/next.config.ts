@@ -19,6 +19,17 @@ const nextConfig: NextConfig = {
   // 워크스페이스 패키지를 TS 소스 그대로 소비
   transpilePackages: ["@rebirth/core", "@rebirth/db", "@rebirth/types"],
 
+  // 선검사 모델은 2.6MB 라 한 번 받으면 다시 받지 않게 함
+  // 바뀌면 파일 이름을 바꿔 새로 받게 함. public 은 해시가 붙지 않음
+  async headers() {
+    return [
+      {
+        source: "/models/:path*",
+        headers: [{ key: "cache-control", value: "public, max-age=31536000, immutable" }],
+      },
+    ];
+  },
+
   // 폰에서 같은 공유기의 이 컴퓨터로 붙어 볼 때 쓰는 주소
   // 없으면 dev 서버가 다른 오리진으로 보고 내부 요청을 막아 지도와 목록이 비어 옴
   // 배포는 한 오리진이라 이 목록과 무관함

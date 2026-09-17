@@ -20,10 +20,10 @@ export const metadata: Metadata = {
     default: "다시집 | Rebirth",
     template: "%s, 다시집",
   },
-  description: "길에서 만난 보호자 없는 동물을 사진 한 장으로 제보합니다.",
+  description: "길에서 만난 보호자 없는 동물을 사진 한 장으로 제보해요.",
   openGraph: {
     title: "다시집 | Rebirth",
-    description: "길에서 만난 보호자 없는 동물을 사진 한 장으로 제보합니다.",
+    description: "길에서 만난 보호자 없는 동물을 사진 한 장으로 제보해요.",
     siteName: "다시집",
     locale: "ko_KR",
     type: "website",
