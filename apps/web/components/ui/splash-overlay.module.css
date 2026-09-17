@@ -48,11 +48,16 @@
   clip-path: inset(52% 33.3% 41.7% 55.4%);
 }
 
+/* 로고 글자가 이미지라 쉼표를 웹폰트로 그리면 글꼴과 색이 어긋나고 폰트가 바뀌는 순간 모양이 흔들려 원본 획을 재서 도형으로 둠 */
 .comma {
   position: absolute;
-  top: 52.05%;
-  left: 52.4%;
-  transform: translateX(-50%);
+  top: 56%;
+  left: 55.33%;
+  width: 3.52%;
+  height: 2.8%;
+  border-radius: 9999px;
+  background: #162e22;
+  transform: translateX(-50%) rotate(16deg);
   visibility: hidden;
 }
 
@@ -71,9 +76,10 @@
   animation-name: join-home, expire;
 }
 
+/* 두 단어가 모이기 시작하는 순간에 맞춰 빠져나가야 쉼표가 자리를 비켜 주는 것으로 읽힘 */
 .root[data-ready="true"] .comma {
   visibility: visible;
-  animation: remove-comma 180ms 400ms ease-out both;
+  animation: remove-comma 200ms var(--join-delay) ease-out both;
 }
 
 @keyframes reveal {
@@ -106,7 +112,7 @@
 @keyframes remove-comma {
   to {
     opacity: 0;
-    transform: translate(-50%, calc(var(--seed-dimension-x1) * -1));
+    transform: translate(-50%, calc(var(--seed-dimension-x1) * -1)) rotate(16deg);
     visibility: hidden;
   }
 }

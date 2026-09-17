@@ -4,7 +4,7 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import Image from "next/image";
-import { Box, Text } from "@seed-design/react";
+import { Box } from "@seed-design/react";
 
 import { releaseSplashGate } from "@/lib/splash-gate";
 
@@ -103,14 +103,7 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
           className={`${styles.word} ${styles.home}`}
           data-splash-word="home"
         />
-        <Text
-          textStyle="t13StaticBold"
-          color="palette.staticBlack"
-          className={styles.comma}
-          data-splash-comma=""
-        >
-          ,
-        </Text>
+        <Box className={styles.comma} data-splash-comma="" />
       </Box>
       <noscript>
         <style>{"[data-splash] { display: none; }"}</style>
