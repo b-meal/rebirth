@@ -65,7 +65,7 @@ export function ReportCard({ item }: { item: ReportCardItem }) {
           ) : lost ? (
             // 실종은 보호 상황을 쓰지 않아 unknown 이 박혀 있음. 확인되지 않음 이 뜨면 안 됨
             <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
-              찾는 중
+              실종
             </Text>
           ) : (
             <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>

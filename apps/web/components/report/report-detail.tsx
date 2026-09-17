@@ -244,14 +244,14 @@ export function ReportDetail({
             size="medium"
             asChild
           >
-            <Link href="/guide/injured">구조 요청</Link>
+            <Link href="/guide/injured">구조·보호 요청</Link>
           </ActionButton>
           <ActionButton
             variant={report.injury === true ? "neutralWeak" : "brandSolid"}
             size="medium"
             asChild
           >
-            <Link href="/lost/new">내 가족 같아요</Link>
+            <Link href="/lost/new">우리 아이인지 확인</Link>
           </ActionButton>
         </HStack>
       </HStack>

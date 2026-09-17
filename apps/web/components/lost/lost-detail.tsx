@@ -80,7 +80,7 @@ function statusBadge(
   }
   if (lifecycle === "closed") return { label: "종료된 신고", tone: "neutral" };
   return {
-    label: searchingDays < 1 ? "오늘 잃어버렸어요" : `찾는 중 ${searchingDays}일째`,
+    label: searchingDays < 1 ? "오늘 잃어버렸어요" : `실종 ${searchingDays}일째`,
     tone: "brand",
   };
 }

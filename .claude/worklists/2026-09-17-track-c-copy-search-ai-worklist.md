@@ -70,26 +70,26 @@
 
 ## Phase 3. 상태 어휘와 CTA 통일
 
-- [ ] `apps/web/components/report/report-detail.tsx` 의 하단 CTA 두 개를 행동 언어로 바꿉니다
-  - [ ] `<Link href="/guide/injured">구조 요청</Link>` 의 문구를 `구조·보호 요청` 으로 바꿉니다
-  - [ ] `<Link href="/lost/new">내 가족 같아요</Link>` 의 문구를 `우리 아이인지 확인` 으로 바꿉니다
-  - [ ] `grep -n "내 가족 같아요\|구조 요청<" apps/web/components/report/report-detail.tsx` 가 아무 줄도 내지 않는 것을 확인합니다
-- [ ] `apps/web/components/report/report-card.tsx` 와 `report-list.tsx` 의 상태 배지를 어휘 표에 맞춥니다
-  - [ ] `apps/web/components/report/report-card.tsx:68` 의 `찾는 중` 배지를 `실종` 으로 바꿉니다
-  - [ ] `apps/web/components/report/report-list.tsx:111` 의 `<Badge label="찾는 중" ...>` 를 `실종` 으로 바꿉니다
-  - [ ] `grep -rn '"찾는 중"\|>찾는 중<' apps/web/components` 가 아무 줄도 내지 않는 것을 확인합니다
-- [ ] `apps/web/components/lost/candidate-deck.tsx` 의 `CARE_LABEL` 을 주어 없는 어휘로 바꿉니다
-  - [ ] `roaming: "배회 중"` 을 `roaming: "발견"` 으로, `in_care: "제보자 보호 중"` 을 `in_care: "보호 중"` 으로 바꿉니다
-  - [ ] `unknown: "확인 중"` 은 그대로 두고 값을 바꾸지 않습니다
-  - [ ] `sed -n '36,42p' apps/web/components/lost/candidate-deck.tsx` 로 세 값을 눈으로 확인합니다
-- [ ] `apps/web/components/lost/lost-detail.tsx` 의 `statusBadge` 문구를 어휘 표에 맞춥니다
-  - [ ] `찾는 중 ${searchingDays}일째` 를 `실종 ${searchingDays}일째` 로 바꿉니다
-  - [ ] `집에 왔어요` 와 `집으로 돌아왔어요` 는 보호자 화면의 말이라 그대로 둡니다
-  - [ ] `오늘 잃어버렸어요` 도 그대로 둡니다
-- [ ] `apps/web` 검증을 통과시키고 Phase 3 담당 경로만 커밋한 뒤 B 에게 알립니다
-  - [ ] `pnpm lint 2>&1 | tail -5` 와 `pnpm typecheck 2>&1 | tail -5` 를 돌려 각각 `2 successful` 과 `5 successful` 을 봅니다
-  - [ ] `git add apps/web/components/report/report-detail.tsx apps/web/components/report/report-card.tsx apps/web/components/report/report-list.tsx apps/web/components/lost/candidate-deck.tsx apps/web/components/lost/lost-detail.tsx` 로 담습니다
-  - [ ] `git commit -m "fix: 상태 어휘를 실종·발견·보호 중으로 통일하고 CTA 를 행동 언어로 바꿈"` 으로 커밋하고 `exit 0` 을 확인합니다
+- [x] `apps/web/components/report/report-detail.tsx` 의 하단 CTA 두 개를 행동 언어로 바꿉니다
+  - [x] `<Link href="/guide/injured">구조 요청</Link>` 의 문구를 `구조·보호 요청` 으로 바꿉니다
+  - [x] `<Link href="/lost/new">내 가족 같아요</Link>` 의 문구를 `우리 아이인지 확인` 으로 바꿉니다
+  - [x] `grep -n "내 가족 같아요\|구조 요청<" apps/web/components/report/report-detail.tsx` 가 아무 줄도 내지 않는 것을 확인합니다
+- [x] `apps/web/components/report/report-card.tsx` 와 `report-list.tsx` 의 상태 배지를 어휘 표에 맞춥니다
+  - [x] `apps/web/components/report/report-card.tsx:68` 의 `찾는 중` 배지를 `실종` 으로 바꿉니다
+  - [x] `apps/web/components/report/report-list.tsx:111` 의 `<Badge label="찾는 중" ...>` 를 `실종` 으로 바꿉니다
+  - [x] `grep -rn '"찾는 중"\|>찾는 중<' apps/web/components` 가 아무 줄도 내지 않는 것을 확인합니다
+- [x] `apps/web/components/lost/candidate-deck.tsx` 의 `CARE_LABEL` 을 주어 없는 어휘로 바꿉니다
+  - [x] `roaming: "배회 중"` 을 `roaming: "발견"` 으로, `in_care: "제보자 보호 중"` 을 `in_care: "보호 중"` 으로 바꿉니다
+  - [x] `unknown: "확인 중"` 은 그대로 두고 값을 바꾸지 않습니다
+  - [x] `sed -n '36,42p' apps/web/components/lost/candidate-deck.tsx` 로 세 값을 눈으로 확인합니다
+- [x] `apps/web/components/lost/lost-detail.tsx` 의 `statusBadge` 문구를 어휘 표에 맞춥니다
+  - [x] `찾는 중 ${searchingDays}일째` 를 `실종 ${searchingDays}일째` 로 바꿉니다
+  - [x] `집에 왔어요` 와 `집으로 돌아왔어요` 는 보호자 화면의 말이라 그대로 둡니다
+  - [x] `오늘 잃어버렸어요` 도 그대로 둡니다
+- [x] `apps/web` 검증을 통과시키고 Phase 3 담당 경로만 커밋한 뒤 B 에게 알립니다
+  - [x] `pnpm lint 2>&1 | tail -5` 와 `pnpm typecheck 2>&1 | tail -5` 를 돌려 각각 `2 successful` 과 `5 successful` 을 봅니다
+  - [x] `git add apps/web/components/report/report-detail.tsx apps/web/components/report/report-card.tsx apps/web/components/report/report-list.tsx apps/web/components/lost/candidate-deck.tsx apps/web/components/lost/lost-detail.tsx` 로 담습니다
+  - [x] `git commit -m "fix: 상태 어휘를 실종·발견·보호 중으로 통일하고 CTA 를 행동 언어로 바꿈"` 으로 커밋하고 `exit 0` 을 확인합니다
 
 ## Phase 5. 검색 목적 분리
 
@@ -148,4 +148,10 @@
 
 ### 지시서 결함
 
+- Phase 3 네 부모의 첫 20자가 모두 `` `apps/web/components `` 로 같아 보고에서 부모를 구분할 수 없음. 파일명으로 갈라야 함
+
 ### 실측 기록
+
+- `apps/web/components` 에 남은 `찾는 중` 4건은 전부 주석(`place-search-field.tsx:47` `home-screen.tsx:83` `lost-form.tsx:422,424`)이라 상태 어휘 아님
+- `report-detail.tsx:220` 주석의 `구조 요청` 은 부상 제보 분기 근거 서술이라 CTA 문구 참조가 아니어서 유지
+- `pnpm lint`·`pnpm typecheck` 가 FULL TURBO 캐시 적중이라 `--filter @rebirth/web` 로 재실행해 eslint·tsc 실제 통과를 확인함

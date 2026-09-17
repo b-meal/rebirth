@@ -35,8 +35,8 @@ export type Candidate = {
 };
 
 const CARE_LABEL: Record<Candidate["careSituation"], string> = {
-  roaming: "배회 중",
-  in_care: "제보자 보호 중",
+  roaming: "발견",
+  in_care: "보호 중",
   unknown: "확인 중",
 };
 
