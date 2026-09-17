@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { animalSize, animalType } from './enums'
+import { animalSize, animalType } from './enums.ts'
 
 /**
  * POST /api/draft/analyze 응답. Anthropic structured output 으로 강제하는 모양이라

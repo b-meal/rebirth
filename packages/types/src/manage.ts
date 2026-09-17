@@ -4,7 +4,7 @@ import {
   closeReason,
   supportRequestKind,
   type SupportRequestKind,
-} from './enums'
+} from './enums.ts'
 
 // 관리 권한과 문의. WEB-12, WEB-16, WEB-17, WEB-24, WEB-36
 

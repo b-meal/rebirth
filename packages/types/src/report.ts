@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { analyzeResult } from './analyze'
+import { analyzeResult } from './analyze.ts'
 import {
   animalSex,
   animalSize,
@@ -13,7 +13,7 @@ import {
   reportKind,
   visibility,
   type FlagReason,
-} from './enums'
+} from './enums.ts'
 
 const OUT_OF_KOREA = '국내에서 목격한 위치만 등록할 수 있습니다'
 

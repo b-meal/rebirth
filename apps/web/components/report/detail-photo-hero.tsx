@@ -117,7 +117,7 @@ export function DetailPhotoHero({ reportId, alt, onShare }: DetailPhotoHeroProps
           <Icon svg={<IconChevronLeftLine />} />
         </ContextualFloatingButton>
         <HStack gap="x2" align="center">
-          <ContextualFloatingButton variant="layer" layout="iconOnly" asChild>
+          <ContextualFloatingButton variant="layer" layout="iconOnly" aria-label="홈으로" asChild>
             <Link href="/" aria-label="홈으로">
               <Icon svg={<IconHouseLine />} />
             </Link>

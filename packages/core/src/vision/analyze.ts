@@ -4,12 +4,14 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { analyzeResult, type AnalyzeResult } from "@rebirth/types";
 
+import { PROMPT, SYSTEM, VISION_MODEL } from "./prompt.ts";
+export { PROMPT, SYSTEM, VISION_MODEL } from "./prompt.ts";
+
 import { bareBreed } from "../reports/breed.ts";
 
 // 사진에서 외형 정보를 뽑아 제보 초안을 만듦
 // 품종을 맞히는 것이 목적이 아니라 제보를 빠르고 일관되게 정리하는 것이 목적
 
-export const VISION_MODEL = "claude-sonnet-5";
 
 // 사용자가 위치를 정하는 동안 끝나야 함. 넘으면 수동 입력으로 돌림
 export const ANALYZE_TIMEOUT_MS = 20_000;
@@ -26,23 +28,7 @@ export class VisionError extends Error {
   }
 }
 
-const SYSTEM = `당신은 길에서 발견된 동물의 사진을 보고 제보 초안을 정리합니다.
 
-원칙
-- 품종을 단정하지 않습니다. "흰색 소형견, 말티즈 계열 추정" 처럼 색과 크기를 앞에 두고 품종은 추정으로만 덧붙입니다
-- 사진에서 보이는 것만 적습니다. 나이, 건강 상태, 성격, 유기 여부를 추측하지 않습니다
-- 의료 판단을 하지 않습니다. 눈에 보이는 상태만 적습니다. 예를 들어 "뒷다리를 딛지 않음" 은 적고 "골절" 은 적지 않습니다
-- 동물이 없거나 판단할 수 없으면 animalType 을 unknown 으로 두고 warnings 에 이유를 적습니다
-- 모든 문장은 한국어로 쓰고 명사형으로 끝냅니다
-- story 는 제보 글 본문입니다. 보이는 것만 두세 문장으로 적고 감정과 추측을 넣지 않습니다
-
-confidence 는 사진만으로 외형을 정리한 정도입니다. 개체 식별 확률이 아닙니다.
-warnings 는 사용자가 읽을 문장입니다. 사진이 어둡거나 멀거나 동물이 없을 때만 채웁니다.`;
-
-const PROMPT = `이 사진의 동물 외형을 제보 초안으로 정리해 주십시오.
-사진이 여러 장이면 같은 개체를 다른 각도에서 찍은 것으로 보고 초안 하나로 합쳐 주십시오.
-보이지 않는 항목은 추측하지 말고 목줄·부상·귀 끝은 확실하지 않으면 null 로 두십시오.
-breedGuess 는 품종명만 짧게 적고 확실하지 않으면 null 로 두십시오. 확정 표현은 쓰지 마십시오.`;
 
 let cached: Anthropic | null = null;
 

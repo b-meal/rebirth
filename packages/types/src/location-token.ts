@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { areaCodeSystem, locationSource } from './enums'
+import { areaCodeSystem, locationSource } from './enums.ts'
 
 // 위치 참조 발급. WEB-04
 // 세 경로가 모두 서버 발급 참조로 수렴하고 클라이언트는 좌표 숫자를 들고 다니지 않음

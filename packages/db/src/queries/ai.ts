@@ -512,3 +512,28 @@ export async function vectorClusters() {
     spread: number | null
   }[]
 }
+
+/** 제보 하나의 벡터를 남김, 같은 제보가 다시 오면 덮어씀 */
+export async function insertReportEmbedding(input: {
+  reportId: string
+  embedding: number[]
+  sourceText: string
+  model: string
+}) {
+  return db
+    .insert(reportEmbeddings)
+    .values({
+      reportId: input.reportId,
+      embedding: input.embedding,
+      sourceText: input.sourceText,
+      model: input.model,
+    })
+    .onConflictDoUpdate({
+      target: reportEmbeddings.reportId,
+      set: {
+        embedding: input.embedding,
+        sourceText: input.sourceText,
+        model: input.model,
+      },
+    })
+}

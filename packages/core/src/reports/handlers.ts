@@ -56,6 +56,7 @@ import {
 } from "../http";
 import { coarseGridMetersFor, snapToGrid } from "../location/geo";
 import { scoreSightingAgainstLost } from "../matching/alerts";
+import { embedReport } from "../matching/embed-report";
 import { SIGNED_URL_TTL_SECONDS, createSignedThumbUrls, createSignedUrl } from "../storage";
 
 // 제보 API 의 라우트 핸들러. web 과 admin 이 각자 route.ts 에서 재수출해 씀
@@ -161,6 +162,18 @@ export async function createReportHandler(
     // 저장은 이미 끝났으므로 실패해도 응답을 막지 않음. 후보 화면을 열면 다시 계산됨
     await scoreSightingAgainstLost(saved.id).catch((error) => {
       console.error("[reports.create] 닮은 신고 점수 계산 실패", error);
+    });
+
+    // 벡터도 저장 뒤에 남김, 게이트웨이가 막혀도 제보는 이미 저장됐음
+    await embedReport(saved.id, {
+      animalType: input.animalType,
+      breedGuess: input.breedGuess ?? null,
+      colors: input.colors,
+      size: input.size,
+      conditionTags: input.conditionTags,
+      appearance: input.appearance,
+    }).catch((error) => {
+      console.error("[reports.create] 벡터 생성 실패", error);
     });
 
     return okPrivate(
