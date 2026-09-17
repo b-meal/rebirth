@@ -22,11 +22,14 @@ import {
   AlertDialogTitle,
 } from "seed-design/ui/alert-dialog";
 
-import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
+import type { AnalyzeAdviceState } from "@/hooks/use-analyze-photo";
 import { useCameraAvailable } from "@/hooks/use-camera-available";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
 import { usePhotoPrecheck } from "@/hooks/use-photo-precheck";
-import { usePhotoUpload } from "@/hooks/use-photo-upload";
+import {
+  useReportPipeline,
+  type ReportPipelinePhase,
+} from "@/hooks/use-report-pipeline";
 import { useReportDraft, type ReportDraft, type ReportStep } from "@/hooks/use-report-draft";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
@@ -46,7 +49,6 @@ const MAX_PHOTOS = 2;
 // 서버가 문구를 못 내려줬을 때만 쓰는 대비값. 평소에는 guidance 의 문구가 그대로 옴
 const NOT_ANIMAL_FALLBACK = "동물이 보이지 않아요. 동물이 담긴 사진으로 다시 찍어 주세요";
 const ANALYZE_FAILED_FALLBACK = "잠시 후 다시 시도해 주세요";
-const UPLOAD_FAILED_FALLBACK = "사진을 올리지 못했어요";
 
 const STEP_LABEL: Record<ReportStep, string> = {
   1: "사진",
@@ -58,6 +60,21 @@ const CARE_OPTIONS: { value: Exclude<CareSituation, "unknown">; label: string }[
   { value: "roaming", label: "배회 중" },
   { value: "in_care", label: "내가 데리고 있음" },
 ];
+
+// 카드가 읽을 권고. 되돌린 갈래도 2단계로 다시 오면 그대로 보임
+function adviceOf(phase: ReportPipelinePhase): AnalyzeAdviceState | null {
+  if (phase.name === "ready") return phase.advice;
+  if (phase.name === "rejected") return "not-animal";
+  if (phase.name === "failed") return "failed";
+  return null;
+}
+
+function messageOf(phase: ReportPipelinePhase): string | null {
+  if (phase.name === "ready" || phase.name === "rejected" || phase.name === "failed") {
+    return phase.message;
+  }
+  return null;
+}
 
 function readStepFromUrl(): ReportStep {
   if (typeof window === "undefined") return 1;
@@ -71,10 +88,6 @@ export function ReportForm() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const cameraAvailable = useCameraAvailable();
-  // 사진 순서대로 받은 참조. 훅은 한 장씩 올리므로 결과를 여기에 모음
-  const [uploadIds, setUploadIds] = useState<string[]>([]);
-  // 올리기 재시도를 세는 값. 사진이 그대로라 이 값이 바뀌어야 이펙트가 다시 돎
-  const [uploadAttempt, setUploadAttempt] = useState(0);
   // 초안을 고칠 때만 여는 상세 입력
   const [formOpen, setFormOpen] = useState(false);
   // 1단계로 되돌린 이유를 알리는 알럿. null 이면 닫힘
@@ -86,49 +99,49 @@ export function ReportForm() {
   } | null>(null);
 
   const { draft, photos, setPhotos, applyAiDraft, edit, reset } = useReportDraft();
-  // 되돌리기는 picker 와 goTo 가 만들어진 뒤에야 쓸 수 있어 참조로 받아 둠
+  // 되돌리기는 goTo 가 만들어진 뒤에야 쓸 수 있어 참조로 받아 둠
   const bounceRef = useRef<(next: NonNullable<typeof block>) => void>(() => {});
-  const analyze = useAnalyzePhoto({
-    onDone: ({ advice, message }) => {
-      if (advice !== "not-animal") return;
-      bounceRef.current({
-        title: "다시 찍어 주세요",
-        description: message ?? NOT_ANIMAL_FALLBACK,
-        retry: false,
-      });
-    },
-    // 초안 없이 등록하면 사진과 글이 따로 놀아 분석이 끝나기 전에는 저장을 막음
-    onFail: (message) => {
-      bounceRef.current({
-        title: "분석에 실패했어요",
-        description: message ?? ANALYZE_FAILED_FALLBACK,
-        retry: true,
-      });
-    },
-  });
-  const upload = usePhotoUpload();
+
+  // 사진 없는 2단계는 올릴 것도 분석할 것도 없어 아무것도 끝나지 않는 막다른 화면
+  // popstate 가 그 단계를 만들지 않지만 그리는 자리에서도 막아 다른 길이 생겨도 되살아나지 않게 함
+  // 이펙트로 되돌리면 그 한 프레임이 먼저 그려지고 걸음이 하나 더 쌓임
+  const view: ReportStep = step === 2 && photos.length > 0 ? 2 : 1;
+
+  const onRejected = useCallback((message: string | null) => {
+    bounceRef.current({
+      title: "다시 찍어 주세요",
+      description: message ?? NOT_ANIMAL_FALLBACK,
+      retry: false,
+    });
+  }, []);
+  // 초안 없이 등록하면 사진과 글이 따로 놀아 분석이 끝나기 전에는 저장을 막음
+  const onFailed = useCallback((message: string | null) => {
+    bounceRef.current({
+      title: "분석에 실패했어요",
+      description: message ?? ANALYZE_FAILED_FALLBACK,
+      retry: true,
+    });
+  }, []);
+
+  // 사진을 올려 참조를 받고 그 참조로 초안을 받는 한 줄기. 화면은 지금 어느 갈래인지만 봄
+  const pipeline = useReportPipeline(photos, { active: view === 2, onRejected, onFailed });
+  const { phase } = pipeline;
 
   // 저장 요청 하나를 가리키는 키, 이중 탭과 재시도가 제보를 두 건 만들지 않음
   const idempotencyKey = useRef<string | null>(null);
 
+  const { reset: resetPipeline } = pipeline;
   const picker = usePhotoPicker({
     maxCount: MAX_PHOTOS,
     onChange: (next) => {
       setPhotos(next);
       // 사진이 바뀌면 이전 분석과 업로드 결과를 쓰지 않음
-      analyze.clear();
-      upload.clear();
-      setUploadIds([]);
+      resetPipeline();
     },
   });
 
   // 1단계에서 고르는 즉시 동물 유무만 물어봄. 2단계로 넘어가도 결과가 남게 여기에 둠
   const precheck = usePhotoPrecheck(photos);
-
-  // 사진 없는 2단계는 올릴 것도 분석할 것도 없어 아무 이펙트도 돌지 않는 막다른 화면
-  // popstate 가 그 단계를 만들지 않지만 그리는 자리에서도 막아 다른 길이 생겨도 되살아나지 않게 함
-  // 이펙트로 되돌리면 그 한 프레임이 먼저 그려지고 걸음이 하나 더 쌓임
-  const view: ReportStep = step === 2 && photos.length > 0 ? 2 : 1;
 
   useEffect(() => {
     // 사진은 File 이라 복원되지 않으므로 새로고침은 늘 1단계에서 다시 시작함
@@ -164,40 +177,6 @@ export function ReportForm() {
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  // 사진 확정 전에는 서버에 올리지 않음. 다시 찍기를 반복해도 스토리지에 쌓이지 않음
-  // 같은 사진 묶음은 한 번만 올려 StrictMode 의 이펙트 두 번 실행에서도 두 건이 생기지 않음
-  const uploadedKey = useRef<string | null>(null);
-  const { upload: startUpload } = upload;
-  useEffect(() => {
-    if (view !== 2 || photos.length === 0) return;
-    const key = photos.map((photo) => photo.id).join(",");
-    if (uploadedKey.current === key) return;
-    uploadedKey.current = key;
-
-    void (async () => {
-      const ids: string[] = [];
-      // 훅이 앞 요청을 취소하므로 순서대로 올림
-      for (const photo of photos) {
-        const id = await startUpload(photo.file);
-        // 한 장이라도 못 올리면 참조가 모자라 등록이 끝까지 막힘
-        // 열쇠를 풀어 두어 다시 시도가 같은 사진으로 처음부터 돌게 함
-        if (!id) {
-          uploadedKey.current = null;
-          return;
-        }
-        ids.push(id);
-      }
-      setUploadIds(ids);
-    })();
-  }, [view, photos, startUpload, uploadAttempt]);
-
-  // 올린 사진을 모두 한 요청에 넣어 초안 하나를 받음. 호출은 사진 수와 무관하게 한 번
-  const { status: analyzeStatus, start: startAnalyze } = analyze;
-  useEffect(() => {
-    if (view !== 2 || uploadIds.length === 0) return;
-    if (analyzeStatus === "idle") startAnalyze(uploadIds);
-  }, [view, uploadIds, analyzeStatus, startAnalyze]);
-
   // 되돌림은 새 걸음이 아니라 걸음 취소라 replace 로 씀
   // push 로 쌓으면 되돌린 자리 바로 뒤에 갈 수 없는 단계가 남아 뒤로가기가 그리로 감
   const goTo = useCallback((next: ReportStep, replace = false) => {
@@ -212,9 +191,9 @@ export function ReportForm() {
 
   // 분석 결과가 오면 초안을 채움, 사용자가 이미 고친 필드는 덮지 않음
   useEffect(() => {
-    if (analyze.status !== "done" || !analyze.draft) return;
-    applyAiDraft(analyze.draft, analyze.model ?? "", analyze.analyzedAt ?? "");
-  }, [analyze.status, analyze.draft, analyze.model, analyze.analyzedAt, applyAiDraft]);
+    if (phase.name !== "ready") return;
+    applyAiDraft(phase.draft, phase.model ?? "", phase.analyzedAt ?? "");
+  }, [phase, applyAiDraft]);
 
   const onLocationChange = useCallback(
     (next: Partial<LocationValue>) => {
@@ -224,11 +203,6 @@ export function ReportForm() {
     },
     [edit],
   );
-
-  // 업로드를 기다리지 않고 넘어감, 등록 버튼에서만 참조가 필요함
-  const uploadsReady = uploadIds.length === photos.length && uploadIds.length > 0;
-  // 동물이 안 보이는 사진은 등록을 막음. 어두운 사진은 막지 않고 안내만 함
-  const notAnimal = analyze.advice === "not-animal";
 
   // 동물이 없으면 2단계에서 할 일이 없어 사진 고르는 화면으로 되돌림
   // 두 장을 한 요청으로 분석해 어느 쪽이 문제인지 알 수 없으므로 지우는 것은 사람이 고름
@@ -246,19 +220,16 @@ export function ReportForm() {
     bounceRef.current = bounce;
   }, [bounce]);
 
-  // 초안을 못 받은 상태로는 저장하지 않음. 비동물과 분석 실패를 모두 막음
-  const analyzeBlocked = notAnimal || analyze.advice === "failed";
-  // 초안이 오기 전에 누르면 외형이 빈 채로 나가 서버가 400 으로 되돌림
-  const analyzePending = analyze.status === "loading";
+  // ready 갈래만이 참조와 초안을 함께 들고 있음
+  // 비동물, 분석 실패, 초안 전 이라는 세 조건을 따로 맞추지 않아도 갈래 하나로 갈림
+  const pending = phase.name === "uploading" || phase.name === "analyzing";
   const canSubmit =
-    uploadsReady &&
-    draft.locationToken !== null &&
-    draft.careSituation !== null &&
-    !analyzeBlocked &&
-    !analyzePending;
+    phase.name === "ready" && draft.locationToken !== null && draft.careSituation !== null;
 
+  // ready 밖에서는 보낼 참조가 없어 갈래를 먼저 확인함
   const handleSubmit = useCallback(async () => {
-    if (uploadIds.length === 0 || !draft.locationToken) return;
+    if (phase.name !== "ready" || !draft.locationToken) return;
+    const { uploadIds } = phase;
     setSubmitting(true);
     setSubmitError(null);
 
@@ -332,15 +303,10 @@ export function ReportForm() {
       setSubmitError("제보가 저장되지 않았어요. 입력한 내용은 그대로 있어요");
       setSubmitting(false);
     }
-  }, [uploadIds, draft, reset, router]);
+  }, [phase, draft, reset, router]);
 
-  // idle 은 아직 아무것도 시작하지 않았다는 뜻이라 그것만으로 로딩을 그리면
-  // 시작할 이펙트가 없는 자리에서 스켈레톤이 끝나지 않음
-  // 올린 참조가 있는데 분석이 아직 idle 인 한 프레임만 진행 중으로 봄
-  const loadingDraft =
-    upload.status === "uploading" ||
-    analyze.status === "loading" ||
-    (uploadIds.length > 0 && analyze.status === "idle");
+  const cardAdvice = adviceOf(phase);
+  const cardMessage = messageOf(phase);
 
   return (
     <Screen>
@@ -366,27 +332,27 @@ export function ReportForm() {
           />
 
           <ScreenBody gap="x4" pt="x4" pb="x4">
-            {upload.status === "uploading" ? (
+            {phase.name === "uploading" ? (
               <Text textStyle="t3Regular" color="fg.neutralMuted">
                 사진을 올리고 있어요
               </Text>
             ) : null}
 
             {/* 올리다 멈추면 참조가 모자라 등록이 막히므로 그 자리에서 다시 올릴 길을 둠 */}
-            {upload.status === "failed" ? (
+            {phase.name === "uploadFailed" ? (
               <ActionableCallout
                 tone="critical"
-                title={upload.message ?? UPLOAD_FAILED_FALLBACK}
+                title={phase.message}
                 description="눌러서 다시 올리기"
-                onClick={() => setUploadAttempt((count) => count + 1)}
+                onClick={pipeline.retryUpload}
               />
             ) : null}
 
             <ReportDraftCard
               draft={draft}
-              loading={loadingDraft}
-              advice={analyze.advice}
-              message={analyze.message}
+              loading={pending}
+              advice={cardAdvice}
+              message={cardMessage}
               onEdit={() => setFormOpen(true)}
               onRetake={() => goTo(1)}
             />
@@ -416,7 +382,7 @@ export function ReportForm() {
             </Section>
 
             <ReportLocation
-              sessionReady={uploadIds.length > 0}
+              sessionReady={pipeline.sessionReady}
               value={{
                 areaName: draft.areaName,
                 locationToken: draft.locationToken,
@@ -448,7 +414,7 @@ export function ReportForm() {
             <ActionButton
               variant="brandSolid"
               size="large"
-              loading={submitting || analyzePending}
+              loading={submitting || pending}
               disabled={!canSubmit}
               onClick={handleSubmit}
             >
@@ -475,7 +441,7 @@ export function ReportForm() {
         onOpenChange={(open) => {
           if (open) return;
           // 실패는 같은 사진으로 다시 해 볼 수 있어 분석만 비워 다음 을 누르면 재시도가 돎
-          if (block?.retry) analyze.clear();
+          if (block?.retry) pipeline.clearAnalysis();
           setBlock(null);
         }}
       >
@@ -487,7 +453,7 @@ export function ReportForm() {
           <AlertDialogFooter>
             <AlertDialogAction
               onClick={() => {
-                if (block?.retry) analyze.clear();
+                if (block?.retry) pipeline.clearAnalysis();
                 setBlock(null);
               }}
             >
