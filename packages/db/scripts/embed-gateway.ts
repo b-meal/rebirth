@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import postgres from "postgres";
-import { embedMany } from "/Users/hahmjuntae/Desktop/workspace/b-meal/rebirth/node_modules/.pnpm/ai@7.0.102_zod@4.5.4/node_modules/ai/dist/index.js";
+import { embedMany } from "ai";
 
 import {
   EMBEDDING_MODEL,

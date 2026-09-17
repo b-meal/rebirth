@@ -5,8 +5,8 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import postgres from "postgres";
-import Anthropic from "/Users/hahmjuntae/Desktop/workspace/b-meal/rebirth/node_modules/.pnpm/@anthropic-ai+sdk@0.124.0_zod@4.5.4/node_modules/@anthropic-ai/sdk/index.js";
-import { zodOutputFormat } from "/Users/hahmjuntae/Desktop/workspace/b-meal/rebirth/node_modules/.pnpm/@anthropic-ai+sdk@0.124.0_zod@4.5.4/node_modules/@anthropic-ai/sdk/helpers/zod.js";
+import Anthropic from "@anthropic-ai/sdk";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 
 import { analyzeResult } from "../../types/src/analyze.ts";
 import { SYSTEM, PROMPT, VISION_MODEL } from "../../core/src/vision/prompt.ts";

@@ -249,9 +249,15 @@ importers:
 
   packages/db:
     dependencies:
+      '@anthropic-ai/sdk':
+        specifier: ^0.124.0
+        version: 0.124.0(zod@4.5.4)
       '@rebirth/types':
         specifier: workspace:*
         version: link:../types
+      ai:
+        specifier: ^7.0.102
+        version: 7.0.102(zod@4.5.4)
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(postgres@3.4.9)
