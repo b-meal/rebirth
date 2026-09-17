@@ -43,6 +43,9 @@ export type MapMarker = ReportCardItem & {
 // 시트에 셀 반경, 지도 중심에서 이 거리 안의 제보만 셈
 const NEARBY_RADIUS_KM = 3;
 
+// 반경 안에 하나도 없을 때 대신 보여 줄 가까운 제보 수
+const NEARBY_FALLBACK_COUNT = 12;
+
 // 핀을 고르면 당기는 축척, 주변 골목이 보이는 정도
 const PIN_ZOOM = 16;
 
@@ -210,13 +213,18 @@ export function HomeScreen({
   }, [map, myPoint]);
 
   // 지도를 못 띄우면 거리를 셀 기준이 없어 최근 제보를 그대로 보여줌
-  const nearby = useMemo(
-    () =>
-      ready
-        ? markers.filter((item) => distanceKm(center, item.point) <= NEARBY_RADIUS_KM)
-        : markers,
-    [ready, center, markers],
-  );
+  // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
+  const { nearby, widened } = useMemo(() => {
+    if (!ready) return { nearby: markers, widened: false };
+    const inRadius = markers.filter((item) => distanceKm(center, item.point) <= NEARBY_RADIUS_KM);
+    if (inRadius.length > 0) return { nearby: inRadius, widened: false };
+    const sorted = [...markers]
+      .map((item) => ({ item, km: distanceKm(center, item.point) }))
+      .sort((a, b) => a.km - b.km)
+      .slice(0, NEARBY_FALLBACK_COUNT)
+      .map((row) => row.item);
+    return { nearby: sorted, widened: sorted.length > 0 };
+  }, [ready, center, markers]);
 
   const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
@@ -519,9 +527,11 @@ export function HomeScreen({
 
           <HStack px="spacingX.globalGutter" justify="space-between" align="center" gap="x2">
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
-              {ready
-                ? `${geocode.result?.areaName ?? "근처"} 반경 ${NEARBY_RADIUS_KM}km`
-                : "최근 발견 제보"}
+              {!ready
+                ? "최근 발견 제보"
+                : widened
+                  ? "가까운 발견 제보"
+                  : `${geocode.result?.areaName ?? "근처"} 반경 ${NEARBY_RADIUS_KM}km`}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted">
               {nearby.length}건
