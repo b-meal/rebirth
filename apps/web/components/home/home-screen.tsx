@@ -11,16 +11,18 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { Box, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
+import { Box, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
 import {
   IconBellLine,
   IconChevronUpLine,
   IconCrosshairLine,
+  IconHospitalcrossShieldLine,
   IconMagnifyingglassLine,
+  IconMegaphoneLine,
   IconPawprintFill,
   IconPlusLine,
 } from "@karrotmarket/react-monochrome-icon";
-import { Marker, Popup, type MapMouseEvent } from "maplibre-gl";
+import { Marker, Popup, type GeoJSONSource, type MapMouseEvent } from "maplibre-gl";
 import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
 import { Callout } from "seed-design/ui/callout";
 import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-button";
@@ -42,9 +44,6 @@ export type MapMarker = ReportCardItem & {
   // 격자 스냅한 공개용 좌표, 정확한 목격 지점이 아님
   point: LatLng;
 };
-
-// 시트에 셀 반경, 지도 중심에서 이 거리 안의 제보만 셈
-const NEARBY_RADIUS_KM = 3;
 
 // 반경 안에 하나도 없을 때 대신 보여 줄 가까운 제보 수
 const NEARBY_FALLBACK_COUNT = 12;
@@ -98,12 +97,15 @@ const MY_LOCATION_CONE = [
 
 // 색은 상황만 알리고 무엇인지는 사진이 알림
 const PIN_TONE = {
+  lost: { bg: "bg.warningSolid", fg: "fg.warningContrast" },
   injured: { bg: "bg.criticalSolid", fg: "fg.criticalContrast" },
   inCare: { bg: "bg.informativeSolid", fg: "fg.informativeContrast" },
   roaming: { bg: "bg.brandSolid", fg: "fg.brandContrast" },
 } as const;
 
 function toneOf(item: MapMarker) {
+  // 실종이 먼저. 보호자가 찾는 중인 동물은 다른 상황 표시에 묻히면 안 됨
+  if (item.kind === "lost") return PIN_TONE.lost;
   if (item.injury === true) return PIN_TONE.injured;
   if (item.careSituation === "in_care") return PIN_TONE.inCare;
   return PIN_TONE.roaming;
@@ -131,7 +133,7 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
     >
       <button
         type="button"
-        aria-label={`${describeAnimal(item)} 제보 미리 보기`}
+        aria-label={`${item.petName || describeAnimal(item)} ${item.kind === "lost" ? "실종 신고" : "제보"} 미리 보기`}
         aria-pressed={selected}
         onClick={() => onSelect(item)}
       >
@@ -156,6 +158,53 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
     </Box>
   );
 }
+
+// 클러스터 묶기는 지도에 맡기고 그리기는 SEED 로 함, 레이어 paint 는 토큰을 읽지 못함
+const PIN_SOURCE = "report-pins";
+
+// 타일이 만들어져야 화면에 보이는 것을 물어볼 수 있어 두는 보이지 않는 한 장
+const PIN_PROBE_LAYER = "report-pins-probe";
+
+// 이 축척을 넘으면 묶지 않고 낱개로 보여 줌, 골목 단위에서는 사진이 더 빨리 읽힘
+const CLUSTER_MAX_ZOOM = 15;
+
+// 묶는 반경(px). 핀 지름의 두 배쯤이라 겹쳐 보이는 것만 묶임
+const CLUSTER_RADIUS_PX = 56;
+
+type ClusterPinProps = {
+  count: number;
+  onClick: () => void;
+};
+
+function ClusterPin({ count, onClick }: ClusterPinProps) {
+  // 묶인 수가 많을수록 크게 그려 어디에 몰려 있는지 축척을 바꾸기 전에 보이게 함
+  const size = count >= 100 ? "x14" : count >= 10 ? "x12" : "x10";
+  return (
+    <Box
+      asChild
+      width={size}
+      height={size}
+      borderRadius="full"
+      borderWidth="2px"
+      borderColor="bg.layerFloating"
+      bg="bg.brandSolid"
+      boxShadow="s2"
+    >
+      <button type="button" aria-label={`제보 ${count}건 묶음, 눌러서 확대`} onClick={onClick}>
+        <VStack align="center" justify="center" height="full">
+          <Text textStyle={count >= 100 ? "t3Bold" : "t2Bold"} color="fg.brandContrast">
+            {count}
+          </Text>
+        </VStack>
+      </button>
+    </Box>
+  );
+}
+
+// 화면에 실제로 그릴 것. 낱개는 사진 핀, 묶음은 숫자 핀
+type Pin =
+  | { kind: "report"; key: string; el: HTMLElement; item: MapMarker }
+  | { kind: "cluster"; key: string; el: HTMLElement; id: number; count: number; at: LatLng };
 
 // 훅의 초기값. 렌더마다 새 배열을 넘기지 않도록 바깥에 둠
 const EMPTY_MARKERS: MapMarker[] = [];
@@ -195,7 +244,7 @@ export function HomeScreen({
   const router = useRouter();
   const snackbar = useSnackbarAdapter();
   const position = useCurrentPosition({ immediate: true });
-  const { containerRef, status, error, center, moveTo, map } = useMap();
+  const { containerRef, status, error, center, radiusKm, moveTo, map } = useMap();
 
   const ready = status === "ready";
   // 지도 중심의 행정동을 카카오 로컬 API 로 확인해 시트 제목에 씀
@@ -238,26 +287,106 @@ export function HomeScreen({
   }, [position.point, moveTo]);
 
   // 핀은 SEED 컴포넌트로 그려야 해 오버레이에 빈 요소만 올리고 포털로 채움
-  const [pins, setPins] = useState<{ item: MapMarker; el: HTMLElement }[]>([]);
+  // 천 건이 넘어 낱개로 다 그리면 폰에서 버벅여 지도에 묶게 하고 보이는 것만 그림
+  const [pins, setPins] = useState<Pin[]>([]);
   useEffect(() => {
     if (!map) return;
-    const drawn = markers.map((item) => {
-      const el = document.createElement("div");
-      el.dataset.reportPin = "";
-      const marker = new Marker({ element: el, anchor: "center" })
-        .setLngLat([item.point.lng, item.point.lat])
-        .addTo(map);
-      return { item, el, marker };
-    });
-    // 마커 요소는 지도가 만든 뒤에야 존재해 포털 대상은 마운트 후 한 번 넣음
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPins(drawn.map(({ item, el }) => ({ item, el })));
+    const byId = new Map(markers.map((item) => [item.id, item]));
+    const data = {
+      type: "FeatureCollection" as const,
+      features: markers.map((item) => ({
+        type: "Feature" as const,
+        properties: { id: item.id },
+        geometry: { type: "Point" as const, coordinates: [item.point.lng, item.point.lat] },
+      })),
+    };
+
+    const source = map.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
+    if (source) source.setData(data);
+    else {
+      map.addSource(PIN_SOURCE, {
+        type: "geojson",
+        data,
+        cluster: true,
+        clusterRadius: CLUSTER_RADIUS_PX,
+        clusterMaxZoom: CLUSTER_MAX_ZOOM,
+      });
+      map.addLayer({
+        id: PIN_PROBE_LAYER,
+        type: "circle",
+        source: PIN_SOURCE,
+        paint: { "circle-radius": 1, "circle-opacity": 0 },
+      });
+    }
+
+    let drawn: Marker[] = [];
+    const redraw = () => {
+      if (!map.getLayer(PIN_PROBE_LAYER)) return;
+      const features = map.queryRenderedFeatures({ layers: [PIN_PROBE_LAYER] });
+      for (const marker of drawn) marker.remove();
+      drawn = [];
+
+      const next: Pin[] = [];
+      const seen = new Set<string>();
+      for (const feature of features) {
+        if (feature.geometry.type !== "Point") continue;
+        const props = feature.properties ?? {};
+        const key = props.cluster ? `c${props.cluster_id}` : `r${props.id}`;
+        // 타일 경계에 걸친 것은 두 번 올라옴
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        const [lng, lat] = feature.geometry.coordinates as [number, number];
+        const el = document.createElement("div");
+        el.dataset.reportPin = "";
+        drawn.push(new Marker({ element: el, anchor: "center" }).setLngLat([lng, lat]).addTo(map));
+
+        if (props.cluster) {
+          next.push({
+            kind: "cluster",
+            key,
+            el,
+            id: props.cluster_id as number,
+            count: props.point_count as number,
+            at: { lat, lng },
+          });
+          continue;
+        }
+        const item = byId.get(props.id as string);
+        if (item) next.push({ kind: "report", key, el, item });
+      }
+      // 마커 요소는 지도가 만든 뒤에야 존재해 포털 대상은 마운트 후 넣음
+      setPins(next);
+    };
+
+    // 묶음은 축척과 위치에 따라 다시 계산돼 화면이 멈출 때마다 새로 읽음
+    const onSourceData = (event: { sourceId?: string; isSourceLoaded?: boolean }) => {
+      if (event.sourceId === PIN_SOURCE && event.isSourceLoaded) redraw();
+    };
+    map.on("moveend", redraw);
+    map.on("sourcedata", onSourceData);
+    redraw();
 
     return () => {
-      for (const { marker } of drawn) marker.remove();
+      map.off("moveend", redraw);
+      map.off("sourcedata", onSourceData);
+      for (const marker of drawn) marker.remove();
       setPins([]);
     };
   }, [map, markers]);
+
+  // 묶음을 누르면 그 묶음이 풀리는 축척까지 당김
+  const expandCluster = useCallback(
+    (id: number, at: LatLng) => {
+      const source = map?.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
+      if (!source) return;
+      source
+        .getClusterExpansionZoom(id)
+        .then((zoom) => moveTo(at, { animate: true, zoom }))
+        .catch(() => undefined);
+    },
+    [map, moveTo],
+  );
 
   const myPoint = position.point;
   // 나침반 값은 초당 수십 번 바뀌어 상태로 들면 핀 수백 개가 같이 다시 그려짐
@@ -301,7 +430,7 @@ export function HomeScreen({
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
   const { nearby, widened } = useMemo(() => {
     if (!ready) return { nearby: markers, widened: false };
-    const inRadius = markers.filter((item) => distanceKm(center, item.point) <= NEARBY_RADIUS_KM);
+    const inRadius = markers.filter((item) => distanceKm(center, item.point) <= radiusKm);
     if (inRadius.length > 0) return { nearby: inRadius, widened: false };
     const sorted = [...markers]
       .map((item) => ({ item, km: distanceKm(center, item.point) }))
@@ -309,7 +438,7 @@ export function HomeScreen({
       .slice(0, NEARBY_FALLBACK_COUNT)
       .map((row) => row.item);
     return { nearby: sorted, widened: sorted.length > 0 };
-  }, [ready, center, markers]);
+  }, [ready, center, radiusKm, markers]);
 
   const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
@@ -460,11 +589,19 @@ export function HomeScreen({
         <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
       </Box>
 
-      {pins.map(({ item, el }) =>
+      {pins.map((pin) =>
         createPortal(
-          <ReportPin item={item} selected={item.id === selectedId} onSelect={selectPin} />,
-          el,
-          item.id,
+          pin.kind === "cluster" ? (
+            <ClusterPin count={pin.count} onClick={() => expandCluster(pin.id, pin.at)} />
+          ) : (
+            <ReportPin
+              item={pin.item}
+              selected={pin.item.id === selectedId}
+              onSelect={selectPin}
+            />
+          ),
+          pin.el,
+          pin.key,
         ),
       )}
 
@@ -490,7 +627,7 @@ export function HomeScreen({
         </VStack>
       ) : null}
 
-      <HStack
+      <VStack
         ref={topBarRef}
         position="absolute"
         top="0"
@@ -500,8 +637,11 @@ export function HomeScreen({
         px="spacingX.globalGutter"
         pt="x3"
         gap="x2"
-        align="center"
+        align="stretch"
+        // 면이 없는 자리까지 탭을 먹으면 지도 위쪽에서 확대와 이동이 듣지 않음
+        style={{ pointerEvents: "none" }}
       >
+      <HStack gap="x2" align="center" style={{ pointerEvents: "auto" }}>
         {/* 지도 위에서는 입력을 받지 않고 검색 화면으로 넘김 */}
         <VStack
           asChild
@@ -559,6 +699,24 @@ export function HomeScreen({
           ) : null}
         </Box>
       </HStack>
+
+      {/* 첫 화면에서 무엇을 하는 곳인지 읽히도록 급한 일 둘을 지도 위에 올림
+          제보하기는 아래 떠 있는 단추가 이미 가지고 있어 여기서 빼둠 */}
+      <HStack gap="x2" align="center" width="fit-content" style={{ pointerEvents: "auto" }}>
+        <ContextualFloatingButton variant="layer" asChild>
+          <Link href="/lost/new">
+            <PrefixIcon svg={<IconMegaphoneLine />} />
+            우리 아이 찾기
+          </Link>
+        </ContextualFloatingButton>
+        <ContextualFloatingButton variant="layer" asChild>
+          <Link href="/guide/injured">
+            <PrefixIcon svg={<IconHospitalcrossShieldLine />} />
+            다친 동물
+          </Link>
+        </ContextualFloatingButton>
+      </HStack>
+      </VStack>
 
       {/* 이 묶음은 시트와 떠 있는 버튼의 자리만 잡음
           면이 없는 곳까지 탭을 먹으면 지도 아래 절반에서 확대와 이동이 듣지 않음 */}
@@ -646,10 +804,10 @@ export function HomeScreen({
           <HStack px="spacingX.globalGutter" justify="space-between" align="center" gap="x2">
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
               {!ready
-                ? "최근 발견 제보"
+                ? "최근 제보"
                 : widened
-                  ? "가까운 발견 제보"
-                  : `${geocode.result?.areaName ?? "근처"} 반경 ${NEARBY_RADIUS_KM}km`}
+                  ? "가까운 제보"
+                  : `${geocode.result?.areaName ?? "근처"} 반경 ${Math.max(1, Math.round(radiusKm))}km`}
             </Text>
             <Text textStyle="t3Regular" color="fg.neutralMuted">
               {nearby.length}건

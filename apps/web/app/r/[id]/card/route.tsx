@@ -1,21 +1,24 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import { createSignedUrl } from "@rebirth/core/storage";
 import { findPublicReport, findReportPhotoPaths } from "@rebirth/db";
 import { ImageResponse } from "next/og";
 
 import { CARE_LABEL, SIZE_LABEL, breedLabel, searchingDays, withObject } from "@/lib/report-label";
 
-// 공유 카드. ratio=story 는 인스타 스토리용 9:16, 기본은 OG 이미지로 쓰는 4:5
+// 공유 카드. ratio=story 는 인스타 스토리용 9:16, 기본은 링크 미리보기용 OG 1.91:1
 // 정확 좌표와 제보자 정보, 품종 확정 표현을 넣지 않음
 
 export const dynamic = "force-dynamic";
 
 const RATIOS = {
   story: { width: 1080, height: 1920 },
-  og: { width: 1080, height: 1350 },
+  og: { width: 1200, height: 630 },
 } as const;
 
-// 사진이 차지하는 비율. 스토리는 배경으로 깔려도 꽉 차 보이게 더 크게 씀
-const PHOTO_SHARE = { story: 0.68, og: 0.52 } as const;
+// 스토리 카드에서 사진이 차지하는 비율. 아래 텍스트 블록이 나머지를 씀
+const STORY_PHOTO_SHARE = 0.68;
 
 const PADDING = 72;
 
@@ -32,6 +35,35 @@ async function loadPhotoUrl(id: string): Promise<string | null> {
   }
 }
 
+/** 사진이 없는 제보의 링크 미리보기. 홈 OG 와 같은 로고 카드로 떨어뜨림 */
+async function brandCard(width: number, height: number) {
+  const logo = await readFile(join(process.cwd(), "public/logo/logo-house.png")).catch(
+    () => null,
+  );
+  return (
+    <div
+      style={{
+        width,
+        height,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#ffffff",
+      }}
+    >
+      {logo ? (
+        // eslint-disable-next-line @next/next/no-img-element -- satori 는 next/image 를 해석하지 못하고 원시 img 만 그림
+        <img
+          src={`data:image/png;base64,${logo.toString("base64")}`}
+          width={320}
+          height={320}
+          alt=""
+        />
+      ) : null}
+    </div>
+  );
+}
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -39,7 +71,6 @@ export async function GET(
   const { id } = await context.params;
   const kind = new URL(request.url).searchParams.get("ratio") === "story" ? "story" : "og";
   const { width, height } = RATIOS[kind];
-  const photoHeight = Math.round(height * PHOTO_SHARE[kind]);
 
   let report: Awaited<ReturnType<typeof findPublicReport>> = undefined;
   try {
@@ -49,6 +80,29 @@ export async function GET(
   }
 
   const photoUrl = report ? await loadPhotoUrl(id) : null;
+
+  // 링크 미리보기는 제목과 설명이 메타 텍스트로 따로 붙어 카드에 글자를 겹치지 않음
+  if (kind === "og") {
+    return new ImageResponse(
+      photoUrl ? (
+        <div style={{ display: "flex", width, height }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- satori 는 next/image 를 해석하지 못하고 원시 img 만 그림 */}
+          <img
+            src={photoUrl}
+            width={width}
+            height={height}
+            style={{ objectFit: "cover" }}
+            alt=""
+          />
+        </div>
+      ) : (
+        await brandCard(width, height)
+      ),
+      { width, height },
+    );
+  }
+
+  const photoHeight = Math.round(height * STORY_PHOTO_SHARE);
 
   const lost = report?.kind === "lost";
   const name = report?.pet?.name ?? null;
