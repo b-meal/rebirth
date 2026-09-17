@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   Box,
   Grid,
@@ -45,6 +45,9 @@ export function ReportCapture({
   onNext,
 }: ReportCaptureProps) {
   const inputRef = useRef<PhotoPickerInputHandle>(null);
+  // capture 가 붙은 입력은 폰에서 카메라만 열어 저장된 사진을 고를 길이 따로 필요함
+  const libraryRef = useRef<PhotoPickerInputHandle>(null);
+  const [lastSource, setLastSource] = useState<"camera" | "library">("camera");
   // 장치 조회는 버튼 문구에만 씀. 여는 방식은 capture 가 알아서 가름
   const camera = cameraAvailable !== false;
   const { photos, maxCount, isFull, processing, error, addFiles, dismissError } = picker;
@@ -52,15 +55,33 @@ export function ReportCapture({
   // capture 는 명세상 힌트라 카메라가 없는 기기는 알아서 파일 선택기로 떨어짐
   // 장치 조회로 가리면 권한 전에 videoinput 을 안 내놓는 브라우저에서 카메라가 안 열림
   const hidden = (
-    <PhotoPickerInput
-      ref={inputRef}
-      mode="camera"
-      disabled={processing || isFull}
-      onFiles={addFiles}
-    />
+    <>
+      <PhotoPickerInput
+        ref={inputRef}
+        mode="camera"
+        disabled={processing || isFull}
+        onFiles={addFiles}
+      />
+      <PhotoPickerInput
+        ref={libraryRef}
+        mode="library"
+        multiple={maxCount > 1}
+        disabled={processing || isFull}
+        onFiles={addFiles}
+      />
+    </>
   );
 
-  const openPicker = () => inputRef.current?.open();
+  const openPicker = () => {
+    setLastSource("camera");
+    inputRef.current?.open();
+  };
+  const openLibrary = () => {
+    setLastSource("library");
+    libraryRef.current?.open();
+  };
+  // 두 장째를 더할 때 앞서 고른 방식을 그대로 씀
+  const openMore = () => (lastSource === "library" ? openLibrary() : openPicker());
 
   if (photos.length === 0) {
     return (
@@ -126,8 +147,19 @@ export function ReportCapture({
             <Icon svg={camera ? <IconCameraFill /> : <IconPictureFill />} />
             {camera ? "사진 촬영" : "앨범에서 선택"}
           </ActionButton>
+          {camera ? (
+            <ActionButton
+              variant="neutralWeak"
+              size="large"
+              loading={processing}
+              onClick={openLibrary}
+            >
+              <Icon svg={<IconPictureFill />} />
+              앨범에서 선택
+            </ActionButton>
+          ) : null}
           <Text textStyle="t3Regular" color="fg.neutralSubtle" align="center">
-            최대 {maxCount}장까지 {camera ? "찍을" : "고를"} 수 있어요
+            최대 {maxCount}장까지 {camera ? "찍거나 고를" : "고를"} 수 있어요
           </Text>
         </VStack>
         {hidden}
@@ -147,7 +179,7 @@ export function ReportCapture({
           <Text textStyle="t4Regular" color="fg.neutralMuted">
             {isFull
               ? `사진 ${photos.length}장을 함께 분석해요`
-              : "한 장 더 찍으면 AI 가 더 정확해져요"}
+              : "한 장 더 있으면 AI 가 더 정확해져요"}
           </Text>
         </Section>
 
@@ -189,11 +221,11 @@ export function ReportCapture({
             >
               <button
                 type="button"
-                onClick={openPicker}
-                aria-label={camera ? "사진 더 찍기" : "사진 더 고르기"}
+                onClick={openMore}
+                aria-label={lastSource === "library" ? "사진 더 고르기" : "사진 더 찍기"}
               >
                 <Icon
-                  svg={camera ? <IconCameraFill /> : <IconPictureFill />}
+                  svg={lastSource === "library" ? <IconPictureFill /> : <IconCameraFill />}
                   size="x6"
                   color="fg.brand"
                 />

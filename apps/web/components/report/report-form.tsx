@@ -208,8 +208,14 @@ export function ReportForm() {
 
   // 초안을 못 받은 상태로는 저장하지 않음. 비동물과 분석 실패를 모두 막음
   const analyzeBlocked = notAnimal || analyze.advice === "failed";
+  // 초안이 오기 전에 누르면 외형이 빈 채로 나가 서버가 400 으로 되돌림
+  const analyzePending = analyze.status === "loading";
   const canSubmit =
-    uploadsReady && draft.locationToken !== null && draft.careSituation !== null && !analyzeBlocked;
+    uploadsReady &&
+    draft.locationToken !== null &&
+    draft.careSituation !== null &&
+    !analyzeBlocked &&
+    !analyzePending;
 
   const handleSubmit = useCallback(async () => {
     if (uploadIds.length === 0 || !draft.locationToken) return;
@@ -391,7 +397,7 @@ export function ReportForm() {
             <ActionButton
               variant="brandSolid"
               size="large"
-              loading={submitting}
+              loading={submitting || analyzePending}
               disabled={!canSubmit}
               onClick={handleSubmit}
             >

@@ -4,13 +4,15 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { analyzeResult, type AnalyzeResult } from "@rebirth/types";
 
+import { bareBreed } from "../reports/breed.ts";
+
 // 사진에서 외형 정보를 뽑아 제보 초안을 만듦
 // 품종을 맞히는 것이 목적이 아니라 제보를 빠르고 일관되게 정리하는 것이 목적
 
 export const VISION_MODEL = "claude-sonnet-5";
 
 // 사용자가 위치를 정하는 동안 끝나야 함. 넘으면 수동 입력으로 돌림
-export const ANALYZE_TIMEOUT_MS = 8_000;
+export const ANALYZE_TIMEOUT_MS = 20_000;
 
 export type VisionErrorKind = "no-config" | "timeout" | "rate-limit" | "api" | "parse";
 
@@ -204,7 +206,7 @@ export async function analyzePhoto({
   }
 
   return {
-    result: parsed,
+    result: { ...parsed, breedGuess: bareBreed(parsed.breedGuess) },
     model: response.model,
     analyzedAt: new Date(),
   };
