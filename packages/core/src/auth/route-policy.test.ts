@@ -4,6 +4,7 @@ import { test } from "node:test";
 import {
   HOME_PATH,
   SIGN_IN_PATH,
+  isProtectedPath,
   isPublicPath,
   safeNextPath,
 } from "./route-policy.ts";
@@ -29,9 +30,23 @@ test("로그인 없이 열리는 경로는 막지 않는다", () => {
   }
 });
 
-test("계정이 있어야 뜻이 통하는 화면은 보호한다", () => {
-  for (const path of ["/settings", "/notifications"]) {
-    assert.equal(isPublicPath(path), false, path);
+test("계정에 묶인 기록만 보호한다", () => {
+  for (const path of [
+    "/mine/profile",
+    "/mine/pets",
+    "/mine/pets/new",
+    "/mine/reports",
+    "/mine/notifications",
+    "/mine/lost/abc",
+  ]) {
+    assert.equal(isProtectedPath(path), true, path);
+  }
+});
+
+test("없는 주소는 로그인으로 보내지 않는다", () => {
+  // 로그인 벽이 404 를 가리면 오타를 친 사람이 로그인 화면을 봄
+  for (const path of ["/not-a-real-page", "/settings", "/notifications", "/mine-x"]) {
+    assert.equal(isProtectedPath(path), false, path);
   }
 });
 
@@ -42,9 +57,11 @@ test("커뮤니티는 읽기가 열려 있다", () => {
   assert.equal(isPublicPath("/community/abc"), true);
 });
 
-test("루트를 접두사로 다뤄 모든 경로가 열리지 않는다", () => {
-  // "/" 가 접두사로 쓰이면 보호 경로까지 통과해 로그인 벽이 통째로 사라짐
-  assert.equal(isPublicPath("/settings"), false);
+test("보호 접두사가 이름만 겹치는 경로를 삼키지 않는다", () => {
+  // "/mine/pets" 가 "/mine/petsitter" 까지 걸면 엉뚱한 화면에 로그인 벽이 섬
+  assert.equal(isProtectedPath("/mine/petsitter"), false);
+  assert.equal(isProtectedPath("/mine"), false);
+  assert.equal(isPublicPath("/mine"), true);
 });
 
 test("다른 출처로 되돌려 보내지 않는다", () => {

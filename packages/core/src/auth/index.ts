@@ -23,6 +23,7 @@ export {
   HOME_PATH,
   NEXT_PARAM,
   SIGN_IN_PATH,
+  isProtectedPath,
   isPublicPath,
   safeNextPath,
 } from "./route-policy";

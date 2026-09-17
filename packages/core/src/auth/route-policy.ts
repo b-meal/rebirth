@@ -11,56 +11,38 @@ export const AUTH_CALLBACK_PATH = "/auth/callback";
 export const NEXT_PARAM = "next";
 
 /**
- * 로그인 없이 열리는 경로
- * 길에서 동물을 발견한 사람이 제보를 마칠 때까지 로그인을 요구하지 않는 것이 기준
- * 계정이 있어야 뜻이 통하는 화면만 보호 대상으로 남김
+ * 로그인을 요구하는 경로
+ * 공개 목록을 세던 방식은 새 화면을 빠뜨리면 로그인 벽이 서고
+ * 없는 주소까지 로그인으로 보내 404 를 가렸음
+ * 계정이 있어야 뜻이 통하는 화면만 여기 적음
  */
-const PUBLIC_PREFIXES = [
-  // 홈은 둘러보는 자리. 로그인은 계정 기능을 누를 때 요구함
-  HOME_PATH,
-  SIGN_IN_PATH,
-  "/auth",
-  // 공개 상세와 공유 카드. 받은 사람이 계정 없이 열어야 함
-  "/r",
-  // 익명 제보와 실종 신고. 기존 익명 세션 경로를 그대로 둠
-  "/report",
-  "/lost",
-  // 지도와 목록 둘러보기
-  "/search",
-  "/reports",
-  // 커뮤니티. 글쓰기는 시트라 주소가 없고 저장할 때 서버 액션이 계정을 확인함
-  "/community",
-  // 계정 화면은 로그인 권유도 겸하므로 열어 두고 안에서 갈라 보여 줌
-  "/mine",
-  // 보호·구조 기관 찾기. 급한 사람이 로그인부터 하게 만들지 않음
-  "/shelters",
-  // 안내와 법적 고지
-  "/guide",
-  "/privacy",
-  "/terms",
-  "/support",
-  // 디자인 카탈로그는 개발 참고 화면
-  "/design",
+const PROTECTED_PREFIXES = [
+  // 계정에 묶인 기록. /mine 자체는 로그인 권유를 겸해 열어 둠
+  "/mine/profile",
+  "/mine/pets",
+  "/mine/reports",
+  "/mine/notifications",
+  "/mine/lost",
 ] as const;
 
-/** "/" 를 접두사로 다루면 모든 경로가 통과하므로 루트만 정확히 일치시킴 */
+/** "/" 를 접두사로 다루면 모든 경로가 걸리므로 루트만 정확히 일치시킴 */
 function matches(pathname: string, prefix: string): boolean {
   if (prefix === HOME_PATH) return pathname === HOME_PATH;
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
 /**
- * 공개 구역 안에 난 예외
- * 접두사 목록만으로는 "열린 구역 안의 닫힌 화면"을 표현할 수 없어 따로 둠
- * 커뮤니티 글쓰기가 여기 있었으나 시트로 바뀌어 화면 주소가 없어짐
- * 그런 화면은 이제 서버 액션이 첫 줄에서 스스로 막음
+ * 로그인이 필요한 경로인지
+ * 화면과 서버 액션이 데이터에 가까운 곳에서 다시 확인하므로 여기는 낙관적 차단임
+ * 목록에 없는 주소는 통과시켜 Next 가 404 를 내게 둠
  */
-const PROTECTED_PATHS: readonly string[] = []
+export function isProtectedPath(pathname: string): boolean {
+  return PROTECTED_PREFIXES.some((prefix) => matches(pathname, prefix));
+}
 
-/** 로그인 없이 열리는 경로인지. 목록에 없으면 보호 대상 */
+/** 로그인 없이 열리는 경로인지 */
 export function isPublicPath(pathname: string): boolean {
-  if (PROTECTED_PATHS.some((path) => matches(pathname, path))) return false;
-  return PUBLIC_PREFIXES.some((prefix) => matches(pathname, prefix));
+  return !isProtectedPath(pathname);
 }
 
 /**
