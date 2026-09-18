@@ -583,8 +583,15 @@ body .seed-snackbar__root {
 
 /* SEED 항목 라벨에는 줄바꿈 방지가 없어 자리가 모자라면 마지막 글자가 다음 줄로 넘어감
    기간은 한 줄로 읽혀야 하는 짧은 말이라 이 목록에서만 막음 */
-.rebirth-period-options .seed-select-item__label {
+.rebirth-period-options .seed-select-item__label,
+.rebirth-nowrap-options .seed-select-item__label {
   white-space: nowrap;
+}
+
+/* 검색 화면의 자주 찾는 조건 셀렉트. 트리거가 width 100% 라 폭을 정하는 자리가 필요함
+   자주 찾는 조건 이 한 줄에 들어오는 폭 */
+.rebirth-shortcut-select {
+  width: 10rem;
 }
 
 .rebirth-scroll-row {

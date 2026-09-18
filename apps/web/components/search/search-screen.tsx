@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Box, Divider, Grid, HStack, Icon, Text, VStack } from "@seed-design/react";
 import {
   IconCameraLine,
@@ -14,6 +14,7 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
+import { SelectContent, SelectItem, SelectRoot, SelectTrigger } from "seed-design/ui/select";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
@@ -31,7 +32,8 @@ import { TrendingChart, type TrendingItem } from "@/components/search/trending-c
 const RECENT_KEY = "rebirth:recent-search";
 const RECENT_MAX = 8;
 
-// 자주 찾는 조건을 한 번에 거는 지름길
+// 자주 찾는 조건을 한 번에 거는 지름길. 칩으로 늘어놓으면 한 줄을 더 차지해 셀렉트에 접어 둠
+// params 가 셀렉트 값이고 주소의 조건이 이 중 하나와 같으면 그 항목이 골라진 채로 보임
 const SHORTCUTS = [
   { label: "개", params: "animalType=dog" },
   { label: "고양이", params: "animalType=cat" },
@@ -39,6 +41,9 @@ const SHORTCUTS = [
   { label: "흰색", params: "colors=%ED%9D%B0%EC%83%89" },
   { label: "갈색", params: "colors=%EA%B0%88%EC%83%89" },
 ] as const;
+
+// 셀렉트는 끄는 자리가 없어 조건을 푸는 항목을 하나 둠
+const SHORTCUT_NONE = "none";
 
 // 발견 제보와 실종 신고는 찾는 말이 달라 목록과 문구를 가르는 기준
 const SEARCH_KINDS = [
@@ -140,15 +145,35 @@ export function SearchScreen({
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // 탭은 화면이 스스로 바꿈. 서버를 다시 부르면 차트와 주변 제보까지 다시 받느라 한참 뒤에 반응함
+  // 조건이 없으면 문구만 바뀌고, 조건이 있으면 결과 첫 쪽만 목록 API 로 다시 받음
+  const [activeKind, setActiveKind] = useState<SearchKind>(kind);
+  const [page, setPage] = useState<{ items: ReportCardItem[]; cursor: string | null } | null>(
+    null,
+  );
+  const [switching, setSwitching] = useState(false);
+  const switchTurn = useRef(0);
+
   // 조건을 바꾸면 서버가 새 쪽을 그려 보냄. 쌓아 둔 것을 비우지 않으면 옛 결과가 남음
-  const drawn = `${resultCursor ?? ""}|${results?.length ?? -1}|${params.toString()}`;
+  // kind 는 주소만 바꿔도 달라지므로 빼고 봄. 서버가 다시 그렸는지는 나머지 조건으로 앎
+  const rest = new URLSearchParams(params.toString());
+  rest.delete("kind");
+  const drawn = `${kind}|${resultCursor ?? ""}|${results?.length ?? -1}|${rest.toString()}`;
   const [seen, setSeen] = useState(drawn);
   if (seen !== drawn) {
     setSeen(drawn);
     setExtra([]);
     setCursor(resultCursor);
     setLoadError(null);
+    setPage(null);
+    setActiveKind(kind);
+    setSwitching(false);
   }
+  // 응답이 돌아왔을 때 서버가 그사이 새로 그렸는지 보는 기준. 렌더 중에는 ref 를 만지지 않음
+  const drawnRef = useRef(drawn);
+  useEffect(() => {
+    drawnRef.current = drawn;
+  }, [drawn]);
 
   const loadMore = useCallback(async () => {
     if (!cursor) return;
@@ -156,6 +181,7 @@ export function SearchScreen({
     setLoadError(null);
     try {
       const query = new URLSearchParams(params.toString());
+      query.set("kind", activeKind);
       query.set("cursor", cursor);
       const response = await fetch(`/api/reports?${query}`);
       if (!response.ok) throw new Error("load failed");
@@ -167,7 +193,47 @@ export function SearchScreen({
     } finally {
       setLoading(false);
     }
-  }, [cursor, params]);
+  }, [cursor, params, activeKind]);
+
+  const switchKind = (next: SearchKind) => {
+    if (next === activeKind) return;
+    setActiveKind(next);
+    // 새로고침과 뒤로가기가 고른 탭을 기억하도록 주소만 바꿈. 서버 컴포넌트는 다시 돌지 않음
+    const url = new URLSearchParams(params.toString());
+    url.set("kind", next);
+    window.history.replaceState(window.history.state, "", `/search?${url}`);
+    // 조건이 없으면 결과 절이 없어 문구만 바뀜
+    if (results === null) return;
+
+    const turn = ++switchTurn.current;
+    const startedOn = drawn;
+    // 그사이 다른 탭을 눌렀거나 서버가 새로 그렸으면 뒤진 응답임
+    const stale = () => switchTurn.current !== turn || drawnRef.current !== startedOn;
+    setSwitching(true);
+    setLoadError(null);
+    void (async () => {
+      try {
+        const response = await fetch(`/api/reports?${url}`);
+        if (!response.ok) throw new Error("switch failed");
+        const data = (await response.json()) as ResultResponse;
+        if (stale()) return;
+        setPage({ items: toCards(data.items), cursor: data.nextCursor });
+        setExtra([]);
+        setCursor(data.nextCursor);
+      } catch {
+        if (!stale()) setLoadError("목록을 바꾸지 못했어요. 다시 눌러 주세요");
+      } finally {
+        if (!stale()) setSwitching(false);
+      }
+    })();
+  };
+
+  // 화면을 떠나면 늦게 온 응답이 상태를 건드리지 않음
+  useEffect(() => {
+    return () => {
+      switchTurn.current += 1;
+    };
+  }, []);
 
   const sentinel = useInfiniteScroll({
     // 실패하면 관찰을 끊음. 자동으로 되풀이하면 같은 오류를 계속 부름
@@ -177,7 +243,7 @@ export function SearchScreen({
   });
 
   // 조건이 없으면 결과 절 자체를 그리지 않아 이어 읽은 것도 없음
-  const rows = results ? [...results, ...extra] : null;
+  const rows = results ? [...(page?.items ?? results), ...extra] : null;
 
   // 서버 렌더에는 저장소가 없어 빈 목록으로 시작함
   const stored = useSyncExternalStore(subscribeRecent, recentSnapshot, () => EMPTY);
@@ -190,14 +256,26 @@ export function SearchScreen({
   }, [stored]);
 
   // 목적이 바뀌어도 조건을 잃지 않게 주소마다 kind 를 끌고 감
-  const mode = SEARCH_KINDS.find((item) => item.key === kind) ?? SEARCH_KINDS[0];
+  const mode = SEARCH_KINDS.find((item) => item.key === activeKind) ?? SEARCH_KINDS[0];
+
+  // 주소의 조건이 지름길 하나와 똑같을 때만 그 항목을 보임. 색을 둘 고른 것 같은 조합은 빈 칸으로 둠
+  const shortcut =
+    SHORTCUTS.find((item) => {
+      const [name, value] = item.params.split("=");
+      return params.get(name!) === decodeURIComponent(value!);
+    })?.params ?? SHORTCUT_NONE;
+
+  const pickShortcut = (value: string) => {
+    const tail = value === SHORTCUT_NONE ? "" : `&${value}`;
+    router.push(`/search?kind=${activeKind}${tail}`);
+  };
 
   const submit = (next: string) => {
     const text = next.trim();
     if (!text) return;
 
     writeRecent([text, ...recent.filter((item) => item !== text)].slice(0, RECENT_MAX));
-    router.push(`/search?kind=${kind}&q=${encodeURIComponent(text)}`);
+    router.push(`/search?kind=${activeKind}&q=${encodeURIComponent(text)}`);
   };
 
   const dropRecent = (text: string) => {
@@ -282,40 +360,44 @@ export function SearchScreen({
                 key={item.key}
                 size="medium"
                 // Chip.Button 에 선택 상태 prop 이 없어 variant 와 aria-pressed 로 대신함
-                variant={item.key === kind ? "solid" : "outlineWeak"}
-                aria-pressed={item.key === kind}
-                onClick={() =>
-                  router.push(
-                    `/search?kind=${item.key}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
-                  )
-                }
+                variant={item.key === activeKind ? "solid" : "outlineWeak"}
+                aria-pressed={item.key === activeKind}
+                onClick={() => switchKind(item.key)}
               >
                 <Chip.Label>{item.label}</Chip.Label>
               </Chip.Button>
             ))}
           </HStack>
 
-          <Box className="rebirth-scroll-row" mx="-x4" px="x4">
-            <HStack gap="spacingX.betweenChips">
-              {SHORTCUTS.map((item) => (
-                <Chip.Button
-                  key={item.label}
-                  size="medium"
-                  onClick={() => router.push(`/search?kind=${kind}&${item.params}`)}
-                >
-                  <Chip.Label>{item.label}</Chip.Label>
-                </Chip.Button>
-              ))}
-            </HStack>
+          {/* 탭 칩 아래 같은 왼쪽 선에 앉는 보조 조작이라 목록 화면의 기간 셀렉트와 같은 medium 을 씀
+              크기는 Root 에 주어 트리거와 펼친 목록이 같은 치수를 씀 */}
+          <Box className="rebirth-shortcut-select">
+            <SelectRoot
+              size="medium"
+              value={[shortcut]}
+              onValueChange={([picked]) => pickShortcut(picked!)}
+            >
+              <SelectTrigger aria-label="자주 찾는 조건" placeholder="자주 찾는 조건" />
+              <SelectContent className="rebirth-nowrap-options">
+                <SelectItem value={SHORTCUT_NONE} label="조건 없음" />
+                {SHORTCUTS.map((item) => (
+                  <SelectItem key={item.params} value={item.params} label={item.label} />
+                ))}
+              </SelectContent>
+            </SelectRoot>
           </Box>
         </SectionCard>
 
         {rows ? (
           <SectionCard gap="x3">
-            <HStack justify="space-between" align="center">
-              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                검색 결과
-              </Text>
+            <HStack justify="space-between" align="center" aria-busy={switching}>
+              <HStack gap="x2" align="center">
+                <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+                  검색 결과
+                </Text>
+                {/* 탭을 바꿔 새 쪽을 받는 동안 옛 목록을 그대로 두고 표시만 붙임. 비우면 화면이 튐 */}
+                {switching ? <ProgressCircle size="24" tone="neutral" /> : null}
+              </HStack>
               {/* 더 남았으면 지금 그린 수가 전부가 아니라는 것을 함께 알림 */}
               <Text textStyle="t3Regular" color="fg.neutralMuted">
                 {rows.length}건{cursor ? " 이상" : ""}
@@ -328,7 +410,7 @@ export function SearchScreen({
                   조건과 맞는 제보가 없어요
                 </Text>
                 <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  {kind === "lost"
+                  {activeKind === "lost"
                     ? "이름이나 특징으로 다시 찾아보세요"
                     : "털색이나 동네처럼 짧은 말로 다시 찾아 주세요"}
                 </Text>
