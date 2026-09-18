@@ -112,6 +112,7 @@ SEED 가 제공하지 않고 이 앱에만 필요한 것만 `apps/web/components
 | `photo-field.tsx` | 압축 업로드 훅과 SEED ImageFrame 을 잇는 사진 입력 |
 | `photo-picker-input.tsx` | 후면 카메라 즉시 실행에 필요한 네이티브 file 입력 |
 | `place-search-field.tsx` | 카카오 장소 검색 결과를 SEED List 로 겹쳐 띄우는 검색창 |
+| `skeleton.tsx` | 레지스트리에 뼈대가 없어 직접 두는 값 대기 표시, 높이 기본값이 t3 한 줄 |
 
 새 화면을 만들 때 이 목록에 없는 것이 필요하면, 먼저 SEED 레지스트리를 확인하고 없을 때만 여기에 추가합니다.
 
