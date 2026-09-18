@@ -3,7 +3,12 @@
 import { useEffect, useState } from "react";
 import { Box, HStack, Icon, Text, VStack } from "@seed-design/react";
 import { IconMapLocationpinLine } from "@karrotmarket/react-monochrome-icon";
-import { LngLatBounds, Marker } from "maplibre-gl";
+import {
+  LngLatBounds,
+  Marker,
+  type GeoJSONSource,
+  type Map as MapLibreMap,
+} from "maplibre-gl";
 import { ActionButton } from "seed-design/ui/action-button";
 import {
   BottomSheetBody,
@@ -37,8 +42,14 @@ const KM_PER_LAT_DEGREE = 111.32;
 // 예측 원이 지도 테두리에 붙어 잘려 보이지 않게 두는 안쪽 여백
 const FIT_PADDING = 28;
 
-// 목격 지점이 서로 붙어 있을 때 과도하게 당겨지는 것 방지
-const FIT_MAX_ZOOM = 15;
+// 번호가 서로 겹치지 않을 만큼은 벌려야 해 미리보기 상한을 한 단계 올림
+const FIT_MAX_ZOOM = 16;
+
+// 선을 앞에서부터 그리는 시간
+const DRAW_MS = 1400;
+
+// 번호와 예측 원이 켜지는 시간
+const FADE_MS = 320;
 
 // 경로가 없을 때 한 화면에 주변 도로가 보이는 정도로만 당김
 const SPOT_ZOOM = 15;
@@ -46,36 +57,73 @@ const SPOT_ZOOM = 15;
 const CIRCLE_ID = "track-circle";
 const CIRCLE_EDGE_ID = "track-circle-edge";
 const LINE_ID = "track-line";
+const GUESS_ID = "track-guess";
 
-/** 이 글의 위치를 나타내는 주인 핀, 번호 없이 가장 크게 둠 */
+// 핀 공통, 흰 테와 그림자로 배경지도에서 떠 보이게 함
+const PIN_BASE = [
+  "display:flex",
+  "align-items:center",
+  "justify-content:center",
+  "box-sizing:border-box",
+  "font-weight:700",
+  "line-height:1",
+  "letter-spacing:-0.01em",
+  "border-radius:9999px",
+  "border:2.5px solid var(--seed-color-bg-layer-floating)",
+  "box-shadow:var(--seed-shadow-s2)",
+];
+
+/** 보호자가 마지막으로 본 곳, 무엇인지는 아래 타임라인이 말해 글자 없이 점으로 둠 */
 const ORIGIN_PIN = [
+  ...PIN_BASE,
   "width:20px",
   "height:20px",
-  "border-radius:9999px",
-  "background:var(--seed-color-bg-brand-solid)",
-  "border:3px solid var(--seed-color-bg-layer-floating)",
-  "box-shadow:0 0 0 8px var(--seed-color-bg-brand-weak)",
+  "background:var(--seed-color-bg-warning-solid)",
 ].join(";");
+
+/** MapLibre 가 겉 상자의 transform 으로 위치를 잡아 애니메이션은 속 상자에만 걺 */
+function mount(map: MapLibreMap, at: LatLng, inner: HTMLElement): Marker {
+  const shell = document.createElement("div");
+  shell.appendChild(inner);
+  return new Marker({ element: shell, anchor: "center" })
+    .setLngLat([at.lng, at.lat])
+    .addTo(map);
+}
+
+/** 마지막 구간이 향한 쪽을 가리키는 삼각형, 방위각만큼 돌려 붙임 */
+function arrowStyle(bearingDeg: number): string {
+  return [
+    "width:0",
+    "height:0",
+    "border-left:7px solid transparent",
+    "border-right:7px solid transparent",
+    "border-bottom:13px solid var(--seed-color-fg-neutral-subtle)",
+    "filter:drop-shadow(0 0 2.5px var(--seed-color-bg-layer-floating))",
+    "opacity:0",
+    `transform:rotate(${bearingDeg}deg) scale(0.4)`,
+    `transition:opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease`,
+  ].join(";");
+}
 
 /**
  * 번호 핀은 서로 붙어도 앞 번호가 읽히게 작게 두고 글자는 흰색으로 둠
  * fg.brandContrast 는 bg.brandSolid 보다 한 단계 진한 같은 색이라 숫자가 묻힘
+ * 마지막 목격에 테를 두르면 그 테가 앞 번호를 가려 방향 화살표로 대신 알림
  */
 function pinStyle(last: boolean): string {
+  const size = last ? 26 : 22;
   return [
-    "display:flex",
-    "align-items:center",
-    "justify-content:center",
-    "width:18px",
-    "height:18px",
-    "border-radius:9999px",
-    "font-size:10px",
-    "font-weight:700",
-    "line-height:1",
+    ...PIN_BASE,
+    `width:${size}px`,
+    `height:${size}px`,
+    `font-size:${last ? 12 : 11}px`,
     "background:var(--seed-color-bg-brand-solid)",
     "color:var(--seed-color-palette-static-white)",
-    "border:2px solid var(--seed-color-bg-layer-floating)",
-    last ? "box-shadow:0 0 0 6px var(--seed-color-bg-brand-weak)" : "",
+    // 가장 최근 목격만 한 치수 크게 두어 테를 덧대지 않고도 눈에 먼저 들어옴
+    last ? "background:var(--seed-color-bg-brand-solid-pressed)" : "",
+    "opacity:0",
+    "transform:scale(0.4)",
+    `transition:opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease`,
   ].join(";");
 }
 
@@ -106,7 +154,7 @@ export type TrackMapProps = {
   /** 시간순으로 이은 뒤따르는 목격, 마지막 원소가 가장 최근 */
   nodes?: TrackMapNode[];
   /** 다음 목격 예측 원, 마지막 이동을 방향으로 삼아 넓힌 자리 */
-  prediction?: { center: LatLng; radiusKm: number } | null;
+  prediction?: { center: LatLng; radiusKm: number; bearingDeg?: number } | null;
 };
 
 export function TrackMap({
@@ -129,7 +177,9 @@ export function TrackMap({
     // MapLibre 는 CSS 변수 문자열을 못 읽어 계산된 색 값을 꺼내 넘김
     const style = getComputedStyle(document.documentElement);
     const solid = style.getPropertyValue("--seed-color-bg-brand-solid").trim();
-    const weak = style.getPropertyValue("--seed-color-bg-brand-weak").trim();
+    // 예측은 확정된 목격과 같은 색을 쓰면 사실처럼 읽혀 무채색으로 내림
+    const guessLine = style.getPropertyValue("--seed-color-fg-neutral-subtle").trim();
+    const guessFill = style.getPropertyValue("--seed-color-bg-neutral-weak").trim();
 
     const bounds = new LngLatBounds();
     bounds.extend([origin.lng, origin.lat]);
@@ -148,7 +198,11 @@ export function TrackMap({
         id: CIRCLE_ID,
         type: "fill",
         source: CIRCLE_ID,
-        paint: { "fill-color": weak, "fill-opacity": 0.4 },
+        paint: {
+          "fill-color": guessFill,
+          "fill-opacity": 0,
+          "fill-opacity-transition": { duration: FADE_MS, delay: 0 },
+        },
       });
       // 끊긴 테두리로 그려 확정된 구역이 아니라 예상 범위임을 눈으로도 알림
       map.addLayer({
@@ -156,9 +210,10 @@ export function TrackMap({
         type: "line",
         source: CIRCLE_ID,
         paint: {
-          "line-color": solid,
-          "line-width": 2,
-          "line-opacity": 0.85,
+          "line-color": guessLine,
+          "line-width": 2.5,
+          "line-opacity": 0,
+          "line-opacity-transition": { duration: FADE_MS, delay: 0 },
           "line-dasharray": [3, 2],
         },
       });
@@ -167,16 +222,14 @@ export function TrackMap({
 
     // 주인 위치에서 시작해 뒤따르는 목격으로 이어 그림
     const path = [origin, ...nodes.map((node) => node.point)];
-    if (path.length > 1) {
+    const line = path.map((point) => [point.lng, point.lat] as [number, number]);
+    if (line.length > 1) {
       map.addSource(LINE_ID, {
         type: "geojson",
         data: {
           type: "Feature",
           properties: {},
-          geometry: {
-            type: "LineString",
-            coordinates: path.map((point) => [point.lng, point.lat]),
-          },
+          geometry: { type: "LineString", coordinates: line },
         },
       });
       map.addLayer({
@@ -184,26 +237,69 @@ export function TrackMap({
         type: "line",
         source: LINE_ID,
         layout: { "line-cap": "round", "line-join": "round" },
-        paint: { "line-color": solid, "line-width": 3, "line-dasharray": [2, 1.5] },
+        paint: { "line-color": solid, "line-width": 4 },
       });
     }
 
     const originPin = document.createElement("div");
     originPin.setAttribute("style", ORIGIN_PIN);
+    const pins: HTMLDivElement[] = [];
     const markers = [
-      new Marker({ element: originPin, anchor: "center" })
-        .setLngLat([origin.lng, origin.lat])
-        .addTo(map),
+      mount(map, origin, originPin),
       ...nodes.map((node, index) => {
         const pin = document.createElement("div");
         pin.setAttribute("style", pinStyle(index === nodes.length - 1));
         pin.textContent = String(index + 1);
+        pins.push(pin);
         bounds.extend([node.point.lng, node.point.lat]);
-        return new Marker({ element: pin, anchor: "center" })
-          .setLngLat([node.point.lng, node.point.lat])
-          .addTo(map);
+        return mount(map, node.point, pin);
       }),
     ];
+
+    const lastNode = nodes.at(-1);
+
+    // 마지막 목격에서 예측 중심까지는 아직 일어나지 않은 일이라 회색 점선으로 이음
+    if (prediction && lastNode) {
+      map.addSource(GUESS_ID, {
+        type: "geojson",
+        data: {
+          type: "Feature",
+          properties: {},
+          geometry: {
+            type: "LineString",
+            coordinates: [
+              [lastNode.point.lng, lastNode.point.lat],
+              [prediction.center.lng, prediction.center.lat],
+            ],
+          },
+        },
+      });
+      map.addLayer({
+        id: GUESS_ID,
+        type: "line",
+        source: GUESS_ID,
+        layout: { "line-cap": "round" },
+        paint: {
+          "line-color": guessLine,
+          "line-width": 2.5,
+          "line-opacity": 0,
+          "line-opacity-transition": { duration: FADE_MS, delay: 0 },
+          "line-dasharray": [2, 2],
+        },
+      });
+    }
+
+    let arrowPin: HTMLDivElement | null = null;
+    if (prediction && typeof prediction.bearingDeg === "number" && lastNode) {
+      arrowPin = document.createElement("div");
+      arrowPin.setAttribute("style", arrowStyle(prediction.bearingDeg));
+      arrowPin.dataset.spin = `rotate(${prediction.bearingDeg}deg) scale(1)`;
+      const head = {
+        lat: lastNode.point.lat + (prediction.center.lat - lastNode.point.lat) * 0.8,
+        lng: lastNode.point.lng + (prediction.center.lng - lastNode.point.lng) * 0.8,
+      };
+      markers.push(mount(map, head, arrowPin));
+    }
 
     // 주인 위치만 있으면 생성 시점 축척을 그대로 두어 과하게 당기지 않음
     if (nodes.length > 0 || ring) {
@@ -214,8 +310,94 @@ export function TrackMap({
       });
     }
 
+    const reveal = (element: HTMLElement) => {
+      element.style.opacity = "1";
+      element.style.transform = element.dataset.spin ?? "scale(1)";
+    };
+
+    const settle = () => {
+      for (const pin of pins) reveal(pin);
+      if (arrowPin) reveal(arrowPin);
+      if (ring) {
+        map.setPaintProperty(CIRCLE_ID, "fill-opacity", 0.55);
+        map.setPaintProperty(CIRCLE_EDGE_ID, "line-opacity", 0.9);
+      }
+      if (map.getLayer(GUESS_ID)) map.setPaintProperty(GUESS_ID, "line-opacity", 0.8);
+    };
+
+    // 손떨림 줄이기를 켠 사용자는 그리는 과정을 보지 않고 결과만 받음
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced || line.length < 2) {
+      settle();
+      return () => {
+        for (const marker of markers) marker.remove();
+        if (map.getLayer(LINE_ID)) map.removeLayer(LINE_ID);
+        if (map.getSource(LINE_ID)) map.removeSource(LINE_ID);
+        if (map.getLayer(CIRCLE_EDGE_ID)) map.removeLayer(CIRCLE_EDGE_ID);
+        if (map.getLayer(CIRCLE_ID)) map.removeLayer(CIRCLE_ID);
+        if (map.getSource(CIRCLE_ID)) map.removeSource(CIRCLE_ID);
+      };
+    }
+
+    /**
+     * 선을 앞에서부터 그려 목격이 이어진 순서를 눈으로 따라가게 함
+     * 선 끝이 지점에 닿는 순간 그 번호가 뜨고 마지막에 방향과 예측 원이 켜짐
+     */
+    const source = map.getSource(LINE_ID) as GeoJSONSource | undefined;
+    const spans = line.slice(1).map((point, index) => {
+      const from = line[index]!;
+      return Math.hypot(point[0] - from[0], point[1] - from[1]);
+    });
+    const total = spans.reduce((sum, span) => sum + span, 0);
+    let frame = 0;
+    const startedAt = performance.now();
+
+    const step = (now: number) => {
+      const ratio = Math.min((now - startedAt) / DRAW_MS, 1);
+      // 처음이 빠르고 끝이 느려 걸어간 느낌을 냄
+      const eased = 1 - (1 - ratio) ** 2;
+      let walked = eased * total;
+      const drawn: [number, number][] = [line[0]!];
+
+      for (let index = 0; index < spans.length; index += 1) {
+        const span = spans[index]!;
+        const next = line[index + 1]!;
+        if (walked >= span || span === 0) {
+          drawn.push(next);
+          walked -= span;
+          const pin = pins[index];
+          if (pin) reveal(pin);
+          continue;
+        }
+        const at = walked / span;
+        const from = line[index]!;
+        drawn.push([
+          from[0] + (next[0] - from[0]) * at,
+          from[1] + (next[1] - from[1]) * at,
+        ]);
+        break;
+      }
+
+      source?.setData({
+        type: "Feature",
+        properties: {},
+        geometry: { type: "LineString", coordinates: drawn },
+      });
+
+      if (ratio < 1) {
+        frame = requestAnimationFrame(step);
+        return;
+      }
+      settle();
+    };
+
+    frame = requestAnimationFrame(step);
+
     return () => {
+      cancelAnimationFrame(frame);
       for (const marker of markers) marker.remove();
+      if (map.getLayer(GUESS_ID)) map.removeLayer(GUESS_ID);
+      if (map.getSource(GUESS_ID)) map.removeSource(GUESS_ID);
       if (map.getLayer(LINE_ID)) map.removeLayer(LINE_ID);
       if (map.getSource(LINE_ID)) map.removeSource(LINE_ID);
       if (map.getLayer(CIRCLE_EDGE_ID)) map.removeLayer(CIRCLE_EDGE_ID);
@@ -300,7 +482,7 @@ export function TrackMap({
 
       <Text textStyle="t2Regular" color="fg.neutralSubtle">
         {traced
-          ? `큰 점이 마지막으로 본 곳이고 번호는 뒤따른 목격 순서예요. 끊긴 원은 다음에 있을 만한 자리이고, 제보자와 동물 보호를 위해 ${gridMeters}m 격자로 넓힌 위치라 정확한 지점이 아니에요`
+          ? `초록 실선은 실제로 목격된 자리를 이은 것이고 회색 점선과 원은 아직 확인되지 않은 추정이에요. 제보자와 동물 보호를 위해 ${gridMeters}m 격자로 넓힌 위치예요`
           : `제보자와 동물 보호를 위해 ${gridMeters}m 격자로 넓힌 위치예요`}
       </Text>
 

@@ -39,6 +39,7 @@ import { rememberView } from "@/components/mine/recent-views";
 import { LostOwnerPanel } from "./lost-owner-panel";
 import { TrackMap } from "./track-map";
 import { TrackSection } from "./track-section";
+import { TrackTimeline } from "./track-timeline";
 import { useTrack } from "./use-track";
 
 // 실종 신고 상세. 발견 제보와 같은 표에 담기지만 읽는 사람도 다음 행동도 달라 화면을 따로 둠
@@ -244,6 +245,13 @@ export function LostDetail({
               destinationName={report.areaName ?? "마지막 목격 위치"}
               nodes={searching ? (track?.nodes ?? []) : []}
               prediction={searching ? (track?.prediction ?? null) : null}
+            />
+          ) : null}
+          {/* 지도의 점과 번호가 어느 지역 어느 시각인지는 글로 한 번 더 읽어야 남음 */}
+          {location && searching && track ? (
+            <TrackTimeline
+              origin={{ areaName: report.areaName, occurredAt: report.occurredAt }}
+              nodes={track.nodes}
             />
           ) : null}
           {report.areaName ? (
