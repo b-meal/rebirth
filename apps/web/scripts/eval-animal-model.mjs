@@ -20,6 +20,15 @@ const ROOT = process.argv[2];
 const DIRS = process.argv.slice(3);
 const ANIMAL_MAX_INDEX = 397;
 
+// 자르는 자리와 집계는 lib/animal-model.ts 와 같아야 함. 한쪽만 고치면 평가가 배포본을 말하지 않음
+const CROP_BOXES = [
+  [0, 0, 1, 1],
+  [0, 0, 0.5, 0.5],
+  [0, 0.5, 0.5, 1],
+  [0.5, 0, 1, 0.5],
+  [0.5, 0.5, 1, 1],
+];
+
 await tf.setBackend("cpu");
 await tf.ready();
 
@@ -73,15 +82,30 @@ function report(run) {
   if (missed.length > 0) console.log(`   못 거른 것 ${missed.map((s) => s.name).join(", ")}`);
 }
 
+function centerSquare(width, height) {
+  if (width > height) {
+    const margin = (width - height) / 2 / width;
+    return [0, margin, 1, 1 - margin];
+  }
+  const margin = (height - width) / 2 / height;
+  return [margin, 0, 1 - margin, 1];
+}
+
 function score(model, pixels) {
   return tf.tidy(() => {
-    const normalized = tf.mul(tf.cast(pixels, "float32"), 1 / 255);
-    const resized = tf.image.resizeBilinear(normalized, [224, 224], true);
-    const batched = tf.reshape(resized, [-1, 224, 224, 3]);
-    const probs = tf.softmax(tf.slice(model.predict(batched), [0, 1], [-1, 1000])).dataSync();
-    let sum = 0;
-    for (let i = 0; i <= ANIMAL_MAX_INDEX; i += 1) sum += probs[i];
-    return sum;
+    const [height, width] = pixels.shape;
+    const boxes = [...CROP_BOXES, centerSquare(width, height)];
+    const normalized = tf.mul(tf.cast(tf.expandDims(pixels, 0), "float32"), 1 / 255);
+    const patches = tf.image.cropAndResize(normalized, boxes, boxes.map(() => 0), [224, 224]);
+    const probs = tf.softmax(tf.slice(model.predict(patches), [0, 1], [-1, 1000])).dataSync();
+    let best = 0;
+    for (let patch = 0; patch < boxes.length; patch += 1) {
+      let sum = 0;
+      const offset = patch * 1000;
+      for (let i = 0; i <= ANIMAL_MAX_INDEX; i += 1) sum += probs[offset + i];
+      if (sum > best) best = sum;
+    }
+    return best;
   });
 }
 

@@ -9,8 +9,9 @@ import type { PhotoItem } from "@/lib/image";
 // 판정은 알림일 뿐 다음 걸음을 막지 않음. 판정을 못 받으면 아무 말도 하지 않고 넘어감
 // 2단계의 초안 분석이 같은 것을 다시 보므로 여기서 놓쳐도 한 겹이 더 남아 있음
 //
-// 기기 모델이 준비돼 있으면 거기서 재고, 아니면 서버에 물음
+// 기기 모델이 통과라고 하면 거기서 끝내고, 거른다고 하거나 모델이 없으면 서버에 물음
 // 아이폰 실측으로 기기는 15ms, 서버는 726ms. 모델은 2.6MB 라 첫 방문에는 대개 서버가 받음
+// 표본 108 장에서 기기가 거른 것은 1 장이라 서버로 넘어가는 사진은 얼마 되지 않음
 
 export type PhotoVerdict = "checking" | "animal" | "not-animal" | "unknown";
 
@@ -64,13 +65,20 @@ async function askServer(photo: PhotoItem, signal: AbortSignal): Promise<PhotoVe
   }
 }
 
-/** 기기를 먼저 보고 안 되면 서버로 감. 어느 길로 갔는지 함께 돌려줌 */
+/**
+ * 기기를 먼저 보되 거른다고 할 때만 서버에 한 번 더 물음. 어느 길로 갔는지 함께 돌려줌
+ *
+ * 기기 모델은 동물이 대야나 화분에 담긴 사진을 놓치는 일이 남아 있어
+ * 그 판정을 그대로 내보내면 모델을 받은 사람만 X 를 보고 첫 방문자는 통과하는 어긋남이 생김
+ * 거부만 서버로 넘기면 최종 답이 늘 서버 쪽이라 누가 보든 같고,
+ * 통과는 기기에서 끝나 대부분의 사진은 여전히 왕복 없이 판정됨
+ */
 async function ask(
   photo: PhotoItem,
   signal: AbortSignal,
 ): Promise<{ verdict: PhotoVerdict; source: VerdictSource }> {
   const device = await askDevice(photo);
-  if (device) return { verdict: device, source: "device" };
+  if (device === "animal") return { verdict: device, source: "device" };
   if (signal.aborted) return { verdict: "unknown", source: "device" };
   return { verdict: await askServer(photo, signal), source: "server" };
 }
