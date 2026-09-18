@@ -175,14 +175,12 @@ export function RescueRequest({ prefill }: { prefill?: RescuePrefill | null }) {
           </VStack>
         </form>
 
-        {/* 제보 상세에서 온 사람은 그 화면에서 이미 기관 목록을 지나옴
-            여기서 또 기관 찾기로 보내면 방금 있던 자리로 되돌리는 길만 늘어남 */}
+        {/* 상세에서 온 사람도 부상 제보는 기관 목록 위에서 눌러 와 지나치지 않았을 수 있음
+            여기 목록은 제보 근처 세 곳이 아니라 전체 찾기라 되돌리는 길이 아님 */}
         <HStack justify="center" gap="x2">
-          {prefill ? null : (
-            <ActionButton variant="ghost" size="medium" asChild>
-              <Link href="/shelters">가까운 기관 찾기</Link>
-            </ActionButton>
-          )}
+          <ActionButton variant="ghost" size="medium" asChild>
+            <Link href="/shelters">가까운 기관 찾기</Link>
+          </ActionButton>
           <ActionButton variant="ghost" size="medium" asChild>
             <a href={`tel:${RESCUE_PHONE}`}>직접 전화할게요</a>
           </ActionButton>
