@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/report-error";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { Box, HStack, Icon, Text, VStack } from "@seed-design/react";
@@ -196,7 +197,8 @@ export function CommentComposer({ reportId }: { reportId: string }) {
       setBody("");
       // 서버가 목록을 다시 렌더하게 함, 낙관적 추가와 실제 순서가 어긋나지 않음
       router.refresh();
-    } catch {
+    } catch (error) {
+      reportClientError("comment.create", error);
       notice("연결이 끊겼어요. 잠시 후 다시 시도해 주세요");
     } finally {
       setSending(false);

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { reportClientError } from "@/lib/report-error";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { HStack, Icon, ResponsivePair, Text, VStack } from "@seed-design/react";
@@ -84,7 +85,8 @@ export function LostOwnerPanel({
 
         setOpen(false);
         router.refresh();
-      } catch {
+      } catch (error) {
+        reportClientError("lost.updateStatus", error);
         setError("상태를 바꾸지 못했어요. 잠시 뒤 다시 눌러 주세요");
       }
     });

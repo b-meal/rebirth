@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/report-error";
 import { CARE_INPUT_LABEL, CONSENT_DOCUMENT_VERSION, type CareSituation } from "@rebirth/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -299,7 +300,8 @@ export function ReportForm() {
       reset();
       // 뒤로가기로 폼에 돌아가지 않게 push 가 아니라 replace 로 완료 화면에 들어감
       router.replace(`/r/${result.id}/done`);
-    } catch {
+    } catch (error) {
+      reportClientError("report.submit", error);
       setSubmitError("제보가 저장되지 않았어요. 입력한 내용은 그대로 있어요");
       setSubmitting(false);
     }
