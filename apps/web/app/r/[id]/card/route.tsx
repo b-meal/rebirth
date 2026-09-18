@@ -12,6 +12,7 @@ import {
   SIZE_LABEL,
   STATUS_LABEL,
   breedLabel,
+  describeAnimal,
   formatMonthDay,
   withObject,
 } from "@/lib/report-label";
@@ -26,12 +27,30 @@ const RATIOS = {
   og: { width: 1200, height: 630 },
 } as const;
 
-// 인스타그램 상하 UI 자리를 비우는 몫
-const STORY_PHOTO_SHARE = 0.56;
+// 위는 계정 이름, 아래는 답장 입력창이 덮는 인스타그램 UI 자리
+const STORY_SAFE_TOP = 180;
+const STORY_SAFE_BOTTOM = 220;
 
-// 위는 사진이 덮고 아래는 답장 입력창 자리라 글자와 QR 을 넣지 않는 여백
-const STORY_SAFE_TOP = 250;
-const STORY_SAFE_BOTTOM = 250;
+// 네 값을 더하면 1920. 비율로 나누면 본문이 넘쳐 QR 이 잘리므로 고정값으로 둠
+const STORY_PHOTO_H = 800;
+const STORY_PANEL_H = 1920 - STORY_SAFE_TOP - STORY_PHOTO_H - STORY_SAFE_BOTTOM;
+
+// 58px 두 줄이 들어가는 글자 수. 넘기면 말줄임해 본문 높이를 지킴
+const HEADLINE_MAX = 30;
+
+/* SEED 토큰 값. satori 는 CSS 변수를 못 읽어 팔레트에서 뽑은 값을 그대로 둠
+   gray 는 다크 모드 단계, carrot 은 globals.css 가 바꿔 둔 브랜드 원천 */
+const T = {
+  surface: "#16171b", // palette-gray-100
+  layer: "#1d2025", // palette-gray-200
+  line: "#2b2e35", // palette-gray-300
+  fgMuted: "#868b94", // palette-gray-700
+  fg: "#ffffff", // palette-static-white
+  brand: "#5ea740", // palette-carrot-700
+  brandInk: "#172f0c", // palette-carrot-1000
+  radius: 20, // radius-x5
+  round: 9999,
+} as const;
 
 // 사진만 퍼가도 무엇인지 읽히게 아래에 겹치는 글자 띠 높이
 const OG_BAND = 180;
@@ -45,6 +64,11 @@ const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 // 카카오톡 미리보기 크롤러 타임아웃 회피
 const CACHE_CONTROL = "public, max-age=300, s-maxage=600, stale-while-revalidate=86400";
+
+/** 정해진 글자 수를 넘으면 말줄임. 본문이 상자를 넘겨 아래가 잘리는 것 방지 */
+function clamp(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
 
 /** 사진이 없거나 서명이 실패하면 텍스트만으로 카드를 만듦 */
 async function loadPhotoUrl(id: string): Promise<string | null> {
@@ -120,7 +144,17 @@ export async function GET(
   const done = Boolean(lost && report && report.lifecycle !== "searching");
   const found = report?.lifecycle === "resolved";
 
+  // 품종을 단정하지 않고 털색과 크기로만 부르는 짧은 이름
+  const described = report
+    ? describeAnimal({
+        animalType: report.animalType,
+        colors: report.colors,
+        size: report.size,
+      })
+    : "";
+
   // 부르면 반응하는 것이 이름이라 이름 아는 신고는 이름이 가장 크게 읽히는 기준
+  // 이름이 없으면 생김새 문장 대신 짧은 호칭을 씀. 긴 문장은 두 줄을 넘겨 아래가 잘림
   const headline = done
     ? name
       ? found
@@ -131,8 +165,12 @@ export async function GET(
         : "지금은 찾지 않아요"
     : name
       ? `${withObject(name)} 찾고 있어요`
-      : (report?.appearance?.split("\n")[0] ??
-        (lost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
+      : lost
+        ? `${described || "반려동물"}을 찾고 있어요`
+        : `${described || "동물"}을 봤어요`;
+
+  // 생김새는 제목 아래 본문으로 내리고 길면 줄임
+  const looks = clamp(report?.appearance?.split("\n")[0]?.trim() ?? "", 38);
   const where = report?.areaName ?? "위치 미확인";
   // 보호 상황 없는 실종은 빈 값으로 두어 배지를 감춤
   // 며칠째 와 오늘 은 긁힌 그림에 굳어 시간이 지나면 거짓이 됨. 언제부터 찾는지는 날짜로만 적음
@@ -194,8 +232,18 @@ export async function GET(
     );
   }
 
-  const photoHeight = Math.round(height * STORY_PHOTO_SHARE);
   const qrDataUrl = await loadQrDataUrl(`${SITE}/r/${id}`);
+  const lastSeen = lost && !done ? `${where}에서 마지막으로 봤어요` : where;
+  const since =
+    lost && report && !done ? `${formatMonthDay(report.occurredAt)}부터 찾고 있어요` : "";
+  const cta = done
+    ? found
+      ? "도와주신 덕분이에요"
+      : "더 찾지 않아요"
+    : lost
+      ? "가족이 기다리고 있어요"
+      : "집으로 돌아갈 수 있게 도와주세요";
+  const badge = lost ? (done ? (found ? "찾음" : "종료") : "실종") : (STATUS_LABEL[report?.careSituation ?? "unknown"] ?? "발견");
 
   return new ImageResponse(
     (
@@ -205,125 +253,143 @@ export async function GET(
           height,
           display: "flex",
           flexDirection: "column",
-          background: "#0f1115",
-          color: "#ffffff",
+          background: T.surface,
+          color: T.fg,
         }}
       >
-        {photoUrl ? (
-          <div
-            style={{
-              display: "flex",
-              width,
-              height: photoHeight,
-              overflow: "hidden",
-            }}
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element -- satori 는 next/image 를 해석하지 못하고 원시 img 만 그림 */}
+        <div style={{ display: "flex", height: STORY_SAFE_TOP }} />
+
+        <div style={{ display: "flex", width, height: STORY_PHOTO_H, overflow: "hidden" }}>
+          {photoUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element -- satori 는 next/image 를 해석하지 못하고 원시 img 만 그림 */
             <img
               src={photoUrl}
               width={width}
-              height={photoHeight}
+              height={STORY_PHOTO_H}
               style={{ objectFit: "cover" }}
               alt=""
             />
-          </div>
-        ) : null}
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                width,
+                height: STORY_PHOTO_H,
+                background: T.layer,
+              }}
+            />
+          )}
+        </div>
 
         <div
           style={{
             display: "flex",
             flexDirection: "column",
-            flexGrow: 1,
-            justifyContent: "space-between",
+            width,
+            height: STORY_PANEL_H,
+            padding: `40px ${PADDING}px 0`,
             overflow: "hidden",
-            paddingTop: photoUrl ? 32 : STORY_SAFE_TOP,
-            paddingLeft: PADDING,
-            paddingRight: PADDING,
-            paddingBottom: STORY_SAFE_BOTTOM,
-            gap: 20,
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-              <div style={{ fontSize: 34, opacity: 0.7 }}>다시집</div>
-              {care ? (
-                <div
-                  style={{
-                    display: "flex",
-                    fontSize: 30,
-                    padding: "8px 22px",
-                    borderRadius: 999,
-                    background: "#2b6cff",
-                  }}
-                >
-                  {care}
-                </div>
-              ) : null}
-            </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+            <div style={{ fontSize: 32, fontWeight: 700, color: T.fgMuted }}>다시집</div>
+            {badge ? (
+              <div
+                style={{
+                  display: "flex",
+                  fontSize: 28,
+                  fontWeight: 700,
+                  padding: "7px 20px",
+                  borderRadius: T.round,
+                  background: T.brand,
+                  color: T.brandInk,
+                }}
+              >
+                {badge}
+              </div>
+            ) : null}
+          </div>
 
-            <div style={{ fontSize: 52, lineHeight: 1.2, fontWeight: 700 }}>
-              {headline}
-            </div>
+          <div style={{ display: "flex", marginTop: 26, fontSize: 58, fontWeight: 700, lineHeight: 1.24 }}>
+            {clamp(headline, HEADLINE_MAX)}
+          </div>
 
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {looks ? (
+            <div
+              style={{
+                display: "flex",
+                marginTop: 16,
+                fontSize: 30,
+                lineHeight: 1.4,
+                color: T.fgMuted,
+              }}
+            >
+              {looks}
+            </div>
+          ) : null}
+
+          {chips.length ? (
+            <div style={{ display: "flex", marginTop: 22, gap: 10 }}>
               {chips.map((chip) => (
                 <div
                   key={chip}
                   style={{
                     display: "flex",
-                    fontSize: 28,
+                    fontSize: 26,
                     padding: "8px 18px",
-                    borderRadius: 999,
-                    border: "2px solid rgba(255,255,255,0.28)",
+                    borderRadius: T.round,
+                    background: T.layer,
+                    color: T.fgMuted,
                   }}
                 >
                   {chip}
                 </div>
               ))}
             </div>
-          </div>
+          ) : null}
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ fontSize: 34, opacity: 0.75 }}>
-              {lost && !done ? `${where}에서 마지막으로 봤어요` : where}
+          <div style={{ display: "flex", marginTop: 30, width: "100%", height: 1, background: T.line }} />
+
+          <div style={{ display: "flex", flexDirection: "column", marginTop: 26 }}>
+            <div style={{ display: "flex", fontSize: 34, fontWeight: 700, lineHeight: 1.3 }}>
+              {lastSeen}
             </div>
-            {/* 실종은 기다리는 사람이 있어 집이 아니라 그 사람에게 돌아가는 일임 */}
-            <div style={{ fontSize: 44, fontWeight: 700, lineHeight: 1.25 }}>
-              {done
-                ? found
-                  ? "도와주신 덕분이에요"
-                  : "더 찾지 않아요"
-                : lost
-                  ? "가족이 기다리고 있어요"
-                  : "집으로 돌아갈 수 있게 도와주세요"}
-            </div>
-            {qrDataUrl ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- satori 는 next/image 를 해석하지 못하고 원시 img 만 그림 */}
-                <img src={qrDataUrl} width={QR_SIZE} height={QR_SIZE} alt="" />
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 10,
-                    fontSize: 28,
-                    opacity: 0.68,
-                  }}
-                >
-                  <div>사진으로 찍어 열어 보세요</div>
-                  {/* 끝난 신고에는 목격을 부르지 않아 헛걸음 방지 */}
-                  {done ? null : (
-                    <div>
-                      {name
-                        ? `${withObject(name)} 봤다면 알려 주세요`
-                        : "이 동물을 봤다면 알려 주세요"}
-                    </div>
-                  )}
-                </div>
+            {since ? (
+              <div style={{ display: "flex", marginTop: 8, fontSize: 28, color: T.fgMuted }}>
+                {since}
               </div>
             ) : null}
           </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 24, marginTop: 30 }}>
+            {qrDataUrl ? (
+              <div
+                style={{
+                  display: "flex",
+                  padding: 10,
+                  borderRadius: T.radius,
+                  background: T.fg,
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- satori 는 next/image 를 해석하지 못하고 원시 img 만 그림 */}
+                <img src={qrDataUrl} width={QR_SIZE} height={QR_SIZE} alt="" />
+              </div>
+            ) : null}
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", fontSize: 38, fontWeight: 700, lineHeight: 1.25 }}>
+                {cta}
+              </div>
+              {/* 끝난 신고에는 목격을 부르지 않아 헛걸음 방지 */}
+              {done ? null : (
+                <div style={{ display: "flex", fontSize: 27, color: T.fgMuted }}>
+                  QR 을 찍으면 목격 제보 창이 바로 열려요
+                </div>
+              )}
+            </div>
+          </div>
         </div>
+
+        <div style={{ display: "flex", height: STORY_SAFE_BOTTOM }} />
       </div>
     ),
     { width, height, headers: { "Cache-Control": CACHE_CONTROL } },
