@@ -198,19 +198,25 @@ export function ReportCapture({
     return (
       <>
         <ScreenBody gap="x8">
-          <VStack align="stretch" gap="x2">
-            <Box height="x1" borderRadius="full" bg="bg.neutralWeak" overflowX="hidden">
-              <Box
-                height="x1"
-                borderRadius="full"
-                bg="bg.brandSolid"
-                width={`${(step / total) * 100}%`}
-              />
-            </Box>
-            <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {step} / {total}, {label}
-            </Text>
-          </VStack>
+          {/* 몇 단계인지는 막대가 보여 주므로 글자로 겹쳐 쓰지 않고 읽어 주는 이름에만 남김 */}
+          <Box
+            height="x1"
+            borderRadius="full"
+            bg="bg.neutralWeak"
+            overflowX="hidden"
+            role="progressbar"
+            aria-valuenow={step}
+            aria-valuemin={1}
+            aria-valuemax={total}
+            aria-label={`${step} / ${total}, ${label}`}
+          >
+            <Box
+              height="x1"
+              borderRadius="full"
+              bg="bg.brandSolid"
+              width={`${(step / total) * 100}%`}
+            />
+          </Box>
 
           <Section gap="x2_5" mt="x5">
             <Text as="h2" textStyle="t8Bold" color="fg.neutral">
@@ -221,18 +227,20 @@ export function ReportCapture({
             </Text>
           </Section>
 
+          {/* 세 줄 모두 한 줄짜리 문구라 번호와 글을 가운데로 맞춰 눈높이를 같게 둠 */}
           <VStack align="stretch" gap="x3_5">
             {TIPS.map((tip, index) => (
-              <HStack key={tip} gap="x2_5" align="flex-start">
+              <HStack key={tip} gap="x2_5" align="center">
                 <VStack
                   align="center"
                   justify="center"
-                  width="x5_5"
-                  height="x5_5"
+                  flexShrink={0}
+                  width="x6"
+                  height="x6"
                   borderRadius="full"
-                  bg="bg.neutralWeak"
+                  bg="bg.brandWeak"
                 >
-                  <Text textStyle="t2Bold" color="fg.neutralSubtle">
+                  <Text textStyle="t2Bold" color="fg.brand">
                     {index + 1}
                   </Text>
                 </VStack>

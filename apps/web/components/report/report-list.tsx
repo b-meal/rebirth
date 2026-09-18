@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AspectRatio, Box, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
@@ -10,9 +10,11 @@ import { LIST_PERIOD_DAYS } from "@rebirth/types";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
 
 import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
 import { Badge } from "@/components/ui/badge";
@@ -165,7 +167,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
     });
   };
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
     if (!cursor) return;
     setLoadingMore(true);
     setLoadError(null);
@@ -179,11 +181,18 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
       setCursor(data.nextCursor);
     } catch {
       // 자동으로 다시 부르지 않고 사용자가 누를 때만 재시도함
-      setLoadError("더 불러오지 못했어요. 다시 시도해 주세요");
+      setLoadError("더 불러오지 못했어요. 다시 눌러 주세요");
     } finally {
       setLoadingMore(false);
     }
-  };
+  }, [cursor, params]);
+
+  // 끝에 닿기 전에 다음 쪽을 미리 불러 둠. 실패한 뒤에는 손으로 누를 때만 다시 부름
+  const sentinel = useInfiniteScroll({
+    hasMore: Boolean(cursor) && !loadError,
+    loading: loadingMore,
+    onLoad: loadMore,
+  });
 
   const rows = [...items, ...extra];
   const filtered = Boolean(animalType) || days !== LIST_PERIOD_DAYS[0];
@@ -258,18 +267,33 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
           </VStack>
         )}
 
-        {loadError ? <Callout tone="critical" description={loadError} /> : null}
+        {/* 실패했을 때만 손으로 다시 부름. 자동으로 되풀이하면 같은 오류를 계속 부름 */}
+        {loadError ? (
+          <VStack align="stretch" gap="x3">
+            <Callout tone="critical" description={loadError} />
+            <ActionButton
+              variant="neutralOutline"
+              size="large"
+              loading={loadingMore}
+              onClick={loadMore}
+            >
+              다시 시도
+            </ActionButton>
+          </VStack>
+        ) : null}
 
-        {cursor ? (
-          <ActionButton
-            variant="neutralOutline"
-            size="large"
-            loading={loadingMore}
-            onClick={loadMore}
-          >
-            더 보기
-          </ActionButton>
-        ) : rows.length > 0 ? (
+        {/* 목록 끝에 닿기 전에 다음 쪽을 미리 부르는 표식
+            보이지 않지만 자리를 차지해야 관찰자가 걸림 */}
+        {cursor && !loadError ? <Box ref={sentinel} height="x1" /> : null}
+
+        {/* 불러오는 동안만 표시를 둠. 미리 불러 두면 대개 보이지 않고 지나감 */}
+        {loadingMore && !loadError ? (
+          <HStack justify="center" py="x4">
+            <ProgressCircle size="24" tone="neutral" />
+          </HStack>
+        ) : null}
+
+        {!cursor && rows.length > 0 ? (
           <Text textStyle="t2Regular" color="fg.neutralSubtle" align="center">
             마지막 제보까지 다 봤어요
           </Text>
