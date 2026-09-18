@@ -1,7 +1,7 @@
 "use client";
 
 import type { AnalyzeResult, CareSituation } from "@rebirth/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { PhotoItem } from "@/lib/image";
 
@@ -113,9 +113,13 @@ export function useReportDraft(): UseReportDraft {
   const [draft, setDraft] = useState<ReportDraft>(emptyDraft);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
 
+  // 복원보다 저장이 먼저 돌면 빈 초안이 저장값을 덮어써 복원이 늘 무효가 됨. 복원 뒤부터 저장
+  const hydrated = useRef(false);
+
   const restore = useCallback(() => {
     const stored = readStored();
     if (stored) setDraft(stored);
+    hydrated.current = true;
   }, []);
 
   useEffect(() => {
@@ -125,6 +129,7 @@ export function useReportDraft(): UseReportDraft {
   }, [restore]);
 
   useEffect(() => {
+    if (!hydrated.current) return;
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
     } catch {
