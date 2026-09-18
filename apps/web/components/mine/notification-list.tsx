@@ -6,6 +6,7 @@ import { Box, HStack, ImageFrame, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
+import { ResultSection } from "seed-design/ui/result-section";
 import type { AnimalType } from "@rebirth/types";
 
 import { markNotificationsRead, unsubscribeArea } from "@/app/mine/notifications/actions";
@@ -112,38 +113,52 @@ export function NotificationList({
   const markOpened = (id: string) =>
     setOpened((prev) => (prev.includes(id) ? prev : [...prev, id]));
 
+  // 받을 것도 구독한 곳도 없는 첫 방문
+  // 빈 절을 둘로 나눠 세우면 같은 말을 두 번 하고 갈 곳은 알려 주지 않음
+  // 한 덩어리로 모아 가운데 세우고 여기서 바로 출발할 단추 하나만 둠
+  if (areas.length === 0 && matches.length === 0 && rows.length === 0) {
+    return (
+      <Screen bg="bg.layerBasement">
+        <AppHeader title="알림" />
+        <ResultSection
+          size="large"
+          title="아직 받을 알림이 없어요"
+          description="동네를 구독하면 그 동네에 올라온 새 제보를 여기로 모아 드려요"
+          primaryActionProps={{
+            asChild: true,
+            size: "large",
+            // 구독은 제보를 열어야 누를 수 있어 목록으로 보냄
+            children: <Link href="/reports">발견 제보 둘러보기</Link>,
+          }}
+        />
+      </Screen>
+    );
+  }
+
   return (
     <Screen bg="bg.layerBasement">
       <AppHeader title="알림" />
 
       <VStack align="stretch" grow={1} gap="x2">
-        <SectionCard gap="x3">
-          <HStack justify="space-between" align="center">
-            <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-              알림 받는 동네
-            </Text>
-            <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {areas.length}개
-            </Text>
-          </HStack>
-
-          {areas.length === 0 ? (
-            <VStack align="stretch" gap="x1">
-              <Text textStyle="t3Bold" color="fg.neutral">
-                아직 알림 받는 동네가 없어요
+        {/* 구독한 곳이 없으면 0 만 남아 알려 주는 것이 없어 절째로 빼둠 */}
+        {areas.length > 0 ? (
+          <SectionCard gap="x3">
+            <HStack justify="space-between" align="center">
+              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+                알림 받는 동네
               </Text>
               <Text textStyle="t3Regular" color="fg.neutralMuted">
-                제보를 열고 &lsquo;이 동네 알림 받기&rsquo;를 누르면 새 제보를 여기에 모아 드려요
+                {areas.length}개
               </Text>
-            </VStack>
-          ) : (
+            </HStack>
+
             <VStack align="stretch" gap="x2">
               {areas.map((area) => (
                 <AreaRow key={area.areaCode} area={area} />
               ))}
             </VStack>
-          )}
-        </SectionCard>
+          </SectionCard>
+        ) : null}
 
         {matches.length > 0 ? (
           <SectionCard gap="x3">
@@ -170,6 +185,8 @@ export function NotificationList({
           </SectionCard>
         ) : null}
 
+        {/* 구독한 곳도 쌓인 것도 없으면 빈 절만 남아 확인할 후보 를 아래로 밀어냄 */}
+        {areas.length > 0 || rows.length > 0 ? (
         <SectionCard gap="x3" grow={1}>
           <Text as="h2" textStyle="t4Bold" color="fg.neutral">
             새 제보
@@ -177,9 +194,7 @@ export function NotificationList({
 
           {rows.length === 0 ? (
             <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {areas.length === 0
-                ? "동네를 구독하면 그 동네 제보가 여기에 쌓여요"
-                : "구독한 뒤에 올라온 제보가 여기에 쌓여요"}
+              구독한 뒤에 올라온 제보가 여기에 쌓여요
             </Text>
           ) : (
             <VStack align="stretch" gap="x3">
@@ -220,6 +235,7 @@ export function NotificationList({
             </HStack>
           ) : null}
         </SectionCard>
+        ) : null}
       </VStack>
     </Screen>
   );
