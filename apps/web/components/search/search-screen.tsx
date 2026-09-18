@@ -253,6 +253,26 @@ export function SearchScreen({
   // 목적이 바뀌어도 조건을 잃지 않게 주소마다 kind 를 끌고 감
   const mode = SEARCH_KINDS.find((item) => item.key === activeKind) ?? SEARCH_KINDS[0];
 
+  // 지름길은 주소의 조건과 같으면 켜져 보이고, 켜진 것을 다시 누르면 그 조건만 풀림
+  // 다른 조건과 검색어는 그대로 두어 개 를 고양이 로 바꾸는 식으로 이어 쓸 수 있음
+  type Shortcut = (typeof SHORTCUTS)[number];
+  const shortcutEntry = (item: Shortcut): [string, string] => {
+    const [name, value] = item.params.split("=");
+    return [name!, decodeURIComponent(value!)];
+  };
+  const isShortcutOn = (item: Shortcut) => {
+    const [name, value] = shortcutEntry(item);
+    return params.get(name) === value;
+  };
+  const toggleShortcut = (item: Shortcut) => {
+    const [name, value] = shortcutEntry(item);
+    const next = new URLSearchParams(params.toString());
+    if (next.get(name) === value) next.delete(name);
+    else next.set(name, value);
+    next.set("kind", activeKind);
+    router.push(`/search?${next}`);
+  };
+
   const submit = (next: string) => {
     const text = next.trim();
     if (!text) return;
@@ -338,17 +358,17 @@ export function SearchScreen({
       <VStack align="stretch" gap="x2" pb="x10">
         <SectionCard gap="x3">
           <HStack gap="spacingX.betweenChips">
+            {/* 켜진 쪽이 한눈에 보여야 해 다른 화면과 같은 Toggle 을 씀. Button 의 solid 는 연한 회색이라 구분이 안 됨
+                켜진 것을 다시 눌러도 switchKind 가 같은 값이라 그대로 둠 */}
             {SEARCH_KINDS.map((item) => (
-              <Chip.Button
+              <Chip.Toggle
                 key={item.key}
                 size="medium"
-                // Chip.Button 에 선택 상태 prop 이 없어 variant 와 aria-pressed 로 대신함
-                variant={item.key === activeKind ? "solid" : "outlineWeak"}
-                aria-pressed={item.key === activeKind}
-                onClick={() => switchKind(item.key)}
+                checked={item.key === activeKind}
+                onCheckedChange={() => switchKind(item.key)}
               >
                 <Chip.Label>{item.label}</Chip.Label>
-              </Chip.Button>
+              </Chip.Toggle>
             ))}
           </HStack>
 
@@ -356,13 +376,14 @@ export function SearchScreen({
           <Box className="rebirth-scroll-row rebirth-bleed">
             <HStack gap="spacingX.betweenChips">
               {SHORTCUTS.map((item) => (
-                <Chip.Button
+                <Chip.Toggle
                   key={item.label}
                   size="medium"
-                  onClick={() => router.push(`/search?kind=${activeKind}&${item.params}`)}
+                  checked={isShortcutOn(item)}
+                  onCheckedChange={() => toggleShortcut(item)}
                 >
                   <Chip.Label>{item.label}</Chip.Label>
-                </Chip.Button>
+                </Chip.Toggle>
               ))}
             </HStack>
           </Box>
