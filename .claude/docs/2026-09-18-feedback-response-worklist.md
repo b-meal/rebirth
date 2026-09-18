@@ -328,34 +328,34 @@
 
 ## Phase 8. 공식 문서 보정
 
-- [ ] `.claude/docs/track-prediction.md` 의 `## 공식` 절을 보정한 다섯 줄로 바꿉니다
-  - [ ] `feasible = d / min(v_max × Δt, D_MAX)` 로 T1 을 고치고 `D_MAX` 값 세 개를 같은 줄에 적습니다
-  - [ ] `κ_eff = κ × n_leg / (n_leg + 1)` 을 T3 에 더하고 T4 중심식을 `κ_eff × v_eff × min(h, H_DRIFT) × û` 로 고칩니다
-  - [ ] `û` 를 다리 합벡터 방향으로 명시하고 `H_DRIFT = 8h` 를 T4 에 적습니다
-  - [ ] `grep -n "v_max × Δt)" .claude/docs/track-prediction.md` 를 실행해 보정 전 식이 `0건` 인 것을 확인합니다
-- [ ] `.claude/docs/track-prediction.md` 의 `## 설계 상수` 표에 새 상수와 근거를 더합니다
-  - [ ] `D_MAX_KM` `H_DRIFT_HOURS` `PHOTO_MIXED_FACTOR` `MIN_LEG_SIMILARITY` 네 줄을 코드블록에 정렬해 담습니다
-  - [ ] `추정` 표기를 측정하지 않은 값에 붙이고 상수마다 왜 그 값인지 한 줄을 적습니다
-  - [ ] `straightness index` `평균제곱변위` `Rayleigh 최빈 거리` 세 근거를 T3·T4·T5 옆에 한 줄씩 적습니다
-  - [ ] `grep -c "추정" .claude/docs/track-prediction.md` 를 실행해 1건 이상인 것을 확인합니다
-- [ ] `.claude/docs/track-prediction.md` 에 탐색 면적 축소 표를 넣습니다
-  - [ ] `v_max × h` 순진한 원 20.4km 1307km², 고정 2km 원 12.6km², T4 예측 원 1.03km 3.3km² 세 줄을 코드블록에 담습니다
-  - [ ] `더 빨리 찾음` 이라는 말을 쓰지 않고 확산 가정 아래의 값이라는 단서를 한 줄로 적습니다
-  - [ ] `소형` 과 `마지막 목격 6.8시간 전` 이라는 시연 데이터 조건을 같은 블록에 적습니다
-- [ ] `.claude/docs/track-prediction.md` 에 한계 절을 새로 넣습니다
-  - [ ] `## 한계` 절에 단일 사슬만 만들고 갈라지는 경로를 다루지 않는다는 한 줄을 적습니다
-  - [ ] `buildTrack` 의 탐욕 선택이라 앞 노드가 틀리면 뒤가 전부 밀린다는 한 줄을 적습니다
-  - [ ] `PHOTO_MIXED_FACTOR` 감쇠만 있어 두 개체를 한 경로로 합칠 수 있다는 한 줄을 적습니다
-  - [ ] `scoreMatch` 가 실종 지점·시각 기준이라 15km 14일 창 밖은 외형 유사도로만 들어온다는 한 줄을 적습니다
-- [ ] `.claude/docs/track-prediction.md` 의 사실 오류를 실측값으로 고칩니다
-  - [ ] `## 경로 신뢰도` 설명의 `가장 약한 고리` 문장을 점수는 최소, 이동성은 평균으로 고칩니다
-  - [ ] `pnpm --filter @rebirth/core test 2>&1 | grep "ℹ tests"` 로 실제 테스트 수를 읽어 `## 구현 위치` 아래 회귀 검증 문장을 고칩니다
-  - [ ] `## 함께 반영한 UX` 의 상태 어휘 줄을 Phase 3 이 실제로 바꾼 결과에 맞춰 고칩니다
-  - [ ] `## 구현 위치` 목록에 Phase 7 의 두 새 경로를 더합니다
-- [ ] `git add` 로 Phase 8 담당 경로만 담아 커밋합니다
-  - [ ] `git add .claude/docs/track-prediction.md` 로 한 파일만 담습니다
-  - [ ] `docs: 공식 보정과 한계를 반영해 이동 경로 문서를 고침` 으로 커밋합니다
-  - [ ] `git status --short` 를 실행해 `.claude/docs` 경로가 `0건` 인 것을 확인합니다
+- [x] `.claude/docs/track-prediction.md` 의 `## 공식` 절을 보정한 다섯 줄로 바꿉니다
+  - [x] `feasible = d / min(v_max × Δt, D_MAX)` 로 T1 을 고치고 `D_MAX` 값 세 개를 같은 줄에 적습니다
+  - [x] `κ_eff = κ × n_leg / (n_leg + 1)` 을 T3 에 더하고 T4 중심식을 `κ_eff × v_eff × min(h, H_DRIFT) × û` 로 고칩니다
+  - [x] `û` 를 다리 합벡터 방향으로 명시하고 `H_DRIFT = 8h` 를 T4 에 적습니다
+  - [x] `grep -n "v_max × Δt)" .claude/docs/track-prediction.md` 를 실행해 보정 전 식이 `0건` 인 것을 확인합니다
+- [x] `.claude/docs/track-prediction.md` 의 `## 설계 상수` 표에 새 상수와 근거를 더합니다
+  - [x] `D_MAX_KM` `H_DRIFT_HOURS` `PHOTO_MIXED_FACTOR` `MIN_LEG_SIMILARITY` 네 줄을 코드블록에 정렬해 담습니다
+  - [x] `추정` 표기를 측정하지 않은 값에 붙이고 상수마다 왜 그 값인지 한 줄을 적습니다
+  - [x] `straightness index` `평균제곱변위` `Rayleigh 최빈 거리` 세 근거를 T3·T4·T5 옆에 한 줄씩 적습니다
+  - [x] `grep -c "추정" .claude/docs/track-prediction.md` 를 실행해 1건 이상인 것을 확인합니다
+- [x] `.claude/docs/track-prediction.md` 에 탐색 면적 축소 표를 넣습니다
+  - [x] `v_max × h` 순진한 원 20.4km 1307km², 고정 2km 원 12.6km², T4 예측 원 1.03km 3.3km² 세 줄을 코드블록에 담습니다
+  - [x] `더 빨리 찾음` 이라는 말을 쓰지 않고 확산 가정 아래의 값이라는 단서를 한 줄로 적습니다
+  - [x] `소형` 과 `마지막 목격 6.8시간 전` 이라는 시연 데이터 조건을 같은 블록에 적습니다
+- [x] `.claude/docs/track-prediction.md` 에 한계 절을 새로 넣습니다
+  - [x] `## 한계` 절에 단일 사슬만 만들고 갈라지는 경로를 다루지 않는다는 한 줄을 적습니다
+  - [x] `buildTrack` 의 탐욕 선택이라 앞 노드가 틀리면 뒤가 전부 밀린다는 한 줄을 적습니다
+  - [x] `PHOTO_MIXED_FACTOR` 감쇠만 있어 두 개체를 한 경로로 합칠 수 있다는 한 줄을 적습니다
+  - [x] `scoreMatch` 가 실종 지점·시각 기준이라 15km 14일 창 밖은 외형 유사도로만 들어온다는 한 줄을 적습니다
+- [x] `.claude/docs/track-prediction.md` 의 사실 오류를 실측값으로 고칩니다
+  - [x] `## 경로 신뢰도` 설명의 `가장 약한 고리` 문장을 점수는 최소, 이동성은 평균으로 고칩니다
+  - [x] `pnpm --filter @rebirth/core test 2>&1 | grep "ℹ tests"` 로 실제 테스트 수를 읽어 `## 구현 위치` 아래 회귀 검증 문장을 고칩니다
+  - [x] `## 함께 반영한 UX` 의 상태 어휘 줄을 Phase 3 이 실제로 바꾼 결과에 맞춰 고칩니다
+  - [x] `## 구현 위치` 목록에 Phase 7 의 두 새 경로를 더합니다
+- [x] `git add` 로 Phase 8 담당 경로만 담아 커밋합니다
+  - [x] `git add .claude/docs/track-prediction.md` 로 한 파일만 담습니다
+  - [x] `docs: 공식 보정과 한계를 반영해 이동 경로 문서를 고침` 으로 커밋합니다
+  - [x] `git status --short` 를 실행해 `.claude/docs` 경로가 `0건` 인 것을 확인합니다
 
 ## Phase 9. 공유 카드 레이아웃
 
@@ -523,7 +523,7 @@
 - [ ] 제출 폼 `해결하고자 한 문제` 와 `사용 AI툴 및 기술 스택` 문안을 Phase 11 초안에서 옮겨 쓰기
 - [ ] 새 덱과 새 캡처에 `배회 중` `찾는 중` 등 Phase 3 금지 어휘가 남지 않았는지 눈으로 확인하기
 - [ ] 커밋 `1d5ff9a` 의 제목을 `feat: 예측 원을 두 겹으로 그리고 화살표를 마지막 목격에서 시작하게 함` 으로 정정하기
-- [ ] `CARE_LABEL` 별칭을 `apps/web/lib/report-label.ts` 에서 제거하기. Phase 6·9·10 이 남은 4곳을 `STATUS_LABEL` 로 바꾼 뒤
+- [x] `CARE_LABEL` 별칭을 `apps/web/lib/report-label.ts` 에서 제거하기. Phase 6·9·10 이 남은 4곳을 `STATUS_LABEL` 로 바꾼 뒤
 - [x] `ReportCardItem.occurredAt` 을 필수로 올리고 생산자 6곳에 값을 넘기기. 지금은 선택이라 값이 없으면 실종 카드가 경과만 그림
 - [x] `apps/web/components/lost/candidate-deck.tsx:37` 의 파일 지역 `CARE_LABEL` 상수를 `STATUS_LABEL` 로 바꾸기
 - [ ] `MIN_LEG_SIMILARITY` 를 재측정하기. `0.82` 는 현재 임베딩 분포에서 승격 0건이라 유사도 경로가 동작하지 않음
@@ -537,6 +537,9 @@
 ## 참고
 
 ### 지시서 결함
+
+- Phase 8 이 고치라는 `## 경로 신뢰도` 절이 문서에 없음. `가장 약한 고리` 문장은 `## 공식` 코드블록의 T2 헤더 줄이었음
+- `MIN_LEG_SIMILARITY` 의 실제 위치는 `track-handlers.ts:34`. 지시서 설계 상수 표는 Phase 2 소관으로 적었음
 
 - Phase 9 실측 행번호. 문구 갈래 `:131-148` 은 `route.tsx:107-145`. `:14` `:21` `:85-102` 도 실제 행과 어긋남
 
@@ -609,3 +612,8 @@
 - OG 띠 제목은 이름만 두면 상태가 사라져 `name ? 이름 · 상태 : 상태` 로 둠
 - 스토리 본문 높이가 595px 라 headline 68 → 52 · CTA 52 → 44 · 칩 34 → 28 로 낮춰야 QR 이 아래 안전 영역을 넘지 않음
 - `STATUS_LABEL["unknown"]` 이 빈 문자열이라 공유 카드 배지를 조건부 렌더로 바꿔 빈 알약이 찍히지 않게 함
+- T2 분모도 소스와 어긋나 있어 `min(v_max × Δt_i, D_MAX)` 로 함께 고침. 지시서 항목 밖이나 소스를 정본으로 삼음
+- `track-review.test.ts` 는 7건이 아니라 8건
+- `## 데이터와 안전` 첫 문단의 `공개된 찾는 중 신고` 를 `공개된 실종 신고` 로 고침
+- `D_MAX_KM.unknown = 10` · `V_MAX_KMH.unknown = 4.5` · `SIGMA_KM.unknown = 0.38`
+- 문서 `## 설계 상수` 는 표가 아니라 코드블록. 노션 블록 절약 규칙 유지
