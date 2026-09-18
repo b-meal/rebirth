@@ -132,6 +132,23 @@ export function formatMonthDay(value: Date | string): string {
   return MONTH_DAY.format(new Date(value));
 }
 
+/**
+ * 날짜와 시각, 연도는 빼고 적음
+ * 후보 확인처럼 며칠 안의 목격끼리 견주는 자리에 씀. 연도가 붙으면 견줄 값보다 길어짐
+ */
+const DAY_TIME = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+export function formatDayTime(value: Date | string): string {
+  return DAY_TIME.format(new Date(value));
+}
+
 const RELATIVE = new Intl.RelativeTimeFormat("ko", { numeric: "auto" });
 
 /**

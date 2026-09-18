@@ -7,6 +7,7 @@ import { ResultSection } from "seed-design/ui/result-section";
 import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { ScreenBody } from "@/components/ui/screen";
+import { formatDayTime } from "@/lib/report-label";
 import { CandidatePhoto } from "./candidate-photo";
 
 // 확인할 후보를 카드로 훑음, 좌우 스와이프 대신 버튼과 키보드로 동작
@@ -39,24 +40,6 @@ const CARE_LABEL: Record<Candidate["careSituation"], string> = {
   in_care: "보호 중",
   unknown: "확인 중",
 };
-
-/**
- * 목격 시각, 후보끼리 견주는 자리라 연도는 빼고 적음
- * getHours 는 보는 사람 시간대를 따라 밖에서 열면 시각이 밀림
- * 어느 시각에 봤는지가 같은 개체인지 가리는 근거라 한국 시간으로 못박음
- */
-const DAY_TIME = new Intl.DateTimeFormat("ko-KR", {
-  timeZone: "Asia/Seoul",
-  month: "long",
-  day: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-  hourCycle: "h23",
-});
-
-function formatAbsolute(value: string): string {
-  return DAY_TIME.format(new Date(value));
-}
 
 export type CandidateDeckProps = {
   candidates: Candidate[];
@@ -192,7 +175,7 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
             {current.areaName ?? "위치 미확인"}
           </Text>
           <Text textStyle="t4Regular" color="fg.neutralMuted">
-            {[formatAbsolute(current.occurredAt), CARE_LABEL[current.careSituation], ...conditions].join(
+            {[formatDayTime(current.occurredAt), CARE_LABEL[current.careSituation], ...conditions].join(
               ", ",
             )}
           </Text>
