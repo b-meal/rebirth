@@ -14,7 +14,6 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
-import { SelectContent, SelectItem, SelectRoot, SelectTrigger } from "seed-design/ui/select";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
@@ -32,8 +31,7 @@ import { TrendingChart, type TrendingItem } from "@/components/search/trending-c
 const RECENT_KEY = "rebirth:recent-search";
 const RECENT_MAX = 8;
 
-// 자주 찾는 조건을 한 번에 거는 지름길. 칩으로 늘어놓으면 한 줄을 더 차지해 셀렉트에 접어 둠
-// params 가 셀렉트 값이고 주소의 조건이 이 중 하나와 같으면 그 항목이 골라진 채로 보임
+// 자주 찾는 조건을 한 번에 거는 지름길
 const SHORTCUTS = [
   { label: "개", params: "animalType=dog" },
   { label: "고양이", params: "animalType=cat" },
@@ -41,9 +39,6 @@ const SHORTCUTS = [
   { label: "흰색", params: "colors=%ED%9D%B0%EC%83%89" },
   { label: "갈색", params: "colors=%EA%B0%88%EC%83%89" },
 ] as const;
-
-// 셀렉트는 끄는 자리가 없어 조건을 푸는 항목을 하나 둠
-const SHORTCUT_NONE = "none";
 
 // 발견 제보와 실종 신고는 찾는 말이 달라 목록과 문구를 가르는 기준
 const SEARCH_KINDS = [
@@ -258,18 +253,6 @@ export function SearchScreen({
   // 목적이 바뀌어도 조건을 잃지 않게 주소마다 kind 를 끌고 감
   const mode = SEARCH_KINDS.find((item) => item.key === activeKind) ?? SEARCH_KINDS[0];
 
-  // 주소의 조건이 지름길 하나와 똑같을 때만 그 항목을 보임. 색을 둘 고른 것 같은 조합은 빈 칸으로 둠
-  const shortcut =
-    SHORTCUTS.find((item) => {
-      const [name, value] = item.params.split("=");
-      return params.get(name!) === decodeURIComponent(value!);
-    })?.params ?? SHORTCUT_NONE;
-
-  const pickShortcut = (value: string) => {
-    const tail = value === SHORTCUT_NONE ? "" : `&${value}`;
-    router.push(`/search?kind=${activeKind}${tail}`);
-  };
-
   const submit = (next: string) => {
     const text = next.trim();
     if (!text) return;
@@ -369,22 +352,19 @@ export function SearchScreen({
             ))}
           </HStack>
 
-          {/* 탭 칩 아래 같은 왼쪽 선에 앉는 보조 조작이라 목록 화면의 기간 셀렉트와 같은 medium 을 씀
-              크기는 Root 에 주어 트리거와 펼친 목록이 같은 치수를 씀 */}
-          <Box className="rebirth-shortcut-select">
-            <SelectRoot
-              size="medium"
-              value={[shortcut]}
-              onValueChange={([picked]) => pickShortcut(picked!)}
-            >
-              <SelectTrigger aria-label="자주 찾는 조건" placeholder="자주 찾는 조건" />
-              <SelectContent className="rebirth-nowrap-options">
-                <SelectItem value={SHORTCUT_NONE} label="조건 없음" />
-                {SHORTCUTS.map((item) => (
-                  <SelectItem key={item.params} value={item.params} label={item.label} />
-                ))}
-              </SelectContent>
-            </SelectRoot>
+          {/* 음수 마진은 prop 으로 주면 값이 되지 않아 클래스가 맡음. 첫 칩이 위 탭과 같은 선에 섬 */}
+          <Box className="rebirth-scroll-row rebirth-bleed">
+            <HStack gap="spacingX.betweenChips">
+              {SHORTCUTS.map((item) => (
+                <Chip.Button
+                  key={item.label}
+                  size="medium"
+                  onClick={() => router.push(`/search?kind=${activeKind}&${item.params}`)}
+                >
+                  <Chip.Label>{item.label}</Chip.Label>
+                </Chip.Button>
+              ))}
+            </HStack>
           </Box>
         </SectionCard>
 
