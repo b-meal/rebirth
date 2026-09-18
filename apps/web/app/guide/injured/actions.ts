@@ -5,7 +5,7 @@ import {
   rescueFieldErrors,
   rescueRequestInput,
 } from "@rebirth/core/support/rescue";
-import { hashToken, issueReference, issueToken } from "@rebirth/core/http";
+import { hashToken, issueReference, issueToken, logFailure } from "@rebirth/core/http";
 import { insertSupportRequest } from "@rebirth/db";
 
 // 구조·보호 요청 접수
@@ -43,8 +43,10 @@ export async function requestRescue(
       tokenHash: hashToken(issueToken()),
     });
     return { reference: row.reference };
-  } catch {
+  } catch (error) {
     // 원인을 그대로 내보내지 않음. 급한 사람에게는 전화가 더 빠름
+    // 다친 동물 접수가 막힌 것은 가장 급한 고장이라 로그에는 반드시 남김
+    logFailure("guide.injuredRequest", error);
     return { message: "접수하지 못했어요. 급하시면 아래 번호로 전화해 주세요" };
   }
 }

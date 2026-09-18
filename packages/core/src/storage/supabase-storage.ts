@@ -1,5 +1,7 @@
 import "server-only";
 
+import { logFailure } from "../http";
+
 // Supabase Storage REST 직접 호출. SDK 를 넣지 않아 번들과 의존성을 늘리지 않음
 // 버킷은 비공개이고 service role 키로만 쓰기 때문에 이 모듈은 서버에서만 돎
 
@@ -220,8 +222,10 @@ export async function createSignedThumbUrls(
     paths.map(async (path) => {
       try {
         return [path, await cachedThumbUrl(path, expiresIn)] as const;
-      } catch {
+      } catch (error) {
         // 한 장이 실패해도 나머지 카드는 사진을 보여 줌
+        // 다만 조용히 두면 사진이 통째로 빠진 화면과 사진이 없는 제보를 구별할 수 없음
+        logFailure("storage.signThumb", error);
         return null;
       }
     }),

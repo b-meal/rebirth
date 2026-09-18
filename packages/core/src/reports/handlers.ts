@@ -48,6 +48,7 @@ import {
   hashToken,
   isUuid,
   issueToken,
+  logFailure,
   notFound,
   ok,
   okPrivate,
@@ -91,8 +92,9 @@ export async function attachPhotoUrls<T extends { id: string }>(
         return url ? [[card.id, url] as const] : [];
       }),
     );
-  } catch {
-    // 사진을 못 읽어도 목록은 보여야 함
+  } catch (error) {
+    // 사진을 못 읽어도 목록은 보여야 함. 대신 사진 없는 목록이 왜 나왔는지는 남김
+    logFailure("reports.listPhotos", error);
   }
 
   return rows.map((row) => ({ ...row, photoUrl: byId.get(row.id) ?? null }));
@@ -164,7 +166,7 @@ export async function createReportHandler(
     // 이 경로는 발견 계열만 받으므로 종류를 다시 가리지 않음
     // 저장은 이미 끝났으므로 실패해도 응답을 막지 않음. 후보 화면을 열면 다시 계산됨
     await scoreSightingAgainstLost(saved.id).catch((error) => {
-      console.error("[reports.create] 닮은 신고 점수 계산 실패", error);
+      logFailure("reports.create.score", error);
     });
 
     // 벡터도 저장 뒤에 남김, 게이트웨이가 막혀도 제보는 이미 저장됐음
@@ -176,7 +178,7 @@ export async function createReportHandler(
       conditionTags: input.conditionTags,
       appearance: input.appearance,
     }).catch((error) => {
-      console.error("[reports.create] 벡터 생성 실패", error);
+      logFailure("reports.create.embed", error);
     });
 
     return okPrivate(

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { logFailure } from "@rebirth/core/http";
 import { createSignedUrls } from "@rebirth/core/storage";
 import {
   findCommunityPost,
@@ -25,8 +26,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   let post: Awaited<ReturnType<typeof findCommunityPost>>;
   try {
     post = await findCommunityPost(id);
-  } catch {
+  } catch (error) {
     // 조회 실패 시 기본 메타로 떨어뜨림
+    logFailure("community.metadata", error);
     return { title: "커뮤니티", robots: { index: false } };
   }
 

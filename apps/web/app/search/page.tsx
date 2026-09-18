@@ -1,3 +1,4 @@
+import { logFailure } from "@rebirth/core/http";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
   findFirstPhotoPaths,
@@ -118,7 +119,9 @@ async function loadResults(
 
     const last = rows.at(-1);
     return { items, nextCursor: hasMore && last ? encodeCursor(last) : null };
-  } catch {
+  } catch (error) {
+    // 검색 결과 0 건과 질의 실패가 화면에서 똑같이 보여 여기서 갈라 둠
+    logFailure("search.list", error);
     return { items: [], nextCursor: null };
   }
 }
@@ -141,7 +144,8 @@ async function loadTrending(sort: "interest" | "help"): Promise<TrendingItem[]> 
       commentCount: row.commentCount,
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
     }));
-  } catch {
+  } catch (error) {
+    logFailure("search.popular", error);
     return [];
   }
 }
@@ -174,7 +178,8 @@ async function loadNearby(): Promise<NearbyItem[]> {
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
       point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
     }));
-  } catch {
+  } catch (error) {
+    logFailure("search.markers", error);
     return [];
   }
 }

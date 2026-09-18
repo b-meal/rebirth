@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
+import { logFailure } from "@rebirth/core/http";
 import { createSignedUrl } from "@rebirth/core/storage";
 import { findPublicReport, findReportPhotoPaths } from "@rebirth/db";
 import { ImageResponse } from "next/og";
@@ -78,7 +79,8 @@ async function loadPhotoUrl(id: string): Promise<string | null> {
     if (!first || first.visibility !== "public") return null;
     const signed = await createSignedUrl(first.storagePath);
     return signed.url;
-  } catch {
+  } catch (error) {
+    logFailure("card.photo", error);
     return null;
   }
 }
@@ -87,7 +89,8 @@ async function loadPhotoUrl(id: string): Promise<string | null> {
 async function loadQrDataUrl(target: string): Promise<string | null> {
   try {
     return await toDataURL(target, { margin: 1, width: QR_SIZE });
-  } catch {
+  } catch (error) {
+    logFailure("card.qr", error);
     return null;
   }
 }
@@ -132,8 +135,9 @@ export async function GET(
   let report: Awaited<ReturnType<typeof findPublicReport>> = undefined;
   try {
     report = await findPublicReport(id);
-  } catch {
+  } catch (error) {
     // 조회 실패는 안내 카드로 대체
+    logFailure("card.report", error);
   }
 
   const photoUrl = report ? await loadPhotoUrl(id) : null;

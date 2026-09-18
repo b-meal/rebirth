@@ -1,5 +1,6 @@
 import "server-only";
 
+import { logFailure } from "@rebirth/core/http";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
   findCommunityPhotoPathsForPosts,
@@ -18,8 +19,9 @@ async function firstPhotoUrls(postIds: string[]): Promise<Map<string, string>> {
   let rows: { postId: string; storagePath: string }[] = [];
   try {
     rows = await findCommunityPhotoPathsForPosts(postIds);
-  } catch {
+  } catch (error) {
     // 사진을 못 읽어도 글은 보여야 함
+    logFailure("community.feedPhotos", error);
     return new Map();
   }
 

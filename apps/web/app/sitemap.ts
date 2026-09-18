@@ -1,3 +1,4 @@
+import { logFailure } from "@rebirth/core/http";
 import { listPublicReports } from "@rebirth/db";
 import type { MetadataRoute } from "next";
 
@@ -21,8 +22,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     // includeClosed 기본값이 visibility public 과 lifecycle active searching 을 함께 걸러 줌
     rows = await listPublicReports({ limit: REPORT_LIMIT });
-  } catch {
+  } catch (error) {
     // 조회가 실패해도 고정 경로만으로 색인 파일을 내보냄
+    // 제보가 통째로 빠진 사이트맵은 검색 유입이 조용히 끊기는 길이라 남겨 둠
+    logFailure("sitemap.reports", error);
   }
 
   return [
