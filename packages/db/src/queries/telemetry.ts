@@ -25,6 +25,8 @@ export async function insertPrecheckEvents(rows: PrecheckEventInput[]) {
 export type ErrorEventInput = {
   fingerprint: string
   level: 'failure' | 'notice'
+  /** local, development, preview, production */
+  env: string
   tag: string
   message: string
   stack?: string | null
@@ -44,6 +46,7 @@ export async function recordErrorEvent(event: ErrorEventInput) {
       .values({
         fingerprint: event.fingerprint,
         level: event.level,
+        env: event.env,
         tag: event.tag,
         message: event.message,
         stack: event.stack ?? null,
