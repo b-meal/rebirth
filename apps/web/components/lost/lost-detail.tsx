@@ -18,6 +18,7 @@ import {
   STATUS_LABEL,
   describeAnimal,
   formatAbsolute,
+  searchingLabel,
   withObject,
   withSubject,
 } from "@/lib/report-label";
@@ -85,10 +86,8 @@ function statusBadge(
 ): { label: string; tone: BadgeTone } | null {
   if (lifecycle === "resolved") return { label: STATUS_LABEL.resolved, tone: "informative" };
   if (lifecycle === "closed") return null;
-  return {
-    label: searchingDays < 1 ? "오늘 잃어버렸어요" : `${STATUS_LABEL.lost} ${searchingDays}일째`,
-    tone: "brand",
-  };
+  // searchingDays 는 하한이 1 이라 1 미만 분기는 죽음. 당일 판정은 공용 헬퍼가 함
+  return { label: searchingLabel(searchingDays), tone: "brand" };
 }
 
 export type LostDetailProps = {
