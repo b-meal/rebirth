@@ -7,6 +7,7 @@ import {
   findAnalysisJobByUpload,
   findUsableUploads,
   insertAnalysisJob,
+  restartAnalysisJob,
 } from "@rebirth/db";
 import { z } from "zod";
 
@@ -30,6 +31,7 @@ import {
 import { downloadPhoto } from "../storage";
 import { ANALYZE_MAX_IMAGES, VisionError, analyzePhoto } from "./analyze";
 import { ANALYZE_FAILED_MESSAGE, adviseFromResult } from "./guidance";
+import { STALE_RUNNING_MS, isRetryableAnalysisJob } from "./job-retry";
 
 // AI 초안. 이미 올린 사진을 uploadId 로 지목해 분석함
 // 브라우저가 사진을 두 번 올리지 않고, 세션 밖 사진은 분석 대상이 되지 않음
@@ -83,29 +85,25 @@ export async function analyzeHandler(request: Request): Promise<Response> {
     }
 
     // 작업 행은 실제로 분석한 첫 장 기준. 같은 사진의 같은 revision 은 다시 분석하지 않음
+    // 실패했거나 오래 멈춘 행은 예외. 그대로 돌려주면 그 사진은 다시 찍기 전까지 영영 분석되지 않음
     const anchor = usable[0];
-    const existing = await findAnalysisJobByUpload({
-      sessionId,
-      uploadId: anchor.id,
-      revision: anchor.revision,
-    });
-    if (existing) return okPrivate(toJobBody(existing));
+    const key = { sessionId, uploadId: anchor.id, revision: anchor.revision };
+    const existing = await findAnalysisJobByUpload(key);
+    if (existing && !isRetryableAnalysisJob(existing)) return okPrivate(toJobBody(existing));
 
     const limit = checkRateLimit(limitKey, RATE_LIMITS.analyze);
     if (!limit.allowed) return tooManyRequests(limit.retryAfterSeconds);
 
-    const job = await insertAnalysisJob({
-      sessionId,
-      uploadId: anchor.id,
-      revision: anchor.revision,
-    });
-    // onConflictDoNothing 이라 경쟁 요청이 이미 만들었을 수 있음
+    // upload+revision 유일 제약 때문에 새 행 대신 같은 행을 되살림
+    const job = existing
+      ? await restartAnalysisJob({
+          id: existing.id,
+          staleBefore: new Date(Date.now() - STALE_RUNNING_MS),
+        })
+      : await insertAnalysisJob(key);
+    // 경쟁 요청이 먼저 만들었거나 되살렸을 수 있음. 그쪽 행을 돌려줌
     if (!job) {
-      const raced = await findAnalysisJobByUpload({
-        sessionId,
-        uploadId: anchor.id,
-        revision: anchor.revision,
-      });
+      const raced = await findAnalysisJobByUpload(key);
       if (raced) return okPrivate(toJobBody(raced));
       return serverError("analyze.job", new Error("작업 행을 만들지 못했습니다"));
     }
