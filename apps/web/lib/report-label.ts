@@ -134,7 +134,26 @@ export function formatMonthDay(value: Date | string): string {
 
 const RELATIVE = new Intl.RelativeTimeFormat("ko", { numeric: "auto" });
 
-/** 목격 시각을 방금, n분 전, n시간 전, 어제, 그저께, n일 전으로 표기 */
+/**
+ * 한국 시간으로 읽은 시각대
+ * 어제 만으로는 낮에 봤는지 새벽에 봤는지 알 수 없고 그 둘은 찾아갈 시간과 방법이 다름
+ * h23 을 못박음. 판에 따라 자정을 24 로 내주는 구현이 있음
+ */
+const KST_HOUR = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Seoul",
+  hour: "2-digit",
+  hourCycle: "h23",
+});
+
+function dayPart(date: Date): string {
+  const hour = Number(KST_HOUR.formatToParts(date).find((p) => p.type === "hour")?.value);
+  if (hour < 6) return "새벽";
+  if (hour < 12) return "아침";
+  if (hour < 18) return "오후";
+  return "밤";
+}
+
+/** 목격 시각을 방금, n분 전, n시간 전, 어제 오후, 그저께 새벽, n일 전 밤으로 표기 */
 export function sinceLabel(date: Date, now: Date = new Date()): string {
   const minutes = Math.round((date.getTime() - now.getTime()) / 60_000);
   // 시계 오차로 미래가 되면 방금으로 눌러 표시함
@@ -146,7 +165,8 @@ export function sinceLabel(date: Date, now: Date = new Date()): string {
   const days = kstDayIndex(date) - kstDayIndex(now);
   // 반올림으로 24시간이 됐어도 달력으로 같은 날이면 어제가 아님
   if (days === 0) return RELATIVE.format(-23, "hour");
-  return RELATIVE.format(days, "day");
+  // 하루가 넘으면 몇 시간 전이 사라져 목록에서 낮 목격과 새벽 목격이 같아짐
+  return `${RELATIVE.format(days, "day")} ${dayPart(date)}`;
 }
 
 export type UrgencyLevel = "fresh" | "recent" | "stale" | "cold";

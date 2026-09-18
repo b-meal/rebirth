@@ -55,13 +55,31 @@ test("하루가 지나지 않으면 자정을 넘어도 경과 시간으로 말�
 test("어제와 그저께를 경과 시간이 아니라 달력으로 가른다", () => {
   const 아침 = kst("2026-09-18T10:00:00");
   // 35시간 전이지만 그저께 밤이라 어제가 아님
-  assert.equal(sinceLabel(kst("2026-09-16T23:00:00"), 아침), "그저께");
-  assert.equal(sinceLabel(kst("2026-09-17T09:00:00"), 아침), "어제");
+  assert.match(sinceLabel(kst("2026-09-16T23:00:00"), 아침), /^그저께/);
+  assert.match(sinceLabel(kst("2026-09-17T09:00:00"), 아침), /^어제/);
 
   const 밤 = kst("2026-09-18T23:00:00");
   // 38시간 전이지만 어제 아침이라 그저께가 아님
-  assert.equal(sinceLabel(kst("2026-09-17T09:00:00"), 밤), "어제");
-  assert.equal(sinceLabel(kst("2026-09-16T09:00:00"), 밤), "그저께");
+  assert.match(sinceLabel(kst("2026-09-17T09:00:00"), 밤), /^어제/);
+  assert.match(sinceLabel(kst("2026-09-16T09:00:00"), 밤), /^그저께/);
+});
+
+test("하루가 넘은 목격은 낮과 새벽을 가려 적는다", () => {
+  const 아침 = kst("2026-09-18T10:00:00");
+  assert.equal(sinceLabel(kst("2026-09-17T09:00:00"), 아침), "어제 아침");
+  assert.equal(sinceLabel(kst("2026-09-16T23:00:00"), 아침), "그저께 밤");
+  assert.equal(sinceLabel(kst("2026-09-16T00:30:00"), 아침), "그저께 새벽");
+  assert.equal(sinceLabel(kst("2026-09-13T21:00:00"), 아침), "5일 전 밤");
+
+  // 19시간 전은 자정을 넘었어도 하루 안이라 경과 시간이 남음
+  assert.equal(sinceLabel(kst("2026-09-17T15:00:00"), 아침), "19시간 전");
+  // 32시간 전이 되면 달력 낱말과 시각대로 바뀜
+  assert.equal(sinceLabel(kst("2026-09-17T15:00:00"), kst("2026-09-18T23:00:00")), "어제 오후");
+});
+
+test("자정 목격을 24시로 읽어 시각대를 놓치지 않는다", () => {
+  // 판에 따라 자정 시각을 24 로 내주면 새벽이 아니라 밤으로 떨어짐
+  assert.equal(sinceLabel(kst("2026-09-16T00:00:00"), kst("2026-09-18T10:00:00")), "그저께 새벽");
 });
 
 test("반올림으로 24시간이 돼도 달력으로 같은 날이면 어제라고 하지 않는다", () => {
