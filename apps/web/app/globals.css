@@ -95,6 +95,72 @@ a {
   display: none;
 }
 
+/* 지도 위 내 위치. 넓고 부드러운 후광, 굵은 흰 테두리의 점, 점에 붙은 화살촉
+   배회 중 제보 핀이 브랜드 초록이라 내 위치는 informative 파랑으로 갈라 둠
+   점은 정중앙, 화살촉은 북쪽(위)을 가리키고 MapLibre 가 래퍼를 돌림
+   제보 핀이 나중에 그려져 위로 올라오므로 z-index 로 내 위치를 위에 두고 탭은 통과시킴 */
+.rebirth-my-location {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 가운데는 고르게, 가장자리로 갈수록 사라지는 반투명 파랑 */
+.rebirth-my-location-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--seed-color-bg-informative-solid) 26%, transparent) 0 30%,
+    color-mix(in srgb, var(--seed-color-bg-informative-solid) 12%, transparent) 62%,
+    transparent 100%
+  );
+}
+
+.rebirth-my-location-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px;
+  border-radius: 50%;
+  background: var(--seed-color-bg-informative-solid);
+  border: 3px solid var(--seed-color-bg-layer-floating);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--seed-color-bg-informative-solid) 35%, transparent);
+}
+
+/* 화살촉. 래퍼 전체를 덮는 SVG 가 점 중심을 기준으로 북쪽에 그려 회전축이 점과 일치함
+   밑변은 점 밑에 숨고 흰 윤곽은 옆면에만 있어 점에서 솟아난 모양이 됨 */
+.rebirth-my-location-heading {
+  position: absolute;
+  inset: 0;
+  color: var(--seed-color-bg-informative-solid);
+}
+
+.rebirth-my-location-heading svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+
+.rebirth-my-location-heading-edge {
+  stroke: var(--seed-color-bg-layer-floating);
+}
+
+/* 정확도 원. 크기는 미터를 축척에 맞춰 px 로 환산해 스크립트가 넣음 */
+.rebirth-my-location-accuracy {
+  border-radius: 50%;
+  background: var(--seed-color-bg-informative-weak);
+  border: 1px solid var(--seed-color-stroke-informative-weak);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 /* 목록 한 줄을 통째로 누르는 자리
    SEED 에 줄 단위 컴포넌트가 없어 앱 유틸로 둠. 면 색은 역할 토큰만 씀
    SEED 컴포넌트는 레시피가 커서를 정하지만 이 줄은 맨 button 이라 직접 둠 */
@@ -484,6 +550,21 @@ body .seed-snackbar__root {
 }
 
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
+/* 조회 기간 셀렉트가 서는 자리
+   SEED 셀렉트 트리거는 width 100% 라 담는 자리가 폭을 정해야 함
+   펼친 목록은 트리거 폭을 그대로 쓰므로 트리거가 아니라 항목이 필요한 만큼 잡음
+   항목은 좌우 여백과 체크마크가 더 붙어 트리거에 맞추면 최근 90일 이 넘침 */
+.rebirth-period-select {
+  width: 8rem;
+  flex-shrink: 0;
+}
+
+/* SEED 항목 라벨에는 줄바꿈 방지가 없어 자리가 모자라면 마지막 글자가 다음 줄로 넘어감
+   기간은 한 줄로 읽혀야 하는 짧은 말이라 이 목록에서만 막음 */
+.rebirth-period-options .seed-select-item__label {
+  white-space: nowrap;
+}
+
 .rebirth-scroll-row {
   overflow-x: auto;
   scrollbar-width: none;

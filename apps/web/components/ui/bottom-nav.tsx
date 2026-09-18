@@ -33,6 +33,8 @@ type NavItem = {
 };
 
 // 실종신고는 확성기, 지도 위 검색창이 돋보기를 이미 써 아이콘이 겹치면 역할이 섞임
+// 탭은 다섯 다 목적지. 실종신고와 발견제보는 둘 다 목록이라 무게와 종류가 대칭임
+// 쓰기는 탭이 아니라 홈의 떠 있는 단추가 맡음
 const NAV: NavItem[] = [
   { label: "홈", href: "/", icon: IconHouseLine, activeIcon: IconHouseFill },
   {
@@ -43,7 +45,7 @@ const NAV: NavItem[] = [
   },
   {
     label: "실종신고",
-    href: "/lost/new",
+    href: "/lost",
     icon: IconMegaphoneLine,
     activeIcon: IconMegaphoneFill,
   },
@@ -65,9 +67,10 @@ function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
 }
 
-// 탭바를 띄우는 화면. 실종신고는 탭에서 열리지만 작성 폼이라 빠짐
+// 탭바를 띄우는 화면. 탭이 가리키는 다섯 곳이 그대로 목록이라 다 들어옴
+// /lost/new 와 /lost/[token] 은 폼과 보호자 화면이라 빠짐
 // 폼은 아래에 제출 띠가 붙어 탭바와 겹치고, 쓰다 말고 탭을 옮길 자리도 아님
-const TAB_ROOTS = ["/", "/community", "/reports", "/mine"];
+const TAB_ROOTS = ["/", "/community", "/lost", "/reports", "/mine"];
 
 /** 탭으로 곧장 닿고 되돌아갈 곳이 없는 최상위 화면인지 */
 export function isTabRoot(pathname: string): boolean {

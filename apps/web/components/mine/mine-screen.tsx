@@ -37,6 +37,7 @@ import { DeletePetButton } from "./delete-pet-button";
 const PROVIDER_LABEL: Record<string, string> = {
   kakao: "카카오",
   google: "구글",
+  anonymous: "체험",
 };
 
 // 계정 없이도 쓰는 기능이라 로그인 화면으로 보낼 곳을 미리 정해 둠
@@ -61,7 +62,8 @@ const LINKS: MineLink[] = [
 // 길에서 급히 찾는 일 셋. 홈 시트 머리가 같은 정의를 그리므로 두 화면 문구가 갈라지지 않음
 export const SHORTCUTS: MineLink[] = [
   { href: "/report", label: "제보하기", icon: <IconCameraLine /> },
-  { href: "/lost/new", label: "실종 신고", icon: <IconMegaphoneLine /> },
+  // 홈 시트와 덮개가 같은 곳을 우리 아이 찾기 로 부름. 문마다 이름이 다르면 다른 곳인 줄 앎
+  { href: "/lost/new", label: "우리 아이 찾기", icon: <IconMegaphoneLine /> },
   { href: "/guide/injured", label: "다친 동물", icon: <IconHospitalcrossShieldLine /> },
 ];
 

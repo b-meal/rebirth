@@ -1,8 +1,13 @@
-// 실종 신고에 이어 붙는 목격 경로와 다음 목격 예측, 예측 원 안의 제보 밀도 조회
+// 실종 신고에 이어 붙는 목격 경로와 다음 목격 예측, 탐색 단계와 주변 제보 상황 조회
 
 import "server-only";
 
-import { findManagedReport, findTrackSightings } from "@rebirth/db";
+import {
+  countSightingsAround,
+  findManagedReport,
+  findLostCoarsePoint,
+  findTrackSightings,
+} from "@rebirth/db";
 
 import {
   checkManageAccess,
@@ -14,7 +19,15 @@ import {
   unauthorized,
   type RouteContext,
 } from "../http";
-import { distanceKm } from "../location/geo.ts";
+import { distanceKm, type LatLng } from "../location/geo.ts";
+import {
+  COVERAGE_DAYS,
+  COVERAGE_RADIUS_KM,
+  buildSearchAdvice,
+  densityRadiusKm,
+  type SearchAdvice,
+  type SearchAround,
+} from "./search-advice.ts";
 import { searchSpots, type Spot } from "./search-spots.ts";
 import {
   confidenceWithPhotos,
@@ -25,6 +38,7 @@ import {
   MIN_LEG_SCORE,
   buildTrack,
   predictNext,
+  searchRadiusKm,
   type Prediction,
   type Track,
   type TrackNode,
@@ -36,38 +50,88 @@ export const MIN_LEG_SIMILARITY = 0.82;
 const NOT_FOUND = "찾는 신고가 없습니다. 관리 주소를 다시 확인해 주십시오";
 const NEED_AUTH = "관리 주소로 다시 들어와 주십시오";
 
-/** 예측 원 안에 든 제보 수와 그중 가장 최근 제보의 경과 시간 */
-function densityAround(
-  nodes: TrackNode[],
-  prediction: Prediction,
-  now: Date,
-): { count: number; radiusKm: number; newestHoursAgo: number } {
-  const inside = nodes.filter(
-    (node) => distanceKm(prediction.center, node.point) <= prediction.radiusKm,
+/**
+ * 탐색 조언 입력을 모음. 중심은 예측 원이 있으면 그 중심, 없으면 실종 신고의 격자 좌표
+ * 분모는 반경 안 전체 발견 제보, 분자는 그중 이 신고와 닮은 후보
+ * 기준 시각은 보호자가 적은 실종 시각이고 후보 시각은 따로 넘김
+ */
+async function loadAdvice(input: {
+  lost: {
+    id: string;
+    occurredAt: Date;
+    animalType: "dog" | "cat" | "other" | "unknown";
+    size: "small" | "medium" | "large" | "unknown";
+    coarseGridM: number;
+  };
+  lostPoint: LatLng | null;
+  nodes: TrackNode[];
+  prediction: Prediction | null;
+  now: Date;
+}): Promise<SearchAdvice> {
+  const { lost, nodes, prediction, now } = input;
+  const hoursSinceLost = Math.max(
+    (now.getTime() - lost.occurredAt.getTime()) / 3_600_000,
+    0,
   );
-  const newest = inside.reduce<Date | null>(
-    (latest, node) =>
-      !latest || node.occurredAt > latest ? node.occurredAt : latest,
+  const center = prediction?.center ?? input.lostPoint;
+  const baseRadiusKm = prediction?.radiusKm ?? searchRadiusKm(lost.size, hoursSinceLost);
+  const radiusKm = densityRadiusKm(baseRadiusKm, lost.coarseGridM);
+
+  let around: SearchAround | null = null;
+  let areaSightings: number | null = null;
+  if (center) {
+    // 두 수는 서로 기대지 않아 나란히 셈. 한쪽이 실패해도 다른 줄은 살림
+    const [inRadius, inArea] = await Promise.allSettled([
+      countSightingsAround({
+        center,
+        radiusM: Math.round(radiusKm * 1000),
+        since: lost.occurredAt,
+        excludeId: lost.id,
+      }),
+      countSightingsAround({
+        center: input.lostPoint ?? center,
+        radiusM: COVERAGE_RADIUS_KM * 1000,
+        since: new Date(now.getTime() - COVERAGE_DAYS * 86_400_000),
+        excludeId: lost.id,
+      }),
+    ]);
+    if (inRadius.status === "fulfilled") {
+      const candidates = nodes.filter(
+        (node) => distanceKm(center, node.point) <= radiusKm,
+      ).length;
+      // 후보도 발견 제보라 분모가 분자보다 작게 세어지는 일은 막음
+      around = { sightings: Math.max(inRadius.value, candidates), candidates };
+    }
+    if (inArea.status === "fulfilled") areaSightings = inArea.value;
+  }
+
+  const latestCandidateAt = nodes.reduce<Date | null>(
+    (latest, node) => (!latest || node.occurredAt > latest ? node.occurredAt : latest),
     null,
   );
-  return {
-    count: inside.length,
-    radiusKm: prediction.radiusKm,
-    // 원 안이 비면 마지막 목격 경과 시간으로 대신함
-    newestHoursAgo: newest
-      ? (now.getTime() - newest.getTime()) / 3_600_000
-      : prediction.hoursSinceLast,
-  };
+
+  return buildSearchAdvice({
+    lostOccurredAt: lost.occurredAt,
+    now,
+    animalType: lost.animalType,
+    size: lost.size,
+    gridMeters: lost.coarseGridM,
+    radiusKm: baseRadiusKm,
+    around,
+    areaSightings,
+    latestCandidateAt,
+  });
 }
 
 /**
  * 탐색 지점 조회와 모델 해석을 나란히 돌림
- * 둘 다 외부 호출이라 한쪽이 실패해도 경로·예측·밀도 응답을 막지 않음
- * 모델 입력 타입에 지점 이름 자리가 없어 경로와 예측만 넘김
+ * 둘 다 외부 호출이라 한쪽이 실패해도 경로·예측·조언 응답을 막지 않음
+ * 모델에는 규칙이 이미 센 숫자만 넘겨 해석이 같은 사실 위에 서게 함
  */
 async function loadAssist(
   track: Track,
   prediction: Prediction | null,
+  advice: SearchAdvice,
 ): Promise<{ spots: Spot[]; interpretation: TrackReview | null }> {
   const [spots, review] = await Promise.allSettled([
     prediction
@@ -91,6 +155,13 @@ async function loadAssist(
             bearingDeg: prediction.bearingDeg,
           }
         : null,
+      situation: {
+        phase: advice.phase,
+        hoursSinceLost: advice.hoursSinceLost,
+        radiusKm: advice.radiusKm,
+        around: advice.around,
+        coverage: advice.coverage,
+      },
     }),
   ]);
 
@@ -100,7 +171,7 @@ async function loadAssist(
   };
 }
 
-/* GET /api/lost/[id]/track  공개된 찾는 중 신고의 목격 경로와 다음 목격 예측 */
+/* GET /api/lost/[id]/track  공개된 찾는 중 신고의 목격 경로와 다음 목격 예측, 탐색 조언 */
 
 export async function getLostTrackHandler(
   request: Request,
@@ -135,11 +206,13 @@ export async function getLostTrackHandler(
     const gridMeters = lost.coarseGridM;
     const size = lost.size;
 
-    const rows = await findTrackSightings(
-      lost.id,
-      MIN_LEG_SCORE,
-      MIN_LEG_SIMILARITY,
-    );
+    const [rows, lostCoarse] = await Promise.all([
+      findTrackSightings(lost.id, MIN_LEG_SCORE, MIN_LEG_SIMILARITY),
+      findLostCoarsePoint(lost.id),
+    ]);
+    const lostPoint: LatLng | null = lostCoarse
+      ? { lat: lostCoarse.y, lng: lostCoarse.x }
+      : null;
     // 배점 하한을 못 넘고 외형 유사도로만 들어온 제보
     const promoted = new Set(
       rows.filter((row) => row.score < MIN_LEG_SCORE).map((row) => row.id),
@@ -160,12 +233,29 @@ export async function getLostTrackHandler(
         : [],
     );
 
+    const now = new Date();
     const track = buildTrack({ nodes, size });
+    const prediction = track ? predictNext({ track, size, now }) : null;
+    // 경로가 없어도 단계와 주변 상황은 말할 수 있어 조언은 항상 냄
+    const advice = await loadAdvice({
+      lost: {
+        id: lost.id,
+        occurredAt: lost.occurredAt,
+        animalType: lost.animalType,
+        size,
+        coarseGridM: gridMeters,
+      },
+      lostPoint,
+      nodes,
+      prediction,
+      now,
+    });
+
     if (!track) {
       return okPrivate({
         track: null,
         prediction: null,
-        density: null,
+        advice,
         spots: [],
         interpretation: null,
         promotedCount: 0,
@@ -173,10 +263,7 @@ export async function getLostTrackHandler(
       });
     }
 
-    const now = new Date();
-    const prediction = predictNext({ track, size, now });
-    const density = prediction ? densityAround(nodes, prediction, now) : null;
-    const { spots, interpretation } = await loadAssist(track, prediction);
+    const { spots, interpretation } = await loadAssist(track, prediction, advice);
 
     return okPrivate({
       // 사진 특징이 어긋난 경로는 결정식 신뢰도를 그대로 내보내지 않음
@@ -188,7 +275,7 @@ export async function getLostTrackHandler(
         ),
       },
       prediction,
-      density,
+      advice,
       spots,
       interpretation,
       promotedCount: track.nodes.filter((node) => promoted.has(node.id)).length,

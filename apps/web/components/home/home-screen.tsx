@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -32,10 +31,13 @@ import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { describeAnimal } from "@/lib/report-label";
 import { useCurrentPosition } from "@/hooks/use-current-position";
+import { useDeviceHeading } from "@/hooks/use-device-heading";
 import { useMap } from "@/hooks/use-map";
+import { useMyLocationMarker } from "@/hooks/use-my-location-marker";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
 import { NearbyList } from "@/components/home/nearby-list";
+import { WriteActionSheet } from "@/components/home/write-action-sheet";
 import { SHORTCUTS } from "@/components/mine/mine-screen";
 import type { ReportCardItem } from "@/components/report/report-card";
 
@@ -48,6 +50,14 @@ export type MapMarker = ReportCardItem & {
 
 // 반경 안에 하나도 없을 때 대신 보여 줄 가까운 제보 수
 const NEARBY_FALLBACK_COUNT = 12;
+
+// 훅의 문구는 제보 폼 기준이라 동이나 면을 고르라고 말함
+// 홈 지도에는 고를 자리가 없어 이 화면에서 할 수 있는 일로 바꿔 알림
+const POSITION_NOTICE: Record<"denied" | "timeout" | "unavailable", string> = {
+  denied: "현재 위치를 허용하지 않아도 둘러볼 수 있어요. 지도를 끌어 동네를 찾아보세요",
+  timeout: "현재 위치를 확인하는 데 오래 걸려요. 지도를 끌어 동네를 찾아보세요",
+  unavailable: "현재 위치를 가져오지 못했어요. 지도를 끌어 동네를 찾아보세요",
+};
 
 // 첫 행동을 마쳤는지 적어 두는 자리, 안내 한 줄과 시트 머리 타일이 같이 접힘
 const SEEN_INTRO_KEY = "rebirth:seen-intro";
@@ -74,16 +84,6 @@ const SHEET_MID = (SHEET.collapsed + SHEET.expanded) / 2;
 
 // 손을 떼면 이 세 단계 중 이웃으로만 붙음
 const STOPS: number[] = [SHEET.hidden, SHEET.collapsed, SHEET.expanded];
-
-// 지도 오버레이는 React 밖에서 그려지므로 색은 SEED CSS 변수로만 참조
-const MY_LOCATION_DOT = [
-  "width:14px",
-  "height:14px",
-  "border-radius:9999px",
-  "background:var(--seed-color-fg-brand)",
-  "border:2px solid var(--seed-color-bg-layer-floating)",
-  "box-shadow:0 0 0 6px var(--seed-color-bg-brand-weak)",
-].join(";");
 
 // 색은 상황만 알리고 무엇인지는 사진이 알림
 // 단색 위 글자와 아이콘은 SEED 가 제 컴포넌트에서 쓰는 대로 흰색, 노랑만 검정
@@ -287,9 +287,11 @@ export function HomeScreen({
   const markers = useStreamed(markersPromise, EMPTY_MARKERS);
   const unread = useStreamed(unreadPromise, 0);
 
-  const router = useRouter();
   const snackbar = useSnackbarAdapter();
-  const position = useCurrentPosition({ immediate: true });
+  // 첫 자리를 잡은 뒤에도 따라가 걸으면서 보는 지도에서 점이 함께 움직임
+  const position = useCurrentPosition({ immediate: true, watch: true });
+  // 방향은 GPS 가 아니라 자기 센서, 서 있어도 몸을 돌리면 부채꼴이 따라옴
+  const heading = useDeviceHeading();
   const { containerRef, status, error, center, radiusKm, moveTo, map } = useMap();
 
   const ready = status === "ready";
@@ -459,19 +461,13 @@ export function HomeScreen({
     [map, moveTo],
   );
 
-  const myPoint = position.point;
-  useEffect(() => {
-    if (!map || !myPoint) return;
-    const dot = document.createElement("div");
-    dot.setAttribute("style", MY_LOCATION_DOT);
-    const marker = new Marker({ element: dot, anchor: "center" })
-      .setLngLat([myPoint.lng, myPoint.lat])
-      .addTo(map);
-
-    return () => {
-      marker.remove();
-    };
-  }, [map, myPoint]);
+  useMyLocationMarker({
+    map,
+    point: position.point,
+    accuracyMeters: position.accuracyMeters,
+    course: position.course,
+    heading,
+  });
 
   // 지도를 못 띄우면 거리를 셀 기준이 없어 최근 제보를 그대로 보여줌
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
@@ -486,6 +482,9 @@ export function HomeScreen({
       .map((row) => row.item);
     return { nearby: sorted, widened: sorted.length > 0 };
   }, [ready, center, radiusKm, markers]);
+
+  // 떠 있는 단추가 여는 쓰기 시트. 지도 위 알약을 대신함
+  const [writeOpen, setWriteOpen] = useState(false);
 
   const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
@@ -626,12 +625,15 @@ export function HomeScreen({
   };
 
   const recenter = () => {
+    // iOS 는 사용자가 누른 안에서만 자기 센서 권한을 물을 수 있어 이 탭에 얹음
+    if (heading.status === "needs-gesture") heading.enable();
     if (position.point) {
       moveTo(position.point, { animate: true });
       return;
     }
-    if (position.error) {
-      notice(position.error);
+    const failed = POSITION_NOTICE[position.status as keyof typeof POSITION_NOTICE];
+    if (failed) {
+      notice(failed);
       return;
     }
     position.request();
@@ -848,11 +850,15 @@ export function HomeScreen({
           >
             <Icon svg={<IconCrosshairLine />} />
           </ContextualFloatingButton>
-          {/* 지도 위 발견동물 제보와 같은 곳으로 가지만 엄지에 닿는 자리라 라벨을 그대로 둠 */}
+          {/* 글을 남기는 길 셋을 이 단추 하나에 모음
+              엄지가 닿는 자리라 급할 때 한 손으로 고를 수 있음
+              누르면 고르는 시트가 열리므로 라벨도 제보하기 가 아니라 알리기 로 둠 */}
           <FloatingActionButton
             icon={<IconPlusLine />}
-            label="제보하기"
-            onClick={() => router.push("/report")}
+            label="알리기"
+            aria-haspopup="dialog"
+            aria-expanded={writeOpen}
+            onClick={() => setWriteOpen(true)}
           />
         </VStack>
         )}
@@ -944,6 +950,8 @@ export function HomeScreen({
         </VStack>
         )}
       </VStack>
+
+      <WriteActionSheet open={writeOpen} onOpenChange={setWriteOpen} />
     </Box>
   );
 }

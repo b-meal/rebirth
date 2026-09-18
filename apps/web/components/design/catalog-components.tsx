@@ -227,8 +227,8 @@ export function CatalogComponents() {
       <Spec section={SECTIONS["radio-group"]}>
         <RadioGroup value={radio} onValueChange={setRadio} aria-label="보호 상황">
           <VStack align="stretch" gap="x2">
-            <RadioGroupItem value="roaming">발견</RadioGroupItem>
-            <RadioGroupItem value="in_care">보호 중</RadioGroupItem>
+            <RadioGroupItem value="roaming">길에 있음</RadioGroupItem>
+            <RadioGroupItem value="in_care">내가 데리고 있음</RadioGroupItem>
           </VStack>
         </RadioGroup>
       </Spec>
