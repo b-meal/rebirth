@@ -6,6 +6,7 @@ import { Box, Flex } from "@seed-design/react";
 import { SnackbarAvoidOverlap } from "seed-design/ui/snackbar";
 
 import { BottomNav, isTabRoot } from "./bottom-nav";
+import { KeyboardBridge } from "./keyboard-bridge";
 import { SplashOverlay } from "./splash-overlay";
 
 // Web 은 모바일 전용, 큰 화면에서도 같은 폭의 프레임에 같은 내용을 담음
@@ -43,6 +44,8 @@ export function AppFrame({ children }: { children: ReactNode }) {
         className={reserve ? "rebirth-tab-space" : undefined}
       >
         {children}
+        {/* 화면을 넘는 동안 키보드를 들고 가는 입력. 프레임에 두어 전환 중에도 남음 */}
+        <KeyboardBridge />
         {/* 공유 링크로 들어온 상세는 덮개 없이 바로 글이 보여야 함 */}
         {entryPath === "/" ? <SplashOverlay maxWidth={FRAME_WIDTH} /> : null}
       </Box>

@@ -39,6 +39,7 @@ import { useMap } from "@/hooks/use-map";
 import { useMyLocationMarker } from "@/hooks/use-my-location-marker";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
+import { holdKeyboard } from "@/components/ui/keyboard-bridge";
 import { NearbyList } from "@/components/home/nearby-list";
 import { WriteActionSheet } from "@/components/home/write-action-sheet";
 import type { ReportCardItem } from "@/components/report/report-card";
@@ -864,7 +865,8 @@ export function HomeScreen({
           bg="bg.layerFloating"
           boxShadow="s2"
         >
-          <Link href="/search" aria-label="제보 검색">
+          {/* 터치 안에서 키보드를 올려 두어야 다음 화면의 autoFocus 가 키보드까지 이어 받음 */}
+          <Link href="/search" aria-label="제보 검색" onClick={holdKeyboard}>
             <HStack gap="x2" align="center" px="x4" py="x3">
               <Icon svg={<IconMagnifyingglassLine />} size="x5" color="fg.neutralSubtle" />
               <Text textStyle="t4Regular" color="fg.neutralSubtle">
