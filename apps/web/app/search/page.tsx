@@ -108,6 +108,7 @@ async function loadResults(
         injury: row.injury,
         areaName: row.areaName,
         sinceLabel: sinceLabel(row.occurredAt),
+        occurredAt: row.occurredAt.toISOString(),
         photoUrl: path ? (signed.get(path) ?? null) : null,
         // 카드는 발견과 실종 두 갈래만 그려 sheltered 는 대상 밖
         kind: row.kind === "lost" ? ("lost" as const) : ("sighting" as const),
@@ -169,6 +170,7 @@ async function loadNearby(): Promise<NearbyItem[]> {
       injury: row.injury,
       areaName: row.areaName,
       sinceLabel: sinceLabel(row.occurredAt),
+      occurredAt: row.occurredAt.toISOString(),
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
       point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
     }));

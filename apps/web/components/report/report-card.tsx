@@ -15,8 +15,8 @@ export type ReportCardItem = {
   injury: boolean | null;
   areaName: string | null;
   sinceLabel: string;
-  /** 목격 시각 원본. 실종 카드가 등급 문구를 뽑는 데만 쓰고 없으면 상태 어휘만 남김 */
-  occurredAt?: string;
+  /** 목격 시각 원본. 실종 카드가 등급 문구를 뽑는 자리 */
+  occurredAt: string;
   photoUrl: string | null;
   /** 발견 제보와 실종 신고가 한 표에 담겨 있어 카드가 부르는 말이 갈림 */
   kind?: "sighting" | "lost";

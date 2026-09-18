@@ -149,6 +149,7 @@ async function loadNearby(currentId: string, origin: NearbyOrigin): Promise<Repo
       injury: row.injury,
       areaName: row.areaName,
       sinceLabel: sinceLabel(row.occurredAt),
+      occurredAt: row.occurredAt.toISOString(),
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
     }));
   } catch {
