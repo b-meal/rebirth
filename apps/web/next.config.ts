@@ -19,6 +19,13 @@ const nextConfig: NextConfig = {
   // 워크스페이스 패키지를 TS 소스 그대로 소비
   transpilePackages: ["@rebirth/core", "@rebirth/db", "@rebirth/types"],
 
+  // React Compiler. 컴포넌트와 훅을 자동으로 memo 해 손으로 쓴 memo 와 useCallback 없이도 같은 값이면 건너뜀
+  // React 19 자체는 이 일을 하지 않아 따로 켬. Rust 판은 Turbopack 안에서 돌아 Babel 플러그인이 필요 없음
+  reactCompiler: true,
+  experimental: {
+    turbopackRustReactCompiler: true,
+  },
+
   // 선검사 모델은 2.6MB 라 한 번 받으면 다시 받지 않게 함
   // 바뀌면 파일 이름을 바꿔 새로 받게 함. public 은 해시가 붙지 않음
   async headers() {

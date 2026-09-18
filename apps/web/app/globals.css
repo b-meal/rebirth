@@ -105,6 +105,8 @@ a {
   height: 48px;
   pointer-events: none;
   z-index: 1;
+  /* 몸을 돌리면 매 프레임 회전이 바뀌어 미리 층으로 올려 후광 그라데이션을 다시 칠하지 않게 함 */
+  will-change: transform;
 }
 
 /* 가운데는 고르게, 가장자리로 갈수록 사라지는 반투명 파랑 */
@@ -551,6 +553,11 @@ body .seed-snackbar__root {
 /* 알림은 글자만큼만 차지하는 알약으로 둠
    폭을 가득 채우면 화면을 가로지르는 띠가 되어 한 줄 알리는 일에 비해 크게 보임
    기본이 width 100% 라 줄이고, 좌우 여백과 모서리도 알약에 맞게 키움 */
+/* 무슨 일인지 한 줄, 할 일 한 줄로 나눈 알림이 줄바꿈을 잃지 않게 함 */
+body .seed-snackbar__message {
+  white-space: pre-line;
+}
+
 body .seed-snackbar__root {
   width: auto;
   max-width: 100%;
@@ -580,6 +587,13 @@ body .seed-snackbar__root {
    기간은 한 줄로 읽혀야 하는 짧은 말이라 이 목록에서만 막음 */
 .rebirth-period-options .seed-select-item__label {
   white-space: nowrap;
+}
+
+/* 목록 위에 얹는 진행 표시. 목록이 화면보다 길어 부모의 한가운데는 보이지 않으므로
+   스크롤해도 보이는 구간 가운데쯤에 머물게 함. 부모 안에서만 움직여 목록 밖으로 나가지 않음 */
+.rebirth-list-busy {
+  position: sticky;
+  top: 40vh;
 }
 
 .rebirth-scroll-row {

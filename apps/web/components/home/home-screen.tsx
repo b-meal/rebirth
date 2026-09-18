@@ -1,15 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { motion } from "motion/react";
 import { Box, Grid, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
 import {
   IconBellLine,
@@ -29,6 +23,7 @@ import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-but
 import { FloatingActionButton } from "seed-design/ui/floating-action-button";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
+import { reconcilePins } from "@/lib/pin-registry";
 import { describeAnimal } from "@/lib/report-label";
 import { SHORTCUTS } from "@/lib/shortcuts";
 import { useCurrentPosition } from "@/hooks/use-current-position";
@@ -36,7 +31,9 @@ import { useDeviceHeading } from "@/hooks/use-device-heading";
 import { useMap } from "@/hooks/use-map";
 import { useMyLocationMarker } from "@/hooks/use-my-location-marker";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
+import { useSheetSnap } from "@/hooks/use-sheet-snap";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
+import { holdKeyboard } from "@/components/ui/keyboard-bridge";
 import { NearbyList } from "@/components/home/nearby-list";
 import { WriteActionSheet } from "@/components/home/write-action-sheet";
 import type { ReportCardItem } from "@/components/report/report-card";
@@ -53,10 +50,11 @@ const NEARBY_FALLBACK_COUNT = 12;
 
 // 훅의 문구는 제보 폼 기준이라 동이나 면을 고르라고 말함
 // 홈 지도에는 고를 자리가 없어 이 화면에서 할 수 있는 일로 바꿔 알림
+// 첫 줄은 무슨 일인지, 둘째 줄은 지금 할 일 하나. 현재 위치 를 되풀이하지 않고 위치 로 줄임
 const POSITION_NOTICE: Record<"denied" | "timeout" | "unavailable", string> = {
-  denied: "현재 위치를 허용하지 않아도 둘러볼 수 있어요. 지도를 끌어 동네를 찾아보세요",
-  timeout: "현재 위치를 확인하는 데 오래 걸려요. 지도를 끌어 동네를 찾아보세요",
-  unavailable: "현재 위치를 가져오지 못했어요. 지도를 끌어 동네를 찾아보세요",
+  denied: "위치 권한 없이도 둘러볼 수 있어요\n지도를 움직여 동네를 찾아보세요",
+  timeout: "위치를 확인하는 데 오래 걸려요\n지도를 움직여 동네를 찾아보세요",
+  unavailable: "위치를 확인할 수 없어요\n지도를 움직여 동네를 찾아보세요",
 };
 
 // 첫 행동을 마쳤는지 적어 두는 자리, 안내 한 줄과 시트 머리 타일이 같이 접힘
@@ -77,13 +75,21 @@ const PIN_ZOOM = 16;
 // 고른 핀을 화면 가운데보다 아래에 두어 위로 열리는 말풍선 자리를 만듦
 const PIN_OFFSET: [number, number] = [0, 90];
 
-// 시트 높이는 화면 비율로 다루고 드래그는 min 과 max 사이에서만 움직임
-// hidden 은 시트를 걷고 손잡이만 남기는 단계, 지도만 보려는 사람의 자리
-const SHEET = { hidden: 0, min: 0.02, collapsed: 0.27, expanded: 0.62, max: 0.72 } as const;
+// 시트가 화면을 덮는 비율. hidden 은 시트를 걷고 손잡이만 남기는 단계, 지도만 보려는 사람의 자리
+// 시트 요소는 늘 full 높이로 서 있고 자리만 transform 으로 옮김
+// 높이를 단계마다 갈면 손가락이 움직일 때마다 레이아웃이 다시 돌고 목록이 자리를 다시 잼
+const SHEET = { hidden: 0, collapsed: 0.54, expanded: 0.78, full: 0.88 } as const;
 const SHEET_MID = (SHEET.collapsed + SHEET.expanded) / 2;
 
-// 손을 떼면 이 세 단계 중 이웃으로만 붙음
-const STOPS: number[] = [SHEET.hidden, SHEET.collapsed, SHEET.expanded];
+// 손을 떼면 이 세 단계 중 하나에 붙음
+const STOPS = [SHEET.hidden, SHEET.collapsed, SHEET.expanded] as const;
+
+// 시트 요소의 높이와, 걷힌 단계를 0 으로 두려고 아래로 내려 둔 만큼
+const SHEET_HEIGHT = `${SHEET.full * 100}dvh`;
+const SHEET_BOTTOM = `${(SHEET.collapsed - SHEET.full) * 100}dvh`;
+
+// 떠 있는 단추가 쉬는 자리, 시트 위에 x3 만큼 띄움
+const FLOATING_BOTTOM = `calc(${SHEET.collapsed * 100}dvh + var(--seed-dimension-x3))`;
 
 // 색은 상황만 알리고 무엇인지는 사진이 알림
 // 단색 위 글자와 아이콘은 SEED 가 제 컴포넌트에서 쓰는 대로 흰색, 노랑만 검정
@@ -120,7 +126,8 @@ type ReportPinProps = {
   onSelect: (item: MapMarker) => void;
 };
 
-function ReportPin({ item, selected, onSelect }: ReportPinProps) {
+// 지도가 움직일 때마다 화면이 다시 그려져 값이 같은 핀은 건너뜀. 핀 요소는 장부가 붙들어 마운트가 유지됨
+const ReportPin = memo(function ReportPin({ item, selected, onSelect }: ReportPinProps) {
   const tone = toneOf(item);
   return (
     <Box
@@ -158,7 +165,7 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
       </button>
     </Box>
   );
-}
+});
 
 // 클러스터 묶기는 지도에 맡기고 그리기는 SEED 로 함, 레이어 paint 는 토큰을 읽지 못함
 const PIN_SOURCE = "report-pins";
@@ -173,13 +180,15 @@ const CLUSTER_MAX_ZOOM = 15;
 const CLUSTER_RADIUS_PX = 56;
 
 type ClusterPinProps = {
+  id: number;
+  at: LatLng;
   count: number;
   /** 묶음을 대표할 제보. 지도에서 사진이 사라지지 않게 한 장을 세움 */
   item: MapMarker | null;
-  onClick: () => void;
+  onExpand: (id: number, at: LatLng) => void;
 };
 
-function ClusterPin({ count, item, onClick }: ClusterPinProps) {
+const ClusterPin = memo(function ClusterPin({ id, at, count, item, onExpand }: ClusterPinProps) {
   // 묶인 수가 많을수록 크게 그려 어디에 몰려 있는지 축척을 바꾸기 전에 보이게 함
   const size = count >= 100 ? "x14" : count >= 10 ? "x12" : "x10";
   const tone = item ? toneOf(item) : PIN_TONE.roaming;
@@ -196,7 +205,11 @@ function ClusterPin({ count, item, onClick }: ClusterPinProps) {
         bg={tone.bg}
         boxShadow="s2"
       >
-        <button type="button" aria-label={`제보 ${count}건 묶음, 눌러서 확대`} onClick={onClick}>
+        <button
+          type="button"
+          aria-label={`제보 ${count}건 묶음, 눌러서 확대`}
+          onClick={() => onExpand(id, at)}
+        >
           {item?.photoUrl ? (
             <ImageFrame
               ratio={1}
@@ -236,7 +249,7 @@ function ClusterPin({ count, item, onClick }: ClusterPinProps) {
       </HStack>
     </Box>
   );
-}
+});
 
 // 화면에 실제로 그릴 것. 낱개도 묶음도 사진 핀, 묶음에만 수 배지가 붙음
 type Pin =
@@ -251,6 +264,14 @@ type Pin =
       // 대표 제보는 지도에 물어봐야 알 수 있어 그린 뒤에 채움
       item: MapMarker | null;
     };
+
+// 장부 한 줄. 지도에 올린 마커와 포털이 그릴 핀을 함께 붙듦
+type PinEntry = { pin: Pin; marker: Marker };
+
+// 타일에서 읽은 것을 장부와 맞출 때 넘기는 값
+type PinFeature =
+  | { kind: "report"; item: MapMarker; at: LatLng }
+  | { kind: "cluster"; id: number; count: number; at: LatLng };
 
 // 훅의 초기값. 렌더마다 새 배열을 넘기지 않도록 바깥에 둠
 const EMPTY_MARKERS: MapMarker[] = [];
@@ -304,9 +325,19 @@ export function HomeScreen({
       render: () => <Snackbar message={message} />,
     });
 
-  // 검색창과 시트가 지도를 덮어 그 사이만 실제로 보이는 구간
+  // 검색창이 지도를 덮어 그 아래부터 시트 위까지가 실제로 보이는 구간
   const topBarRef = useRef<HTMLDivElement | null>(null);
-  const sheetRef = useRef<HTMLDivElement | null>(null);
+
+  // 시트 자리는 MotionValue 하나가 쥐고, 상태로 남는 것은 손을 뗀 뒤 붙은 단계뿐
+  const {
+    y,
+    followY,
+    stop: sheetStop,
+    viewport: viewportHeight,
+    snapTo,
+    dragProps,
+    handleProps,
+  } = useSheetSnap({ stops: STOPS, rest: SHEET.collapsed, ceiling: SHEET.full });
 
   // 지도 중심을 보이는 구간 한가운데로 옮겨 내 위치가 시트 쪽으로 밀려 내려가지 않게 함
   useEffect(() => {
@@ -314,9 +345,9 @@ export function HomeScreen({
     const apply = () => {
       const height = window.innerHeight;
       const top = topBarRef.current?.getBoundingClientRect().bottom ?? 0;
-      const sheetTop = sheetRef.current?.getBoundingClientRect().top ?? height;
+      // 시트가 가린 높이는 붙은 단계가 그대로 말해 줘 요소를 재지 않음
       // 시트를 펼친 채 화면이 바뀌면 여백이 지도보다 커져 남는 구간이 사라지므로 절반으로 묶음
-      const bottom = Math.max(Math.min(height - sheetTop, (height - top) / 2), 0);
+      const bottom = Math.max(Math.min(sheetStop * height, (height - top) / 2), 0);
       map.setPadding({ top, bottom, left: 0, right: 0 });
     };
     apply();
@@ -324,7 +355,8 @@ export function HomeScreen({
     return () => {
       window.removeEventListener("resize", apply);
     };
-  }, [map]);
+    // 시트가 다른 단계에 붙으면 지도에서 보이는 구간도 달라짐
+  }, [map, sheetStop]);
 
   // 권한 응답이 늦게 와도 첫 도착에만 옮겨 사용자가 끌어 둔 화면을 되돌리지 않음
   const centered = useRef(false);
@@ -335,11 +367,147 @@ export function HomeScreen({
   }, [position.point, moveTo]);
 
   // 핀은 SEED 컴포넌트로 그려야 해 오버레이에 빈 요소만 올리고 포털로 채움
-  // 천 건이 넘어 낱개로 다 그리면 폰에서 버벅여 지도에 묶게 하고 보이는 것만 그림
+  // 천 건이 넘어 낱개로 다 그리면 폰에서 버벅여 지도에 묶게 하고 타일이 실린 구간만 그림
   const [pins, setPins] = useState<Pin[]>([]);
+  // 지도에 올라간 핀 장부. 키가 같은 핀은 요소를 그대로 두어 지도가 움직여도 다시 마운트되지 않음
+  // 매번 지우고 새로 만들면 포털 대상이 바뀌어 React 가 핀을 다시 마운트하고 사진이 한 프레임 비어 깜빡임
+  const registry = useRef(new Map<string, PinEntry>());
+  const byIdRef = useRef(new Map<string, MapMarker>());
+
   useEffect(() => {
     if (!map) return;
-    const byId = new Map(markers.map((item) => [item.id, item]));
+    const book = registry.current;
+
+    // 장부에서 지금 핀 목록을 뽑아 화면에 넘김. 순서는 포털 키가 있어 뜻이 없음
+    const publish = () => setPins(Array.from(book.values(), (entry) => entry.pin));
+
+    // 묶음에 세울 사진은 지도에게 물어봐야 알 수 있어 핀을 올린 뒤에 채움
+    const fillClusterPhotos = async (keys: string[]) => {
+      const source = map.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
+      if (!source || keys.length === 0) return;
+      let filled = 0;
+      await Promise.all(
+        keys.map(async (key) => {
+          const entry = book.get(key);
+          if (!entry || entry.pin.kind !== "cluster") return;
+          // 사진 없는 제보가 앞에 설 수 있어 몇 장 받아 첫 사진을 고름
+          const leaves = await source.getClusterLeaves(entry.pin.id, 4, 0).catch(() => []);
+          const items = leaves
+            .map((leaf) => byIdRef.current.get(leaf.properties?.id as string))
+            .filter((item): item is MapMarker => Boolean(item));
+          const item = items.find((candidate) => candidate.photoUrl) ?? items[0] ?? null;
+          // 그사이 지도가 움직여 장부에서 빠졌으면 버림
+          const current = book.get(key);
+          if (!current || current.pin.kind !== "cluster" || !item) return;
+          current.pin = { ...current.pin, item };
+          filled += 1;
+        }),
+      );
+      if (filled > 0) publish();
+    };
+
+    const redraw = () => {
+      if (!map.getLayer(PIN_PROBE_LAYER)) return;
+      // 화면에 그려진 것만 물으면 가장자리를 넘는 순간 지워져 되돌아올 때 새로 만듦
+      // 실린 타일 전체를 물어 뷰포트 둘레에 여유를 두고 붙들어 둠
+      const features = map.querySourceFeatures(PIN_SOURCE);
+      const incoming: { key: string; feature: PinFeature }[] = [];
+      for (const feature of features) {
+        if (feature.geometry.type !== "Point") continue;
+        const props = feature.properties ?? {};
+        const [lng, lat] = feature.geometry.coordinates as [number, number];
+        const at = { lat, lng };
+        if (props.cluster) {
+          incoming.push({
+            key: `c${props.cluster_id}`,
+            feature: {
+              kind: "cluster",
+              id: props.cluster_id as number,
+              count: props.point_count as number,
+              at,
+            },
+          });
+          continue;
+        }
+        const item = byIdRef.current.get(props.id as string);
+        if (item) incoming.push({ key: `r${item.id}`, feature: { kind: "report", item, at } });
+      }
+
+      const result = reconcilePins(book, incoming, {
+        create: (feature) => {
+          const el = document.createElement("div");
+          el.dataset.reportPin = "";
+          const marker = new Marker({ element: el, anchor: "center" })
+            .setLngLat([feature.at.lng, feature.at.lat])
+            .addTo(map);
+          const key = feature.kind === "cluster" ? `c${feature.id}` : `r${feature.item.id}`;
+          const pin: Pin =
+            feature.kind === "cluster"
+              ? { kind: "cluster", key, el, id: feature.id, count: feature.count, at: feature.at, item: null }
+              : { kind: "report", key, el, item: feature.item };
+          return { pin, marker };
+        },
+        update: (entry, feature) => {
+          let changed = false;
+          // 같은 묶음도 타일에 따라 좌표가 조금 다를 수 있어 요소는 두고 자리만 옮김
+          const here = entry.marker.getLngLat();
+          if (here.lng !== feature.at.lng || here.lat !== feature.at.lat) {
+            entry.marker.setLngLat([feature.at.lng, feature.at.lat]);
+          }
+          if (entry.pin.kind === "cluster" && feature.kind === "cluster") {
+            if (entry.pin.count !== feature.count || entry.pin.at !== feature.at) {
+              entry.pin = { ...entry.pin, count: feature.count, at: feature.at };
+              changed = true;
+            }
+          } else if (entry.pin.kind === "report" && feature.kind === "report") {
+            if (entry.pin.item !== feature.item) {
+              entry.pin = { ...entry.pin, item: feature.item };
+              changed = true;
+            }
+          }
+          return changed;
+        },
+        remove: (entry) => entry.marker.remove(),
+      });
+
+      if (result.created + result.updated + result.removed === 0) return;
+      publish();
+      void fillClusterPhotos(
+        result.entries
+          .filter((entry) => entry.pin.kind === "cluster" && entry.pin.item === null)
+          .map((entry) => entry.pin.key),
+      );
+    };
+
+    // sourcedata 는 타일마다 오고 moveend 와 겹치기도 해 한 프레임에 한 번만 맞춤
+    let frame = 0;
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        redraw();
+      });
+    };
+    const onSourceData = (event: { sourceId?: string; isSourceLoaded?: boolean }) => {
+      if (event.sourceId === PIN_SOURCE && event.isSourceLoaded) schedule();
+    };
+    map.on("moveend", schedule);
+    map.on("sourcedata", onSourceData);
+    schedule();
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      map.off("moveend", schedule);
+      map.off("sourcedata", onSourceData);
+      for (const entry of book.values()) entry.marker.remove();
+      book.clear();
+    };
+  }, [map]);
+
+  // 마커 데이터를 지도 소스에 넣음. 다시 그리는 일은 sourcedata 가 위 effect 를 깨워 맡음
+  useEffect(() => {
+    if (!map) return;
+    byIdRef.current = new Map(markers.map((item) => [item.id, item]));
     const data = {
       type: "FeatureCollection" as const,
       features: markers.map((item) => ({
@@ -350,116 +518,42 @@ export function HomeScreen({
     };
 
     const source = map.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
-    if (source) source.setData(data);
-    else {
-      map.addSource(PIN_SOURCE, {
-        type: "geojson",
-        data,
-        cluster: true,
-        clusterRadius: CLUSTER_RADIUS_PX,
-        clusterMaxZoom: CLUSTER_MAX_ZOOM,
-      });
-      map.addLayer({
-        id: PIN_PROBE_LAYER,
-        type: "circle",
-        source: PIN_SOURCE,
-        paint: { "circle-radius": 1, "circle-opacity": 0 },
-      });
-    }
-
-    let drawn: Marker[] = [];
-    const redraw = () => {
-      if (!map.getLayer(PIN_PROBE_LAYER)) return;
-      const features = map.queryRenderedFeatures({ layers: [PIN_PROBE_LAYER] });
-      for (const marker of drawn) marker.remove();
-      drawn = [];
-
-      const next: Pin[] = [];
-      const seen = new Set<string>();
-      for (const feature of features) {
-        if (feature.geometry.type !== "Point") continue;
-        const props = feature.properties ?? {};
-        const key = props.cluster ? `c${props.cluster_id}` : `r${props.id}`;
-        // 타일 경계에 걸친 것은 두 번 올라옴
-        if (seen.has(key)) continue;
-        seen.add(key);
-
-        const [lng, lat] = feature.geometry.coordinates as [number, number];
-        const el = document.createElement("div");
-        el.dataset.reportPin = "";
-        drawn.push(new Marker({ element: el, anchor: "center" }).setLngLat([lng, lat]).addTo(map));
-
-        if (props.cluster) {
-          next.push({
-            kind: "cluster",
-            key,
-            el,
-            id: props.cluster_id as number,
-            count: props.point_count as number,
-            at: { lat, lng },
-            item: null,
-          });
-          continue;
-        }
-        const item = byId.get(props.id as string);
-        if (item) next.push({ kind: "report", key, el, item });
+    if (source) {
+      // 데이터가 바뀌면 묶음 번호가 다시 매겨져 묶음 핀은 장부에서 지움. 낱개는 키가 id 라 그대로 둠
+      for (const [key, entry] of registry.current) {
+        if (entry.pin.kind !== "cluster") continue;
+        entry.marker.remove();
+        registry.current.delete(key);
       }
-      // 마커 요소는 지도가 만든 뒤에야 존재해 포털 대상은 마운트 후 넣음
-      setPins(next);
-      void fillClusterPhotos(next);
-    };
-
-    // 묶음에 세울 사진은 지도에게 물어봐야 알 수 있어 핀을 그린 뒤에 채움
-    let turn = 0;
-    const fillClusterPhotos = async (pins: Pin[]) => {
-      const clusters = pins.filter((pin) => pin.kind === "cluster");
-      if (clusters.length === 0) return;
-      const clustered = map.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
-      if (!clustered) return;
-
-      const mine = ++turn;
-      await Promise.all(
-        clusters.map(async (pin) => {
-          // 사진 없는 제보가 앞에 설 수 있어 몇 장 받아 첫 사진을 고름
-          const leaves = await clustered.getClusterLeaves(pin.id, 4, 0).catch(() => []);
-          const items = leaves
-            .map((leaf) => byId.get(leaf.properties?.id as string))
-            .filter((item): item is MapMarker => Boolean(item));
-          pin.item = items.find((item) => item.photoUrl) ?? items[0] ?? null;
-        }),
-      );
-      // 그사이 지도가 움직였으면 이미 다른 핀이 올라와 있음
-      if (mine === turn) setPins([...pins]);
-    };
-
-    // 묶음은 축척과 위치에 따라 다시 계산돼 화면이 멈출 때마다 새로 읽음
-    const onSourceData = (event: { sourceId?: string; isSourceLoaded?: boolean }) => {
-      if (event.sourceId === PIN_SOURCE && event.isSourceLoaded) redraw();
-    };
-    map.on("moveend", redraw);
-    map.on("sourcedata", onSourceData);
-    redraw();
-
-    return () => {
-      map.off("moveend", redraw);
-      map.off("sourcedata", onSourceData);
-      for (const marker of drawn) marker.remove();
-      setPins([]);
-    };
+      source.setData(data);
+      return;
+    }
+    map.addSource(PIN_SOURCE, {
+      type: "geojson",
+      data,
+      cluster: true,
+      clusterRadius: CLUSTER_RADIUS_PX,
+      clusterMaxZoom: CLUSTER_MAX_ZOOM,
+    });
+    // 소스를 쓰는 레이어가 있어야 타일이 실리고 물어볼 수 있음
+    map.addLayer({
+      id: PIN_PROBE_LAYER,
+      type: "circle",
+      source: PIN_SOURCE,
+      paint: { "circle-radius": 1, "circle-opacity": 0 },
+    });
   }, [map, markers]);
 
   // 묶음을 누르면 그 묶음이 풀리는 축척까지 당김
-  const expandCluster = useCallback(
-    (id: number, at: LatLng) => {
-      const source = map?.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
-      if (!source) return;
-      source
-        .getClusterExpansionZoom(id)
-        .then((zoom) => moveTo(at, { animate: true, zoom }))
-        .catch(() => undefined);
-    },
-    [map, moveTo],
-  );
+  // 핀에 넘기는 함수들의 고정은 React Compiler 가 맡아 useCallback 을 손으로 쓰지 않음
+  const expandCluster = (id: number, at: LatLng) => {
+    const source = map?.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
+    if (!source) return;
+    source
+      .getClusterExpansionZoom(id)
+      .then((zoom) => moveTo(at, { animate: true, zoom }))
+      .catch(() => undefined);
+  };
 
   useMyLocationMarker({
     map,
@@ -471,7 +565,8 @@ export function HomeScreen({
 
   // 지도를 못 띄우면 거리를 셀 기준이 없어 최근 제보를 그대로 보여줌
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
-  const { nearby, widened } = useMemo(() => {
+  // 값이 같으면 React Compiler 가 건너뛰어 useMemo 를 손으로 쓰지 않음
+  const { nearby, widened } = (() => {
     if (!ready) return { nearby: markers, widened: false };
     const inRadius = markers.filter((item) => distanceKm(center, item.point) <= radiusKm);
     if (inRadius.length > 0) return { nearby: inRadius, widened: false };
@@ -481,12 +576,10 @@ export function HomeScreen({
       .slice(0, NEARBY_FALLBACK_COUNT)
       .map((row) => row.item);
     return { nearby: sorted, widened: sorted.length > 0 };
-  }, [ready, center, radiusKm, markers]);
+  })();
 
   // 떠 있는 단추가 여는 쓰기 시트. 지도 위 알약을 대신함
   const [writeOpen, setWriteOpen] = useState(false);
-
-  const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
   // 서버에는 저장소가 없어 첫 그림에서는 판정을 미루고 안내를 그리지 않음
   const [seenIntro, setSeenIntro] = useState<boolean | null>(null);
@@ -495,46 +588,47 @@ export function HomeScreen({
     setSeenIntro(readSeenIntro());
   }, []);
 
-  const markIntroSeen = useCallback(() => {
+  const markIntroSeen = () => {
     setSeenIntro(true);
     try {
       localStorage.setItem(SEEN_INTRO_KEY, "1");
     } catch {
       // 저장이 막혀도 이 세션 동안은 접힌 채로 둠
     }
-  }, []);
+  };
 
   // 판정 전에는 null 이라 안내와 타일 둘 다 자리를 잡지 않음
   const firstVisit = seenIntro === false;
 
   // 핀을 고르면 지도 위 말풍선으로 요약을 띄움
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = useMemo(
-    () => markers.find((item) => item.id === selectedId) ?? null,
-    [markers, selectedId],
-  );
+  const selected = markers.find((item) => item.id === selectedId) ?? null;
 
   // 말풍선을 닫을 때 돌려놓을 직전 화면, 핀을 옮겨 골라도 처음 값을 지킴
   const beforePreview = useRef<{ point: LatLng; zoom: number } | null>(null);
 
-  const selectPin = (item: MapMarker) => {
-    if (map && !beforePreview.current) {
-      const at = map.getCenter();
-      beforePreview.current = { point: { lat: at.lat, lng: at.lng }, zoom: map.getZoom() };
-    }
-    setSelectedId(item.id);
-    setSheetRatio(SHEET.hidden);
-    moveTo(item.point, { animate: true, zoom: PIN_ZOOM, offset: PIN_OFFSET });
-  };
+  // 핀이 memo 라 같은 함수를 넘겨야 지도가 움직일 때 핀이 다시 그려지지 않음
+  const selectPin = useCallback(
+    (item: MapMarker) => {
+      if (map && !beforePreview.current) {
+        const at = map.getCenter();
+        beforePreview.current = { point: { lat: at.lat, lng: at.lng }, zoom: map.getZoom() };
+      }
+      setSelectedId(item.id);
+      snapTo(SHEET.hidden);
+      moveTo(item.point, { animate: true, zoom: PIN_ZOOM, offset: PIN_OFFSET });
+    },
+    [map, moveTo, snapTo],
+  );
 
   const closePreview = useCallback(() => {
     setSelectedId(null);
-    setSheetRatio(SHEET.collapsed);
+    snapTo(SHEET.collapsed);
 
     const before = beforePreview.current;
     beforePreview.current = null;
     if (before) moveTo(before.point, { animate: true, zoom: before.zoom });
-  }, [moveTo]);
+  }, [moveTo, snapTo]);
 
   // 말풍선도 지도가 만든 요소에 포털로 채움, 위치와 방향은 SDK 가 잡음
   const [popupEl, setPopupEl] = useState<HTMLElement | null>(null);
@@ -580,49 +674,8 @@ export function HomeScreen({
     };
   }, [map, closePreview]);
 
-  const expanded = sheetRatio > SHEET_MID;
-  const hidden = sheetRatio === SHEET.hidden;
-  const drag = useRef<{ startY: number; startRatio: number; moved: boolean } | null>(null);
-
-  const startDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    drag.current = { startY: event.clientY, startRatio: sheetRatio, moved: false };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
-
-  const onDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const current = drag.current;
-    if (!current) return;
-    if (Math.abs(event.clientY - current.startY) > 4) current.moved = true;
-    const next = current.startRatio + (current.startY - event.clientY) / window.innerHeight;
-    setSheetRatio(Math.min(SHEET.max, Math.max(SHEET.min, next)));
-  };
-
-  const endDrag = () => {
-    const current = drag.current;
-    if (!current) return;
-    drag.current = null;
-    const at = Math.max(0, STOPS.indexOf(current.startRatio));
-    // 움직이지 않았으면 탭으로 보고 한 단 올리되 맨 위에서는 접음
-    if (!current.moved) {
-      setSheetRatio(at === STOPS.length - 1 ? SHEET.collapsed : STOPS[at + 1]);
-      return;
-    }
-    // 끌어올렸으면 한 단 올리고 내렸으면 한 단 내리고, 거의 안 움직였으면 되돌림
-    setSheetRatio((value) => {
-      if (value > current.startRatio + 0.03) return STOPS[Math.min(at + 1, STOPS.length - 1)];
-      if (value < current.startRatio - 0.03) return STOPS[Math.max(at - 1, 0)];
-      return current.startRatio;
-    });
-  };
-
-  // 손잡이는 걷었을 때와 펼쳤을 때 생김새만 다르고 동작은 하나
-  const handleProps = {
-    onPointerDown: startDrag,
-    onPointerMove: onDrag,
-    onPointerUp: endDrag,
-    onPointerCancel: endDrag,
-    style: { touchAction: "none", cursor: "grab" } as const,
-  };
+  const expanded = sheetStop > SHEET_MID;
+  const hidden = sheetStop === SHEET.hidden;
 
   const recenter = () => {
     // iOS 는 사용자가 누른 안에서만 자기 센서 권한을 물을 수 있어 이 탭에 얹음
@@ -640,7 +693,8 @@ export function HomeScreen({
   };
 
   return (
-    <Box position="relative" height="100dvh" bg="bg.layerDefault">
+    // 시트를 끄는 동안 아래로 늘린 상자가 화면 밖으로 나가도 문서가 스크롤되지 않게 가둠
+    <Box position="relative" height="100dvh" bg="bg.layerDefault" style={{ overflow: "clip" }}>
       {/* zIndex 를 줘서 SDK 가 넣는 내부 레이어가 시트 위로 올라오지 않게 가둠 */}
       {/* MapLibre 가 컨테이너에 position relative 를 걸어 크기 잡는 요소를 따로 둠 */}
       <Box
@@ -659,9 +713,11 @@ export function HomeScreen({
         createPortal(
           pin.kind === "cluster" ? (
             <ClusterPin
+              id={pin.id}
+              at={pin.at}
               count={pin.count}
               item={pin.item}
-              onClick={() => expandCluster(pin.id, pin.at)}
+              onExpand={expandCluster}
             />
           ) : (
             <ReportPin
@@ -722,7 +778,8 @@ export function HomeScreen({
           bg="bg.layerFloating"
           boxShadow="s2"
         >
-          <Link href="/search" aria-label="제보 검색">
+          {/* 터치 안에서 키보드를 올려 두어야 다음 화면의 autoFocus 가 키보드까지 이어 받음 */}
+          <Link href="/search" aria-label="제보 검색" onClick={holdKeyboard}>
             <HStack gap="x2" align="center" px="x4" py="x3">
               <Icon svg={<IconMagnifyingglassLine />} size="x5" color="fg.neutralSubtle" />
               <Text textStyle="t4Regular" color="fg.neutralSubtle">
@@ -789,58 +846,75 @@ export function HomeScreen({
       ) : null}
 
       {/* 첫 화면에서 무엇을 하는 곳인지 읽히도록 급한 일 셋을 지도 위에 올림
-          좁은 화면에서는 단추가 겹치는 대신 가로로 밀림, 위아래 여백은 그림자 자리 */}
-      <HStack
-        gap="x2"
-        align="center"
-        width="fit-content"
+          좁은 화면에서는 글자를 줄이지 않고 가로로 넘김. 여백을 뚫고 화면 끝까지 나가
+          첫 단추는 본문 선에서 시작하고 마지막 단추가 끝에 걸쳐 보여 더 있다는 것이 읽힘
+          넘기는 상자에 pointer-events none 을 걸면 iOS 가 스크롤 대상으로 잡지 않아 상자가 탭을 받음
+          대신 폭을 내용에 맞추고 화면 폭으로만 제한해, 다 들어오는 화면에서는 오른쪽 빈 띠가 지도에 남음
+          위아래 여백은 잘리는 그림자 자리 */}
+      <Box
+        className="rebirth-scroll-row rebirth-bleed"
         py="x2"
         bleedY="x2"
-        overflowX="auto"
-        style={{ pointerEvents: "auto", whiteSpace: "nowrap" }}
+        style={{
+          pointerEvents: "auto",
+          whiteSpace: "nowrap",
+          width: "fit-content",
+          // 폭 제한이 안쪽 여백까지 세어야 상자가 화면 밖으로 나가지 않음
+          boxSizing: "border-box",
+          maxWidth: "calc(100% + 2 * var(--seed-dimension-spacing-x-global-gutter))",
+        }}
       >
-        <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/lost/new" onClick={markIntroSeen}>
-            <PrefixIcon svg={<IconMegaphoneLine />} />
-            우리 아이 찾기
-          </Link>
-        </ContextualFloatingButton>
-        <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/report" onClick={markIntroSeen}>
-            <PrefixIcon svg={<IconCameraLine />} />
-            발견동물 제보
-          </Link>
-        </ContextualFloatingButton>
-        <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/guide/injured" onClick={markIntroSeen}>
-            <PrefixIcon svg={<IconHospitalcrossShieldLine />} />
-            다친 동물
-          </Link>
-        </ContextualFloatingButton>
-      </HStack>
+        <HStack gap="x2" align="center" width="fit-content">
+          <ContextualFloatingButton variant="layer" asChild>
+            <Link href="/lost/new" onClick={markIntroSeen}>
+              <PrefixIcon svg={<IconMegaphoneLine />} />
+              우리 아이 찾기
+            </Link>
+          </ContextualFloatingButton>
+          <ContextualFloatingButton variant="layer" asChild>
+            <Link href="/report" onClick={markIntroSeen}>
+              <PrefixIcon svg={<IconCameraLine />} />
+              발견동물 제보
+            </Link>
+          </ContextualFloatingButton>
+          <ContextualFloatingButton variant="layer" asChild>
+            <Link href="/guide/injured" onClick={markIntroSeen}>
+              <PrefixIcon svg={<IconHospitalcrossShieldLine />} />
+              다친 동물
+            </Link>
+          </ContextualFloatingButton>
+        </HStack>
+      </Box>
       </VStack>
 
       {/* 이 묶음은 시트와 떠 있는 버튼의 자리만 잡음
+          둘 다 흐름에서 자리를 바꾸지 않고 transform 으로만 오르내려 끄는 동안 레이아웃이 돌지 않음
           면이 없는 곳까지 탭을 먹으면 지도 아래 절반에서 확대와 이동이 듣지 않음 */}
-      <VStack
+      <Box
         position="absolute"
         bottom="0"
         left="0"
         right="0"
         zIndex={2}
-        gap="x3"
-        align="stretch"
         style={{ pointerEvents: "none" }}
       >
         {selected ? null : (
         <VStack
-          alignSelf="flex-end"
-          width="fit-content"
+          asChild
           align="flex-end"
           gap="x2"
           px="spacingX.globalGutter"
-          style={{ pointerEvents: "auto" }}
         >
+          {/* 시트를 따라 내려오다 알약 자리에서 멈춤, 값은 시트와 같은 MotionValue 하나에서 나옴 */}
+          <motion.div
+            style={{
+              y: followY,
+              position: "absolute",
+              right: 0,
+              bottom: FLOATING_BOTTOM,
+              pointerEvents: "auto",
+            }}
+          >
           <ContextualFloatingButton
             variant="layer"
             layout="iconOnly"
@@ -860,12 +934,23 @@ export function HomeScreen({
             aria-expanded={writeOpen}
             onClick={() => setWriteOpen(true)}
           />
+          </motion.div>
         </VStack>
         )}
 
         {hidden ? (
           // 시트를 걷으면 지도만 남고 탭바 위에 이 손잡이 하나만 떠 있음
-          <VStack align="center" className="rebirth-above-tabs" style={{ pointerEvents: "auto" }}>
+          <VStack
+            align="center"
+            className="rebirth-above-tabs"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: "auto",
+            }}
+          >
             <HStack
               asChild
               align="center"
@@ -876,7 +961,13 @@ export function HomeScreen({
               bg="bg.layerFloating"
               boxShadow="s2"
             >
-              <button type="button" aria-expanded={false} aria-label="목록 펼치기" {...handleProps}>
+              {/* 눈에 보이는 글자가 이름 안에 그대로 들어가야 음성으로 부르는 말과 화면이 같음 */}
+              <button
+                type="button"
+                aria-expanded={false}
+                aria-label={`제보 ${nearby.length}건, 목록 펼치기`}
+                {...handleProps}
+              >
                 <Icon svg={<IconChevronUpLine />} size="x4" color="fg.neutralSubtle" />
                 <Text textStyle="t2Bold" color="fg.neutral">
                   제보 {nearby.length}건
@@ -884,10 +975,12 @@ export function HomeScreen({
               </button>
             </HStack>
           </VStack>
-        ) : (
+        ) : null}
+
+        {/* 걷은 단계에서도 요소는 그대로 서 있고 화면 아래로 물러나기만 함
+            높이가 늘 같아 목록이 자리를 다시 재지 않고, 걷힌 동안은 inert 로 초점도 받지 않음 */}
         <VStack
-          ref={sheetRef}
-          as="section"
+          asChild
           align="stretch"
           gap="x2"
           pb="x5"
@@ -895,8 +988,22 @@ export function HomeScreen({
           borderTopLeftRadius="r5"
           borderTopRightRadius="r5"
           boxShadow="s3"
-          style={{ pointerEvents: "auto" }}
         >
+          <motion.section
+            {...dragProps}
+            inert={hidden}
+            style={{
+              y,
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: SHEET_BOTTOM,
+              height: SHEET_HEIGHT,
+              // 아래 여백이 높이에 더해지면 단계마다 시트가 그만큼 더 올라옴
+              boxSizing: "border-box",
+              pointerEvents: hidden ? "none" : "auto",
+            }}
+          >
           <VStack asChild align="center" pt="x2_5" pb="x0_5">
             <button
               type="button"
@@ -946,10 +1053,11 @@ export function HomeScreen({
             </Text>
           </HStack>
 
-          <NearbyList items={nearby} height={`${Math.round(sheetRatio * 100)}dvh`} />
+          {/* 화면 밖으로 내려가 있는 만큼을 목록 끝에 더해 어느 단계에서도 마지막 장까지 닿음 */}
+          <NearbyList items={nearby} tailPx={Math.round((SHEET.full - sheetStop) * viewportHeight)} />
+          </motion.section>
         </VStack>
-        )}
-      </VStack>
+      </Box>
 
       <WriteActionSheet open={writeOpen} onOpenChange={setWriteOpen} />
     </Box>

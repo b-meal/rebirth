@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Box, Divider, Grid, HStack, Icon, Text, VStack } from "@seed-design/react";
 import {
   IconCameraLine,
@@ -140,15 +140,35 @@ export function SearchScreen({
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  // 탭은 화면이 스스로 바꿈. 서버를 다시 부르면 차트와 주변 제보까지 다시 받느라 한참 뒤에 반응함
+  // 조건이 없으면 문구만 바뀌고, 조건이 있으면 결과 첫 쪽만 목록 API 로 다시 받음
+  const [activeKind, setActiveKind] = useState<SearchKind>(kind);
+  const [page, setPage] = useState<{ items: ReportCardItem[]; cursor: string | null } | null>(
+    null,
+  );
+  const [switching, setSwitching] = useState(false);
+  const switchTurn = useRef(0);
+
   // 조건을 바꾸면 서버가 새 쪽을 그려 보냄. 쌓아 둔 것을 비우지 않으면 옛 결과가 남음
-  const drawn = `${resultCursor ?? ""}|${results?.length ?? -1}|${params.toString()}`;
+  // kind 는 주소만 바꿔도 달라지므로 빼고 봄. 서버가 다시 그렸는지는 나머지 조건으로 앎
+  const rest = new URLSearchParams(params.toString());
+  rest.delete("kind");
+  const drawn = `${kind}|${resultCursor ?? ""}|${results?.length ?? -1}|${rest.toString()}`;
   const [seen, setSeen] = useState(drawn);
   if (seen !== drawn) {
     setSeen(drawn);
     setExtra([]);
     setCursor(resultCursor);
     setLoadError(null);
+    setPage(null);
+    setActiveKind(kind);
+    setSwitching(false);
   }
+  // 응답이 돌아왔을 때 서버가 그사이 새로 그렸는지 보는 기준. 렌더 중에는 ref 를 만지지 않음
+  const drawnRef = useRef(drawn);
+  useEffect(() => {
+    drawnRef.current = drawn;
+  }, [drawn]);
 
   const loadMore = useCallback(async () => {
     if (!cursor) return;
@@ -156,6 +176,7 @@ export function SearchScreen({
     setLoadError(null);
     try {
       const query = new URLSearchParams(params.toString());
+      query.set("kind", activeKind);
       query.set("cursor", cursor);
       const response = await fetch(`/api/reports?${query}`);
       if (!response.ok) throw new Error("load failed");
@@ -167,7 +188,47 @@ export function SearchScreen({
     } finally {
       setLoading(false);
     }
-  }, [cursor, params]);
+  }, [cursor, params, activeKind]);
+
+  const switchKind = (next: SearchKind) => {
+    if (next === activeKind) return;
+    setActiveKind(next);
+    // 새로고침과 뒤로가기가 고른 탭을 기억하도록 주소만 바꿈. 서버 컴포넌트는 다시 돌지 않음
+    const url = new URLSearchParams(params.toString());
+    url.set("kind", next);
+    window.history.replaceState(window.history.state, "", `/search?${url}`);
+    // 조건이 없으면 결과 절이 없어 문구만 바뀜
+    if (results === null) return;
+
+    const turn = ++switchTurn.current;
+    const startedOn = drawn;
+    // 그사이 다른 탭을 눌렀거나 서버가 새로 그렸으면 뒤진 응답임
+    const stale = () => switchTurn.current !== turn || drawnRef.current !== startedOn;
+    setSwitching(true);
+    setLoadError(null);
+    void (async () => {
+      try {
+        const response = await fetch(`/api/reports?${url}`);
+        if (!response.ok) throw new Error("switch failed");
+        const data = (await response.json()) as ResultResponse;
+        if (stale()) return;
+        setPage({ items: toCards(data.items), cursor: data.nextCursor });
+        setExtra([]);
+        setCursor(data.nextCursor);
+      } catch {
+        if (!stale()) setLoadError("목록을 바꾸지 못했어요. 다시 눌러 주세요");
+      } finally {
+        if (!stale()) setSwitching(false);
+      }
+    })();
+  };
+
+  // 화면을 떠나면 늦게 온 응답이 상태를 건드리지 않음
+  useEffect(() => {
+    return () => {
+      switchTurn.current += 1;
+    };
+  }, []);
 
   const sentinel = useInfiniteScroll({
     // 실패하면 관찰을 끊음. 자동으로 되풀이하면 같은 오류를 계속 부름
@@ -177,7 +238,7 @@ export function SearchScreen({
   });
 
   // 조건이 없으면 결과 절 자체를 그리지 않아 이어 읽은 것도 없음
-  const rows = results ? [...results, ...extra] : null;
+  const rows = results ? [...(page?.items ?? results), ...extra] : null;
 
   // 서버 렌더에는 저장소가 없어 빈 목록으로 시작함
   const stored = useSyncExternalStore(subscribeRecent, recentSnapshot, () => EMPTY);
@@ -190,14 +251,34 @@ export function SearchScreen({
   }, [stored]);
 
   // 목적이 바뀌어도 조건을 잃지 않게 주소마다 kind 를 끌고 감
-  const mode = SEARCH_KINDS.find((item) => item.key === kind) ?? SEARCH_KINDS[0];
+  const mode = SEARCH_KINDS.find((item) => item.key === activeKind) ?? SEARCH_KINDS[0];
+
+  // 지름길은 주소의 조건과 같으면 켜져 보이고, 켜진 것을 다시 누르면 그 조건만 풀림
+  // 다른 조건과 검색어는 그대로 두어 개 를 고양이 로 바꾸는 식으로 이어 쓸 수 있음
+  type Shortcut = (typeof SHORTCUTS)[number];
+  const shortcutEntry = (item: Shortcut): [string, string] => {
+    const [name, value] = item.params.split("=");
+    return [name!, decodeURIComponent(value!)];
+  };
+  const isShortcutOn = (item: Shortcut) => {
+    const [name, value] = shortcutEntry(item);
+    return params.get(name) === value;
+  };
+  const toggleShortcut = (item: Shortcut) => {
+    const [name, value] = shortcutEntry(item);
+    const next = new URLSearchParams(params.toString());
+    if (next.get(name) === value) next.delete(name);
+    else next.set(name, value);
+    next.set("kind", activeKind);
+    router.push(`/search?${next}`);
+  };
 
   const submit = (next: string) => {
     const text = next.trim();
     if (!text) return;
 
     writeRecent([text, ...recent.filter((item) => item !== text)].slice(0, RECENT_MAX));
-    router.push(`/search?kind=${kind}&q=${encodeURIComponent(text)}`);
+    router.push(`/search?kind=${activeKind}&q=${encodeURIComponent(text)}`);
   };
 
   const dropRecent = (text: string) => {
@@ -242,9 +323,10 @@ export function SearchScreen({
         </ActionButton>
 
         <VStack align="stretch" grow={1} minWidth="0">
+          {/* large 라야 글자가 16px 임. medium 은 14px 이라 iOS Safari 가 포커스 때 화면을 확대함 */}
           <TextField
             aria-label="검색어"
-            size="medium"
+            size="large"
             prefixIcon={<IconMagnifyingglassLine />}
             value={keyword}
             onValueChange={(next) => setKeyword(next.value)}
@@ -277,34 +359,32 @@ export function SearchScreen({
       <VStack align="stretch" gap="x2" pb="x10">
         <SectionCard gap="x3">
           <HStack gap="spacingX.betweenChips">
+            {/* 켜진 쪽이 한눈에 보여야 해 다른 화면과 같은 Toggle 을 씀. Button 의 solid 는 연한 회색이라 구분이 안 됨
+                켜진 것을 다시 눌러도 switchKind 가 같은 값이라 그대로 둠 */}
             {SEARCH_KINDS.map((item) => (
-              <Chip.Button
+              <Chip.Toggle
                 key={item.key}
                 size="medium"
-                // Chip.Button 에 선택 상태 prop 이 없어 variant 와 aria-pressed 로 대신함
-                variant={item.key === kind ? "solid" : "outlineWeak"}
-                aria-pressed={item.key === kind}
-                onClick={() =>
-                  router.push(
-                    `/search?kind=${item.key}${query ? `&q=${encodeURIComponent(query)}` : ""}`,
-                  )
-                }
+                checked={item.key === activeKind}
+                onCheckedChange={() => switchKind(item.key)}
               >
                 <Chip.Label>{item.label}</Chip.Label>
-              </Chip.Button>
+              </Chip.Toggle>
             ))}
           </HStack>
 
-          <Box className="rebirth-scroll-row" mx="-x4" px="x4">
+          {/* 음수 마진은 prop 으로 주면 값이 되지 않아 클래스가 맡음. 첫 칩이 위 탭과 같은 선에 섬 */}
+          <Box className="rebirth-scroll-row rebirth-bleed">
             <HStack gap="spacingX.betweenChips">
               {SHORTCUTS.map((item) => (
-                <Chip.Button
+                <Chip.Toggle
                   key={item.label}
                   size="medium"
-                  onClick={() => router.push(`/search?kind=${kind}&${item.params}`)}
+                  checked={isShortcutOn(item)}
+                  onCheckedChange={() => toggleShortcut(item)}
                 >
                   <Chip.Label>{item.label}</Chip.Label>
-                </Chip.Button>
+                </Chip.Toggle>
               ))}
             </HStack>
           </Box>
@@ -322,24 +402,49 @@ export function SearchScreen({
               </Text>
             </HStack>
 
-            {rows.length === 0 ? (
-              <VStack align="stretch" gap="x1">
-                <Text textStyle="t4Regular" color="fg.neutralMuted">
-                  조건과 맞는 제보가 없어요
-                </Text>
-                <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  {kind === "lost"
-                    ? "이름이나 특징으로 다시 찾아보세요"
-                    : "털색이나 동네처럼 짧은 말로 다시 찾아 주세요"}
-                </Text>
-              </VStack>
-            ) : (
-              <Grid columns={2} gap="x4">
-                {rows.map((item) => (
-                  <ReportCard key={item.id} item={item} />
-                ))}
-              </Grid>
-            )}
+            {/* 탭을 바꿔 새 쪽을 받는 동안 옛 목록은 그대로 두고 목록 한가운데에 표시 하나만 올림
+                목록을 비우면 화면이 튀고, 제목 옆에 붙이면 무엇을 기다리는지 눈이 가지 않음 */}
+            <Box position="relative" aria-busy={switching}>
+              {rows.length === 0 ? (
+                switching ? (
+                  <HStack justify="center" py="x8">
+                    <ProgressCircle size="24" tone="neutral" />
+                  </HStack>
+                ) : (
+                  <VStack align="stretch" gap="x1">
+                    <Text textStyle="t4Regular" color="fg.neutralMuted">
+                      조건과 맞는 제보가 없어요
+                    </Text>
+                    <Text textStyle="t3Regular" color="fg.neutralSubtle">
+                      {activeKind === "lost"
+                        ? "이름이나 특징으로 다시 찾아보세요"
+                        : "털색이나 동네처럼 짧은 말로 다시 찾아 주세요"}
+                    </Text>
+                  </VStack>
+                )
+              ) : (
+                <Grid columns={2} gap="x4">
+                  {rows.map((item) => (
+                    <ReportCard key={item.id} item={item} />
+                  ))}
+                </Grid>
+              )}
+              {switching && rows.length > 0 ? (
+                <VStack position="absolute" top="0" right="0" bottom="0" left="0" align="center" aria-hidden>
+                  {/* 목록이 화면보다 길어 한가운데는 보이지 않으므로 보이는 구간 가운데에 붙여 둠
+                      사진 위에 얹히므로 떠 있는 면 하나를 받쳐 표시가 묻히지 않게 함 */}
+                  <Box
+                    className="rebirth-list-busy"
+                    bg="bg.layerFloating"
+                    borderRadius="full"
+                    p="x2"
+                    boxShadow="s2"
+                  >
+                    <ProgressCircle size="24" tone="neutral" />
+                  </Box>
+                </VStack>
+              ) : null}
+            </Box>
 
             {/* 실패했을 때만 손으로 다시 부름. 자동으로 되풀이하면 같은 오류를 계속 부름 */}
             {loadError ? (

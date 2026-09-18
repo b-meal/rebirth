@@ -301,7 +301,7 @@ export function LostDetail({
                 <Icon svg={<IconChevronRightLine />} size="x4" color="fg.neutralSubtle" />
               </Link>
             </HStack>
-            <Box className="rebirth-scroll-row" mx="-x4" px="x4">
+            <Box className="rebirth-scroll-row rebirth-bleed">
               <HStack gap="x3" align="flex-start">
                 {nearby.map((item) => (
                   <Box key={item.id} width={NEARBY_CARD_WIDTH} flexShrink={0}>
