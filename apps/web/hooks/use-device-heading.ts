@@ -126,6 +126,19 @@ export function useDeviceHeading(): DeviceHeadingState {
     start(true);
   }, [unsupported, start]);
 
+  // iOS 는 누른 안에서만 물을 수 있는데 그 단추가 어디인지 알려 줄 길이 없음
+  // 화면 어디든 처음 누르는 탭을 그 제스처로 써서 팝업을 띄움, 지도를 톡 치는 것도 포함
+  // 아직 표본을 기다리는 idle 도 받아 3초가 지나기 전에 누른 탭을 흘리지 않음
+  const awaitingTap = status === "idle" || status === "needs-gesture";
+  useEffect(() => {
+    if (!awaitingTap) return;
+    const onTap = () => start(false);
+    document.addEventListener("click", onTap, { capture: true, once: true });
+    return () => {
+      document.removeEventListener("click", onTap, { capture: true });
+    };
+  }, [awaitingTap, start]);
+
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === "hidden") detach.current?.();

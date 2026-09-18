@@ -27,9 +27,13 @@ test("Safari 필드가 있으면 그 값을 그대로 쓴다", () => {
   assert.deepEqual(sample, { heading: 45, source: "webkit" });
 });
 
-test("Safari 가 못 믿는다고 한 표본은 버린다", () => {
+test("Safari 가 못 믿는다고 한 표본만 버리고 오차가 커도 쓴다", () => {
   assert.equal(readHeading({ alpha: 0, webkitCompassHeading: 45, webkitCompassAccuracy: -1 }), null);
-  assert.equal(readHeading({ alpha: 0, webkitCompassHeading: 45, webkitCompassAccuracy: 90 }), null);
+  // 보정 중의 큰 오차는 버리면 화살촉이 아예 안 떠 값으로 씀
+  assert.deepEqual(readHeading({ alpha: 0, webkitCompassHeading: 45, webkitCompassAccuracy: 90 }), {
+    heading: 45,
+    source: "webkit",
+  });
 });
 
 test("북쪽을 모르는 상대 각도는 쓰지 않는다", () => {

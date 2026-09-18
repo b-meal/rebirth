@@ -83,3 +83,66 @@ test("걸어가면 점이 따라 움직이고 지도는 되돌리지 않는다",
     .poll(() => dot.evaluate((el) => el.style.transform), { timeout: 10_000 })
     .not.toBe(before);
 });
+
+/**
+ * iOS Safari 흉내. requestPermission 은 누른 안에서만 성공하고 그 전에는 이벤트가 오지 않음
+ * 각도는 Safari 방식대로 webkitCompassHeading 에 담아 보냄
+ */
+async function emulateSafariCompass(page: Page, heading: number) {
+  await page.addInitScript((value: number) => {
+    class FakeOrientationEvent extends Event {
+      alpha: number | null = null;
+      beta: number | null = null;
+      gamma: number | null = null;
+      absolute = false;
+      webkitCompassHeading: number;
+      webkitCompassAccuracy = 15;
+      constructor(type: string, compass: number) {
+        super(type);
+        this.webkitCompassHeading = compass;
+      }
+    }
+    let granted = false;
+    (FakeOrientationEvent as unknown as { requestPermission: () => Promise<string> }).requestPermission =
+      () => {
+        if (!navigator.userActivation.isActive) {
+          return Promise.reject(new DOMException("needs gesture", "NotAllowedError"));
+        }
+        granted = true;
+        return Promise.resolve("granted");
+      };
+    const w = window as unknown as Record<string, unknown>;
+    w.DeviceOrientationEvent = FakeOrientationEvent;
+    setInterval(() => {
+      if (granted) window.dispatchEvent(new FakeOrientationEvent("deviceorientationabsolute", value));
+    }, 100);
+  }, heading);
+}
+
+test("iOS 처럼 권한이 필요한 기기는 첫 탭이 곧 권한 요청이 된다", async ({ page }) => {
+  await emulateSafariCompass(page, 45);
+  // 덮개를 걷는 단추 탭이 첫 제스처라 그 자리에서 권한 팝업이 뜨고 바로 켜짐
+  const dot = await openHome(page);
+  const cone = page.locator(".rebirth-my-location-heading");
+  await expect(cone).toBeVisible({ timeout: 5000 });
+  await expect
+    .poll(() => dot.evaluate((el) => el.style.transform), { timeout: 5000 })
+    .toMatch(/rotateZ\(45deg\)/);
+});
+
+test("iOS 처럼 권한이 필요한 기기에서 덮개 없이 들어오면 지도를 한 번 누르면 켜진다", async ({ page }) => {
+  await emulateSafariCompass(page, 45);
+  // 덮개는 한 번만 뜨므로 먼저 걷고 다시 들어와 탭 없는 첫 화면을 만듦
+  await page.goto("/");
+  await dismissSplash(page);
+  await page.goto("/");
+  const dot = page.locator(".rebirth-my-location");
+  await expect(dot).toBeVisible({ timeout: 20_000 });
+  const cone = page.locator(".rebirth-my-location-heading");
+  await page.waitForTimeout(3500);
+  await expect(cone).toBeHidden();
+
+  // 단추가 아닌 지도 빈 곳을 톡 치는 것도 제스처로 침
+  await page.mouse.click(120, 420);
+  await expect(cone).toBeVisible({ timeout: 5000 });
+});

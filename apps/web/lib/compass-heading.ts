@@ -10,10 +10,8 @@ export type HeadingSample = {
 };
 
 // iOS 가 자기장 간섭으로 못 믿는 표본에 주는 값
+// 오차 각도가 크다는 이유로는 버리지 않음, 보정 중에는 수십 도가 흔해 그러면 화살촉이 아예 안 뜸
 const WEBKIT_UNRELIABLE = -1;
-
-// 이 각도를 넘는 오차는 부채꼴이 엉뚱한 곳을 가리켜 표본을 버림
-const MAX_ACCURACY_DEG = 60;
 
 // Safari 만 붙이는 필드, 표준 타입에 없어 여기서만 넓힘
 type OrientationLike = {
@@ -44,10 +42,7 @@ export function readHeading(
 ): HeadingSample | null {
   const webkit = event.webkitCompassHeading;
   if (typeof webkit === "number" && Number.isFinite(webkit)) {
-    const accuracy = event.webkitCompassAccuracy;
-    if (accuracy === WEBKIT_UNRELIABLE || (accuracy !== undefined && accuracy > MAX_ACCURACY_DEG)) {
-      return null;
-    }
+    if (event.webkitCompassAccuracy === WEBKIT_UNRELIABLE) return null;
     // 이미 시계 방향 북쪽 기준이라 뒤집지 않고 화면 각도만 더함
     return { heading: normalizeDegrees(webkit + screenAngle), source: "webkit" };
   }
