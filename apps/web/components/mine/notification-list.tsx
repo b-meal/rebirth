@@ -7,13 +7,13 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
-import { CARE_LABEL, type AnimalType, type CareSituation } from "@rebirth/types";
+import type { AnimalType } from "@rebirth/types";
 
 import { markNotificationsRead, unsubscribeArea } from "@/app/mine/notifications/actions";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, SectionCard } from "@/components/ui/screen";
-import { describeAnimal, kstDayIndex, sinceLabel } from "@/lib/report-label";
+import { STATUS_LABEL, describeAnimal, kstDayIndex, sinceLabel } from "@/lib/report-label";
 
 // 구독한 동네에 올라온 제보를 모아 보여 주는 알림함
 // 서버는 마지막으로 본 시각 하나로 점을 판단하고, 방금 열어 본 줄은 화면이 따로 지움
@@ -54,8 +54,6 @@ export type NotificationListProps = {
   /** 더 읽을 곳. 없으면 이 목록이 전부임 */
   nextCursor: string | null;
   matches: MatchAlertItem[];
-  /** 가짜 데이터로 화면만 보는 중. 서버를 건드리는 동작을 모두 막음 */
-  preview?: boolean;
 };
 
 /** 이어 읽은 쪽. 날짜는 JSON 을 거치며 문자열이 됨 */
@@ -73,7 +71,6 @@ export function NotificationList({
   items,
   nextCursor,
   matches,
-  preview = false,
 }: NotificationListProps) {
   const [opened, setOpened] = useState<string[]>([]);
   const [extra, setExtra] = useState<NotificationItem[]>([]);
@@ -109,11 +106,9 @@ export function NotificationList({
 
   // 목록을 그린 뒤에 읽음으로 올림. 이번에 본 점은 남고 다음에 들어오면 사라짐
   useEffect(() => {
-    // 가짜 화면이 진짜 읽은 시각을 올리면 안 읽은 알림이 소리 없이 사라짐
-    if (preview) return;
     if (areas.length === 0 && matches.length === 0) return;
     void markNotificationsRead();
-  }, [preview, areas.length, matches.length]);
+  }, [areas.length, matches.length]);
 
   const markOpened = (id: string) =>
     setOpened((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -257,7 +252,7 @@ export function NotificationList({
 
             <VStack align="stretch" gap="x2">
               {areas.map((area) => (
-                <AreaRow key={area.areaCode} area={area} preview={preview} />
+                <AreaRow key={area.areaCode} area={area} />
               ))}
             </VStack>
           </SectionCard>
@@ -287,7 +282,7 @@ function groupByDay(
   return [...buckets].map(([label, items]) => ({ label, items }));
 }
 
-function AreaRow({ area, preview }: { area: NotificationArea; preview: boolean }) {
+function AreaRow({ area }: { area: NotificationArea }) {
   const [pending, start] = useTransition();
 
   return (
@@ -302,12 +297,12 @@ function AreaRow({ area, preview }: { area: NotificationArea; preview: boolean }
           </Text>
         ) : null}
       </HStack>
+      {/* 단추 글자가 절 제목 옆 건수와 같은 오른쪽 선에 서야 세로로 읽힘 */}
       <ActionButton
         variant="ghost"
         size="xsmall"
+        className="rebirth-row-end-action"
         loading={pending}
-        // 가짜 동네 코드로 구독 해제를 부르면 서버가 없는 것을 지우러 감
-        disabled={preview}
         onClick={() => start(() => void unsubscribeArea(area.areaCode))}
       >
         해제
@@ -365,8 +360,8 @@ function NotificationRow({
             </Text>
           ) : (
             <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
-              {/* 이 절은 발견 제보만 담아 종류를 되풀이하지 않고 보호 상황만 적음 */}
-              {CARE_LABEL[item.careSituation as CareSituation] ?? ""}
+              {/* 다른 화면과 같은 원천을 써야 같은 제보가 화면마다 다른 말로 불리지 않음 */}
+              {STATUS_LABEL[item.careSituation] ?? ""}
             </Text>
           )}
         </VStack>

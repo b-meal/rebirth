@@ -178,6 +178,15 @@ a {
   background: var(--seed-color-bg-brand-weak);
 }
 
+/* 줄 끝에 세우는 ghost 단추
+   단추는 제 좌우 여백을 갖고 있어 글자가 면 끝에서 x3_5 만큼 안으로 들어감
+   위에 있는 숫자는 글자라 끝에 붙어 있어 오른쪽 선이 서로 어긋남
+   여백만큼 밖으로 빼 글자끼리 줄을 맞춤. 손이 닿는 면은 그대로라 누르기는 쉬운 채로 둠
+   음수 여백을 prop 으로 주면 토큰 이름이 그대로 나가 값이 되지 않아 여기서 함 */
+.rebirth-row-end-action {
+  margin-right: calc(var(--seed-dimension-x3_5) * -1);
+}
+
 /* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬 */
 @media (hover: hover) and (pointer: fine) {
   .rebirth-row:hover {

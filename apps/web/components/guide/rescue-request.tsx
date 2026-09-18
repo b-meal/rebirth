@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState, type FormEvent } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { HStack, Icon, Text, VStack } from "@seed-design/react";
@@ -13,9 +13,12 @@ import {
   TextFieldTextarea,
 } from "seed-design/ui/text-field";
 
+import { rescueFieldErrors, rescueRequestInput } from "@rebirth/core/support/rescue";
+
 import { Screen, ScreenBody } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
 import { CTA } from "@/lib/cta-label";
+import { useFocusError } from "@/hooks/use-focus-error";
 import { requestRescue, type RescueFormState } from "@/app/guide/injured/actions";
 
 // 다친 동물을 본 사람이 쓰는 화면
@@ -100,11 +103,34 @@ export function RescueRequest({ prefill }: { prefill?: RescuePrefill | null }) {
   const [what, setWhat] = useState(prefill?.what ?? "");
   const [condition, setCondition] = useState(prefill?.condition ?? "");
 
+  // 서버와 같은 규칙으로 보내기 전에 먼저 거름. 급한 사람을 빈칸 하나로 왕복시키지 않음
+  // 제출마다 새 객체를 만들어 같은 오류가 이어져도 포커스가 다시 감
+  const [clientState, setClientState] = useState<RescueFormState>({});
+  const shown = clientState.errors ? clientState : state;
+  const formRef = useRef<HTMLFormElement>(null);
+  useFocusError(formRef, shown);
+
+  const validateBeforeSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const data = new FormData(event.currentTarget);
+    const parsed = rescueRequestInput.safeParse({
+      where: data.get("where"),
+      what: data.get("what"),
+      condition: data.get("condition") ?? undefined,
+      reportId: data.get("reportId") ?? undefined,
+    });
+    if (parsed.success) {
+      setClientState({});
+      return;
+    }
+    event.preventDefault();
+    setClientState({ errors: rescueFieldErrors(parsed.error) });
+  };
+
   if (state.reference) {
     return <Done reference={state.reference} reportId={prefill?.reportId} />;
   }
 
-  const errors = state.errors ?? {};
+  const errors = shown.errors ?? {};
 
   return (
     <Screen>
@@ -138,7 +164,7 @@ export function RescueRequest({ prefill }: { prefill?: RescuePrefill | null }) {
 
         {state.message ? <Callout tone="critical" description={state.message} /> : null}
 
-        <form action={formAction}>
+        <form ref={formRef} action={formAction} onSubmit={validateBeforeSubmit}>
           {/* 어느 제보에서 온 접수인지. 운영자가 중복 건을 가리는 데 씀 */}
           {/* design-system-allow:raw-element 보이지 않는 hidden 필드라 SEED 에 대응 컴포넌트가 없음 */}
           {prefill ? <input type="hidden" name="reportId" value={prefill.reportId} /> : null}

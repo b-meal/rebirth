@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { Box, Flex } from "@seed-design/react";
 import { SnackbarAvoidOverlap } from "seed-design/ui/snackbar";
@@ -21,6 +21,9 @@ const DOCK = { transform: "translateX(-50%)" } as const;
 
 export function AppFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname() ?? "";
+  // 문서 첫 진입 경로. 덮개는 홈으로 들어온 문서에서 한 번만 뜨고, 탭으로 돌아와도 다시 그리지 않음
+  // 지금 경로로 갈라 마운트를 끊으면 돌아올 때마다 visible 이 처음부터 시작해 덮개가 다시 뜸
+  const [entryPath] = useState(pathname);
   if (FULL_WIDTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`))) {
     return <>{children}</>;
   }
@@ -41,7 +44,7 @@ export function AppFrame({ children }: { children: ReactNode }) {
       >
         {children}
         {/* 공유 링크로 들어온 상세는 덮개 없이 바로 글이 보여야 함 */}
-        {pathname === "/" ? <SplashOverlay maxWidth={FRAME_WIDTH} /> : null}
+        {entryPath === "/" ? <SplashOverlay maxWidth={FRAME_WIDTH} /> : null}
       </Box>
 
       {/* 알림이 탭바를 덮지 않도록 띠 높이를 재게 함 */}

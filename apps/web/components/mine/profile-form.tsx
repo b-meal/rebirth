@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import { Icon, VStack } from "@seed-design/react";
 import { IconPersonFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -8,6 +8,8 @@ import { Avatar } from "seed-design/ui/avatar";
 import { Callout } from "seed-design/ui/callout";
 import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
+
+import { fieldErrors, updateProfile } from "@rebirth/types";
 
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen } from "@/components/ui/screen";
@@ -27,9 +29,23 @@ const SNACKBAR_MS = 2000;
 
 export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
   const [state, action, pending] = useActionState<ActionState, FormData>(saveProfile, {});
-  const errors = state.errors ?? {};
+  // 서버와 같은 규칙으로 보내기 전에 먼저 거름. 빈 이름으로 왕복하면 오류가 한 박자 늦게 옴
+  const [clientState, setClientState] = useState<ActionState>({});
+  const displayed = clientState.errors ? clientState : state;
+  const errors = displayed.errors ?? {};
   const formRef = useRef<HTMLFormElement>(null);
-  useFocusError(formRef, state);
+  useFocusError(formRef, displayed);
+
+  const validateBeforeSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const data = new FormData(event.currentTarget);
+    const parsed = updateProfile.safeParse({ displayName: data.get("displayName") });
+    if (parsed.success) {
+      setClientState({});
+      return;
+    }
+    event.preventDefault();
+    setClientState({ errors: fieldErrors(parsed.error) });
+  };
 
   // TextField 는 글자 수를 세느라 안에서 value 를 쥐고 있어 defaultValue 가 묻힘
   // 지금 이름이 처음부터 들어와 있어야 고치는 화면이 되므로 이 화면이 값을 쥠
@@ -57,7 +73,7 @@ export function ProfileForm({ displayName, avatarUrl }: ProfileFormProps) {
       {/* design-system-allow:raw-element form 은 SEED 에 대응 컴포넌트가 없는 표준 요소 */}
       {/* 저장 버튼이 화면 아래에 붙어 있어야 해 form 이 화면 전체를 감쌈 */}
       <VStack asChild align="stretch" grow={1} minHeight="0">
-        <form ref={formRef} action={action}>
+        <form ref={formRef} action={action} onSubmit={validateBeforeSubmit}>
           <VStack align="stretch" grow={1} px="spacingX.globalGutter" pt="x6" gap="x8">
             {/* 사진은 바꿀 수 있는 자리가 없어 설명을 두지 않음 */}
             {/* 누를 곳이 없으면 왜 못 바꾸는지 묻지 않음 */}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Badge,
   Grid,
@@ -13,7 +13,16 @@ import {
   VStack,
 } from "@seed-design/react";
 import { IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
-import { PET_NOTE_MAX, PET_REGISTRATION_DIGITS, PHOTO_MAX_COUNT } from "@rebirth/types";
+import {
+  PET_NOTE_MAX,
+  PET_REGISTRATION_DIGITS,
+  PHOTO_MAX_COUNT,
+  animalSize,
+  animalType as animalTypeSchema,
+  createPet,
+  fieldErrors,
+  updatePet,
+} from "@rebirth/types";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
@@ -83,9 +92,39 @@ export function PetForm({ pet }: PetFormProps) {
     editing ? editPet : addPet,
     {},
   );
-  const errors = state.errors ?? {};
+  // 서버 액션과 같은 모양으로 보내기 전에 먼저 거름. 이름 하나 비어도 사진까지 실어 왕복하지 않음
+  const [clientState, setClientState] = useState<ActionState>({});
+  const shown = clientState.errors ? clientState : state;
+  const errors = shown.errors ?? {};
   const formRef = useRef<HTMLFormElement>(null);
-  useFocusError(formRef, state);
+  useFocusError(formRef, shown);
+
+  const validateBeforeSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const data = new FormData(event.currentTarget);
+    const common = {
+      name: data.get("name"),
+      animalType: animalTypeSchema.catch("unknown").parse(data.get("animalType")),
+      breedGuess: data.get("breedGuess"),
+      size: animalSize.catch("unknown").parse(data.get("size")),
+      colors: data.getAll("colors").map(String),
+      registrationNumber: data.get("registrationNumber"),
+      note: data.get("note"),
+      uploadIds: data.getAll("uploadIds").map(String).filter(Boolean),
+    };
+    const parsed = editing
+      ? updatePet.safeParse({
+          ...common,
+          id: data.get("id"),
+          keepPhotoPaths: data.getAll("keepPhotoPaths").map(String).filter(Boolean),
+        })
+      : createPet.safeParse(common);
+    if (parsed.success) {
+      setClientState({});
+      return;
+    }
+    event.preventDefault();
+    setClientState({ errors: fieldErrors(parsed.error) });
+  };
 
   // 이미 올려 둔 사진은 File 이 아니라 고르는 칸에 넣을 수 없어 따로 들고 뺄 수만 있게 함
   const [kept, setKept] = useState(pet?.photos ?? []);
@@ -208,7 +247,7 @@ export function PetForm({ pet }: PetFormProps) {
       {/* design-system-allow:raw-element form 은 SEED 에 대응 컴포넌트가 없는 표준 요소 */}
       {/* 저장 버튼이 화면 아래에 붙어 있어야 해 form 이 남은 높이를 다 받음 */}
       <VStack asChild align="stretch" grow={1} minHeight="0">
-        <form ref={formRef} action={action}>
+        <form ref={formRef} action={action} onSubmit={validateBeforeSubmit}>
           <ScreenBody gap="x6">
             {editing ? <input type="hidden" name="id" value={pet.id} /> : null}
 

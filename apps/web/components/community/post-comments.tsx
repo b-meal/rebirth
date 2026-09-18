@@ -1,7 +1,7 @@
 // design-system-allow:raw-element 보이지 않는 hidden 필드라 SEED 에 대응 컴포넌트가 없음
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState, type FormEvent } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { HStack, Icon, Text, VStack } from "@seed-design/react";
@@ -10,7 +10,7 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
-import { COMMENT_MAX } from "@rebirth/core/community";
+import { COMMENT_MAX, communityCommentInput, fieldErrors } from "@rebirth/core/community";
 
 import { createComment, type CommentFormState } from "@/app/community/actions";
 import { sinceLabel } from "@/lib/report-label";
@@ -99,6 +99,20 @@ export function CommentComposer({ postId, signedIn }: CommentComposerProps) {
   );
   const formRef = useRef<HTMLFormElement>(null);
 
+  // 빈 댓글은 서버까지 가지 않고 바로 알림. 보내고 나서야 비었다고 들으면 한 박자 늦음
+  const [clientMessage, setClientMessage] = useState<string | null>(null);
+  const validateBeforeSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const data = new FormData(event.currentTarget);
+    const parsed = communityCommentInput.safeParse({ body: data.get("body") });
+    if (parsed.success) {
+      setClientMessage(null);
+      return;
+    }
+    event.preventDefault();
+    setClientMessage(fieldErrors(parsed.error).body ?? "댓글을 입력해 주세요");
+  };
+  const message = clientMessage ?? state.message;
+
   // 성공하면 입력칸을 비움. 실패했을 때 지우면 쓴 글이 사라짐
   useEffect(() => {
     if (!state.message) formRef.current?.reset();
@@ -120,7 +134,7 @@ export function CommentComposer({ postId, signedIn }: CommentComposerProps) {
   }
 
   return (
-    <form ref={formRef} action={formAction}>
+    <form ref={formRef} action={formAction} onSubmit={validateBeforeSubmit}>
       <input type="hidden" name="postId" value={postId} />
       {/* 오류를 입력칸에 붙임. 위에 따로 띄우면 어느 칸이 문제인지 눈이 한 번 더 움직임 */}
       <HStack gap="x2" align="flex-start">
@@ -130,8 +144,8 @@ export function CommentComposer({ postId, signedIn }: CommentComposerProps) {
             size="medium"
             maxGraphemeCount={COMMENT_MAX}
             hideCharacterCount
-            errorMessage={state.message}
-            invalid={Boolean(state.message)}
+            errorMessage={message}
+            invalid={Boolean(message)}
           >
             <TextFieldInput
               name="body"
