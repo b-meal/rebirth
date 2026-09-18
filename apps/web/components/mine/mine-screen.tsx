@@ -1,3 +1,5 @@
+import "server-only";
+
 import Link from "next/link";
 import {
   AspectRatio,
@@ -11,10 +13,8 @@ import {
 } from "@seed-design/react";
 import {
   IconBellLine,
-  IconCameraLine,
   IconChevronRightLine,
   IconHeadsetLine,
-  IconHospitalcrossShieldLine,
   IconMegaphoneLine,
   IconPawprintLine,
   IconPersonFill,
@@ -29,6 +29,7 @@ import { AppHeader } from "@/components/ui/app-header";
 import { Badge } from "@/components/ui/badge";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { ANIMAL_LABEL, SIZE_LABEL } from "@/lib/report-label";
+import { SHORTCUTS, type MineLink } from "@/lib/shortcuts";
 import { RecentReports } from "./recent-reports";
 import { DeletePetButton } from "./delete-pet-button";
 
@@ -45,24 +46,11 @@ const SIGN_IN_HREF = `${SIGN_IN_PATH}?${NEXT_PARAM}=%2Fmine`;
 /** 동물 사진 한 변 */
 const PET_THUMB = "56px";
 
-export type MineLink = {
-  href: string;
-  label: string;
-  icon: React.ReactNode;
-};
-
 // 내 기록은 위 숫자 칸이 맡고, 이 목록은 계정과 상관없이 늘 같은 줄만 둠
 const LINKS: MineLink[] = [
   // 계정이 없어도 물을 일이 생겨 로그인과 상관없이 둠
   { href: "/support", label: "문의하기", icon: <IconHeadsetLine /> },
   { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
-];
-
-// 길에서 급히 찾는 일 셋. 홈 시트 머리가 같은 정의를 그리므로 두 화면 문구가 갈라지지 않음
-export const SHORTCUTS: MineLink[] = [
-  { href: "/report", label: "제보하기", icon: <IconCameraLine /> },
-  { href: "/lost/new", label: "실종 신고", icon: <IconMegaphoneLine /> },
-  { href: "/guide/injured", label: "다친 동물", icon: <IconHospitalcrossShieldLine /> },
 ];
 
 export type MineUser = {
