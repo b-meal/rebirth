@@ -37,12 +37,13 @@ type Layer = {
 };
 
 // 화살촉. 래퍼와 같은 48 눈금 위에 점 중심(24,24)을 기준으로 그림
-// 밑변은 점 테두리 안쪽 반지름 7.5 의 호라 흰 테두리 밑에 숨고, 흰 윤곽은 두 옆면에만 둬 원 둘레가 울퉁불퉁해지지 않음
+// 세 꼭짓점은 한 변 11 의 정삼각형. 밑변 두 점은 점 테두리 안쪽 반지름 7.5 의 원 위에 있어
+// 밑변을 그 호로 그리면 흰 테두리 밑에 숨고, 흰 윤곽은 두 옆면에만 둬 원 둘레가 울퉁불퉁해지지 않음
 // 모서리는 clip-path 로는 둥글릴 수 없어 SVG 의 round join 을 씀, 색은 CSS 가 넣음
 const ARROW_SVG = [
   '<svg viewBox="0 0 48 48" aria-hidden="true">',
-  '<path class="rebirth-my-location-heading-edge" d="M18.51 18.89 L24 6 L29.49 18.89" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" fill="none"/>',
-  '<path d="M24 6 L29.49 18.89 A7.5 7.5 0 0 0 18.51 18.89 Z" stroke="none"/>',
+  '<path class="rebirth-my-location-heading-edge" d="M18.5 18.9 L24 9.37 L29.5 18.9" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round" fill="none"/>',
+  '<path d="M24 9.37 L29.5 18.9 A7.5 7.5 0 0 0 18.5 18.9 Z" stroke="none"/>',
   "</svg>",
 ].join("");
 
