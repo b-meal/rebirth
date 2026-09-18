@@ -4,15 +4,17 @@ import { notFound, redirect } from "next/navigation";
 import { listSightingLostMatches } from "@rebirth/core/matching";
 
 import { getCurrentUser } from "@/lib/auth/session";
+import { CTA } from "@/lib/cta-label";
 import { Screen } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
 import { SightingMatchList } from "@/components/report/sighting-match-list";
 
-// 발견 제보를 실종 신고들과 견주는 화면. 제보 상세의 내 가족 같아요 가 여기로 옴
+// 발견 제보를 실종 신고들과 견주는 화면. 제보 상세의 우리 아이인지 확인 이 여기로 옴
 // 로그인하면 내 신고와 견주고, 아니면 가까운 공개 신고를 둘러봄
 // 로그인 벽을 세우지 않음. 이 제품에서 보여 줄 것이 매칭이라 계정부터 물으면 아무것도 못 봄
 
-export const metadata: Metadata = { title: "닮은 실종 신고", robots: { index: false } };
+// 탭한 말을 그대로 제목에 둠. 무엇과 무엇을 견줬는지는 본문 첫 줄이 말함
+export const metadata: Metadata = { title: CTA.match, robots: { index: false } };
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +32,7 @@ export default async function SightingMatchPage({ params }: PageProps<"/r/[id]/m
 
   return (
     <Screen>
-      <AppHeader title={result.mode === "mine" ? "내 신고와 견주기" : "닮은 실종 신고"} />
+      <AppHeader title={CTA.match} />
       <SightingMatchList
         reportId={id}
         mode={result.mode}

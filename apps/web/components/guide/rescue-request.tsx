@@ -15,6 +15,7 @@ import {
 
 import { Screen, ScreenBody } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
+import { CTA } from "@/lib/cta-label";
 import { requestRescue, type RescueFormState } from "@/app/guide/injured/actions";
 
 // 다친 동물을 본 사람이 쓰는 화면
@@ -27,7 +28,7 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <ActionButton type="submit" variant="brandSolid" size="large" loading={pending}>
-      구조 요청하기
+      {CTA.rescueSubmit}
     </ActionButton>
   );
 }
@@ -36,7 +37,7 @@ function SubmitButton() {
 function Done({ reference }: { reference: string }) {
   return (
     <Screen>
-      <AppHeader title="구조 요청" home />
+      <AppHeader title={CTA.rescue} home />
       <ScreenBody gap="x6" justify="center">
         <VStack align="center" gap="x4">
           <Icon svg={<IconCheckmarkCircleFill />} size="x12" color="fg.positive" />
@@ -83,7 +84,7 @@ export function RescueRequest() {
 
   return (
     <Screen>
-      <AppHeader title="구조 요청" />
+      <AppHeader title={CTA.rescue} />
       <ScreenBody gap="x6">
         <VStack align="stretch" gap="x2">
           <Text as="h2" textStyle="t8Bold" color="fg.neutral">
