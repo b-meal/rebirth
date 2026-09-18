@@ -25,6 +25,8 @@ export type SightingMatchListProps = {
   /** 돌아갈 발견 제보 */
   reportId: string;
   mode: "mine" | "public";
+  /** 견줄 대상이 된 신고 수. mine 에서 0이면 기준이 될 신고가 아직 없음 */
+  total: number;
   items: SightingMatchItem[];
 };
 
@@ -35,6 +37,10 @@ function lostLabel(item: SightingMatchItem): string {
 }
 
 const EMPTY = {
+  none: {
+    title: "아직 찾는 중인 신고가 없어요",
+    description: "실종 신고를 쓰면 이 제보와 얼마나 닮았는지 여기서 견줄 수 있어요",
+  },
   mine: {
     title: "견줄 수 있는 신고가 없어요",
     description: "찾는 중인 신고와 종이 달라요. 다른 신고를 쓰면 여기에 나와요",
@@ -45,8 +51,15 @@ const EMPTY = {
   },
 } as const;
 
-export function SightingMatchList({ reportId, mode, items }: SightingMatchListProps) {
-  const empty = EMPTY[mode];
+export function SightingMatchList({
+  reportId,
+  mode,
+  total,
+  items,
+}: SightingMatchListProps) {
+  // 신고가 아예 없는 것과 있는데 종이 달라 못 견준 것은 다른 말이어야 함
+  const emptyKey = mode === "mine" && total === 0 ? "none" : mode;
+  const empty = EMPTY[emptyKey];
 
   return (
     <>
@@ -111,10 +124,11 @@ export function SightingMatchList({ reportId, mode, items }: SightingMatchListPr
         ) : null}
       </ScreenBody>
 
-      {/* 이 화면에서 할 일은 제보를 다시 들여다보는 것 하나뿐임
-          점수를 보고 나서 사진과 특징을 다시 보러 가는 길을 늘 같은 자리에 둠 */}
+      {/* 점수를 보고 나서 사진과 특징을 다시 보러 가는 길을 늘 같은 자리에 둠
+          견줄 신고가 없는 사람에게만 신고 쓰기를 앞에 세움. 고르는 일은 사용자가 함 */}
       <VStack
         align="stretch"
+        gap="x2"
         position="sticky"
         bottom="0"
         px="spacingX.globalGutter"
@@ -122,7 +136,16 @@ export function SightingMatchList({ reportId, mode, items }: SightingMatchListPr
         bg="bg.layerDefault"
         className="rebirth-bottom-bar"
       >
-        <ActionButton variant="brandSolid" size="large" asChild>
+        {emptyKey === "none" ? (
+          <ActionButton variant="brandSolid" size="large" asChild>
+            <Link href="/lost/new">실종 신고 쓰기</Link>
+          </ActionButton>
+        ) : null}
+        <ActionButton
+          variant={emptyKey === "none" ? "neutralWeak" : "brandSolid"}
+          size="large"
+          asChild
+        >
           <Link href={`/r/${reportId}`}>제보 다시 보기</Link>
         </ActionButton>
       </VStack>

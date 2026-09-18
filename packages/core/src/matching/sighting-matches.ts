@@ -12,7 +12,7 @@ import { toMatchInput } from "./row";
 import { isComparable, scoreMatch, type MatchBreakdown, type MatchInput } from "./score";
 
 // 발견 제보 하나를 실종 신고들과 견줌. 후보 화면의 반대 방향
-// 제보 상세의 내 가족 같아요 가 여기로 옴
+// 제보 상세의 우리 아이인지 확인 이 여기로 옴
 // 유사도일 뿐 개체 동일성 확정이 아님. 화면이 확정 아님 표기를 함께 냄
 
 /** 한 번에 견줄 내 신고 수. 넘으면 최근 신고부터 끊음 */
