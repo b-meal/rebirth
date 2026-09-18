@@ -56,8 +56,17 @@ const SPOT_ZOOM = 15;
 
 const CIRCLE_ID = "track-circle";
 const CIRCLE_EDGE_ID = "track-circle-edge";
+const CIRCLE_OUTER_ID = "track-circle-outer";
+const CIRCLE_OUTER_EDGE_ID = "track-circle-outer-edge";
 const LINE_ID = "track-line";
 const GUESS_ID = "track-guess";
+
+// 확산 가정에서 안쪽 원이 약 39%, 바깥 원이 약 86% 를 덮는 배수
+const RING_OUTER_FACTOR = 2;
+
+// 화살표 머리 밑변과 높이, clip-path 로 몸통을 잘라 낼 때 쓰는 기준
+const ARROW_WIDTH = 14;
+const ARROW_HEAD = 13;
 
 // 핀 공통, 흰 테와 그림자로 배경지도에서 떠 보이게 함
 const PIN_BASE = [
@@ -90,19 +99,27 @@ function mount(map: MapLibreMap, at: LatLng, inner: HTMLElement): Marker {
     .addTo(map);
 }
 
-/** 마지막 구간이 향한 쪽을 가리키는 삼각형, 방위각만큼 돌려 붙임 */
-function arrowStyle(bearingDeg: number): string {
+/**
+ * 마지막 목격에 꼬리를 두고 방위각 쪽으로 뻗는 화살표
+ * 받은 길이만큼 상자를 늘려 머리가 예측 중심 자리에 닿게 함
+ * 몸통은 예측 점선이 이미 그려 clip-path 로 머리만 남김
+ */
+function arrowStyle(bearingDeg: number, lengthPx: number): string {
   return [
-    "width:0",
-    "height:0",
-    "border-left:7px solid transparent",
-    "border-right:7px solid transparent",
-    "border-bottom:13px solid var(--seed-color-fg-neutral-subtle)",
+    `width:${ARROW_WIDTH}px`,
+    `height:${lengthPx}px`,
+    `clip-path:polygon(${ARROW_WIDTH / 2}px 0, ${ARROW_WIDTH}px ${ARROW_HEAD}px, 0 ${ARROW_HEAD}px)`,
+    "background:var(--seed-color-fg-neutral-subtle)",
     "filter:drop-shadow(0 0 2.5px var(--seed-color-bg-layer-floating))",
     "opacity:0",
-    `transform:rotate(${bearingDeg}deg) scale(0.4)`,
+    `transform:${arrowSpin(bearingDeg)} scale(0.4)`,
     `transition:opacity ${FADE_MS}ms ease, transform ${FADE_MS}ms ease`,
   ].join(";");
+}
+
+/** 상자 중심을 방위각 쪽으로 절반 밀어 꼬리를 마커 좌표에 맞추는 변환 */
+function arrowSpin(bearingDeg: number): string {
+  return `rotate(${bearingDeg}deg) translateY(-50%)`;
 }
 
 /**
@@ -185,7 +202,7 @@ export function TrackMap({
     bounds.extend([origin.lng, origin.lat]);
 
     const ring = prediction ? circleRing(prediction.center, prediction.radiusKm) : null;
-    if (ring) {
+    if (prediction && ring) {
       map.addSource(CIRCLE_ID, {
         type: "geojson",
         data: {
@@ -217,7 +234,34 @@ export function TrackMap({
           "line-dasharray": [3, 2],
         },
       });
-      for (const coordinate of ring) bounds.extend(coordinate);
+
+      /**
+       * 바깥 원은 더 멀리까지 갔을 수 있다는 뜻이라 채움 없이 테두리만 둠
+       * 안쪽보다 옅게 깔아 두 경계 중 어느 쪽이 더 가능성이 높은지 구분됨
+       */
+      const outerRing = circleRing(prediction.center, prediction.radiusKm * RING_OUTER_FACTOR);
+      map.addSource(CIRCLE_OUTER_ID, {
+        type: "geojson",
+        data: {
+          type: "Feature",
+          properties: {},
+          geometry: { type: "Polygon", coordinates: [outerRing] },
+        },
+      });
+      map.addLayer({
+        id: CIRCLE_OUTER_EDGE_ID,
+        type: "line",
+        source: CIRCLE_OUTER_ID,
+        paint: {
+          "line-color": guessLine,
+          "line-width": 1.5,
+          "line-opacity": 0,
+          "line-opacity-transition": { duration: FADE_MS, delay: 0 },
+          "line-dasharray": [3, 3],
+        },
+      });
+      // 바깥 링이 안쪽 링을 품어 이 좌표만 넣어도 두 원이 화면 안에 들어옴
+      for (const coordinate of outerRing) bounds.extend(coordinate);
     }
 
     // 주인 위치에서 시작해 뒤따르는 목격으로 이어 그림
@@ -289,18 +333,6 @@ export function TrackMap({
       });
     }
 
-    let arrowPin: HTMLDivElement | null = null;
-    if (prediction && typeof prediction.bearingDeg === "number" && lastNode) {
-      arrowPin = document.createElement("div");
-      arrowPin.setAttribute("style", arrowStyle(prediction.bearingDeg));
-      arrowPin.dataset.spin = `rotate(${prediction.bearingDeg}deg) scale(1)`;
-      const head = {
-        lat: lastNode.point.lat + (prediction.center.lat - lastNode.point.lat) * 0.8,
-        lng: lastNode.point.lng + (prediction.center.lng - lastNode.point.lng) * 0.8,
-      };
-      markers.push(mount(map, head, arrowPin));
-    }
-
     // 주인 위치만 있으면 생성 시점 축척을 그대로 두어 과하게 당기지 않음
     if (nodes.length > 0 || ring) {
       map.fitBounds(bounds, {
@@ -308,6 +340,18 @@ export function TrackMap({
         maxZoom: FIT_MAX_ZOOM,
         animate: false,
       });
+    }
+
+    // 축척이 정해진 뒤라야 화면 거리를 재 화살표 길이에 쓸 수 있어 fitBounds 다음에 둠
+    let arrowPin: HTMLDivElement | null = null;
+    if (prediction && typeof prediction.bearingDeg === "number" && lastNode) {
+      const tail = map.project([lastNode.point.lng, lastNode.point.lat]);
+      const head = map.project([prediction.center.lng, prediction.center.lat]);
+      const reach = Math.max(Math.hypot(head.x - tail.x, head.y - tail.y), ARROW_HEAD);
+      arrowPin = document.createElement("div");
+      arrowPin.setAttribute("style", arrowStyle(prediction.bearingDeg, reach));
+      arrowPin.dataset.spin = `${arrowSpin(prediction.bearingDeg)} scale(1)`;
+      markers.push(mount(map, lastNode.point, arrowPin));
     }
 
     const reveal = (element: HTMLElement) => {
@@ -321,6 +365,7 @@ export function TrackMap({
       if (ring) {
         map.setPaintProperty(CIRCLE_ID, "fill-opacity", 0.55);
         map.setPaintProperty(CIRCLE_EDGE_ID, "line-opacity", 0.9);
+        map.setPaintProperty(CIRCLE_OUTER_EDGE_ID, "line-opacity", 0.45);
       }
       if (map.getLayer(GUESS_ID)) map.setPaintProperty(GUESS_ID, "line-opacity", 0.8);
     };
@@ -331,8 +376,13 @@ export function TrackMap({
       settle();
       return () => {
         for (const marker of markers) marker.remove();
+        // 이 경로도 GUESS 를 지워야 다음 실행의 addSource 가 중복 id 로 막히지 않음
+        if (map.getLayer(GUESS_ID)) map.removeLayer(GUESS_ID);
+        if (map.getSource(GUESS_ID)) map.removeSource(GUESS_ID);
         if (map.getLayer(LINE_ID)) map.removeLayer(LINE_ID);
         if (map.getSource(LINE_ID)) map.removeSource(LINE_ID);
+        if (map.getLayer(CIRCLE_OUTER_EDGE_ID)) map.removeLayer(CIRCLE_OUTER_EDGE_ID);
+        if (map.getSource(CIRCLE_OUTER_ID)) map.removeSource(CIRCLE_OUTER_ID);
         if (map.getLayer(CIRCLE_EDGE_ID)) map.removeLayer(CIRCLE_EDGE_ID);
         if (map.getLayer(CIRCLE_ID)) map.removeLayer(CIRCLE_ID);
         if (map.getSource(CIRCLE_ID)) map.removeSource(CIRCLE_ID);
@@ -400,6 +450,8 @@ export function TrackMap({
       if (map.getSource(GUESS_ID)) map.removeSource(GUESS_ID);
       if (map.getLayer(LINE_ID)) map.removeLayer(LINE_ID);
       if (map.getSource(LINE_ID)) map.removeSource(LINE_ID);
+      if (map.getLayer(CIRCLE_OUTER_EDGE_ID)) map.removeLayer(CIRCLE_OUTER_EDGE_ID);
+      if (map.getSource(CIRCLE_OUTER_ID)) map.removeSource(CIRCLE_OUTER_ID);
       if (map.getLayer(CIRCLE_EDGE_ID)) map.removeLayer(CIRCLE_EDGE_ID);
       if (map.getLayer(CIRCLE_ID)) map.removeLayer(CIRCLE_ID);
       if (map.getSource(CIRCLE_ID)) map.removeSource(CIRCLE_ID);
