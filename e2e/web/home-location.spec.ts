@@ -102,12 +102,16 @@ async function emulateSafariCompass(page: Page, heading: number) {
         this.webkitCompassHeading = compass;
       }
     }
+    // Chromium 은 같은 출처로 다시 들어올 때 직전 클릭의 활성 상태를 새 문서에 넘겨 줘
+    // userActivation 으로는 탭 없는 첫 화면을 만들 수 없음. Safari 처럼 이 문서 안의 클릭만 침
+    let tapped = false;
+    window.addEventListener("click", () => {
+      tapped = true;
+    }, { capture: true });
     let granted = false;
     (FakeOrientationEvent as unknown as { requestPermission: () => Promise<string> }).requestPermission =
       () => {
-        if (!navigator.userActivation.isActive) {
-          return Promise.reject(new DOMException("needs gesture", "NotAllowedError"));
-        }
+        if (!tapped) return Promise.reject(new DOMException("needs gesture", "NotAllowedError"));
         granted = true;
         return Promise.resolve("granted");
       };
