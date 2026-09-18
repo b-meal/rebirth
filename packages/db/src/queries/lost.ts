@@ -191,8 +191,10 @@ export type MyLostForSighting = Awaited<
 >[number]
 
 /**
- * 점수 계산에 쓸 실종 신고 값. 격자 좌표를 포함해 서버 안에서만 씀
+ * 점수 계산에 쓸 제보 값. 격자 좌표를 포함해 서버 안에서만 씀
  * 응답에 그대로 넣지 않음. 호출부가 점수만 뽑아 쓰는 것을 전제로 함
+ * 공개 제보만 돌려줌. 숨김·삭제 제보가 match 화면에서 200 이면 상세 404 와 대조해 존재를 알 수 있고
+ * 삭제된 위치로 후보 계산이 계속 돌게 됨
  */
 export function findReportForScoring(id: string) {
   return db
@@ -210,7 +212,7 @@ export function findReportForScoring(id: string) {
       occurredAt: reports.occurredAt,
     })
     .from(reports)
-    .where(eq(reports.id, id))
+    .where(and(eq(reports.id, id), eq(reports.visibility, 'public')))
     .limit(1)
 }
 
