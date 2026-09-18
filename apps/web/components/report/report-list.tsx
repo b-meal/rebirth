@@ -13,7 +13,7 @@ import { Chip } from "seed-design/ui/chip";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
 
-import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
+import { STATUS_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
@@ -110,13 +110,13 @@ function Card({ item }: { item: ListItem }) {
             <HStack gap="x1" align="center" wrap>
               {/* 실종은 보호 상황을 쓰지 않아 확인되지 않음 이 박히면 안 됨 */}
               {lost ? (
-                <Badge label="실종" tone="brand" />
-              ) : (
+                <Badge label={STATUS_LABEL.lost} tone="brand" />
+              ) : STATUS_LABEL[item.careSituation] ? (
                 <Badge
-                  label={CARE_LABEL[item.careSituation] ?? "확인되지 않음"}
+                  label={STATUS_LABEL[item.careSituation]}
                   tone={item.careSituation === "in_care" ? "informative" : "neutral"}
                 />
-              )}
+              ) : null}
               {item.injury === true ? (
                 <Badge label="다친 것으로 보임" tone="critical" />
               ) : null}

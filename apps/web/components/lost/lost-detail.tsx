@@ -14,7 +14,13 @@ import {
 import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
 
-import { describeAnimal, formatAbsolute, withObject, withSubject } from "@/lib/report-label";
+import {
+  STATUS_LABEL,
+  describeAnimal,
+  formatAbsolute,
+  withObject,
+  withSubject,
+} from "@/lib/report-label";
 import { Screen, SectionCard, SectionTitle } from "@/components/ui/screen";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { AreaSubscribeButton } from "@/components/report/area-subscribe-button";
@@ -71,19 +77,16 @@ type PublicLostReport = {
 /**
  * 신고 상태를 한 줄로 알림
  * 며칠째 찾고 있는지가 이 화면에서 가장 먼저 읽혀야 할 값이라 배지로 올림
- * 이름을 아는 신고는 이름으로 부름. 가족을 찾았어요 는 발견자 쪽 말이라 쓰지 않음
+ * 어휘는 실종과 찾음 둘로만 두고, 찾음 아닌 종료는 다섯 어휘 밖이라 배지를 빼고 null 을 냄
  */
 function statusBadge(
   lifecycle: string,
   searchingDays: number,
-  name: string | null,
-): { label: string; tone: BadgeTone } {
-  if (lifecycle === "resolved") {
-    return { label: name ? `${name}, 집에 왔어요` : "집으로 돌아왔어요", tone: "informative" };
-  }
-  if (lifecycle === "closed") return { label: "종료된 신고", tone: "neutral" };
+): { label: string; tone: BadgeTone } | null {
+  if (lifecycle === "resolved") return { label: STATUS_LABEL.resolved, tone: "informative" };
+  if (lifecycle === "closed") return null;
   return {
-    label: searchingDays < 1 ? "오늘 잃어버렸어요" : `실종 ${searchingDays}일째`,
+    label: searchingDays < 1 ? "오늘 잃어버렸어요" : `${STATUS_LABEL.lost} ${searchingDays}일째`,
     tone: "brand",
   };
 }
@@ -144,7 +147,7 @@ export function LostDetail({
 
 
   const name = report.pet?.name ?? null;
-  const status = statusBadge(report.lifecycle, searchingDays, name);
+  const status = statusBadge(report.lifecycle, searchingDays);
   const searching = report.lifecycle === "searching";
   const mine = ownership.mine;
   // 보호자가 적어 둔 품종은 아는 값이라 그대로 씀. AI 가 붙인 값만 계열 추정으로 부름
@@ -160,9 +163,11 @@ export function LostDetail({
 
       <VStack align="stretch" gap="x2" pb="x4">
         <SectionCard gap="x3">
-          <HStack gap="x1_5" wrap>
-            <Badge label={status.label} tone={status.tone} />
-          </HStack>
+          {status ? (
+            <HStack gap="x1_5" wrap>
+              <Badge label={status.label} tone={status.tone} />
+            </HStack>
+          ) : null}
 
           <ReportBadges
             animalType={report.animalType}
