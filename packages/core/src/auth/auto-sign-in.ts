@@ -19,6 +19,10 @@ export type AutoSignInRequest = {
   secFetchMode?: string | null;
   accept?: string | null;
   userAgent?: string | null;
+  /** RSC 헤더. 화면 안 링크로 이동할 때 Next 가 붙임. 세션 없이 열어 둔 탭도 여기로 들어옴 */
+  rsc?: string | null;
+  /** Next-Router-Prefetch 헤더. 미리 읽기는 사람이 연 것이 아니라 계정을 만들지 않음 */
+  prefetch?: string | null;
 };
 
 // 링크 미리보기 봇과 크롤러. 계정을 만들어 줘도 쓸 사람이 없음
@@ -29,6 +33,9 @@ const BOT_USER_AGENT =
 export function shouldAutoSignIn(request: AutoSignInRequest): boolean {
   if (request.method.toUpperCase() !== "GET") return false;
   if (request.userAgent && BOT_USER_AGENT.test(request.userAgent)) return false;
+
+  // 화면 안 링크 이동. 세션 없이 열어 둔 탭에서 눌러도 로그인 화면으로 튕기지 않게 함
+  if (request.rsc === "1" && !request.prefetch) return true;
 
   const mode = request.secFetchMode?.trim().toLowerCase();
   if (mode) return mode === "navigate";
