@@ -27,7 +27,7 @@ const EASE = 0.25;
 const SETTLE_DEG = 0.1;
 
 // 정확도 원이 점의 후광보다 작으면 겹쳐 보여 그리지 않음
-const MIN_CIRCLE_PX = 72;
+const MIN_CIRCLE_PX = 48;
 
 type Layer = {
   dot: Marker;

@@ -101,8 +101,8 @@ a {
    제보 핀이 나중에 그려져 위로 올라오므로 z-index 로 내 위치를 위에 두고 탭은 통과시킴 */
 .rebirth-my-location {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 48px;
+  height: 48px;
   pointer-events: none;
   z-index: 1;
 }
@@ -124,12 +124,12 @@ a {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 22px;
-  height: 22px;
-  margin: -11px;
+  width: 16px;
+  height: 16px;
+  margin: -8px;
   border-radius: 50%;
   background: var(--seed-color-bg-informative-solid);
-  border: 4px solid var(--seed-color-bg-layer-floating);
+  border: 3px solid var(--seed-color-bg-layer-floating);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--seed-color-bg-informative-solid) 35%, transparent);
 }
 
@@ -138,10 +138,10 @@ a {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 18px;
-  height: 18px;
-  margin-left: -9px;
-  margin-top: -28px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  margin-top: -21px;
   color: var(--seed-color-bg-informative-solid);
 }
 
