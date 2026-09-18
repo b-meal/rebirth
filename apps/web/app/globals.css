@@ -95,6 +95,59 @@ a {
   display: none;
 }
 
+/* 지도 위 내 위치. 점은 정중앙, 부채꼴은 북쪽(위)을 가리키고 MapLibre 가 래퍼를 돌림
+   색은 SEED 변수만 쓰고, 지도 위라 탭을 먹지 않게 pointer-events 를 끔 */
+.rebirth-my-location {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+}
+
+.rebirth-my-location-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin: -7px;
+  border-radius: 50%;
+  background: var(--seed-color-fg-brand);
+  border: 2px solid var(--seed-color-bg-layer-floating);
+  box-shadow: 0 0 0 6px var(--seed-color-bg-brand-weak);
+}
+
+/* 바깥 흰 삼각형 위에 브랜드색 삼각형을 올려 윤곽을 냄
+   clip-path 뒤에는 filter 그림자가 잘려 나가 두 겹으로 그림 */
+.rebirth-my-location-heading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 16px;
+  margin-left: -10px;
+  margin-top: -32px;
+  background: var(--seed-color-bg-layer-floating);
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+}
+
+.rebirth-my-location-heading::after {
+  content: "";
+  position: absolute;
+  inset: 3px 3px 2px;
+  background: var(--seed-color-fg-brand);
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+}
+
+/* 정확도 원. 크기는 미터를 축척에 맞춰 px 로 환산해 스크립트가 넣음 */
+.rebirth-my-location-accuracy {
+  border-radius: 50%;
+  background: var(--seed-color-bg-brand-weak);
+  border: 1px solid var(--seed-color-fg-brand);
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 /* 목록 한 줄을 통째로 누르는 자리
    SEED 에 줄 단위 컴포넌트가 없어 앱 유틸로 둠. 면 색은 역할 토큰만 씀
    SEED 컴포넌트는 레시피가 커서를 정하지만 이 줄은 맨 button 이라 직접 둠 */

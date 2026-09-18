@@ -31,7 +31,9 @@ import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { describeAnimal } from "@/lib/report-label";
 import { useCurrentPosition } from "@/hooks/use-current-position";
+import { useDeviceHeading } from "@/hooks/use-device-heading";
 import { useMap } from "@/hooks/use-map";
+import { useMyLocationMarker } from "@/hooks/use-my-location-marker";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
 import { NearbyList } from "@/components/home/nearby-list";
@@ -60,16 +62,6 @@ const SHEET_MID = (SHEET.collapsed + SHEET.expanded) / 2;
 
 // 손을 떼면 이 세 단계 중 이웃으로만 붙음
 const STOPS: number[] = [SHEET.hidden, SHEET.collapsed, SHEET.expanded];
-
-// 지도 오버레이는 React 밖에서 그려지므로 색은 SEED CSS 변수로만 참조
-const MY_LOCATION_DOT = [
-  "width:14px",
-  "height:14px",
-  "border-radius:9999px",
-  "background:var(--seed-color-fg-brand)",
-  "border:2px solid var(--seed-color-bg-layer-floating)",
-  "box-shadow:0 0 0 6px var(--seed-color-bg-brand-weak)",
-].join(";");
 
 // 색은 상황만 알리고 무엇인지는 사진이 알림
 // 단색 위 글자와 아이콘은 SEED 가 제 컴포넌트에서 쓰는 대로 흰색, 노랑만 검정
@@ -275,7 +267,10 @@ export function HomeScreen({
 
   const router = useRouter();
   const snackbar = useSnackbarAdapter();
-  const position = useCurrentPosition({ immediate: true });
+  // 첫 자리를 잡은 뒤에도 따라가 걸으면서 보는 지도에서 점이 함께 움직임
+  const position = useCurrentPosition({ immediate: true, watch: true });
+  // 방향은 GPS 가 아니라 자기 센서, 서 있어도 몸을 돌리면 부채꼴이 따라옴
+  const heading = useDeviceHeading();
   const { containerRef, status, error, center, radiusKm, moveTo, map } = useMap();
 
   const ready = status === "ready";
@@ -445,19 +440,13 @@ export function HomeScreen({
     [map, moveTo],
   );
 
-  const myPoint = position.point;
-  useEffect(() => {
-    if (!map || !myPoint) return;
-    const dot = document.createElement("div");
-    dot.setAttribute("style", MY_LOCATION_DOT);
-    const marker = new Marker({ element: dot, anchor: "center" })
-      .setLngLat([myPoint.lng, myPoint.lat])
-      .addTo(map);
-
-    return () => {
-      marker.remove();
-    };
-  }, [map, myPoint]);
+  useMyLocationMarker({
+    map,
+    point: position.point,
+    accuracyMeters: position.accuracyMeters,
+    course: position.course,
+    heading,
+  });
 
   // 지도를 못 띄우면 거리를 셀 기준이 없어 최근 제보를 그대로 보여줌
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
@@ -593,6 +582,8 @@ export function HomeScreen({
   };
 
   const recenter = () => {
+    // iOS 는 사용자가 누른 안에서만 자기 센서 권한을 물을 수 있어 이 탭에 얹음
+    if (heading.status === "needs-gesture") heading.enable();
     if (position.point) {
       moveTo(position.point, { animate: true });
       return;
