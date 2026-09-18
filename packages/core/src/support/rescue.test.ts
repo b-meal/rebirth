@@ -34,17 +34,19 @@ test("형식이 어긋난 제보 id 는 오류 대신 버린다", () => {
   if (result.success) assert.equal(result.data.reportId, undefined);
 });
 
-test("제보 링크는 운영자가 중복 건을 가리게 본문 끝에 붙는다", () => {
-  const body = composeRescueBody(
-    { ...valid, reportId: REPORT_ID },
-    { reportUrl: `https://example.com/r/${REPORT_ID}` },
-  );
-  assert.match(body, /^위치: /);
-  assert.equal(body.split("\n").at(-1), `제보: https://example.com/r/${REPORT_ID}`);
+test("본문은 위치, 동물, 상태 세 줄로만 묶인다", () => {
+  const body = composeRescueBody(valid);
+  assert.deepEqual(body.split("\n"), [
+    `위치: ${valid.where}`,
+    `동물: ${valid.what}`,
+    `상태: ${valid.condition}`,
+  ]);
 });
 
-test("직접 들어온 접수 본문에는 제보 줄이 없다", () => {
-  const body = composeRescueBody(valid);
+test("어느 제보 건인지는 본문에 적지 않는다", () => {
+  // 제보 참조는 related_report_id 열이 가짐. 본문에 또 적으면 같은 사실이 두 곳에 남음
+  const body = composeRescueBody({ ...valid, reportId: REPORT_ID });
+  assert.equal(body.includes(REPORT_ID), false);
   assert.equal(body.includes("제보:"), false);
 });
 

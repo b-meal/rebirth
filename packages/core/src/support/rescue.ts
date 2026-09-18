@@ -46,22 +46,14 @@ export function fitRescueField(
   return trimmed.slice(0, RESCUE_LIMIT[field])
 }
 
-export type RescueBodyOptions = {
-  /** 어느 제보 건인지. 없으면 같은 동물에 대한 중복 접수를 가릴 수 없음 */
-  reportUrl?: string
-}
-
 /**
  * 운영자가 한 줄로 읽을 수 있게 묶음
  * support_requests.body 의 최소 길이 제약도 이 형식이면 넘김
+ * 어느 제보 건인지는 본문에 적지 않고 related_report_id 열에 넣음
  */
-export function composeRescueBody(
-  input: RescueRequestInput,
-  options: RescueBodyOptions = {},
-): string {
+export function composeRescueBody(input: RescueRequestInput): string {
   const lines = [`위치: ${input.where}`, `동물: ${input.what}`]
   if (input.condition) lines.push(`상태: ${input.condition}`)
-  if (options.reportUrl) lines.push(`제보: ${options.reportUrl}`)
   return lines.join('\n')
 }
 

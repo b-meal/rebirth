@@ -11,9 +11,6 @@ import { insertSupportRequest } from "@rebirth/db";
 // 구조·보호 요청 접수
 // 사용자는 세 칸만 채우고 접수번호를 받음. 어느 기관에 연락할지는 운영자가 판단함
 
-// 운영자가 눌러 볼 링크라 미리보기 주소가 아닌 배포 도메인으로 고정함
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-
 export type RescueFormState = {
   /** 접수되면 사용자에게 보여 줄 번호 */
   reference?: string;
@@ -37,10 +34,10 @@ export async function requestRescue(
   try {
     const row = await insertSupportRequest({
       kind: "rescue",
-      // 제보에서 온 접수는 어느 건인지 함께 남김. 없으면 중복 접수를 가릴 수 없음
-      body: composeRescueBody(parsed.data, {
-        reportUrl: parsed.data.reportId ? `${SITE}/r/${parsed.data.reportId}` : undefined,
-      }),
+      body: composeRescueBody(parsed.data),
+      // 제보에서 온 접수는 어느 건인지 남김. 없으면 같은 동물의 중복 접수를 가릴 수 없음
+      // 문의 API 와 같은 열을 씀. 운영 화면이 이미 이 열로 제보를 이어 봄
+      relatedReportId: parsed.data.reportId,
       reference: issueReference("SR"),
       // 조회 토큰은 지금 화면에서 쓰지 않지만 열이 NOT NULL 이라 발급해 둠
       tokenHash: hashToken(issueToken()),
