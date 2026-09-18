@@ -1,3 +1,4 @@
+import { memo } from "react";
 import Link from "next/link";
 import { AspectRatio, Box, HStack, ImageFrame, Text, VStack } from "@seed-design/react";
 import type { AnimalType } from "@rebirth/types";
@@ -27,7 +28,8 @@ export type ReportCardItem = {
 /** 가로로 넘겨 보는 카드 폭, 두 장 반이 걸쳐 보여 더 있다는 것이 드러남 */
 export const NEARBY_CARD_WIDTH = "136px";
 
-export function ReportCard({ item }: { item: ReportCardItem }) {
+// 목록이 스크롤마다 다시 그려져도 같은 제보의 카드는 건너뜀
+export const ReportCard = memo(function ReportCard({ item }: { item: ReportCardItem }) {
   const lost = item.kind === "lost";
   // 이름을 아는 기록은 이름이 먼저 읽혀야 함. 생김새는 아래 줄로 내림
   const title = item.petName || describeAnimal(item);
@@ -77,4 +79,4 @@ export function ReportCard({ item }: { item: ReportCardItem }) {
       </Link>
     </VStack>
   );
-}
+});

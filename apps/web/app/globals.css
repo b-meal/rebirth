@@ -105,6 +105,8 @@ a {
   height: 48px;
   pointer-events: none;
   z-index: 1;
+  /* 몸을 돌리면 매 프레임 회전이 바뀌어 미리 층으로 올려 후광 그라데이션을 다시 칠하지 않게 함 */
+  will-change: transform;
 }
 
 /* 가운데는 고르게, 가장자리로 갈수록 사라지는 반투명 파랑 */
@@ -583,15 +585,8 @@ body .seed-snackbar__root {
 
 /* SEED 항목 라벨에는 줄바꿈 방지가 없어 자리가 모자라면 마지막 글자가 다음 줄로 넘어감
    기간은 한 줄로 읽혀야 하는 짧은 말이라 이 목록에서만 막음 */
-.rebirth-period-options .seed-select-item__label,
-.rebirth-nowrap-options .seed-select-item__label {
+.rebirth-period-options .seed-select-item__label {
   white-space: nowrap;
-}
-
-/* 검색 화면의 자주 찾는 조건 셀렉트. 트리거가 width 100% 라 폭을 정하는 자리가 필요함
-   자주 찾는 조건 이 한 줄에 들어오는 폭 */
-.rebirth-shortcut-select {
-  width: 10rem;
 }
 
 /* 목록 위에 얹는 진행 표시. 목록이 화면보다 길어 부모의 한가운데는 보이지 않으므로

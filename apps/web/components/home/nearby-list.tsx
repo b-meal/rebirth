@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Box, Grid, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -30,7 +30,8 @@ type NearbyListProps = {
   height: string;
 };
 
-export function NearbyList({ items, height }: NearbyListProps) {
+// 홈 화면은 위치와 핀이 바뀔 때마다 다시 그려지지만 목록은 반경 안 제보와 높이가 같으면 건너뜀
+export const NearbyList = memo(function NearbyList({ items, height }: NearbyListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -163,4 +164,4 @@ export function NearbyList({ items, height }: NearbyListProps) {
       )}
     </Box>
   );
-}
+});
