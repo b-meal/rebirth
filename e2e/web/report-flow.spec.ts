@@ -34,12 +34,12 @@ async function pickCare(page: import("@playwright/test").Page, label: string) {
   await page.locator("span.seed-chip__label", { hasText: label }).first().click();
 }
 
-test("1단계에 촬영과 앨범이 모두 있다", async ({ page }) => {
-  // 길에서 찍지 않는 사람도 저장된 사진으로 제보할 수 있어야 함
+test("1단계는 사진 가져오기를 버튼 하나로만 묻는다", async ({ page }) => {
+  // 기기가 파일 입력 하나로 보관함과 촬영을 함께 물어 우리가 먼저 묻지 않음
+  // 길에서 찍지 않는 사람은 그 기기 물음에서 보관함을 고름
   await page.goto("/report");
   await dismissSplash(page);
-  await expect(page.getByRole("button", { name: "사진 촬영" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "앨범에서 선택" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /사진 촬영|앨범에서 선택/ })).toHaveCount(1);
   await expect(page.locator("input[type=file][capture]")).toHaveCount(1);
   await expect(page.locator("input[type=file]:not([capture])")).toHaveCount(1);
 });
