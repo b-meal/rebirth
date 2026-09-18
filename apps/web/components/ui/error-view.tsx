@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 
+import { CTA } from "@/lib/cta-label";
+
 import { Screen, ScreenBody } from "./screen";
 
 // WEB-27 원인과 다음 행동만 알리고 내부 정보는 감추며 자동 재시도는 없음
@@ -76,7 +78,7 @@ export function ErrorView({
           </ActionButton>
           {safetyLink ? (
             <ActionButton variant="ghost" size="medium" asChild>
-              <Link href="/guide/injured">급한 상황이면 구조 요청하기</Link>
+              <Link href="/guide/injured">{CTA.rescueUrgent}</Link>
             </ActionButton>
           ) : null}
         </VStack>

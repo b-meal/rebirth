@@ -12,6 +12,7 @@ import {
 import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
 
+import { CTA } from "@/lib/cta-label";
 import { describeAnimal, formatAbsolute } from "@/lib/report-label";
 import { Screen, SectionCard, SectionTitle } from "@/components/ui/screen";
 import { Badge } from "@/components/ui/badge";
@@ -255,7 +256,7 @@ export function ReportDetail({
             size="medium"
             asChild
           >
-            <Link href="/guide/injured">구조·보호 요청</Link>
+            <Link href="/guide/injured">{CTA.rescue}</Link>
           </ActionButton>
           <ActionButton
             variant={report.injury === true ? "neutralWeak" : "brandSolid"}
@@ -264,7 +265,7 @@ export function ReportDetail({
           >
             {/* 내 실종 신고와 이 제보의 유사도를 먼저 보여 줌
                 신고가 없는 사람만 그 화면이 작성으로 넘김 */}
-            <Link href={`/r/${report.id}/match`}>우리 아이인지 확인</Link>
+            <Link href={`/r/${report.id}/match`}>{CTA.match}</Link>
           </ActionButton>
         </HStack>
       </HStack>
