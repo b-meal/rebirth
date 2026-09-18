@@ -37,16 +37,9 @@ test("로그인 흐름 경로는 자동 로그인에서 뺀다", () => {
   // 익명 세션을 먼저 만들면 제공자 로그인이 그 세션에 가로막힘
   assert.equal(isAuthFlowPath("/sign-in"), true);
   assert.equal(isAuthFlowPath("/auth/callback"), true);
+  assert.equal(isAuthFlowPath("/auth/guest"), true);
   assert.equal(isAuthFlowPath("/"), false);
   assert.equal(isAuthFlowPath("/mine/reports"), false);
-});
-
-test("화면 안 링크 이동(RSC)은 로그인시키고 미리 읽기는 제외한다", () => {
-  const navigation = { ...browser, secFetchMode: "cors", accept: "text/x-component", rsc: "1" };
-  assert.equal(shouldAutoSignIn(navigation), true);
-  assert.equal(shouldAutoSignIn({ ...navigation, prefetch: "1" }), false);
-  // 봇은 RSC 헤더를 붙여도 제외
-  assert.equal(shouldAutoSignIn({ ...navigation, userAgent: "Googlebot/2.1" }), false);
 });
 
 test("프리페치, 서버 액션, 봇은 건드리지 않는다", () => {

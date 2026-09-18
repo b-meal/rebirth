@@ -2,6 +2,8 @@
 // 심사와 시연에서 SNS 로그인 없이 마이페이지·후보·커뮤니티를 그대로 보게 함
 // server-only 를 import 하지 않음. 순수 판정이라 proxy 와 테스트에서 그대로 씀
 // 로그인 흐름 경로를 빼는 판정은 route-policy 의 isAuthFlowPath 가 맡음
+// 화면 안 링크 이동(RSC)은 Next 가 proxy 앞에서 RSC 헤더를 지워 여기서 못 가림
+// 그 경우는 로그인 화면이 /auth/guest 로 보내 계정을 만들어 줌
 
 /** 켜는 환경 변수. 1 이나 true 일 때만 켬. 심사가 끝나면 값을 지워 끔 */
 export const AUTO_SIGN_IN_ENV = "AUTH_AUTO_ANONYMOUS";
@@ -19,10 +21,6 @@ export type AutoSignInRequest = {
   secFetchMode?: string | null;
   accept?: string | null;
   userAgent?: string | null;
-  /** RSC 헤더. 화면 안 링크로 이동할 때 Next 가 붙임. 세션 없이 열어 둔 탭도 여기로 들어옴 */
-  rsc?: string | null;
-  /** Next-Router-Prefetch 헤더. 미리 읽기는 사람이 연 것이 아니라 계정을 만들지 않음 */
-  prefetch?: string | null;
 };
 
 // 링크 미리보기 봇과 크롤러. 계정을 만들어 줘도 쓸 사람이 없음
@@ -33,9 +31,6 @@ const BOT_USER_AGENT =
 export function shouldAutoSignIn(request: AutoSignInRequest): boolean {
   if (request.method.toUpperCase() !== "GET") return false;
   if (request.userAgent && BOT_USER_AGENT.test(request.userAgent)) return false;
-
-  // 화면 안 링크 이동. 세션 없이 열어 둔 탭에서 눌러도 로그인 화면으로 튕기지 않게 함
-  if (request.rsc === "1" && !request.prefetch) return true;
 
   const mode = request.secFetchMode?.trim().toLowerCase();
   if (mode) return mode === "navigate";

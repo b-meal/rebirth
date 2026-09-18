@@ -4,7 +4,13 @@ import { redirect } from "next/navigation";
 import { Text, VStack } from "@seed-design/react";
 import { Callout } from "seed-design/ui/callout";
 
-import { AUTH_PROVIDERS, NEXT_PARAM, safeNextPath } from "@rebirth/core/auth";
+import {
+  AUTH_GUEST_PATH,
+  AUTH_PROVIDERS,
+  NEXT_PARAM,
+  isAutoSignInEnabled,
+  safeNextPath,
+} from "@rebirth/core/auth";
 
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody } from "@/components/ui/screen";
@@ -25,6 +31,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   start_failed: "지금은 연결이 어려워요. 잠시 후 다시 시도해 주세요",
   unsupported_provider: "지원하지 않는 로그인 방식이에요",
   idle_expired: "오랫동안 사용하지 않아 자동으로 로그아웃했어요",
+  guest_failed: "지금은 접속이 많아 바로 들어가지 못했어요. 잠시 후 다시 시도해 주세요",
 };
 
 /** 사용자가 잘못한 것도 고장도 아닌 안내. 빨간 톤으로 겁주지 않음 */
@@ -41,6 +48,12 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
     const supabase = await createClient();
     const { data } = await supabase.auth.getClaims();
     if (data?.claims && !data.claims.is_anonymous) redirect(next);
+
+    // 시연 모드에서는 이 화면을 보여 주지 않고 익명 계정을 만들어 가려던 곳으로 보냄
+    // 발급이 거절돼 돌아온 경우만 이유를 적고 제공자 단추를 남김
+    if (!data?.claims && isAutoSignInEnabled() && error !== "guest_failed") {
+      redirect(`${AUTH_GUEST_PATH}?${NEXT_PARAM}=${encodeURIComponent(next)}`);
+    }
   }
 
   return (

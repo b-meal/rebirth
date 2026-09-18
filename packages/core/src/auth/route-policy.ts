@@ -6,6 +6,8 @@
 export const HOME_PATH = "/";
 export const SIGN_IN_PATH = "/sign-in";
 export const AUTH_CALLBACK_PATH = "/auth/callback";
+/** 시연 모드에서 로그인 화면 대신 익명 계정을 만들어 주는 자리 */
+export const AUTH_GUEST_PATH = "/auth/guest";
 
 /** 로그인한 사람을 되돌려 보낼 곳을 담는 쿼리 이름 */
 export const NEXT_PARAM = "next";
@@ -42,7 +44,11 @@ export function isProtectedPath(pathname: string): boolean {
 
 /** SNS 로그인이 진행 중인 경로. 시연용 자동 로그인이 여기에 끼어들면 제공자 로그인이 막힘 */
 export function isAuthFlowPath(pathname: string): boolean {
-  return matches(pathname, SIGN_IN_PATH) || matches(pathname, AUTH_CALLBACK_PATH);
+  return (
+    matches(pathname, SIGN_IN_PATH) ||
+    matches(pathname, AUTH_CALLBACK_PATH) ||
+    matches(pathname, AUTH_GUEST_PATH)
+  );
 }
 
 /** 로그인 없이 열리는 경로인지 */

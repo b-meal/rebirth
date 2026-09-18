@@ -28,6 +28,7 @@ export {
 
 export {
   AUTH_CALLBACK_PATH,
+  AUTH_GUEST_PATH,
   HOME_PATH,
   NEXT_PARAM,
   SIGN_IN_PATH,

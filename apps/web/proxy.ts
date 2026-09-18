@@ -76,8 +76,6 @@ export async function proxy(request: NextRequest) {
       secFetchMode: request.headers.get("sec-fetch-mode"),
       accept: request.headers.get("accept"),
       userAgent: request.headers.get("user-agent"),
-      rsc: request.headers.get("rsc"),
-      prefetch: request.headers.get("next-router-prefetch"),
     })
   ) {
     const { error } = await supabase.auth.signInAnonymously();
