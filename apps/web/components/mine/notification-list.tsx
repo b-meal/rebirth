@@ -7,13 +7,13 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
-import { CARE_LABEL, type AnimalType, type CareSituation } from "@rebirth/types";
+import type { AnimalType } from "@rebirth/types";
 
 import { markNotificationsRead, unsubscribeArea } from "@/app/mine/notifications/actions";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, SectionCard } from "@/components/ui/screen";
-import { describeAnimal, kstDayIndex, sinceLabel } from "@/lib/report-label";
+import { STATUS_LABEL, describeAnimal, kstDayIndex, sinceLabel } from "@/lib/report-label";
 
 // 구독한 동네에 올라온 제보를 모아 보여 주는 알림함
 // 서버는 마지막으로 본 시각 하나로 점을 판단하고, 방금 열어 본 줄은 화면이 따로 지움
@@ -365,8 +365,8 @@ function NotificationRow({
             </Text>
           ) : (
             <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
-              {/* 이 절은 발견 제보만 담아 종류를 되풀이하지 않고 보호 상황만 적음 */}
-              {CARE_LABEL[item.careSituation as CareSituation] ?? ""}
+              {/* 다른 화면과 같은 원천을 써야 같은 제보가 화면마다 다른 말로 불리지 않음 */}
+              {STATUS_LABEL[item.careSituation] ?? ""}
             </Text>
           )}
         </VStack>
