@@ -323,9 +323,10 @@ export function SearchScreen({
         </ActionButton>
 
         <VStack align="stretch" grow={1} minWidth="0">
+          {/* large 라야 글자가 16px 임. medium 은 14px 이라 iOS Safari 가 포커스 때 화면을 확대함 */}
           <TextField
             aria-label="검색어"
-            size="medium"
+            size="large"
             prefixIcon={<IconMagnifyingglassLine />}
             value={keyword}
             onValueChange={(next) => setKeyword(next.value)}
