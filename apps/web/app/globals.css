@@ -172,6 +172,12 @@ a {
   transition: background-color 120ms ease;
 }
 
+/* 아직 안 읽은 줄. 오른쪽 끝 점 하나는 훑어 내릴 때 눈에 걸리지 않아 면으로 구분함
+   hover 와 active 보다 앞에 두어 손을 올리면 그쪽이 이김 */
+.rebirth-row--unread {
+  background: var(--seed-color-bg-brand-weak);
+}
+
 /* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬 */
 @media (hover: hover) and (pointer: fine) {
   .rebirth-row:hover {

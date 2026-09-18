@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Box, HStack, ImageFrame, Text, VStack } from "@seed-design/react";
+import { Box, HStack, ImageFrame, Text, VStack, VisuallyHidden } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
-import type { AnimalType } from "@rebirth/types";
+import { CARE_LABEL, type AnimalType, type CareSituation } from "@rebirth/types";
 
 import { markNotificationsRead, unsubscribeArea } from "@/app/mine/notifications/actions";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, SectionCard } from "@/components/ui/screen";
-import { STATUS_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
+import { describeAnimal, kstDayIndex, sinceLabel } from "@/lib/report-label";
 
 // 구독한 동네에 올라온 제보를 모아 보여 주는 알림함
 // 서버는 마지막으로 본 시각 하나로 점을 판단하고, 방금 열어 본 줄은 화면이 따로 지움
@@ -151,26 +151,9 @@ export function NotificationList({
       <AppHeader title="알림" />
 
       <VStack align="stretch" grow={1} gap="x2">
-        {/* 구독한 곳이 없으면 0 만 남아 알려 주는 것이 없어 절째로 빼둠 */}
-        {areas.length > 0 ? (
-          <SectionCard gap="x3">
-            <HStack justify="space-between" align="center">
-              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                알림 받는 동네
-              </Text>
-              <Text textStyle="t3Regular" color="fg.neutralMuted">
-                {areas.length}개
-              </Text>
-            </HStack>
-
-            <VStack align="stretch" gap="x2">
-              {areas.map((area) => (
-                <AreaRow key={area.areaCode} area={area} preview={preview} />
-              ))}
-            </VStack>
-          </SectionCard>
-        ) : null}
-
+        {/* 여기 온 이유는 새로 온 것을 보려는 것이라 읽을 것을 맨 위에 둠
+            그중에서도 내 신고와 닮은 제보가 가장 급해 첫 절로 옴
+            구독 관리는 다 본 뒤에 찾는 일이라 맨 아래로 내려감 */}
         {matches.length > 0 ? (
           <SectionCard gap="x3">
             <HStack justify="space-between" align="center">
@@ -208,14 +191,25 @@ export function NotificationList({
               구독한 뒤에 올라온 제보가 여기에 쌓여요
             </Text>
           ) : (
-            <VStack align="stretch" gap="x3">
-              {rows.map((item) => (
-                <NotificationRow
-                  key={item.id}
-                  item={item}
-                  unread={item.unread && !opened.includes(item.id)}
-                  onOpen={() => markOpened(item.id)}
-                />
+            // 며칠치가 한 줄기로 이어지면 언제 것인지는 줄마다 읽어야 알 수 있음
+            // 날짜로 끊어 두면 오늘 올라온 것이 몇 건인지 훑는 것만으로 보임
+            <VStack align="stretch" gap="x4">
+              {groupByDay(rows).map((group) => (
+                <VStack key={group.label} align="stretch" gap="x2">
+                  <Text textStyle="t2Bold" color="fg.neutralSubtle">
+                    {group.label}
+                  </Text>
+                  <VStack align="stretch" gap="x1">
+                    {group.items.map((item) => (
+                      <NotificationRow
+                        key={item.id}
+                        item={item}
+                        unread={item.unread && !opened.includes(item.id)}
+                        onOpen={() => markOpened(item.id)}
+                      />
+                    ))}
+                  </VStack>
+                </VStack>
               ))}
             </VStack>
           )}
@@ -247,9 +241,50 @@ export function NotificationList({
           ) : null}
         </SectionCard>
         ) : null}
+
+        {/* 구독 관리는 읽을 것을 다 본 뒤에 찾는 일이라 맨 아래에 둠
+            구독한 곳이 없으면 0 만 남아 알려 주는 것이 없어 절째로 빼둠 */}
+        {areas.length > 0 ? (
+          <SectionCard gap="x3">
+            <HStack justify="space-between" align="center">
+              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+                알림 받는 동네
+              </Text>
+              <Text textStyle="t3Regular" color="fg.neutralMuted">
+                {areas.length}개
+              </Text>
+            </HStack>
+
+            <VStack align="stretch" gap="x2">
+              {areas.map((area) => (
+                <AreaRow key={area.areaCode} area={area} preview={preview} />
+              ))}
+            </VStack>
+          </SectionCard>
+        ) : null}
       </VStack>
     </Screen>
   );
+}
+
+// 날짜 묶음. 줄에 적히는 어제 와 같은 한국 시간 경계를 써야 소제목과 줄이 어긋나지 않음
+function groupByDay(
+  rows: NotificationItem[],
+  now: Date = new Date(),
+): { label: string; items: NotificationItem[] }[] {
+  const today = kstDayIndex(now);
+  const buckets = new Map<string, NotificationItem[]>();
+
+  for (const item of rows) {
+    const past = today - kstDayIndex(item.createdAt);
+    const label = past <= 0 ? "오늘" : past === 1 ? "어제" : "지난 알림";
+    const bucket = buckets.get(label);
+    if (bucket) bucket.push(item);
+    else buckets.set(label, [item]);
+  }
+
+  // 목록이 이미 최신순이라 처음 담긴 순서가 곧 날짜 순서임
+  return [...buckets].map(([label, items]) => ({ label, items }));
 }
 
 function AreaRow({ area, preview }: { area: NotificationArea; preview: boolean }) {
@@ -294,8 +329,13 @@ function NotificationRow({
   note?: string;
 }) {
   return (
-    <HStack asChild gap="x3" align="center" minWidth="0">
-      <Link href={`/r/${item.id}`} className="rebirth-row" onClick={onOpen}>
+    <HStack asChild gap="x3" align="center" minWidth="0" p="x2">
+      <Link
+        href={`/r/${item.id}`}
+        // 안 읽은 줄은 면으로 구분함. 오른쪽 끝 점 하나는 훑어 내릴 때 눈에 걸리지 않음
+        className={unread ? "rebirth-row rebirth-row--unread" : "rebirth-row"}
+        onClick={onOpen}
+      >
         {item.photoUrl ? (
           <ImageFrame
             ratio={1}
@@ -325,15 +365,15 @@ function NotificationRow({
             </Text>
           ) : (
             <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
-              {STATUS_LABEL[item.careSituation] ?? ""}
+              {/* 이 절은 발견 제보만 담아 종류를 되풀이하지 않고 보호 상황만 적음 */}
+              {CARE_LABEL[item.careSituation as CareSituation] ?? ""}
             </Text>
           )}
         </VStack>
 
-        {/* 안 읽은 줄에만 붙는 점. 숫자를 쓰면 줄마다 세어야 해 표시만 둠 */}
-        {unread ? (
-          <Box width="x2" height="x2" borderRadius="full" bg="bg.brandSolid" />
-        ) : null}
+        {/* 안 읽음은 면으로 보여 주므로 눈에는 더 그릴 것이 없음
+            색만으로는 읽어 주지 못하는 화면이 있어 말로도 남김 */}
+        {unread ? <VisuallyHidden>안 읽음</VisuallyHidden> : null}
       </Link>
     </HStack>
   );
