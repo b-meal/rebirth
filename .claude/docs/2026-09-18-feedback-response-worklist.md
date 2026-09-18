@@ -108,36 +108,36 @@
 
 ## Phase 1. 이동 경로 공식 보정
 
-- [ ] `packages/core/src/matching/track.ts` 에 `D_MAX_KM` 을 넣고 `legFeasibility` 의 분모를 상한으로 감쌉니다
-  - [ ] `packages/core/src/matching/track.ts:16-27` 의 `SIGMA_KM` 아래에 `export const D_MAX_KM: Record<TrackSize, number> = { small: 5, medium: 10, large: 15, unknown: 10 }` 를 추가합니다
-  - [ ] `packages/core/src/matching/track.ts:70-79` 의 반환식을 `distanceKm(from.point, to.point) / Math.min(V_MAX_KMH[size] * hours, D_MAX_KM[size])` 로 바꿉니다
-  - [ ] `D_MAX_KM` 위에 `긴 공백에서 상한이 무한히 늘어나는 것 방지` 한 줄 주석을 붙입니다
-  - [ ] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
-- [ ] `packages/core/src/matching/track.test.ts` 에 긴 공백 노드가 경로에서 빠지는 테스트를 넣습니다
-  - [ ] `packages/core/src/matching/track.test.ts:8-17` 의 import 에 `D_MAX_KM` 을 더합니다
-  - [ ] `isFeasibleLeg` 가 소형견 기준 `시각(48)` `북쪽(20)` 노드에서 `false` 인 테스트 1건을 추가합니다
-  - [ ] `시각(48)` `북쪽(4)` 는 `true` 인 단정을 같은 테스트에 더해 상한 안쪽이 살아 있는 것을 확인합니다
-  - [ ] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
-- [ ] `packages/core/src/matching/track.ts:145-159` 의 `straightness` 에 다리 수 수축을 더한 `straightnessEffective` 를 만듭니다
-  - [ ] `packages/core/src/matching/track.ts` 에 `export function straightnessEffective(legs: TrackLeg[]): number` 를 추가하고 `straightness(legs) * legs.length / (legs.length + 1)` 을 반환합니다
-  - [ ] `straightnessEffective` 위에 `다리 하나뿐인 경로가 직진으로 읽히는 것 방지` 한 줄 주석을 붙입니다
-  - [ ] `packages/core/src/matching/track.test.ts` 에 다리 1개는 `0.5` 이하, 다리 3개는 `0.7` 이상인 테스트 1건을 추가합니다
-  - [ ] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
-- [ ] `packages/core/src/matching/track.ts:161-208` 의 `predictNext` 표류를 합벡터 방향과 포화 시간으로 바꿉니다
-  - [ ] `packages/core/src/matching/track.ts:23-27` 부근에 `export const H_DRIFT_HOURS = 8` 을 추가하고 `상관 랜덤워크의 방향 지속 시간 추정` 한 줄 주석을 붙입니다
-  - [ ] `packages/core/src/matching/track.ts:179` 의 `kappa` 를 `straightnessEffective(track.legs)` 로 바꿉니다
-  - [ ] `packages/core/src/matching/track.ts:185-188` 의 `unit` 을 `track.legs` 전체의 `legVector` 합벡터 단위벡터로 바꾸고 `shiftKm` 을 `kappa * vEff * Math.min(hoursSinceLast, H_DRIFT_HOURS)` 로 바꿉니다
-  - [ ] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
-- [ ] `packages/core/src/matching/track.test.ts` 에 표류 포화와 합벡터 방향 테스트를 넣습니다
-  - [ ] `시각(12)` 와 `시각(200)` 의 `center` 가 같은 좌표인 테스트 1건을 직선 경로로 추가해 포화를 확인합니다
-  - [ ] `bearingDeg` 가 마지막 다리만 서쪽으로 꺾인 경로에서 `270` 이 아니라 북쪽 쪽에 남는 테스트 1건을 추가합니다
-  - [ ] `predictNext` 의 `straightness` 반환값이 `straightnessEffective` 와 같은지 단정 1줄을 더합니다
-  - [ ] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
-- [ ] `packages/core/src/matching/track.ts` 변경을 Phase 1 담당 경로만 커밋합니다
-  - [ ] `pnpm --filter @rebirth/core typecheck` 를 실행해 종료코드 `0` 을 봅니다
-  - [ ] `git add packages/core/src/matching/track.ts packages/core/src/matching/track.test.ts` 로 두 파일만 담습니다
-  - [ ] `fix: 이동 거리 상한과 표류 포화를 넣어 긴 공백에서 경로가 무너지는 것 막음` 으로 커밋합니다
-  - [ ] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 보고 `git status --short` 에 Phase 1 경로가 남지 않은 것을 확인합니다
+- [x] `packages/core/src/matching/track.ts` 에 `D_MAX_KM` 을 넣고 `legFeasibility` 의 분모를 상한으로 감쌉니다
+  - [x] `packages/core/src/matching/track.ts:16-27` 의 `SIGMA_KM` 아래에 `export const D_MAX_KM: Record<TrackSize, number> = { small: 5, medium: 10, large: 15, unknown: 10 }` 를 추가합니다
+  - [x] `packages/core/src/matching/track.ts:70-79` 의 반환식을 `distanceKm(from.point, to.point) / Math.min(V_MAX_KMH[size] * hours, D_MAX_KM[size])` 로 바꿉니다
+  - [x] `D_MAX_KM` 위에 `긴 공백에서 상한이 무한히 늘어나는 것 방지` 한 줄 주석을 붙입니다
+  - [x] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
+- [x] `packages/core/src/matching/track.test.ts` 에 긴 공백 노드가 경로에서 빠지는 테스트를 넣습니다
+  - [x] `packages/core/src/matching/track.test.ts:8-17` 의 import 에 `D_MAX_KM` 을 더합니다
+  - [x] `isFeasibleLeg` 가 소형견 기준 `시각(48)` `북쪽(20)` 노드에서 `false` 인 테스트 1건을 추가합니다
+  - [x] `시각(48)` `북쪽(4)` 는 `true` 인 단정을 같은 테스트에 더해 상한 안쪽이 살아 있는 것을 확인합니다
+  - [x] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
+- [x] `packages/core/src/matching/track.ts:145-159` 의 `straightness` 에 다리 수 수축을 더한 `straightnessEffective` 를 만듭니다
+  - [x] `packages/core/src/matching/track.ts` 에 `export function straightnessEffective(legs: TrackLeg[]): number` 를 추가하고 `straightness(legs) * legs.length / (legs.length + 1)` 을 반환합니다
+  - [x] `straightnessEffective` 위에 `다리 하나뿐인 경로가 직진으로 읽히는 것 방지` 한 줄 주석을 붙입니다
+  - [x] `packages/core/src/matching/track.test.ts` 에 다리 1개는 `0.5` 이하, 다리 3개는 `0.7` 이상인 테스트 1건을 추가합니다
+  - [x] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
+- [x] `packages/core/src/matching/track.ts:161-208` 의 `predictNext` 표류를 합벡터 방향과 포화 시간으로 바꿉니다
+  - [x] `packages/core/src/matching/track.ts:23-27` 부근에 `export const H_DRIFT_HOURS = 8` 을 추가하고 `상관 랜덤워크의 방향 지속 시간 추정` 한 줄 주석을 붙입니다
+  - [x] `packages/core/src/matching/track.ts:179` 의 `kappa` 를 `straightnessEffective(track.legs)` 로 바꿉니다
+  - [x] `packages/core/src/matching/track.ts:185-188` 의 `unit` 을 `track.legs` 전체의 `legVector` 합벡터 단위벡터로 바꾸고 `shiftKm` 을 `kappa * vEff * Math.min(hoursSinceLast, H_DRIFT_HOURS)` 로 바꿉니다
+  - [x] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
+- [x] `packages/core/src/matching/track.test.ts` 에 표류 포화와 합벡터 방향 테스트를 넣습니다
+  - [x] `시각(12)` 와 `시각(200)` 의 `center` 가 같은 좌표인 테스트 1건을 직선 경로로 추가해 포화를 확인합니다
+  - [x] `bearingDeg` 가 마지막 다리만 서쪽으로 꺾인 경로에서 `270` 이 아니라 북쪽 쪽에 남는 테스트 1건을 추가합니다
+  - [x] `predictNext` 의 `straightness` 반환값이 `straightnessEffective` 와 같은지 단정 1줄을 더합니다
+  - [x] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
+- [x] `packages/core/src/matching/track.ts` 변경을 Phase 1 담당 경로만 커밋합니다
+  - [x] `pnpm --filter @rebirth/core typecheck` 를 실행해 종료코드 `0` 을 봅니다
+  - [x] `git add packages/core/src/matching/track.ts packages/core/src/matching/track.test.ts` 로 두 파일만 담습니다
+  - [x] `fix: 이동 거리 상한과 표류 포화를 넣어 긴 공백에서 경로가 무너지는 것 막음` 으로 커밋합니다
+  - [x] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 보고 `git status --short` 에 Phase 1 경로가 남지 않은 것을 확인합니다
 
 ## Phase 2. 사진 대조와 외형 유사도 경로 소속
 
@@ -513,9 +513,20 @@
 
 ## 추가 항목
 
+- [ ] `straightnessEffective` 를 `packages/core/src/matching/index.ts` 에 export 하기
+
+- [ ] Phase 12 통과 뒤 `playwright` 로 `m-01` 부터 `m-19` 와 신규 화면(`/find` `/r/[id]/poster` 경로 타임라인 두 겹 예측 원)을 다시 캡처하기
+- [ ] `/Users/hahmjuntae/Desktop/rebirth-제출자료` 의 `card-share.png` 를 Phase 9 산출물로 다시 굽기
+- [ ] `HERO-hero-16x9.png` 와 `HERO-hero-1x1.png` 를 새 커버 문구와 새 캡처로 다시 만들기
+- [ ] `DECK-1` 부터 `DECK-5` 를 이동 경로 추적·공식·전단 QR 을 넣은 8장 구성으로 재구성해 다시 굽기
+- [ ] `AI활용_문구.txt` 의 `AI 활용 방식 및 결과` 를 500자 상한 안에서 이동 경로 추적을 포함해 다시 쓰기
+- [ ] 제출 폼 `해결하고자 한 문제` 와 `사용 AI툴 및 기술 스택` 문안을 Phase 11 초안에서 옮겨 쓰기
+- [ ] 새 덱과 새 캡처에 `배회 중` `찾는 중` 등 Phase 3 금지 어휘가 남지 않았는지 눈으로 확인하기
 ## 참고
 
 ### 지시서 결함
+
+- Phase 1 은 `pnpm --filter @rebirth/core lint` 를 전제하지 않았으나 core 에는 lint 스크립트가 없어 `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT` 로 끝남
 
 - Phase 0 은 미커밋 변경 4개·현재 브랜치 `develop` 을 전제했으나 실제는 수정 6 + 미추적 2, 브랜치 `feat/unified-track-map`
 - Phase 0 은 커밋 두 개를 전제했으나 주제가 셋이라 `107a863` 스플래시 · `10ffef6` 지도 · `4d601d4` 사진 세 개가 됨
@@ -528,3 +539,8 @@
 - 스플래시 3파일은 Phase 0 진행 중 동시 세션이 `107a863` 으로 선점 커밋해 에이전트의 `git add` 는 빈 스테이지였음
 - 새 브랜치가 `feat/unified-track-map` 을 upstream 으로 잡아 `git branch --unset-upstream` 으로 끊음
 - Phase 0 기준선은 설계 상수와 일치. core 104 pass · web 8 pass · fail 0 · lint 2 tasks · typecheck 5 tasks
+- Phase 1 실측 행번호. `SIGMA_KM` 16-21 · `legFeasibility` 70-79 · `straightness` 145-158 · `predictNext` 161-208 · 테스트 import 4-12
+- Phase 1 기존 테스트 4건이 새 공식에서 그대로 통과해 기대값 수정 없음. core 104 → 107 pass
+- `H_DRIFT_HOURS` 는 `R_MAX_KM` 아래, `D_MAX_KM` 은 `SIGMA_KM` 아래에 둠
+- `predictNext` 의 `lastLeg` 변수를 `track.legs.length === 0` 가드로 교체. 합벡터 전환으로 미사용이 됨
+- Phase 1 테스트에 `북서(북km, 서km)` 헬퍼 1개 추가. 끝만 서쪽으로 꺾인 경로를 만들 수단
