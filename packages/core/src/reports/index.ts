@@ -6,6 +6,7 @@ export {
   createReportHandler,
   getReportHandler,
   getReportPhotoHandler,
+  listCommentsHandler,
   listReportsHandler,
   saveReport,
   shareReportHandler,

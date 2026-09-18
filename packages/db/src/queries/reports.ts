@@ -665,13 +665,33 @@ export type ReportCommentRow = {
   [K in keyof typeof commentColumns]: (typeof reportComments.$inferSelect)[K]
 }
 
+/** 이어 읽을 자리. 같은 시각에 달린 댓글이 있어 id 까지 함께 봄 */
+export type ReportCommentCursor = { createdAt: Date; id: string }
+
+export type ReportCommentPageOptions = {
+  /** 이 댓글 다음부터. 대화가 아래로 이어지므로 뒤쪽을 읽음 */
+  after?: ReportCommentCursor
+  limit?: number
+}
+
 /** 상세 화면의 댓글. 대화 순서대로 읽히게 오래된 것부터 */
-export function listReportComments(reportId: string, limit = COMMENT_PAGE_SIZE) {
+export function listReportComments(
+  reportId: string,
+  { after, limit = COMMENT_PAGE_SIZE }: ReportCommentPageOptions = {},
+) {
   return db
     .select(commentColumns)
     .from(reportComments)
-    .where(eq(reportComments.reportId, reportId))
-    .orderBy(reportComments.createdAt)
+    .where(
+      and(
+        eq(reportComments.reportId, reportId),
+        after
+          ? raw`(${reportComments.createdAt}, ${reportComments.id}) > (${after.createdAt.toISOString()}::timestamptz, ${after.id})`
+          : undefined,
+      ),
+    )
+    // 같은 시각에 달린 댓글이 쪽을 넘나들지 않도록 id 까지 순서를 못 박음
+    .orderBy(reportComments.createdAt, reportComments.id)
     .limit(limit)
 }
 

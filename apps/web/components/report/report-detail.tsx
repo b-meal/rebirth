@@ -64,6 +64,8 @@ export type ReportDetailProps = {
   /** 격자 스냅 좌표, 좌표가 없는 지역 선택 제보는 null */
   location: { point: LatLng; gridMeters: number } | null;
   comments: ReportComment[];
+  /** 댓글의 다음 쪽. 없으면 첫 쪽이 전부임 */
+  commentCursor: string | null;
   nearby: ReportCardItem[];
   /** 격자 좌표에서 가까운 순으로 고른 공공데이터 기관, 좌표가 없으면 빈 배열 */
   shelters: ShelterItem[];
@@ -78,6 +80,7 @@ export function ReportDetail({
   sinceLabel,
   location,
   comments,
+  commentCursor,
   nearby,
   shelters,
   interest,
@@ -202,8 +205,16 @@ export function ReportDetail({
         ) : null}
 
         <SectionCard gap="x4">
-          <SectionTitle>댓글 {comments.length}</SectionTitle>
-          <ReportComments comments={comments} />
+          {/* 첫 쪽이 다 찼으면 지금 센 수가 전부가 아니라 + 를 붙임 */}
+          <SectionTitle>
+            댓글 {comments.length}
+            {commentCursor ? "+" : ""}
+          </SectionTitle>
+          <ReportComments
+            reportId={report.id}
+            comments={comments}
+            nextCursor={commentCursor}
+          />
           <CommentComposer reportId={report.id} />
         </SectionCard>
 
