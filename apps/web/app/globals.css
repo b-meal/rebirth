@@ -550,6 +550,14 @@ body .seed-snackbar__root {
 }
 
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
+/* 조회 기간 셀렉트가 서는 자리
+   SEED 셀렉트 트리거는 width 100% 라 담는 자리가 폭을 정해야 함
+   dimension 토큰은 x16(64px) 이 끝이라 최근 90일 과 화살표가 들어가지 않음 */
+.rebirth-period-select {
+  width: 7.5rem;
+  flex-shrink: 0;
+}
+
 .rebirth-scroll-row {
   overflow-x: auto;
   scrollbar-width: none;

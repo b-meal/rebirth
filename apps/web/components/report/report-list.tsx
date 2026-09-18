@@ -6,12 +6,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { AspectRatio, Box, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
 import { IconPawprintLine } from "@karrotmarket/react-monochrome-icon";
 import type { AnimalType } from "@rebirth/types";
-import { LIST_PERIOD_DAYS } from "@rebirth/types";
+import { LIST_DEFAULT_DAYS, LIST_PERIOD_DAYS } from "@rebirth/types";
 import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
+import { SelectContent, SelectItem, SelectRoot, SelectTrigger } from "seed-design/ui/select";
 
 import { describeAnimal, reportStatusBadge, sinceLabel } from "@/lib/report-label";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
@@ -166,7 +167,11 @@ export function ReportList({ kind, items, nextCursor }: ReportListProps) {
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const animalType = params.get("animalType");
-  const days = Number(params.get("days")) || LIST_PERIOD_DAYS[0];
+  // 주소에 아무 값이나 들어와도 셀렉트가 고를 수 있는 값만 남김, 서버 질의도 같은 기준으로 자름
+  const askedDays = Number(params.get("days"));
+  const days = (LIST_PERIOD_DAYS as readonly number[]).includes(askedDays)
+    ? askedDays
+    : LIST_DEFAULT_DAYS;
 
   // 서버가 새 쪽을 그려 보내면 쌓아 둔 것을 버리고 그 쪽에서 다시 시작함
   // 조건을 바꿀 때가 이 경우라, 옛 커서와 옛 목록이 남아 섞이지 않음
@@ -179,13 +184,27 @@ export function ReportList({ kind, items, nextCursor }: ReportListProps) {
   }
 
   // 조건을 URL 에 담아 상세에서 뒤로 왔을 때 그대로 복원됨
+  const go = (next: URLSearchParams) => {
+    startTransition(() => {
+      router.replace(next.size > 0 ? `${pathname}?${next}` : pathname, { scroll: false });
+    });
+  };
+
+  // 칩은 켠 값을 다시 눌러 끄는 자리라 같은 값이 오면 지움
   const setParam = (key: string, value?: string) => {
     const next = new URLSearchParams(params.toString());
     if (value && next.get(key) !== value) next.set(key, value);
     else next.delete(key);
-    startTransition(() => {
-      router.replace(next.size > 0 ? `${pathname}?${next}` : pathname, { scroll: false });
-    });
+    go(next);
+  };
+
+  // 셀렉트는 끄는 자리가 없어 고른 값을 그대로 씀, 같은 값을 다시 골라도 기간이 풀리지 않음
+  // 기본값은 주소에서 빼 조건 없는 목록 주소가 그대로 공유됨
+  const setDays = (value: string) => {
+    const next = new URLSearchParams(params.toString());
+    if (Number(value) === LIST_DEFAULT_DAYS) next.delete("days");
+    else next.set("days", value);
+    go(next);
   };
 
   const loadMore = useCallback(async () => {
@@ -218,7 +237,7 @@ export function ReportList({ kind, items, nextCursor }: ReportListProps) {
   });
 
   const rows = [...items, ...extra];
-  const filtered = Boolean(animalType) || days !== LIST_PERIOD_DAYS[0];
+  const filtered = Boolean(animalType) || days !== LIST_DEFAULT_DAYS;
 
   return (
     <Screen>
@@ -239,30 +258,34 @@ export function ReportList({ kind, items, nextCursor }: ReportListProps) {
               ))}
             </HStack>
           </Box>
-          <Box className="rebirth-scroll-row rebirth-bleed">
-            <HStack gap="spacingX.betweenChips">
-              {LIST_PERIOD_DAYS.map((period) => (
-                <Chip.Toggle
-                  key={period}
-                  checked={days === period}
-                  onCheckedChange={() => setParam("days", String(period))}
-                >
-                  <Chip.Label>최근 {period}일</Chip.Label>
-                </Chip.Toggle>
-              ))}
-            </HStack>
-          </Box>
         </Section>
 
-        <HStack justify="space-between" align="center">
+        {/* 기간은 고르는 값이 셋뿐이고 한 번 정하면 잘 바꾸지 않아 건수 옆 오른쪽 끝에 접어 둠
+            칩으로 늘어놓으면 종류 칩과 두 줄이 되어 목록이 그만큼 아래로 내려감 */}
+        <HStack justify="space-between" align="center" gap="x2">
           <Text textStyle="t3Regular" color="fg.neutralMuted">
             {pending ? "불러오는 중" : `${rows.length}건`}
           </Text>
-          {filtered ? (
-            <ActionButton variant="ghost" size="xsmall" onClick={() => router.replace(pathname)}>
-              조건 초기화
-            </ActionButton>
-          ) : null}
+          <HStack align="center" gap="x2">
+            {filtered ? (
+              <ActionButton variant="ghost" size="xsmall" onClick={() => router.replace(pathname)}>
+                조건 초기화
+              </ActionButton>
+            ) : null}
+            <Box className="rebirth-period-select">
+              <SelectRoot
+                value={[String(days)]}
+                onValueChange={([picked]) => setDays(picked!)}
+              >
+                <SelectTrigger aria-label="조회 기간" />
+                <SelectContent>
+                  {LIST_PERIOD_DAYS.map((period) => (
+                    <SelectItem key={period} value={String(period)} label={`최근 ${period}일`} />
+                  ))}
+                </SelectContent>
+              </SelectRoot>
+            </Box>
+          </HStack>
         </HStack>
 
         {rows.length === 0 ? (
