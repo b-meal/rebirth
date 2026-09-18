@@ -2,6 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
+import { promptTime } from "./prompt-time.ts";
+
 /**
  * 이동 경로와 노드 사진을 모델이 읽고 먼저 가 볼 순서를 적음
  * 배점과 예측은 결정식이 이미 끝냈고 여기서는 읽는 법만 만듦
@@ -104,15 +106,11 @@ export function bearingWord(deg: number): string {
   return BEARING_WORDS[Math.round(normalized / 45) % 8]!;
 }
 
-// 분 단위까지만 남겨 초와 밀리초의 소수점 숫자 제거
-const atMinute = (value: Date) =>
-  value.toISOString().slice(0, 16).replace("T", " ");
-
 /** 경로를 모델이 읽을 문장으로 옮김. 좌표는 어떤 형태로도 담지 않음 */
 export function describeTrack(input: TrackReviewInput): string {
   const nodes = input.nodes.map(
     (node, index) =>
-      `${index + 1}. ${node.areaName ?? "지역 미확인"} · ${atMinute(node.occurredAt)}`,
+      `${index + 1}. ${node.areaName ?? "지역 미확인"} · ${promptTime(node.occurredAt)}`,
   );
 
   const prediction = input.prediction

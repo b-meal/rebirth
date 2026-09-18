@@ -88,6 +88,13 @@ test("describeTrack 이 좌표 숫자를 문장에 담지 않는다", () => {
   assert.ok(text.includes("북동쪽"));
 });
 
+test("describeTrack 이 노드 시각을 한국 시간으로 적는다", () => {
+  const text = describeTrack(입력);
+  // UTC 로 적으면 09:00 과 15:30 이 되어 모델이 저녁 목격을 한낮으로 읽음
+  assert.ok(text.includes("2026-09-16 18:00 KST"), text);
+  assert.ok(text.includes("2026-09-17 00:30 KST"), text);
+});
+
 test("describeTrack 이 주변 상황을 규칙이 센 숫자 그대로 적는다", () => {
   const text = describeTrack({
     ...입력,
