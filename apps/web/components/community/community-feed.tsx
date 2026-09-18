@@ -275,12 +275,13 @@ export function CommunityFeed({
       <AppHeader
         title="커뮤니티"
         action={
+          // 기다리는 신호는 아래 배너 뼈대 하나가 맡음
+          // 여기까지 함께 돌리면 한 번 기다리는 일을 두 곳에서 알리게 됨
           <ActionButton
             variant="ghost"
             size="medium"
             layout="iconOnly"
             aria-label="내 동네 다시 잡기"
-            loading={locating}
             onClick={retry}
           >
             <Icon svg={<IconLocationpinLine />} />
