@@ -99,7 +99,7 @@ export function ReportForm() {
     retry: boolean;
   } | null>(null);
 
-  const { draft, photos, setPhotos, applyAiDraft, edit, reset } = useReportDraft();
+  const { draft, photos, setPhotos, applyAiDraft, edit, clearAi, reset } = useReportDraft();
   // 되돌리기는 goTo 가 만들어진 뒤에야 쓸 수 있어 참조로 받아 둠
   const bounceRef = useRef<(next: NonNullable<typeof block>) => void>(() => {});
 
@@ -138,6 +138,8 @@ export function ReportForm() {
       setPhotos(next);
       // 사진이 바뀌면 이전 분석과 업로드 결과를 쓰지 않음
       resetPipeline();
+      // 이전 초안에서 고친 기록도 버림. 남기면 새 사진의 초안이 옛 문장에 막힘
+      clearAi();
     },
   });
 
