@@ -5,8 +5,8 @@ import "server-only";
 
 export const PHOTO_BUCKET = "report-photos";
 
-// 조회용 서명 URL 유효기간. 상세 화면 체류와 공유 클릭까지 감당하는 길이
-export const SIGNED_URL_TTL_SECONDS = 60 * 60;
+// 한 시간이면 탭을 열어 둔 채 한 번만 자리를 비워도 사진이 한꺼번에 깨짐
+export const SIGNED_URL_TTL_SECONDS = 12 * 60 * 60;
 
 export type StorageErrorKind =
   | "no-config"
