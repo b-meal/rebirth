@@ -129,7 +129,8 @@ a {
   margin: -8px;
   border-radius: 50%;
   background: var(--seed-color-bg-informative-solid);
-  border: 3px solid var(--seed-color-bg-layer-floating);
+  /* 지도 타일은 색 모드와 무관하게 밝아 테두리는 다크 모드에서도 흰색으로 고정 */
+  border: 3px solid var(--seed-color-palette-static-white);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--seed-color-bg-informative-solid) 35%, transparent);
 }
 
@@ -149,15 +150,16 @@ a {
 }
 
 .rebirth-my-location-heading-edge {
-  stroke: var(--seed-color-bg-layer-floating);
+  stroke: var(--seed-color-palette-static-white);
 }
 
-/* 정확도 원. 크기는 미터를 축척에 맞춰 px 로 환산해 스크립트가 넣음 */
+/* 정확도 원. 크기는 미터를 축척에 맞춰 px 로 환산해 스크립트가 넣음
+   이 안쪽 어딘가 라는 옅은 힌트라 후광과 같은 파랑을 아주 낮은 농도로만 깔음
+   bg-informative-weak 는 다크 모드에서 진한 남색 면이라 지도를 덮어 쓰지 않음 */
 .rebirth-my-location-accuracy {
   border-radius: 50%;
-  background: var(--seed-color-bg-informative-weak);
-  border: 1px solid var(--seed-color-stroke-informative-weak);
-  opacity: 0.45;
+  background: color-mix(in srgb, var(--seed-color-bg-informative-solid) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--seed-color-bg-informative-solid) 30%, transparent);
   pointer-events: none;
 }
 
@@ -168,6 +170,12 @@ a {
   cursor: pointer;
   border-radius: var(--seed-radius-r2);
   transition: background-color 120ms ease;
+}
+
+/* 아직 안 읽은 줄. 오른쪽 끝 점 하나는 훑어 내릴 때 눈에 걸리지 않아 면으로 구분함
+   hover 와 active 보다 앞에 두어 손을 올리면 그쪽이 이김 */
+.rebirth-row--unread {
+  background: var(--seed-color-bg-brand-weak);
 }
 
 /* 손가락 화면에서는 hover 가 눌린 채로 남아 마우스에서만 켬 */

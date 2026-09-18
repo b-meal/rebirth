@@ -29,6 +29,9 @@ const SETTLE_DEG = 0.1;
 // 정확도 원이 점의 후광보다 작으면 겹쳐 보여 그리지 않음
 const MIN_CIRCLE_PX = 48;
 
+// 정확도 원 지름이 화면 짧은 변의 이 배수를 넘으면 그리지 않음
+const MAX_CIRCLE_RATIO = 0.8;
+
 type Layer = {
   dot: Marker;
   circle: Marker;
@@ -114,7 +117,11 @@ export function useMyLocationMarker({
 
     const resize = () => {
       const px = accuracyMeters ? circleDiameterPx(map, point, accuracyMeters) : 0;
-      built.circleEl.hidden = px < MIN_CIRCLE_PX;
+      // 화면보다 큰 원은 이 안쪽 어딘가 라는 뜻이 없고 지도만 덮어 그리지 않음
+      // PC 는 와이파이 측위라 정확도가 수 km 로 와서 이 경우가 흔함
+      const { width, height } = map.getContainer().getBoundingClientRect();
+      const tooLarge = px > Math.min(width, height) * MAX_CIRCLE_RATIO;
+      built.circleEl.hidden = px < MIN_CIRCLE_PX || tooLarge;
       built.circleEl.style.width = `${px.toFixed(1)}px`;
       built.circleEl.style.height = `${px.toFixed(1)}px`;
     };

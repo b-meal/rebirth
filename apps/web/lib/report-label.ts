@@ -90,7 +90,11 @@ const KST_DATE = new Intl.DateTimeFormat("en-US", {
   day: "2-digit",
 });
 
-function kstDayIndex(date: Date): number {
+/**
+ * 한국 시간 달력으로 며칠째인지를 세는 값
+ * 알림함의 날짜 묶음이 줄에 적힌 어제 와 같은 경계를 써야 소제목과 줄이 어긋나지 않음
+ */
+export function kstDayIndex(date: Date): number {
   // 자리 순서는 ICU 판마다 달라 종류로 집어 옮김
   const part = new Map(KST_DATE.formatToParts(date).map((p) => [p.type, p.value]));
   const day = `${part.get("year")}-${part.get("month")}-${part.get("day")}`;
