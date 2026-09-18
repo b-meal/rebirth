@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Box, Grid, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -30,8 +30,8 @@ type NearbyListProps = {
   height: string;
 };
 
-// 홈 화면은 위치와 핀이 바뀔 때마다 다시 그려지지만 목록은 반경 안 제보와 높이가 같으면 건너뜀
-export const NearbyList = memo(function NearbyList({ items, height }: NearbyListProps) {
+// 홈 화면이 다시 그려져도 반경 안 제보와 높이가 같으면 React Compiler 가 건너뜀, 손으로 memo 하지 않음
+export function NearbyList({ items, height }: NearbyListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +42,7 @@ export const NearbyList = memo(function NearbyList({ items, height }: NearbyList
   const [scrolled, setScrolled] = useState(false);
 
   // 실제 카드에서 줄 높이를 재 토큰 값이 바뀌어도 자리 계산이 따라감
-  const measure = useCallback(() => {
+  const measure = () => {
     const scroller = scrollRef.current;
     if (scroller) setViewport(scroller.clientHeight);
 
@@ -55,7 +55,7 @@ export const NearbyList = memo(function NearbyList({ items, height }: NearbyList
     setRow((prev) =>
       Math.abs(prev.height - (height + gap)) > 1 ? { height: height + gap, gap } : prev,
     );
-  }, []);
+  };
 
   // 시트를 끌면 목록 높이가 바뀌고 글꼴이 늦게 오면 카드 높이가 바뀜, 둘 다 다시 잼
   useEffect(() => {
@@ -71,7 +71,7 @@ export const NearbyList = memo(function NearbyList({ items, height }: NearbyList
 
   // 스크롤마다 상태를 갈면 손가락보다 렌더가 늦음, 한 프레임에 한 번만 읽음
   const frame = useRef(0);
-  const onScroll = useCallback(() => {
+  const onScroll = () => {
     if (frame.current) return;
     frame.current = requestAnimationFrame(() => {
       frame.current = 0;
@@ -80,7 +80,7 @@ export const NearbyList = memo(function NearbyList({ items, height }: NearbyList
       setScrollTop(scroller.scrollTop);
       if (scroller.scrollTop > 0) setScrolled(true);
     });
-  }, []);
+  };
 
   useEffect(
     () => () => {
@@ -164,4 +164,4 @@ export const NearbyList = memo(function NearbyList({ items, height }: NearbyList
       )}
     </Box>
   );
-});
+}
