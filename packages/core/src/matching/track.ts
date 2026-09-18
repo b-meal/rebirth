@@ -157,6 +157,14 @@ export function straightness(legs: TrackLeg[]): number {
   return Math.min(1, Math.max(0, Math.hypot(sumX, sumY) / sumLen));
 }
 
+/** 경과 시간의 제곱근으로 넓어지는 탐색 반경. 경로가 없을 때도 기본 반경으로 씀 */
+export function searchRadiusKm(size: TrackSize, hours: number): number {
+  return Math.min(
+    R_MAX_KM,
+    Math.max(R_MIN_KM, SIGMA_KM[size] * Math.sqrt(Math.max(hours, 0)) + GPS_EPSILON_KM),
+  );
+}
+
 /** T4. 마지막 목격 이후 경과 시간만큼 마지막 이동 방향으로 옮긴 탐색 원 */
 export function predictNext({
   track,
@@ -190,13 +198,7 @@ export function predictNext({
   const lngScale = Math.max(Math.cos(lat * RAD), 0.01) * KM_PER_LAT_DEGREE;
   const lng = lastNode.point.lng + (shiftKm * unit.x) / lngScale;
 
-  const radiusKm = Math.min(
-    R_MAX_KM,
-    Math.max(
-      R_MIN_KM,
-      SIGMA_KM[size] * Math.sqrt(hoursSinceLast) + GPS_EPSILON_KM,
-    ),
-  );
+  const radiusKm = searchRadiusKm(size, hoursSinceLast);
 
   return {
     center: { lat, lng },
