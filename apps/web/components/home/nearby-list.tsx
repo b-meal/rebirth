@@ -28,10 +28,12 @@ type NearbyListProps = {
   items: ReportCardItem[];
   /** 시트가 화면 밖으로 내려가 있는 만큼, 마지막 장까지 밀어 올릴 수 있게 목록 끝에 더함 */
   tailPx: number;
+  /** 시트가 스크롤 상자를 알아야 손짓을 넘겨받을 수 있어 바깥 ref 를 함께 받음 */
+  scrollElementRef?: (element: HTMLDivElement | null) => void;
 };
 
 // 홈 화면이 다시 그려져도 반경 안 제보와 꼬리 길이가 같으면 React Compiler 가 건너뜀, 손으로 memo 하지 않음
-export function NearbyList({ items, tailPx }: NearbyListProps) {
+export function NearbyList({ items, tailPx, scrollElementRef }: NearbyListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -120,7 +122,10 @@ export function NearbyList({ items, tailPx }: NearbyListProps) {
     /* 아래 여백은 떠 있는 내비게이션이 가리는 만큼 비워 두는 자리
        높이는 시트가 남긴 만큼 채움, 단계가 바뀌어도 상자 크기가 그대로라 자리를 다시 재지 않음 */
     <Box
-      ref={scrollRef}
+      ref={(element: HTMLDivElement | null) => {
+        scrollRef.current = element;
+        scrollElementRef?.(element);
+      }}
       flexGrow={1}
       minHeight="0"
       px="spacingX.globalGutter"

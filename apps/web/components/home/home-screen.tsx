@@ -338,6 +338,7 @@ export function HomeScreen({
     dragProps,
     grabProps,
     handleProps,
+    contentRef,
   } = useSheetSnap({ stops: STOPS, rest: SHEET.collapsed, ceiling: SHEET.full });
 
   // 지도 중심을 보이는 구간 한가운데로 옮겨 내 위치가 시트 쪽으로 밀려 내려가지 않게 함
@@ -1068,7 +1069,11 @@ export function HomeScreen({
           </HStack>
 
           {/* 화면 밖으로 내려가 있는 만큼을 목록 끝에 더해 어느 단계에서도 마지막 장까지 닿음 */}
-          <NearbyList items={nearby} tailPx={Math.round((SHEET.full - sheetStop) * viewportHeight)} />
+          <NearbyList
+            items={nearby}
+            tailPx={Math.round((SHEET.full - sheetStop) * viewportHeight)}
+            scrollElementRef={contentRef}
+          />
           </motion.section>
         </VStack>
       </Box>
