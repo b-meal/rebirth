@@ -132,6 +132,15 @@ export function SearchScreen({
   const params = useSearchParams();
   const position = useCurrentPosition({ immediate: true });
   const [keyword, setKeyword] = useState(query);
+
+  // autoFocus 를 HTML 에 박으면 화면이 그려지기 전에 자판이 올라와 내용을 가림
+  // 화면이 다 그려진 다음 프레임에 초점을 주고, 결과를 보러 온 진입은 자판이 목록을 덮으므로 주지 않음
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (results !== null) return;
+    const frame = requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+    return () => cancelAnimationFrame(frame);
+  }, [results]);
   const [chart, setChart] = useState<ChartKey>("interest");
   const [photoOpen, setPhotoOpen] = useState(false);
 
@@ -332,10 +341,10 @@ export function SearchScreen({
             onValueChange={(next) => setKeyword(next.value)}
           >
             <TextFieldInput
+              ref={inputRef}
               placeholder={mode.placeholder}
               aria-label="검색어 입력"
               enterKeyHint="search"
-              autoFocus
               onKeyDown={(event) => {
                 if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                 event.preventDefault();

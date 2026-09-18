@@ -33,7 +33,6 @@ import { useMyLocationMarker } from "@/hooks/use-my-location-marker";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { useSheetSnap } from "@/hooks/use-sheet-snap";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
-import { holdKeyboard } from "@/components/ui/keyboard-bridge";
 import { NearbyList } from "@/components/home/nearby-list";
 import { WriteActionSheet } from "@/components/home/write-action-sheet";
 import type { ReportCardItem } from "@/components/report/report-card";
@@ -336,8 +335,9 @@ export function HomeScreen({
     viewport: viewportHeight,
     snapTo,
     dragProps,
-    grabProps,
+    sheetProps,
     handleProps,
+    contentRef,
   } = useSheetSnap({ stops: STOPS, rest: SHEET.collapsed, ceiling: SHEET.full });
 
   // 지도 중심을 보이는 구간 한가운데로 옮겨 내 위치가 시트 쪽으로 밀려 내려가지 않게 함
@@ -785,8 +785,8 @@ export function HomeScreen({
           bg="bg.layerFloating"
           boxShadow="s2"
         >
-          {/* 터치 안에서 키보드를 올려 두어야 다음 화면의 autoFocus 가 키보드까지 이어 받음 */}
-          <Link href="/search" aria-label="제보 검색" onClick={holdKeyboard}>
+          {/* 자판은 검색 화면이 다 그려진 뒤에 그쪽이 올림. 여기서 먼저 올리면 자판이 로딩 화면을 덮음 */}
+          <Link href="/search" aria-label="제보 검색">
             <HStack gap="x2" align="center" px="x4" py="x3">
               <Icon svg={<IconMagnifyingglassLine />} size="x5" color="fg.neutralSubtle" />
               <Text textStyle="t4Regular" color="fg.neutralSubtle">
@@ -1002,8 +1002,11 @@ export function HomeScreen({
         >
           <motion.section
             {...dragProps}
+            // 시트 어디를 잡아도 끌리고 같은 손짓이 문서 스크롤로 가지 않음. 목록 안은 손짓 넘김이 따로 정함
+            onPointerDown={sheetProps.onPointerDown}
             inert={hidden}
             style={{
+              ...sheetProps.style,
               y,
               position: "absolute",
               left: 0,
@@ -1051,14 +1054,7 @@ export function HomeScreen({
             </Grid>
           ) : null}
 
-          {/* 제목 줄도 끌기 면. 손잡이만 잡게 두면 여기를 잡은 손짓이 문서로 흘러 페이지가 함께 움직임 */}
-          <HStack
-            px="spacingX.globalGutter"
-            justify="space-between"
-            align="center"
-            gap="x2"
-            {...grabProps}
-          >
+          <HStack px="spacingX.globalGutter" justify="space-between" align="center" gap="x2">
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
               {!ready
                 ? "최근 제보"
@@ -1072,7 +1068,11 @@ export function HomeScreen({
           </HStack>
 
           {/* 화면 밖으로 내려가 있는 만큼을 목록 끝에 더해 어느 단계에서도 마지막 장까지 닿음 */}
-          <NearbyList items={nearby} tailPx={Math.round((SHEET.full - sheetStop) * viewportHeight)} />
+          <NearbyList
+            items={nearby}
+            tailPx={Math.round((SHEET.full - sheetStop) * viewportHeight)}
+            scrollElementRef={contentRef}
+          />
           </motion.section>
         </VStack>
       </Box>
