@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
@@ -11,14 +10,12 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { Box, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
+import { Box, HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
 import {
   IconBellLine,
   IconChevronUpLine,
   IconCrosshairLine,
-  IconHospitalcrossShieldLine,
   IconMagnifyingglassLine,
-  IconMegaphoneLine,
   IconPawprintFill,
   IconPlusLine,
 } from "@karrotmarket/react-monochrome-icon";
@@ -37,6 +34,7 @@ import { useMyLocationMarker } from "@/hooks/use-my-location-marker";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
 import { NearbyList } from "@/components/home/nearby-list";
+import { WriteActionSheet } from "@/components/home/write-action-sheet";
 import type { ReportCardItem } from "@/components/report/report-card";
 
 // 지도가 맨 아래, 그 위에 시트, 맨 위에 떠 있는 내비게이션을 겹치는 첫 화면
@@ -273,7 +271,6 @@ export function HomeScreen({
   const markers = useStreamed(markersPromise, EMPTY_MARKERS);
   const unread = useStreamed(unreadPromise, 0);
 
-  const router = useRouter();
   const snackbar = useSnackbarAdapter();
   // 첫 자리를 잡은 뒤에도 따라가 걸으면서 보는 지도에서 점이 함께 움직임
   const position = useCurrentPosition({ immediate: true, watch: true });
@@ -469,6 +466,9 @@ export function HomeScreen({
       .map((row) => row.item);
     return { nearby: sorted, widened: sorted.length > 0 };
   }, [ready, center, radiusKm, markers]);
+
+  // 떠 있는 단추가 여는 쓰기 시트. 지도 위 알약을 대신함
+  const [writeOpen, setWriteOpen] = useState(false);
 
   const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
@@ -735,22 +735,6 @@ export function HomeScreen({
         </Box>
       </HStack>
 
-      {/* 첫 화면에서 무엇을 하는 곳인지 읽히도록 급한 일 둘을 지도 위에 올림
-          제보하기는 아래 떠 있는 단추가 이미 가지고 있어 여기서 빼둠 */}
-      <HStack gap="x2" align="center" width="fit-content" style={{ pointerEvents: "auto" }}>
-        <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/lost/new">
-            <PrefixIcon svg={<IconMegaphoneLine />} />
-            우리 아이 찾기
-          </Link>
-        </ContextualFloatingButton>
-        <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/guide/injured">
-            <PrefixIcon svg={<IconHospitalcrossShieldLine />} />
-            다친 동물
-          </Link>
-        </ContextualFloatingButton>
-      </HStack>
       </VStack>
 
       {/* 이 묶음은 시트와 떠 있는 버튼의 자리만 잡음
@@ -783,10 +767,15 @@ export function HomeScreen({
           >
             <Icon svg={<IconCrosshairLine />} />
           </ContextualFloatingButton>
+          {/* 글을 남기는 길 셋을 이 단추 하나에 모음
+              엄지가 닿는 자리라 급할 때 한 손으로 고를 수 있음
+              누르면 고르는 시트가 열리므로 라벨도 제보하기 가 아니라 알리기 로 둠 */}
           <FloatingActionButton
             icon={<IconPlusLine />}
-            label="제보하기"
-            onClick={() => router.push("/report")}
+            label="알리기"
+            aria-haspopup="dialog"
+            aria-expanded={writeOpen}
+            onClick={() => setWriteOpen(true)}
           />
         </VStack>
         )}
@@ -853,6 +842,8 @@ export function HomeScreen({
         </VStack>
         )}
       </VStack>
+
+      <WriteActionSheet open={writeOpen} onOpenChange={setWriteOpen} />
     </Box>
   );
 }
