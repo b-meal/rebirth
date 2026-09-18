@@ -40,7 +40,8 @@ export function AppFrame({ children }: { children: ReactNode }) {
         className={reserve ? "rebirth-tab-space" : undefined}
       >
         {children}
-        <SplashOverlay maxWidth={FRAME_WIDTH} />
+        {/* 공유 링크로 들어온 상세는 덮개 없이 바로 글이 보여야 함 */}
+        {pathname === "/" ? <SplashOverlay maxWidth={FRAME_WIDTH} /> : null}
       </Box>
 
       {/* 알림이 탭바를 덮지 않도록 띠 높이를 재게 함 */}

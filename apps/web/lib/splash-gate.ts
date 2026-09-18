@@ -4,9 +4,15 @@
 // 덮개가 끝나지 않는 화면에서 잠금이 남지 않도록 두는 상한
 const MAX_WAIT_MS = 4000;
 
-// 서버에는 덮개가 없어 처음부터 걷힌 상태로 둠
-let gone = typeof window === "undefined";
+// 덮개가 뜨는 화면에서만 잠금. 공유 링크로 들어온 상세는 기다릴 덮개가 없음
+let gone = true;
 const waiting = new Set<() => void>();
+
+/** 덮개가 그려지기로 정해졌을 때 호출. 렌더 중에 불러 뒤따르는 effect 가 기다리게 함 */
+export function armSplashGate(): void {
+  if (typeof window === "undefined") return;
+  gone = false;
+}
 
 /** 덮개가 사라진 순간 호출. 이후의 대기는 곧바로 풀림 */
 export function releaseSplashGate(): void {

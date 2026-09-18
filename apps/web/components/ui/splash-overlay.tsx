@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Box, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 
-import { releaseSplashGate } from "@/lib/splash-gate";
+import { armSplashGate, releaseSplashGate } from "@/lib/splash-gate";
 
 import styles from "./splash-overlay.module.css";
 
@@ -27,6 +27,9 @@ const TIMING = {
 export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
   // 공통 프레임의 마운트 상태로 문서 첫 진입과 내부 화면 이동 구분
   const [visible, setVisible] = useState(true);
+  // effect 보다 먼저 잠가야 같은 커밋의 위치 요청이 덮개를 기다림
+  armSplashGate();
+
   const [imageReady, setImageReady] = useState(false);
   const [fontReady, setFontReady] = useState(false);
 
