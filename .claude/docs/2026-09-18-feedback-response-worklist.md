@@ -297,34 +297,34 @@
 
 ## Phase 7. 전단 QR 과 검색 유입 랜딩
 
-- [ ] `apps/web/package.json` 에 `qrcode` 의존성을 더합니다
-  - [ ] `pnpm --filter @rebirth/web add qrcode@^1.5.4` 를 실행합니다
-  - [ ] `pnpm --filter @rebirth/web add -D @types/qrcode` 를 실행합니다
-  - [ ] `git diff apps/web/package.json pnpm-lock.yaml` 로 두 파일만 바뀐 것을 확인합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/app/r/[id]/poster/page.tsx` 를 만들어 인쇄용 전단을 그립니다
-  - [ ] `lifecycle` 이 `searching` 이 아니면 `notFound()` 를 부르는 서버 컴포넌트로 실종 신고를 읽습니다
-  - [ ] `qrcode` 의 `toString` 으로 `/r/<id>` 주소를 SVG 문자열로 만들어 그대로 박습니다
-  - [ ] `A4` 한 장에 사진 한 장·이름·생김새·마지막 목격 지역명·QR 을 담고 정확 좌표를 넣지 않습니다
-  - [ ] `export const metadata = { robots: { index: false } }` 를 넣어 전단이 검색에 잡히지 않게 합니다
-  - [ ] `@media print` 로 배경과 여백만 손대고 색은 SEED 토큰에서 읽습니다
-- [ ] `apps/web/app/r/[id]/poster/page.tsx` 에 전단 진입 경로를 붙입니다
-  - [ ] `apps/web/components/lost/lost-owner-panel.tsx` 에 `전단 만들기` 링크를 더합니다
-  - [ ] `lifecycle` 이 `searching` 인 신고에만 링크가 보이게 분기합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/app/find/page.tsx` 를 만들어 검색 유입 랜딩 한 장을 그립니다
-  - [ ] `metadata` 에 `title` 과 `description` 을 넣어 검색 결과에 무엇을 하는 곳인지 드러냅니다
-  - [ ] `/lost/new` `/report` `/guide/injured` 세 링크를 큰 타일로 그립니다
-  - [ ] `/find` 아래에 이동 경로 추적 설명 세 문장을 두고 지도는 그리지 않아 첫 페인트를 가볍게 둡니다
-  - [ ] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/app/find/page.tsx` 에서 실종 신고 상세로 이어지는 길을 확인합니다
-  - [ ] `/find` 에서 `/search?kind=lost` 로 가는 링크 한 개를 더해 이름으로 찾는 길을 남깁니다
-  - [ ] `apps/web/app/layout.tsx` 의 내비게이션을 건드리지 않고 탭바에 `/find` 를 넣지 않습니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `git add` 로 Phase 7 담당 경로만 담아 커밋합니다
-  - [ ] `git add apps/web/package.json pnpm-lock.yaml apps/web/app/r/[id]/poster apps/web/app/find apps/web/components/lost/lost-owner-panel.tsx` 로 담습니다
-  - [ ] `feat: 실종 전단 QR 과 검색 유입 랜딩을 더함` 으로 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
+- [x] `apps/web/package.json` 에 `qrcode` 의존성을 더합니다
+  - [x] `pnpm --filter @rebirth/web add qrcode@^1.5.4` 를 실행합니다
+  - [x] `pnpm --filter @rebirth/web add -D @types/qrcode` 를 실행합니다
+  - [x] `git diff apps/web/package.json pnpm-lock.yaml` 로 두 파일만 바뀐 것을 확인합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/app/r/[id]/poster/page.tsx` 를 만들어 인쇄용 전단을 그립니다
+  - [x] `lifecycle` 이 `searching` 이 아니면 `notFound()` 를 부르는 서버 컴포넌트로 실종 신고를 읽습니다
+  - [x] `qrcode` 의 `toString` 으로 `/r/<id>` 주소를 SVG 문자열로 만들어 그대로 박습니다
+  - [x] `A4` 한 장에 사진 한 장·이름·생김새·마지막 목격 지역명·QR 을 담고 정확 좌표를 넣지 않습니다
+  - [x] `export const metadata = { robots: { index: false } }` 를 넣어 전단이 검색에 잡히지 않게 합니다
+  - [x] `@media print` 로 배경과 여백만 손대고 색은 SEED 토큰에서 읽습니다
+- [x] `apps/web/app/r/[id]/poster/page.tsx` 에 전단 진입 경로를 붙입니다
+  - [x] `apps/web/components/lost/lost-owner-panel.tsx` 에 `전단 만들기` 링크를 더합니다
+  - [x] `lifecycle` 이 `searching` 인 신고에만 링크가 보이게 분기합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/app/find/page.tsx` 를 만들어 검색 유입 랜딩 한 장을 그립니다
+  - [x] `metadata` 에 `title` 과 `description` 을 넣어 검색 결과에 무엇을 하는 곳인지 드러냅니다
+  - [x] `/lost/new` `/report` `/guide/injured` 세 링크를 큰 타일로 그립니다
+  - [x] `/find` 아래에 이동 경로 추적 설명 세 문장을 두고 지도는 그리지 않아 첫 페인트를 가볍게 둡니다
+  - [x] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/app/find/page.tsx` 에서 실종 신고 상세로 이어지는 길을 확인합니다
+  - [x] `/find` 에서 `/search?kind=lost` 로 가는 링크 한 개를 더해 이름으로 찾는 길을 남깁니다
+  - [x] `apps/web/app/layout.tsx` 의 내비게이션을 건드리지 않고 탭바에 `/find` 를 넣지 않습니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `git add` 로 Phase 7 담당 경로만 담아 커밋합니다
+  - [x] `git add apps/web/package.json pnpm-lock.yaml apps/web/app/r/[id]/poster apps/web/app/find apps/web/components/lost/lost-owner-panel.tsx` 로 담습니다
+  - [x] `feat: 실종 전단 QR 과 검색 유입 랜딩을 더함` 으로 커밋합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
 
 ## Phase 8. 공식 문서 보정
 
@@ -392,51 +392,51 @@
 
 ## Phase 10. 링크 미리보기와 공유 사용성
 
-- [ ] `apps/web/app/r/[id]/page.tsx:44-104` 의 미리보기 메타를 손봅니다
-  - [ ] `CARE_LABEL` 참조를 `STATUS_LABEL` 로 바꾸고 `description` 의 다섯 어휘를 맞춥니다
-  - [ ] `twitter` 에 `images` 의 `alt` 를 더해 스크린리더와 크롤러가 같은 설명을 읽게 합니다
-  - [ ] `openGraph.images` 의 `url` 에 `?v=` 로 `report.updatedAt` 을 붙여 수정 뒤 미리보기가 갱신되게 합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/app/robots.ts` 를 만들어 색인 규칙을 한곳에 둡니다
-  - [ ] `rules` 에 `allow: "/"` 와 `disallow` 로 `/mine` `/lost/` `/api/` `/r/*/poster` 를 넣습니다
-  - [ ] `sitemap` 에 `${siteUrl}/sitemap.xml` 을 넣고 `host` 를 `siteUrl` 로 둡니다
-  - [ ] `관리 주소와 전단은 색인 대상이 아님` 한 줄 주석을 붙입니다
-  - [ ] `curl -s http://localhost:3000/robots.txt` 로 `Disallow: /mine` 이 있는 것을 확인합니다
-- [ ] `apps/web/app/sitemap.ts` 를 만들어 공개된 찾는 중 신고를 색인에 올립니다
-  - [ ] `findPublicReport` 대신 목록 질의로 `visibility = public` 이고 `lifecycle` 이 `searching` 또는 `active` 인 제보 id 를 읽습니다
-  - [ ] `/` `/find` `/reports` `/shelters` `/community` 고정 경로를 앞에 두고 제보 경로를 뒤에 붙입니다
-  - [ ] `lastModified` 는 `updatedAt` 을 쓰고 상한 `5000` 건으로 잘라 한 파일에 담습니다
-  - [ ] `curl -s http://localhost:3000/sitemap.xml | head -5` 로 `<urlset` 이 나오는 것을 확인합니다
-- [ ] `apps/web/app/manifest.ts` 를 만들어 홈 화면 추가와 공유 진입을 갖춥니다
-  - [ ] `name` `short_name` `start_url` `display: "standalone"` `background_color` `theme_color` 를 넣습니다
-  - [ ] `icons` 에 `public/logo/logo-mark-512.png` 를 `512x512` 로 넣고 `purpose: "maskable"` 항목을 더합니다
-  - [ ] `shortcuts` 에 `/report` 와 `/lost/new` 두 개를 넣어 홈 화면에서 곧장 열리게 합니다
-  - [ ] `curl -s http://localhost:3000/manifest.webmanifest | head -3` 로 `"name"` 이 나오는 것을 확인합니다
-- [ ] `apps/web/components/share/report-share.tsx:95-107` 의 공유 문구를 신고 갈래로 나눕니다
-  - [ ] `useReportShare` 입력에 `kind` 와 `petName` 을 더합니다
-  - [ ] `실종은 이름을 아는 신고면 몰리를 찾고 있어요` 형태로, 발견은 기존 문구로 갈래를 나눕니다
-  - [ ] `apps/web/components/report/report-detail.tsx` 와 `apps/web/components/lost/lost-detail.tsx` 의 호출부에 새 인자를 넘깁니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/share/report-share.tsx:34-52` 의 카드 미리 받기를 시트 열 때로 옮깁니다
-  - [ ] `useEffect` 의 즉시 `fetch` 를 `armCard()` 함수로 바꿔 공유 시트가 열릴 때 한 번만 부릅니다
-  - [ ] `ReportShareSheet` 의 `onOpenChange` 가 `true` 로 올 때 `armCard` 를 부르게 배선합니다
-  - [ ] `상세를 열기만 한 사람에게 카드 렌더를 돌리지 않는 비용 절감` 한 줄 주석을 붙입니다
-  - [ ] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/share/report-share.tsx` 에 데스크톱 폴백을 더합니다
-  - [ ] `navigator.canShare` 가 없으면 카드를 `a[download]` 로 내려 주는 갈래를 더합니다
-  - [ ] `내려받은 카드를 인스타그램에 올려 주세요` 안내를 스낵바로 띄웁니다
-  - [ ] `이 브라우저는 이미지 공유를 지원하지 않아요` 문구는 폴백이 실패했을 때만 남깁니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/app/search/page.tsx` 와 `apps/web/app/reports/page.tsx` 의 메타를 채웁니다
-  - [ ] `apps/web/app/search/page.tsx` 에 `metadata` 를 더해 `title` 과 `description` 을 넣습니다
-  - [ ] `apps/web/app/reports/page.tsx:10` 의 `metadata` 에 `description` 과 `openGraph` 를 더합니다
-  - [ ] `robots` 를 두 화면 모두 막지 않아 검색 유입 경로로 남깁니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `git add` 로 Phase 10 담당 경로만 담아 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
-  - [ ] `git add "apps/web/app/r/[id]/page.tsx" apps/web/app/robots.ts apps/web/app/sitemap.ts apps/web/app/manifest.ts apps/web/components/share apps/web/app/search apps/web/app/reports apps/web/components/report/report-detail.tsx apps/web/components/lost/lost-detail.tsx` 로 담습니다
-  - [ ] `feat: 링크 미리보기와 공유 문구를 신고 갈래로 나누고 색인 규칙을 더함` 으로 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/app/r/[id]/page.tsx:44-104` 의 미리보기 메타를 손봅니다
+  - [x] `CARE_LABEL` 참조를 `STATUS_LABEL` 로 바꾸고 `description` 의 다섯 어휘를 맞춥니다
+  - [x] `twitter` 에 `images` 의 `alt` 를 더해 스크린리더와 크롤러가 같은 설명을 읽게 합니다
+  - [x] `openGraph.images` 의 `url` 에 `?v=` 로 `report.updatedAt` 을 붙여 수정 뒤 미리보기가 갱신되게 합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/app/robots.ts` 를 만들어 색인 규칙을 한곳에 둡니다
+  - [x] `rules` 에 `allow: "/"` 와 `disallow` 로 `/mine` `/lost/` `/api/` `/r/*/poster` 를 넣습니다
+  - [x] `sitemap` 에 `${siteUrl}/sitemap.xml` 을 넣고 `host` 를 `siteUrl` 로 둡니다
+  - [x] `관리 주소와 전단은 색인 대상이 아님` 한 줄 주석을 붙입니다
+  - [x] `curl -s http://localhost:3000/robots.txt` 로 `Disallow: /mine` 이 있는 것을 확인합니다
+- [x] `apps/web/app/sitemap.ts` 를 만들어 공개된 찾는 중 신고를 색인에 올립니다
+  - [x] `findPublicReport` 대신 목록 질의로 `visibility = public` 이고 `lifecycle` 이 `searching` 또는 `active` 인 제보 id 를 읽습니다
+  - [x] `/` `/find` `/reports` `/shelters` `/community` 고정 경로를 앞에 두고 제보 경로를 뒤에 붙입니다
+  - [x] `lastModified` 는 `updatedAt` 을 쓰고 상한 `5000` 건으로 잘라 한 파일에 담습니다
+  - [x] `curl -s http://localhost:3000/sitemap.xml | head -5` 로 `<urlset` 이 나오는 것을 확인합니다
+- [x] `apps/web/app/manifest.ts` 를 만들어 홈 화면 추가와 공유 진입을 갖춥니다
+  - [x] `name` `short_name` `start_url` `display: "standalone"` `background_color` `theme_color` 를 넣습니다
+  - [x] `icons` 에 `public/logo/logo-mark-512.png` 를 `512x512` 로 넣고 `purpose: "maskable"` 항목을 더합니다
+  - [x] `shortcuts` 에 `/report` 와 `/lost/new` 두 개를 넣어 홈 화면에서 곧장 열리게 합니다
+  - [x] `curl -s http://localhost:3000/manifest.webmanifest | head -3` 로 `"name"` 이 나오는 것을 확인합니다
+- [x] `apps/web/components/share/report-share.tsx:95-107` 의 공유 문구를 신고 갈래로 나눕니다
+  - [x] `useReportShare` 입력에 `kind` 와 `petName` 을 더합니다
+  - [x] `실종은 이름을 아는 신고면 몰리를 찾고 있어요` 형태로, 발견은 기존 문구로 갈래를 나눕니다
+  - [x] `apps/web/components/report/report-detail.tsx` 와 `apps/web/components/lost/lost-detail.tsx` 의 호출부에 새 인자를 넘깁니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/share/report-share.tsx:34-52` 의 카드 미리 받기를 시트 열 때로 옮깁니다
+  - [x] `useEffect` 의 즉시 `fetch` 를 `armCard()` 함수로 바꿔 공유 시트가 열릴 때 한 번만 부릅니다
+  - [x] `ReportShareSheet` 의 `onOpenChange` 가 `true` 로 올 때 `armCard` 를 부르게 배선합니다
+  - [x] `상세를 열기만 한 사람에게 카드 렌더를 돌리지 않는 비용 절감` 한 줄 주석을 붙입니다
+  - [x] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/share/report-share.tsx` 에 데스크톱 폴백을 더합니다
+  - [x] `navigator.canShare` 가 없으면 카드를 `a[download]` 로 내려 주는 갈래를 더합니다
+  - [x] `내려받은 카드를 인스타그램에 올려 주세요` 안내를 스낵바로 띄웁니다
+  - [x] `이 브라우저는 이미지 공유를 지원하지 않아요` 문구는 폴백이 실패했을 때만 남깁니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/app/search/page.tsx` 와 `apps/web/app/reports/page.tsx` 의 메타를 채웁니다
+  - [x] `apps/web/app/search/page.tsx` 에 `metadata` 를 더해 `title` 과 `description` 을 넣습니다
+  - [x] `apps/web/app/reports/page.tsx:10` 의 `metadata` 에 `description` 과 `openGraph` 를 더합니다
+  - [x] `robots` 를 두 화면 모두 막지 않아 검색 유입 경로로 남깁니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `git add` 로 Phase 10 담당 경로만 담아 커밋합니다
+  - [x] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
+  - [x] `git add "apps/web/app/r/[id]/page.tsx" apps/web/app/robots.ts apps/web/app/sitemap.ts apps/web/app/manifest.ts apps/web/components/share apps/web/app/search apps/web/app/reports apps/web/components/report/report-detail.tsx apps/web/components/lost/lost-detail.tsx` 로 담습니다
+  - [x] `feat: 링크 미리보기와 공유 문구를 신고 갈래로 나누고 색인 규칙을 더함` 으로 커밋합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
 
 ## Phase 11. 공식 심사 기준 대응
 
@@ -530,9 +530,13 @@
 - [ ] `lost-detail.tsx` 가 신고 지점 좌표를 `TrackTimeline` 에 넘기기. 지금은 신고에서 첫 목격까지의 구간 요약이 빠짐
 - [ ] Phase 12 전체 빌드에서 `/` 번들 크기 확인하기. `home-screen` 이 `mine-screen` 모듈을 통째로 클라이언트 그래프에 끌어옴
 - [ ] `mine-screen` 의 전이 import 에 `server-only` 를 붙이기. 지금은 `@rebirth/core/auth` 주석 언급뿐이라 클라이언트 번들 유입이 가능
+- [ ] `/find` 와 `/r/[id]/poster` 의 실제 렌더 스모크를 Phase 12 에서 돌리기. Phase 7 은 dev 서버 경합을 피해 건너뜀
+- [ ] 전단 페이지에 인쇄 버튼을 넣을지 정하기. 지금은 사용자가 `Cmd+P` 를 눌러야 함
 ## 참고
 
 ### 지시서 결함
+
+- Phase 10 이 `updatedAt` 을 `lastModified` 로 쓰라 했으나 `listPublicReports` 의 `publicReportColumns` 에 그 열이 없어 `createdAt` 을 씀
 
 - Phase 6 실측 행번호. `home-screen.tsx:738-753` 은 736-753 · `786-790` 은 783-787 · `mine-screen.tsx:62-66` 은 61-66
 
@@ -583,3 +587,12 @@
 - 발견동물 제보 단추 href 는 FAB 와 같은 `/report`, 아이콘은 `mine-screen` `SHORTCUTS` 와 같은 `IconCameraLine`
 - 가로 스크롤은 `HStack` 에 `overflowX="auto"` 와 `width="fit-content"` 유지, `py="x2" bleedY="x2"` 로 그림자 잘림 방지
 - `map-preview-card.tsx` 의 `CARE_LABEL` 교체로 `apps/web` 에 남은 참조는 `report-label.ts` 의 별칭 정의뿐
+- 전단 사진은 서명 URL 이라 `next.config` `remotePatterns` 밖이고 `card/route.tsx` 와 같은 raw `img` 와 `eslint-disable` 을 씀
+- `qrcode` 는 `@types` 가 named export 만 내어 `toString` 을 `qrToString` 으로 별칭 import 함
+- 전단은 `AppFrame` 390px 폭 안이라 `@media print` 에서 `body *:has(.rebirth-poster)` 로 폭 제한을 품
+- `qrcode ^1.5.4` 와 `@types/qrcode ^1.5.6` 설치. `Done in 1.3s using pnpm v11.0.9`
+- `useReportShare` 에 `prefetch` 선택 인자 추가. 기본 `true` 라 `report-done.tsx` 는 종전대로, 상세 둘만 `prefetch: false`
+- `ReportShareSheet` 의 `onOpenChange` 가 부모의 `setShareOpen(true)` 에서 호출되지 않아 상세 두 화면에 `openShare(next)` 한 함수를 두고 세 길을 모두 지나게 배선
+- `manifest.ts` 는 JSON 이라 SEED CSS 변수를 못 읽어 `globals.css` 의 carrot 700 `#5ea740` 을 `design-system-allow:color` 로 적음
+- 끝난 실종 신고의 미리보기 마무리 문구를 `가족을 만났어요` 에서 `<이름>이 집으로 돌아왔어요` 로 바꿈
+- `sitemap.xml` loc 1414건(고정 5 + 제보). `robots.txt` 에 `Disallow: /mine` 확인
