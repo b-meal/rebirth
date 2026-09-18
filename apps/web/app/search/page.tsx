@@ -39,9 +39,17 @@ async function signThumbs(paths: (string | null)[]) {
   return createSignedThumbUrls(wanted).catch(() => new Map<string, string>());
 }
 
+/** 조건이 없으면 null. 조건이 있으면 첫 쪽과 이어 읽을 자리를 함께 넘김 */
+type ResultPage = { items: ReportCardItem[]; nextCursor: string | null };
+
+/** 이어 읽기는 /api/reports 가 맡으므로 커서 모양을 그쪽과 같게 둠 */
+function encodeCursor(row: { occurredAt: Date; id: string }): string {
+  return `${row.occurredAt.toISOString()}_${row.id}`;
+}
+
 async function loadResults(
   params: Record<string, string | string[] | undefined>,
-): Promise<ReportCardItem[] | null> {
+): Promise<ResultPage | null> {
   const parsed = listQuery.safeParse({
     ...(first(params.kind) && { kind: first(params.kind) }),
     ...(first(params.q) && { q: first(params.q) }),
@@ -57,20 +65,24 @@ async function loadResults(
   if (!q && !animalType && !size && !colors?.length) return null;
 
   try {
-    const rows = await listPublicReports({
+    // 한 건 더 받아 다음 쪽이 있는지 봄. 개수를 따로 세면 목록과 어긋날 수 있음
+    const all = await listPublicReports({
       kind: parsed.data.kind ?? "sighting",
       q,
       animalType,
       size,
       colors,
       fromOccurredAt: new Date(Date.now() - parsed.data.days * 86_400_000),
-      limit: RESULT_LIMIT,
+      limit: RESULT_LIMIT + 1,
     });
+
+    const hasMore = all.length > RESULT_LIMIT;
+    const rows = hasMore ? all.slice(0, RESULT_LIMIT) : all;
 
     const photoPaths = await findFirstPhotoPaths(rows.map((row) => row.id));
     const signed = await signThumbs([...photoPaths.values()]);
 
-    return rows.map((row) => {
+    const items = rows.map((row) => {
       const path = photoPaths.get(row.id) ?? null;
       return {
         id: row.id,
@@ -87,8 +99,11 @@ async function loadResults(
         petName: row.petName,
       };
     });
+
+    const last = rows.at(-1);
+    return { items, nextCursor: hasMore && last ? encodeCursor(last) : null };
   } catch {
-    return [];
+    return { items: [], nextCursor: null };
   }
 }
 
@@ -161,7 +176,8 @@ export default async function SearchPage({ searchParams }: SearchParams) {
     <SearchScreen
       query={first(params.q) ?? ""}
       kind={first(params.kind) === "lost" ? "lost" : "sighting"}
-      results={results}
+      results={results?.items ?? null}
+      resultCursor={results?.nextCursor ?? null}
       trending={{ interest, help }}
       nearby={nearby}
     />
