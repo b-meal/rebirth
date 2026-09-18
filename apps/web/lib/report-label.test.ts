@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { CARE_LABEL } from "@rebirth/types";
+
 import {
+  STATUS_LABEL,
   densityLine,
   formatMonthDay,
   searchingDays,
@@ -125,4 +128,25 @@ test("상황 한 줄은 밀도가 없으면 등급 문구만 남긴다", () => {
   // 절대 날짜는 아래 기록 줄이 맡고 이 줄은 경과와 할 일만 말함
   assert.doesNotMatch(withDensity, /년|월/);
   assert.doesNotMatch(withoutDensity, /년|월/);
+});
+
+// packages/types 의 labels.test.ts 가 같은 금지어를 막고 있지만 그 검사는 그 패키지만 훑음
+// 화면 어휘를 apps/web 이 따로 들고 있어 검사망 밖에 있었고, 병합 한 번에 규칙이 되돌아간 적이 있음
+// 코드 충돌은 해결로 지워지지만 깨진 테스트는 빨간불로 남아 다음 병합에서 다시 눈에 띔
+test("화면 어휘가 주어 없이 읽히지 않는 말을 쓰지 않는다", () => {
+  // 배회 중 은 누가 배회하는지, 찾음 과 만남 은 누가 찾았는지가 빠짐
+  const banned = ["배회 중", "찾는 중", "찾음", "만남"];
+
+  for (const [key, label] of Object.entries(STATUS_LABEL)) {
+    for (const word of banned) {
+      assert.equal(label.includes(word), false, `STATUS_LABEL.${key} 의 ${label} 에 ${word}`);
+    }
+  }
+});
+
+// 폼에서 고른 말과 저장 뒤 배지가 가리키는 값이 같아야 고른 말이 그대로 보임
+test("화면 어휘가 보호 상황 값을 빠짐없이 덮는다", () => {
+  for (const key of Object.keys(CARE_LABEL)) {
+    assert.equal(typeof STATUS_LABEL[key], "string", `STATUS_LABEL 에 ${key} 가 없음`);
+  }
 });

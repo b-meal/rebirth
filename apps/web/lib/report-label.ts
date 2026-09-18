@@ -17,13 +17,14 @@ export const ANIMAL_LABEL: Record<string, string> = {
   unknown: "확인 어려움",
 };
 
-// 주어 없는 다섯 어휘로 고정, 배회 중과 찾는 중 금지
+// 주어 없는 어휘로 고정, 배회 중과 찾는 중 금지
+// 찾음 은 누가 찾았는지가 빠져 보호자가 찾은 것인지 남이 찾아 준 것인지 읽히지 않음
+// packages/types 의 labels.test.ts 가 같은 이유로 찾음 을 막고 있어 문구를 맞춤
 export const STATUS_LABEL: Record<string, string> = {
   lost: "실종",
   roaming: "발견",
   in_care: "보호 중",
-  rescue: "구조 요청",
-  resolved: "찾음",
+  resolved: "집으로 돌아옴",
   unknown: "",
 };
 
