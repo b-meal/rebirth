@@ -11,32 +11,23 @@ import {
   VStack,
 } from "@seed-design/react";
 import {
-  IconCameraFill,
   IconPictureFill,
   IconPlusLine,
   IconXmarkFill,
 } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { DismissibleCallout } from "seed-design/ui/callout";
-import {
-  BottomSheetBody,
-  BottomSheetContent,
-  BottomSheetRoot,
-} from "seed-design/ui/bottom-sheet";
-import { List, ListButtonItem } from "seed-design/ui/list";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
 
 import type { PhotoItem } from "@/lib/image";
 import type { PhotoPickerState } from "@/hooks/use-photo-picker";
-import { useNativePhotoChooser } from "@/hooks/use-native-photo-chooser";
 import { PhotoPickerInput, type PhotoPickerInputHandle } from "./photo-picker-input";
 
 // 촬영과 앨범 선택을 한 자리에서 다루는 사진 입력, 미리보기는 SEED ImageFrame
 //
-// 누르는 자리는 언제나 하나뿐임
-// 빈 자리와 촬영 버튼과 앨범 버튼을 나란히 두면 셋이 같은 일을 해 어디를 눌러야 할지 고르게 됨
-// 갈 곳이 둘이면 누른 뒤에 시트로 묻고, 하나뿐이면 묻지 않고 바로 엶
-// 휴대폰은 기기가 스스로 묻는 자리라 갈 곳을 하나로 봄. 시트를 세우면 물음이 두 번 나옴
+// 누르는 자리는 언제나 하나뿐이고 갈 곳을 묻지 않음
+// 웹에서 고르는 창은 파일 입력 그 자체라, 그 앞에 우리 시트를 세우면 물음이 두 번 나옴
+// 자세한 까닭은 photo-picker-input 에 적어 둠
 
 export type PhotoFieldProps = {
   picker: PhotoPickerState;
@@ -45,17 +36,7 @@ export type PhotoFieldProps = {
   disabled?: boolean;
   /** 서버로 올리는 중인지. 고른 사진 위에 표시를 덮어 그 자리에서 보여 줌 */
   uploading?: boolean;
-  /**
-   * 데스크톱처럼 카메라가 없는 환경에서는 촬영을 내놓지 않음
-   * 아직 장치를 확인하는 중이면 null. 이때는 갈 곳을 단정하는 문구를 쓰지 않음
-   * false 로 접어 버리면 확인이 끝나는 순간 글이 바뀌어 읽던 문장이 눈앞에서 달라짐
-   */
-  cameraAvailable?: boolean | null;
-  /** 현장 촬영만 받는 화면에서는 앨범을 내놓지 않음 */
-  libraryAvailable?: boolean;
 };
-
-type Source = "camera" | "library";
 
 const SINGLE_RATIO = 4 / 3;
 
@@ -65,14 +46,10 @@ export function PhotoField({
   hint = "사진을 촬영하거나 앨범에서 골라 주세요",
   uploading = false,
   disabled = false,
-  cameraAvailable = true,
-  libraryAvailable = true,
 }: PhotoFieldProps) {
-  const cameraRef = useRef<PhotoPickerInputHandle>(null);
   const libraryRef = useRef<PhotoPickerInputHandle>(null);
-  const [activeSource, setActiveSource] = useState<Source | null>(null);
-  // 갈 곳이 둘일 때만 열림
-  const [chooserOpen, setChooserOpen] = useState(false);
+  // 이 칸이 시작한 처리인지. 같은 picker 를 다른 곳이 함께 쓰면 processing 만으로는 가려지지 않음
+  const [ingesting, setIngesting] = useState(false);
 
   const {
     photos,
@@ -96,33 +73,14 @@ export function PhotoField({
   // 확인이 끝나 카메라가 없다고 밝혀졌을 때만 촬영을 접음
   // capture 는 명세상 힌트라 카메라가 없는 기기는 알아서 파일 선택기로 떨어지고
   // 권한 전에는 videoinput 을 안 내놓는 브라우저가 있어 확인 중에는 열어 둠
-  const hasCamera = cameraAvailable !== false;
-  // 휴대폰은 파일 입력 하나가 보관함과 촬영을 함께 묻는다
-  // 그 앞에 시트를 세우면 같은 물음이 두 번 나오고 앨범을 고른 사람이 촬영을 또 본다
-  const nativeChooser = useNativePhotoChooser();
-  const bothSources = hasCamera && libraryAvailable && !nativeChooser;
+  const requestPhoto = () => libraryRef.current?.open();
 
-  const open = (source: Source) => {
-    setChooserOpen(false);
-    (source === "camera" ? cameraRef : libraryRef).current?.open();
-  };
-
-  // 갈 곳이 하나뿐이면 묻지 않음. 한 갈래뿐인 물음은 걸음만 늘림
-  const requestPhoto = () => {
-    if (bothSources) {
-      setChooserOpen(true);
-      return;
-    }
-    // 앨범 쪽 입력이라야 기기가 촬영까지 함께 물어 한 번으로 끝남
-    open(libraryAvailable ? "library" : "camera");
-  };
-
-  const handleFiles = (source: Source) => async (files: File[]) => {
-    setActiveSource(source);
+  const handleFiles = async (files: File[]) => {
+    setIngesting(true);
     try {
       await (replacing ? replaceFiles(files) : addFiles(files));
     } finally {
-      setActiveSource(null);
+      setIngesting(false);
     }
   };
 
@@ -246,7 +204,7 @@ export function PhotoField({
             variant="neutralWeak"
             size="medium"
             disabled={locked}
-            loading={processing && activeSource !== null}
+            loading={processing && ingesting}
             onClick={requestPhoto}
           >
             다른 사진으로 바꾸기
@@ -271,48 +229,13 @@ export function PhotoField({
         <DismissibleCallout tone="critical" description={error} onDismiss={dismissError} />
       ) : null}
 
-      {/* 갈 곳이 둘일 때만 물음. 시트는 손이 닿는 아래쪽에서 열림 */}
-      <BottomSheetRoot open={chooserOpen} onOpenChange={setChooserOpen}>
-        <BottomSheetContent title="사진 가져오기">
-          <BottomSheetBody>
-            {/* 누를 수 있는 줄은 ListButtonItem 이라야 함
-                ListItem 은 li 라 SEED 의 hover 규칙(button, a 에만 걸림)이 붙지 않음 */}
-            <List>
-              <ListButtonItem
-                prefix={<Icon svg={<IconCameraFill />} />}
-                title="사진 촬영"
-                detail="카메라로 지금 찍기"
-                onClick={() => open("camera")}
-              />
-              <ListButtonItem
-                prefix={<Icon svg={<IconPictureFill />} />}
-                title="앨범에서 선택"
-                detail={single ? "저장된 사진 고르기" : `최대 ${remaining}장까지 고르기`}
-                onClick={() => open("library")}
-              />
-            </List>
-          </BottomSheetBody>
-        </BottomSheetContent>
-      </BottomSheetRoot>
-
-      {/* 확인 중에도 걸어 둠. 없으면 그 사이에 누른 촬영이 아무 일도 하지 않음 */}
-      {hasCamera ? (
-        <PhotoPickerInput
-          ref={cameraRef}
-          mode="camera"
-          disabled={locked}
-          onFiles={handleFiles("camera")}
-        />
-      ) : null}
-      {libraryAvailable ? (
-        <PhotoPickerInput
-          ref={libraryRef}
-          mode="library"
-          multiple={!single && remaining > 1}
-          disabled={locked}
-          onFiles={handleFiles("library")}
-        />
-      ) : null}
+      <PhotoPickerInput
+        ref={libraryRef}
+        mode="library"
+        multiple={!single && remaining > 1}
+        disabled={locked}
+        onFiles={handleFiles}
+      />
     </VStack>
   );
 }

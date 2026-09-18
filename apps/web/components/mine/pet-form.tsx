@@ -38,7 +38,6 @@ import { COAT_COLORS, CoatColorPicker } from "@/components/ui/coat-color-picker"
 import { PhotoField } from "@/components/ui/photo-field";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { useAnalyzePhoto } from "@/hooks/use-analyze-photo";
-import { useCameraAvailable } from "@/hooks/use-camera-available";
 import { useFocusError } from "@/hooks/use-focus-error";
 import { usePetAiDraft, type PetAiField } from "@/hooks/use-pet-ai-draft";
 import { usePhotoPicker } from "@/hooks/use-photo-picker";
@@ -149,7 +148,6 @@ export function PetForm({ pet }: PetFormProps) {
   // 여러 장을 각자 올림. use-photo-upload 는 새로 올릴 때 앞의 것을 끊어 한 장만 남음
   const upload = usePhotoUploads();
   const snackbar = useSnackbarAdapter();
-  const cameraAvailable = useCameraAvailable();
   const picker = usePhotoPicker({
     // 남겨 둔 사진이 이미 자리를 차지해 그만큼 덜 고를 수 있음
     maxCount: Math.max(0, PHOTO_MAX_COUNT - kept.length),
@@ -316,7 +314,6 @@ export function PetForm({ pet }: PetFormProps) {
                   : "사진을 찍으면 생김새를 먼저 채워 드려요"
               }
               // 확인이 끝나기 전에는 null. 사진 칸이 갈 곳을 단정하지 않게 그대로 넘김
-              cameraAvailable={cameraAvailable}
               uploading={upload.uploading}
               disabled={upload.uploading || kept.length >= PHOTO_MAX_COUNT}
             />

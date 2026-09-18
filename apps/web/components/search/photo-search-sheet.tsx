@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
-import { IconCameraLine, IconPictureLine } from "@karrotmarket/react-monochrome-icon";
+import { IconPictureLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import {
   BottomSheetBody,
@@ -36,7 +36,6 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
   const analyze = useAnalyzePhoto();
   const [error, setError] = useState<string | null>(null);
 
-  const cameraRef = useRef<PhotoPickerInputHandle>(null);
   const libraryRef = useRef<PhotoPickerInputHandle>(null);
 
   const picker = usePhotoPicker({ maxCount: 1 });
@@ -135,30 +134,18 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
 
             {notice ? <Callout tone="informative" description={notice} /> : null}
 
-            <HStack gap="x3">
-              <VStack asChild align="center" gap="x1" py="x4" grow={1} borderRadius="r3" bg="bg.neutralWeak">
-                <button type="button" onClick={() => cameraRef.current?.open()}>
-                  <Icon svg={<IconCameraLine />} color="fg.neutral" />
-                  <Text textStyle="t3Bold" color="fg.neutral">
-                    카메라
-                  </Text>
-                </button>
-              </VStack>
-              <VStack asChild align="center" gap="x1" py="x4" grow={1} borderRadius="r3" bg="bg.neutralWeak">
-                <button type="button" onClick={() => libraryRef.current?.open()}>
-                  <Icon svg={<IconPictureLine />} color="fg.neutral" />
-                  <Text textStyle="t3Bold" color="fg.neutral">
-                    앨범
-                  </Text>
-                </button>
-              </VStack>
-            </HStack>
+            {/* 카메라와 앨범을 나눠 놓지 않음
+                기기가 입력 하나로 보관함과 촬영을 함께 물어 나눠 두면 같은 물음이 두 번 나옴 */}
+            <VStack asChild align="center" gap="x1" py="x4" borderRadius="r3" bg="bg.neutralWeak">
+              {/* design-system-allow:raw-element 넓은 면 전체를 누르는 자리라 button 이 필요함 */}
+              <button type="button" onClick={() => libraryRef.current?.open()}>
+                <Icon svg={<IconPictureLine />} color="fg.neutral" />
+                <Text textStyle="t3Bold" color="fg.neutral">
+                  {photo ? "다른 사진 고르기" : "사진 고르기"}
+                </Text>
+              </button>
+            </VStack>
 
-            <PhotoPickerInput
-              ref={cameraRef}
-              mode="camera"
-              onFiles={(files) => void picker.replaceFiles(files)}
-            />
             <PhotoPickerInput
               ref={libraryRef}
               mode="library"
