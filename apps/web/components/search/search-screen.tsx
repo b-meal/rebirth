@@ -390,38 +390,59 @@ export function SearchScreen({
 
         {rows ? (
           <SectionCard gap="x3">
-            <HStack justify="space-between" align="center" aria-busy={switching}>
-              <HStack gap="x2" align="center">
-                <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                  검색 결과
-                </Text>
-                {/* 탭을 바꿔 새 쪽을 받는 동안 옛 목록을 그대로 두고 표시만 붙임. 비우면 화면이 튐 */}
-                {switching ? <ProgressCircle size="24" tone="neutral" /> : null}
-              </HStack>
+            <HStack justify="space-between" align="center">
+              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+                검색 결과
+              </Text>
               {/* 더 남았으면 지금 그린 수가 전부가 아니라는 것을 함께 알림 */}
               <Text textStyle="t3Regular" color="fg.neutralMuted">
                 {rows.length}건{cursor ? " 이상" : ""}
               </Text>
             </HStack>
 
-            {rows.length === 0 ? (
-              <VStack align="stretch" gap="x1">
-                <Text textStyle="t4Regular" color="fg.neutralMuted">
-                  조건과 맞는 제보가 없어요
-                </Text>
-                <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                  {activeKind === "lost"
-                    ? "이름이나 특징으로 다시 찾아보세요"
-                    : "털색이나 동네처럼 짧은 말로 다시 찾아 주세요"}
-                </Text>
-              </VStack>
-            ) : (
-              <Grid columns={2} gap="x4">
-                {rows.map((item) => (
-                  <ReportCard key={item.id} item={item} />
-                ))}
-              </Grid>
-            )}
+            {/* 탭을 바꿔 새 쪽을 받는 동안 옛 목록은 그대로 두고 목록 한가운데에 표시 하나만 올림
+                목록을 비우면 화면이 튀고, 제목 옆에 붙이면 무엇을 기다리는지 눈이 가지 않음 */}
+            <Box position="relative" aria-busy={switching}>
+              {rows.length === 0 ? (
+                switching ? (
+                  <HStack justify="center" py="x8">
+                    <ProgressCircle size="24" tone="neutral" />
+                  </HStack>
+                ) : (
+                  <VStack align="stretch" gap="x1">
+                    <Text textStyle="t4Regular" color="fg.neutralMuted">
+                      조건과 맞는 제보가 없어요
+                    </Text>
+                    <Text textStyle="t3Regular" color="fg.neutralSubtle">
+                      {activeKind === "lost"
+                        ? "이름이나 특징으로 다시 찾아보세요"
+                        : "털색이나 동네처럼 짧은 말로 다시 찾아 주세요"}
+                    </Text>
+                  </VStack>
+                )
+              ) : (
+                <Grid columns={2} gap="x4">
+                  {rows.map((item) => (
+                    <ReportCard key={item.id} item={item} />
+                  ))}
+                </Grid>
+              )}
+              {switching && rows.length > 0 ? (
+                <VStack position="absolute" top="0" right="0" bottom="0" left="0" align="center" aria-hidden>
+                  {/* 목록이 화면보다 길어 한가운데는 보이지 않으므로 보이는 구간 가운데에 붙여 둠
+                      사진 위에 얹히므로 떠 있는 면 하나를 받쳐 표시가 묻히지 않게 함 */}
+                  <Box
+                    className="rebirth-list-busy"
+                    bg="bg.layerFloating"
+                    borderRadius="full"
+                    p="x2"
+                    boxShadow="s2"
+                  >
+                    <ProgressCircle size="24" tone="neutral" />
+                  </Box>
+                </VStack>
+              ) : null}
+            </Box>
 
             {/* 실패했을 때만 손으로 다시 부름. 자동으로 되풀이하면 같은 오류를 계속 부름 */}
             {loadError ? (

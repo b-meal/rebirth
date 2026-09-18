@@ -594,6 +594,13 @@ body .seed-snackbar__root {
   width: 10rem;
 }
 
+/* 목록 위에 얹는 진행 표시. 목록이 화면보다 길어 부모의 한가운데는 보이지 않으므로
+   스크롤해도 보이는 구간 가운데쯤에 머물게 함. 부모 안에서만 움직여 목록 밖으로 나가지 않음 */
+.rebirth-list-busy {
+  position: sticky;
+  top: 40vh;
+}
+
 .rebirth-scroll-row {
   overflow-x: auto;
   scrollbar-width: none;
