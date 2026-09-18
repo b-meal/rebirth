@@ -20,8 +20,19 @@ export const SIGMA_KM: Record<TrackSize, number> = {
   unknown: 0.38,
 };
 
+// 긴 공백에서 상한이 무한히 늘어나는 것 방지
+export const D_MAX_KM: Record<TrackSize, number> = {
+  small: 5,
+  medium: 10,
+  large: 15,
+  unknown: 10,
+};
+
 export const R_MIN_KM = 0.4;
 export const R_MAX_KM = 8;
+
+// 상관 랜덤워크의 방향 지속 시간 추정
+export const H_DRIFT_HOURS = 8;
 
 // 격자 좌표의 위치 오차 하한, 반경이 0 으로 수렴하는 것 방지
 export const GPS_EPSILON_KM = 0.3;
@@ -75,7 +86,10 @@ export function legFeasibility(
   const hours = hoursBetween(from, to);
   // 같은 시각이나 역순인 두 목격은 이동으로 설명 불가
   if (hours <= 0) return Infinity;
-  return distanceKm(from.point, to.point) / (V_MAX_KMH[size] * hours);
+  return (
+    distanceKm(from.point, to.point) /
+    Math.min(V_MAX_KMH[size] * hours, D_MAX_KM[size])
+  );
 }
 
 export function isFeasibleLeg(
@@ -165,7 +179,12 @@ export function searchRadiusKm(size: TrackSize, hours: number): number {
   );
 }
 
-/** T4. 마지막 목격 이후 경과 시간만큼 마지막 이동 방향으로 옮긴 탐색 원 */
+// 다리 하나뿐인 경로가 직진으로 읽히는 것 방지
+export function straightnessEffective(legs: TrackLeg[]): number {
+  return (straightness(legs) * legs.length) / (legs.length + 1);
+}
+
+/** T4. 마지막 목격 이후 경과 시간만큼 다리 합벡터 방향으로 옮긴 탐색 원 */
 export function predictNext({
   track,
   size,
@@ -176,24 +195,29 @@ export function predictNext({
   now: Date;
 }): Prediction | null {
   const lastNode = track.nodes.at(-1);
-  const lastLeg = track.legs.at(-1);
-  if (!lastNode || !lastLeg) return null;
+  if (!lastNode || track.legs.length === 0) return null;
 
   const hoursSinceLast =
     (now.getTime() - lastNode.occurredAt.getTime()) / 3_600_000;
   // 마지막 목격보다 앞선 시각은 예측 대상 밖
   if (hoursSinceLast <= 0) return null;
 
-  const kappa = straightness(track.legs);
+  const kappa = straightnessEffective(track.legs);
   const sumKm = track.legs.reduce((sum, leg) => sum + leg.km, 0);
   const sumHours = track.legs.reduce((sum, leg) => sum + leg.hours, 0);
   const vEff = sumHours > 0 ? sumKm / sumHours : 0;
 
-  const v = legVector(lastLeg);
-  const len = Math.hypot(v.x, v.y);
-  const unit = len > 0 ? { x: v.x / len, y: v.y / len } : { x: 0, y: 0 };
+  let sumX = 0;
+  let sumY = 0;
+  for (const leg of track.legs) {
+    const v = legVector(leg);
+    sumX += v.x;
+    sumY += v.y;
+  }
+  const len = Math.hypot(sumX, sumY);
+  const unit = len > 0 ? { x: sumX / len, y: sumY / len } : { x: 0, y: 0 };
 
-  const shiftKm = kappa * vEff * hoursSinceLast;
+  const shiftKm = kappa * vEff * Math.min(hoursSinceLast, H_DRIFT_HOURS);
   const lat = lastNode.point.lat + (shiftKm * unit.y) / KM_PER_LAT_DEGREE;
   const lngScale = Math.max(Math.cos(lat * RAD), 0.01) * KM_PER_LAT_DEGREE;
   const lng = lastNode.point.lng + (shiftKm * unit.x) / lngScale;

@@ -29,7 +29,11 @@ import {
   type SearchAround,
 } from "./search-advice.ts";
 import { searchSpots, type Spot } from "./search-spots.ts";
-import { reviewTrack, type TrackReview } from "./track-review.ts";
+import {
+  confidenceWithPhotos,
+  reviewTrack,
+  type TrackReview,
+} from "./track-review.ts";
 import {
   MIN_LEG_SCORE,
   buildTrack,
@@ -39,6 +43,9 @@ import {
   type Track,
   type TrackNode,
 } from "./track.ts";
+
+// 외형 벡터만으로 경로에 들일 하한, 유사도 분위수 기준
+export const MIN_LEG_SIMILARITY = 0.82;
 
 const NOT_FOUND = "찾는 신고가 없습니다. 관리 주소를 다시 확인해 주십시오";
 const NEED_AUTH = "관리 주소로 다시 들어와 주십시오";
@@ -200,12 +207,16 @@ export async function getLostTrackHandler(
     const size = lost.size;
 
     const [rows, lostCoarse] = await Promise.all([
-      findTrackSightings(lost.id, MIN_LEG_SCORE),
+      findTrackSightings(lost.id, MIN_LEG_SCORE, MIN_LEG_SIMILARITY),
       findLostCoarsePoint(lost.id),
     ]);
     const lostPoint: LatLng | null = lostCoarse
       ? { lat: lostCoarse.y, lng: lostCoarse.x }
       : null;
+    // 배점 하한을 못 넘고 외형 유사도로만 들어온 제보
+    const promoted = new Set(
+      rows.filter((row) => row.score < MIN_LEG_SCORE).map((row) => row.id),
+    );
     // 격자 좌표가 없는 제보는 경로에 얹을 자리가 없음
     const nodes: TrackNode[] = rows.flatMap((row) =>
       row.coarsePoint
@@ -214,7 +225,8 @@ export async function getLostTrackHandler(
               id: row.id,
               point: { lat: row.coarsePoint.y, lng: row.coarsePoint.x },
               occurredAt: row.occurredAt,
-              score: row.score,
+              // ponytail: 유사도 승격은 최저 점수 대입으로 둠, 경로 소속 배점이 따로 생기면 걷어냄
+              score: row.score >= MIN_LEG_SCORE ? row.score : MIN_LEG_SCORE,
               areaName: row.areaName,
             },
           ]
@@ -246,6 +258,7 @@ export async function getLostTrackHandler(
         advice,
         spots: [],
         interpretation: null,
+        promotedCount: 0,
         gridMeters,
       });
     }
@@ -253,11 +266,19 @@ export async function getLostTrackHandler(
     const { spots, interpretation } = await loadAssist(track, prediction, advice);
 
     return okPrivate({
-      track,
+      // 사진 특징이 어긋난 경로는 결정식 신뢰도를 그대로 내보내지 않음
+      track: {
+        ...track,
+        confidence: confidenceWithPhotos(
+          track.confidence,
+          interpretation?.photoConsistency ?? null,
+        ),
+      },
       prediction,
       advice,
       spots,
       interpretation,
+      promotedCount: track.nodes.filter((node) => promoted.has(node.id)).length,
       gridMeters,
     });
   } catch (error) {

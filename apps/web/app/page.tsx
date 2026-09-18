@@ -41,6 +41,7 @@ async function loadMarkers(): Promise<MapMarker[]> {
       kind: row.kind as "sighting" | "lost",
       petName: row.petName,
       sinceLabel: sinceLabel(row.occurredAt),
+      occurredAt: row.occurredAt.toISOString(),
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
       point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
     }));

@@ -46,6 +46,7 @@ export {
   predictNext,
   searchRadiusKm,
   straightness,
+  straightnessEffective,
   type Prediction,
   type Track,
   type TrackLeg,

@@ -14,7 +14,7 @@ import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
 import { SelectContent, SelectItem, SelectRoot, SelectTrigger } from "seed-design/ui/select";
 
-import { describeAnimal, reportStatusBadge, sinceLabel } from "@/lib/report-label";
+import { STATUS_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
@@ -78,14 +78,9 @@ const TYPE_OPTIONS: { value: AnimalType; label: string }[] = [
 const THUMB = "88px";
 
 function Card({ item, kind }: { item: ListItem; kind: ListKind }) {
+  const lost = item.kind === "lost";
   // 실종만 모인 목록에서는 모든 줄이 같은 배지라 알려 주는 것이 없어 뺌
-  const status =
-    kind === "lost"
-      ? null
-      : reportStatusBadge({
-          kind: item.kind ?? "sighting",
-          careSituation: item.careSituation,
-        });
+  const showStatus = kind !== "lost";
   // 이름을 아는 기록은 이름이 먼저 읽혀야 함
   const title = item.petName || describeAnimal(item);
 
@@ -134,8 +129,15 @@ function Card({ item, kind }: { item: ListItem; kind: ListKind }) {
             </Text>
             {/* 상황은 색으로 먼저 읽히고 글자가 뜻을 확인해 줌 */}
             <HStack gap="x1" align="center" wrap>
-              {/* 종류와 보호 상황을 한 배지로 고름. 실종은 보호 상황을 쓰지 않아 여기서 갈림 */}
-              {status ? <Badge label={status.label} tone={status.tone} /> : null}
+              {/* 실종은 보호 상황을 쓰지 않아 확인되지 않음 이 박히면 안 됨 */}
+              {!showStatus ? null : lost ? (
+                <Badge label={STATUS_LABEL.lost} tone="brand" />
+              ) : STATUS_LABEL[item.careSituation] ? (
+                <Badge
+                  label={STATUS_LABEL[item.careSituation]}
+                  tone={item.careSituation === "in_care" ? "informative" : "neutral"}
+                />
+              ) : null}
               {item.injury === true ? (
                 <Badge label="다친 것으로 보임" tone="critical" />
               ) : null}

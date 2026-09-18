@@ -6,7 +6,7 @@ import { AspectRatio, Box, Icon, ImageFrame, Skeleton, Text, VStack } from "@see
 import { IconXmarkLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 
-import { CARE_LABEL, describeAnimal } from "@/lib/report-label";
+import { STATUS_LABEL, describeAnimal } from "@/lib/report-label";
 import { ReportBadges } from "@/components/report/report-badges";
 import type { MapMarker } from "@/components/home/home-screen";
 
@@ -105,7 +105,7 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
         </Text>
         <Text textStyle="t2Regular" color="fg.neutralMuted" maxLines={1}>
           {item.areaName ?? "지역 미확인"}, {item.sinceLabel} , {" "}
-          {CARE_LABEL[item.careSituation] ?? ""}
+          {STATUS_LABEL[item.careSituation] ?? ""}
         </Text>
 
         {detail ? (

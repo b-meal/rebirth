@@ -16,7 +16,7 @@ import type { TrackStatus, TrackView } from "./use-track";
 // 방위각을 낱말로 옮기는 표, 북에서 시계 방향 45도 간격
 const BEARING_WORD = ["북", "북동", "동", "남동", "남", "남서", "서", "북서"] as const;
 
-function bearingWord(degree: number): string {
+export function bearingWord(degree: number): string {
   const normalized = ((degree % 360) + 360) % 360;
   return BEARING_WORD[Math.round(normalized / 45) % BEARING_WORD.length] ?? "북";
 }
@@ -78,6 +78,13 @@ export function TrackSection({ status, track }: TrackSectionProps) {
       ) : null}
 
       {quiet ? <Callout tone="neutral" description={quiet} /> : null}
+
+      {/* 배점 하한을 못 넘고 외형만 닮아 이어 붙인 노드는 따로 세어 둠 */}
+      {track.promotedCount > 0 ? (
+        <Text textStyle="t2Regular" color="fg.neutralMuted">
+          외형이 닮아 이어 붙인 확인할 후보 {track.promotedCount}건
+        </Text>
+      ) : null}
 
       {interpretation ? (
         <VStack align="stretch" gap="x1">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { HStack, Icon, Text, VStack } from "@seed-design/react";
@@ -23,6 +23,14 @@ import { requestRescue, type RescueFormState } from "@/app/guide/injured/actions
 
 const RESCUE_PHONE = "1577-0954";
 
+/** 제보 상세에서 왔을 때 채워 둘 값. 칸 길이는 서버에서 이미 맞춰 옴 */
+export type RescuePrefill = {
+  reportId: string;
+  where?: string;
+  what?: string;
+  condition?: string;
+};
+
 /** 폼 안에서만 제출 상태를 읽을 수 있어 버튼을 따로 둠 */
 function SubmitButton() {
   const { pending } = useFormStatus();
@@ -34,7 +42,7 @@ function SubmitButton() {
 }
 
 /** 접수를 마친 뒤. 다음에 할 일 하나만 남김 */
-function Done({ reference }: { reference: string }) {
+function Done({ reference, reportId }: { reference: string; reportId?: string }) {
   return (
     <Screen>
       <AppHeader title={CTA.rescue} home />
@@ -55,10 +63,14 @@ function Done({ reference }: { reference: string }) {
         </VStack>
 
         <VStack align="stretch" gap="x2">
+          {/* 제보에서 온 사람에게 또 제보를 시키지 않고 보던 자리로 되돌림 */}
           <ActionButton variant="neutralSolid" size="large" asChild>
-            <Link href="/report">발견 제보 남기기</Link>
+            {reportId ? (
+              <Link href={`/r/${reportId}`}>제보 다시 보기</Link>
+            ) : (
+              <Link href="/report">발견 제보 남기기</Link>
+            )}
           </ActionButton>
-          {/* 접수는 즉시 처리가 아니라 급하면 전화가 빠름 */}
           <ActionButton variant="neutralOutline" size="large" asChild>
             <Link href="/shelters">가까운 보호, 구조 기관 보기</Link>
           </ActionButton>
@@ -72,13 +84,25 @@ function Done({ reference }: { reference: string }) {
   );
 }
 
-export function RescueRequest() {
+export function RescueRequest({ prefill }: { prefill?: RescuePrefill | null }) {
   const [state, formAction] = useActionState<RescueFormState, FormData>(
     requestRescue,
     {},
   );
 
-  if (state.reference) return <Done reference={state.reference} />;
+  /**
+   * 채워 넣은 값을 상태로 쥠
+   * SEED TextField 는 값을 root 가 쥐고 스니펫이 defaultValue 를 훅으로 넘기지 않아
+   * 입력에 defaultValue 를 주면 root 가 빈 값으로 덮음
+   * 첫 그림에 값이 실려 나가므로 자바스크립트 없이 열어도 채워진 채로 보임
+   */
+  const [where, setWhere] = useState(prefill?.where ?? "");
+  const [what, setWhat] = useState(prefill?.what ?? "");
+  const [condition, setCondition] = useState(prefill?.condition ?? "");
+
+  if (state.reference) {
+    return <Done reference={state.reference} reportId={prefill?.reportId} />;
+  }
 
   const errors = state.errors ?? {};
 
@@ -88,10 +112,12 @@ export function RescueRequest() {
       <ScreenBody gap="x6">
         <VStack align="stretch" gap="x2">
           <Text as="h2" textStyle="t8Bold" color="fg.neutral">
-            다친 동물을 보셨나요
+            {prefill ? "제보 내용을 채워 뒀어요" : "다친 동물을 보셨나요"}
           </Text>
           <Text textStyle="t4Regular" color="fg.neutralMuted">
-            세 가지만 알려 주시면 기관에 대신 전달해 드릴게요
+            {prefill
+              ? "맞는지 확인하고 보내 주시면 기관에 대신 전달해 드릴게요"
+              : "세 가지만 알려 주시면 기관에 대신 전달해 드릴게요"}
           </Text>
         </VStack>
 
@@ -113,9 +139,15 @@ export function RescueRequest() {
         {state.message ? <Callout tone="critical" description={state.message} /> : null}
 
         <form action={formAction}>
+          {/* 어느 제보에서 온 접수인지. 운영자가 중복 건을 가리는 데 씀 */}
+          {/* design-system-allow:raw-element 보이지 않는 hidden 필드라 SEED 에 대응 컴포넌트가 없음 */}
+          {prefill ? <input type="hidden" name="reportId" value={prefill.reportId} /> : null}
+
           <VStack align="stretch" gap="x5">
             <TextField
               label="어디에 있나요"
+              value={where}
+              onValueChange={({ value }) => setWhere(value)}
               errorMessage={errors.where}
               invalid={Boolean(errors.where)}
             >
@@ -124,6 +156,8 @@ export function RescueRequest() {
 
             <TextField
               label="어떤 동물인가요"
+              value={what}
+              onValueChange={({ value }) => setWhat(value)}
               errorMessage={errors.what}
               invalid={Boolean(errors.what)}
             >
@@ -133,6 +167,8 @@ export function RescueRequest() {
             <TextField
               label="어떤 상태인가요"
               description="잘 모르겠다면 비워 두셔도 괜찮아요"
+              value={condition}
+              onValueChange={({ value }) => setCondition(value)}
               errorMessage={errors.condition}
               invalid={Boolean(errors.condition)}
             >
@@ -146,6 +182,8 @@ export function RescueRequest() {
           </VStack>
         </form>
 
+        {/* 상세에서 온 사람도 부상 제보는 기관 목록 위에서 눌러 와 지나치지 않았을 수 있음
+            여기 목록은 제보 근처 세 곳이 아니라 전체 찾기라 되돌리는 길이 아님 */}
         <HStack justify="center" gap="x2">
           <ActionButton variant="ghost" size="medium" asChild>
             <Link href="/shelters">가까운 기관 찾기</Link>

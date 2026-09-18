@@ -114,6 +114,7 @@ type ResultResponse = {
 function toCards(rows: ResultResponse["items"]): ReportCardItem[] {
   return rows.map(({ occurredAt, kind, ...rest }) => ({
     ...rest,
+    occurredAt,
     sinceLabel: sinceLabel(new Date(occurredAt)),
     kind: kind === "lost" ? ("lost" as const) : ("sighting" as const),
   }));

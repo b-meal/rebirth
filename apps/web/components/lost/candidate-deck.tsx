@@ -7,7 +7,7 @@ import { ResultSection } from "seed-design/ui/result-section";
 import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { ScreenBody } from "@/components/ui/screen";
-import { CARE_LABEL, formatDayTime } from "@/lib/report-label";
+import { STATUS_LABEL, formatDayTime } from "@/lib/report-label";
 import { CandidatePhoto } from "./candidate-photo";
 
 // 확인할 후보를 카드로 훑음, 좌우 스와이프 대신 버튼과 키보드로 동작
@@ -169,9 +169,9 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
             {current.areaName ?? "위치 미확인"}
           </Text>
           <Text textStyle="t4Regular" color="fg.neutralMuted">
-            {[formatDayTime(current.occurredAt), CARE_LABEL[current.careSituation], ...conditions].join(
-              ", ",
-            )}
+            {[formatDayTime(current.occurredAt), STATUS_LABEL[current.careSituation], ...conditions]
+              .filter(Boolean)
+              .join(", ")}
           </Text>
         </VStack>
 

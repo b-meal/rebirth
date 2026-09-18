@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { HStack, Icon, ResponsivePair, Text, VStack } from "@seed-design/react";
 import {
   IconCheckmarkCircleFill,
+  IconDocumentLine,
   IconLockLine,
   IconMagnifyingglassSparkleFill,
 } from "@karrotmarket/react-monochrome-icon";
@@ -133,6 +134,13 @@ export function LostOwnerPanel({
               <Link href={`/mine/lost/${reportId}`}>
                 <Icon svg={<IconMagnifyingglassSparkleFill />} />
                 확인할 후보 보기
+              </Link>
+            </ActionButton>
+            {/* 온라인에 닿지 않는 이웃에게는 종이가 유일한 경로라 찾는 중에만 띄움 */}
+            <ActionButton variant="neutralWeak" size="large" asChild>
+              <Link href={`/r/${reportId}/poster`}>
+                <Icon svg={<IconDocumentLine />} />
+                전단 만들기
               </Link>
             </ActionButton>
             <ActionButton

@@ -9,7 +9,7 @@ import {
 } from "@karrotmarket/react-monochrome-icon";
 import type { AnimalType } from "@rebirth/types";
 
-import { ANIMAL_LABEL, CARE_LABEL, SIZE_LABEL, breedLabel } from "@/lib/report-label";
+import { ANIMAL_LABEL, SIZE_LABEL, STATUS_LABEL, breedLabel } from "@/lib/report-label";
 import { Badge } from "@/components/ui/badge";
 
 // 상세와 지도 말풍선이 같은 뱃지 묶음을 쓰게 모아 둠
@@ -40,6 +40,8 @@ export function ReportBadges({
   const sizeLabel = SIZE_LABEL[size];
   const careIcon =
     CARE_ICON[(careSituation ?? "unknown") as keyof typeof CARE_ICON] ?? CARE_ICON.unknown;
+  // unknown 은 빈 문자열이라 배지를 아예 빼고 그림
+  const careLabel = careSituation ? (STATUS_LABEL[careSituation] ?? "") : "";
 
   return (
     <HStack gap="x1_5" wrap>
@@ -52,9 +54,9 @@ export function ReportBadges({
       {sizeLabel ? (
         <Badge label={sizeLabel} tone="neutral" icon={<IconArrowLeftBracketRightFill />} />
       ) : null}
-      {careSituation ? (
+      {careLabel ? (
         <Badge
-          label={CARE_LABEL[careSituation] ?? "확인 중"}
+          label={careLabel}
           tone={careSituation === "in_care" ? "informative" : "brand"}
           icon={careIcon}
         />

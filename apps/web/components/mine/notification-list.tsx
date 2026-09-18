@@ -12,7 +12,7 @@ import { markNotificationsRead, unsubscribeArea } from "@/app/mine/notifications
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, SectionCard } from "@/components/ui/screen";
-import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
+import { STATUS_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
 
 // 구독한 동네에 올라온 제보를 모아 보여 주는 알림함
 // 서버는 마지막으로 본 시각 하나로 점을 판단하고, 방금 열어 본 줄은 화면이 따로 지움
@@ -296,7 +296,7 @@ function NotificationRow({
             </Text>
           ) : (
             <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
-              {CARE_LABEL[item.careSituation] ?? ""}
+              {STATUS_LABEL[item.careSituation] ?? ""}
             </Text>
           )}
         </VStack>
