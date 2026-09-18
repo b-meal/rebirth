@@ -273,12 +273,15 @@ export function ReportList({ kind, items, nextCursor }: ReportListProps) {
               </ActionButton>
             ) : null}
             <Box className="rebirth-period-select">
+              {/* 건수와 같은 줄에 앉는 보조 조작이라 폼 입력 크기인 large 대신 medium 으로 둠
+                  크기는 Root 에 주어 트리거와 펼친 목록이 같은 치수를 씀 */}
               <SelectRoot
+                size="medium"
                 value={[String(days)]}
                 onValueChange={([picked]) => setDays(picked!)}
               >
                 <SelectTrigger aria-label="조회 기간" />
-                <SelectContent>
+                <SelectContent className="rebirth-period-options">
                   {LIST_PERIOD_DAYS.map((period) => (
                     <SelectItem key={period} value={String(period)} label={`최근 ${period}일`} />
                   ))}

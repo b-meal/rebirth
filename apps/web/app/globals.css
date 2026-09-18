@@ -552,10 +552,17 @@ body .seed-snackbar__root {
 /* 스크롤 막대를 감추는 가로 나열용 유틸 */
 /* 조회 기간 셀렉트가 서는 자리
    SEED 셀렉트 트리거는 width 100% 라 담는 자리가 폭을 정해야 함
-   dimension 토큰은 x16(64px) 이 끝이라 최근 90일 과 화살표가 들어가지 않음 */
+   펼친 목록은 트리거 폭을 그대로 쓰므로 트리거가 아니라 항목이 필요한 만큼 잡음
+   항목은 좌우 여백과 체크마크가 더 붙어 트리거에 맞추면 최근 90일 이 넘침 */
 .rebirth-period-select {
-  width: 7.5rem;
+  width: 8rem;
   flex-shrink: 0;
+}
+
+/* SEED 항목 라벨에는 줄바꿈 방지가 없어 자리가 모자라면 마지막 글자가 다음 줄로 넘어감
+   기간은 한 줄로 읽혀야 하는 짧은 말이라 이 목록에서만 막음 */
+.rebirth-period-options .seed-select-item__label {
+  white-space: nowrap;
 }
 
 .rebirth-scroll-row {
