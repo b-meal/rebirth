@@ -3,13 +3,12 @@
 import { Text, VStack } from "@seed-design/react";
 import { Callout } from "seed-design/ui/callout";
 
-import { sinceLabel } from "@/lib/report-label";
 import { SectionCard, SectionTitle } from "@/components/ui/screen";
 import type { TrackStatus, TrackView } from "./use-track";
 
 /**
- * 경로와 주변 상황을 읽어 무엇을 하면 되는지 적는 카드
- * 지도는 마지막으로 본 곳 카드가 한 장만 가지고 여기는 글만 둠
+ * 지금 할 일 한 줄, 그 근거 숫자 한 줄, 먼저 가 볼 곳 목록만 두는 카드
+ * 지도와 타임라인은 위 카드가 가지므로 지역명과 시각을 여기서 되풀이하지 않음
  * 규칙이 센 줄과 모델이 읽은 줄을 한 덩이에 섞지 않음. AI 초안 표기는 모델 줄에만 붙음
  * 좌표와 방위각 숫자는 화면에 내보내지 않고 방향은 여덟 낱말로만 말함
  */
@@ -35,20 +34,26 @@ export function TrackSection({ status, track }: TrackSectionProps) {
       <SectionCard gap="x2">
         <SectionTitle>다음에 찾아볼 곳</SectionTitle>
         <Text textStyle="t3Regular" color="fg.neutralMuted">
-          이어진 목격을 찾고 있어요
+          주변 제보를 세고 있어요
         </Text>
       </SectionCard>
     );
   }
 
-  const { advice, interpretation, nodes, prediction } = track;
-  const hasTrack = nodes.length > 0;
-  const last = hasTrack ? nodes[nodes.length - 1]! : null;
+  const { advice, interpretation, prediction } = track;
   // 모델이 순서를 적었으면 그것을 쓰고 없을 때만 지점 이름으로 채움
   const searchOrder =
     interpretation && interpretation.searchOrder.length > 0
       ? interpretation.searchOrder
       : track.spots.map((spot) => spot.name);
+  // 제보가 없는 곳은 밀도 줄과 커버리지 줄이 같은 말이라 공유를 권하는 쪽만 남김
+  const quiet = advice?.lines.coverage ?? null;
+  const evidence = quiet && advice?.around?.sightings === 0 ? null : advice?.lines.density;
+  // 모델이 이동 방향을 읽었으면 규칙의 방향 줄은 같은 말이라 뺌
+  const direction =
+    prediction && !interpretation
+      ? `마지막 이동이 ${bearingWord(prediction.bearingDeg)}쪽이라 그 방향부터 살펴보세요`
+      : null;
 
   return (
     <SectionCard gap="x3">
@@ -56,40 +61,27 @@ export function TrackSection({ status, track }: TrackSectionProps) {
 
       {advice ? (
         <VStack align="stretch" gap="x1">
-          {/* 기준은 실종 시각이고 후보 시각은 같은 아이로 확정된 것이 아니라 따로 말함 */}
-          {advice.latestCandidateAt ? (
-            <Text textStyle="t3Regular" color="fg.neutral">
-              가장 최근 닮은 후보는 {last?.areaName ?? "지역 미확인"}에서{" "}
-              {sinceLabel(new Date(advice.latestCandidateAt))} 올라왔어요
-            </Text>
-          ) : null}
-          {advice.lines.density ? (
-            <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {advice.lines.density}
-            </Text>
-          ) : null}
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
+          <Text textStyle="t4Bold" color="fg.neutral">
             {advice.lines.action}
           </Text>
-          {prediction ? (
+          {evidence ? (
             <Text textStyle="t3Regular" color="fg.neutralMuted">
-              마지막 이동이 {bearingWord(prediction.bearingDeg)}쪽이라 그 방향부터 살펴보세요
+              {evidence}
+            </Text>
+          ) : null}
+          {direction ? (
+            <Text textStyle="t3Regular" color="fg.neutralMuted">
+              {direction}
             </Text>
           ) : null}
         </VStack>
       ) : null}
 
-      {advice?.lines.coverage ? <Callout tone="neutral" description={advice.lines.coverage} /> : null}
-
-      {!hasTrack ? (
-        <Text textStyle="t3Regular" color="fg.neutralMuted">
-          아직 이을 만한 목격이 없어요. 목격 제보가 두 건 이상 모이면 이동 경로를 그려 드려요
-        </Text>
-      ) : null}
+      {quiet ? <Callout tone="neutral" description={quiet} /> : null}
 
       {interpretation ? (
         <VStack align="stretch" gap="x1">
-          <Text textStyle="t4Bold" color="fg.neutral">
+          <Text textStyle="t3Regular" color="fg.neutral">
             {interpretation.movement}
           </Text>
           {searchOrder.map((place, index) => (
@@ -112,12 +104,6 @@ export function TrackSection({ status, track }: TrackSectionProps) {
             </Text>
           ))}
         </VStack>
-      ) : null}
-
-      {hasTrack ? (
-        <Text textStyle="t2Regular" color="fg.neutralSubtle">
-          같은 아이인지는 아직 확인 전이고 확인할 후보를 시간순으로 이은 추정이에요
-        </Text>
       ) : null}
     </SectionCard>
   );
