@@ -1,3 +1,4 @@
+import { logFailure } from "../http/log";
 import "server-only";
 
 import {
@@ -205,7 +206,7 @@ export async function getLostCandidatesHandler(
         })),
       ).catch((error) => {
         // 캐시 실패가 화면을 막지 않음
-        console.error("[lost.candidates] 점수 캐시 실패", error);
+        logFailure("lost.candidates.cache", error);
       });
     }
 

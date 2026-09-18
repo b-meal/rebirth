@@ -1,3 +1,4 @@
+import { logNotice } from "../http/log";
 import "server-only";
 
 import { upsertShelters } from "@rebirth/db";
@@ -128,7 +129,7 @@ async function collect(
   }
 
   if (fetched < total) {
-    console.warn(`[shelters] ${total} 건 중 ${fetched} 건만 받음`);
+    logNotice("shelters.sync", "받아 온 건수가 모자람", { fetched, total });
   }
   return { rows, fetched, total: Number.isFinite(total) ? total : fetched };
 }

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { logFailure } from "../http/log";
+
 import {
   RATE_LIMITS,
   badRequest,
@@ -66,7 +68,7 @@ export async function precheckHandler(request: Request): Promise<Response> {
     );
   } catch (error) {
     // 모델 오류와 시간 초과는 정상 경로. 판정 없이 넘기고 2단계가 다시 봄
-    console.error("[precheck]", error);
+    logFailure("precheck", error);
     return okPrivate(body("unknown"));
   }
 }

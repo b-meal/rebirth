@@ -1,3 +1,4 @@
+import { logFailure } from "../http/log";
 import "server-only";
 
 import {
@@ -54,7 +55,7 @@ export async function syncRescueDataHandler(request: Request): Promise<Response>
     });
   } catch (error) {
     if (error instanceof RescueDataError) {
-      console.error(`[rescue] 수집 중단 (${error.reason})`, error.message);
+      logFailure("rescue.collect", error.message, { reason: error.reason });
       return serviceUnavailable(error.message);
     }
     return serverError("rescue-sync", error);

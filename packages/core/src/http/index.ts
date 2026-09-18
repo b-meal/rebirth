@@ -21,6 +21,8 @@ export {
   type RouteContext,
 } from "./responses";
 
+export { logFailure, logNotice } from "./log";
+
 export {
   createCatchAll,
   type CatchAllContext,

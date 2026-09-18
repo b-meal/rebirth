@@ -1,5 +1,7 @@
 import type { z } from "zod";
 
+import { logFailure } from "./log";
+
 // 라우트 응답 형태를 한곳에서 정함. web 과 admin 이 같은 본문 모양을 씀
 // NextResponse 대신 표준 Response 를 써서 이 패키지가 next 에 묶이지 않게 함
 
@@ -190,7 +192,7 @@ export function serviceUnavailable(message: string): Response {
 /** 서버 오류. 원인은 로그에만 남기고 본문에는 requestId 만 담음 */
 export function serverError(tag: string, error: unknown): Response {
   const requestId = newRequestId();
-  console.error(`[${tag}] requestId=${requestId}`, error);
+  logFailure(tag, error, { requestId });
   return Response.json(
     {
       code: ERROR_CODES.serverError,
