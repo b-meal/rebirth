@@ -236,7 +236,7 @@ AI 활용의 적절성  사람의 눈으로 하기 어려운 자리에만 모델
 
 ```
 대표 이미지            HERO-hero-16x9.png, 새 커버 문구와 새 캡처로 다시 굽는 것이 남은 일
-제목                   다시집 RE:Birth
+제목                   다시집 Rebirth
 해결하고자 한 문제      길에서 동물을 발견한 사람은 어디에 알려야 할지 모르고, 실종 신고를 낸 보호자는 지금 어디를 찾아야 할지 모릅니다. 다시집은 사진 한 장을 3분 만에 발견동물 제보로 바꾸고, 흩어진 목격을 이어 다음에 나타날 지역을 좁힙니다.
 사용 AI툴 및 기술 스택   추론 claude-sonnet-5 · 임베딩 openai/text-embedding-3-small · 장소 Kakao Local
                        Next.js 16 App Router · React 19 · TypeScript · 당근 SEED · shadcn/ui · Supabase Postgres(PostGIS, pgvector) · Supabase Storage · Drizzle ORM · Vercel

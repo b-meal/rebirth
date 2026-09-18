@@ -6,6 +6,7 @@ import { toString as qrToString } from "qrcode";
 import { Box, HStack, Text, VStack } from "@seed-design/react";
 
 import { STATUS_LABEL, describeAnimal, formatAbsolute, withObject } from "@/lib/report-label";
+import { PrintButton } from "./print-button";
 
 // 손으로 붙이는 A4 전단, 마지막 목격은 지역명까지만 적고 정확 좌표 제외
 
@@ -158,13 +159,12 @@ export default async function LostPosterPage({ params }: Params) {
         </VStack>
       </HStack>
 
-      <Text
-        textStyle="t3Regular"
-        color="fg.neutralSubtle"
-        className="rebirth-poster-screen-only"
-      >
-        인쇄 대화상자에서 용지를 A4, 배율을 100% 로 두면 이 화면 그대로 나와요
-      </Text>
+      <VStack align="stretch" gap="x2" className="rebirth-poster-screen-only">
+        <PrintButton />
+        <Text textStyle="t3Regular" color="fg.neutralSubtle">
+          인쇄 대화상자에서 용지를 A4, 배율을 100% 로 두면 이 화면 그대로 나와요
+        </Text>
+      </VStack>
     </VStack>
   );
 }

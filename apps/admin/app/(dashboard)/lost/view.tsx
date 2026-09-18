@@ -44,7 +44,7 @@ export function LostView({ items }: { items: LostRow[] }) {
       <div className="flex items-baseline gap-2">
         <h1 className="text-xl font-bold">실종 신고</h1>
         <span className="text-xs text-muted-foreground">
-          총 {items.length}건, 찾는 중 {searching}건
+          총 {items.length}건, {LIFECYCLE_LABEL.searching} {searching}건
         </span>
       </div>
 
