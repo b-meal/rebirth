@@ -40,10 +40,22 @@ const CARE_LABEL: Record<Candidate["careSituation"], string> = {
   unknown: "확인 중",
 };
 
+/**
+ * 목격 시각, 후보끼리 견주는 자리라 연도는 빼고 적음
+ * getHours 는 보는 사람 시간대를 따라 밖에서 열면 시각이 밀림
+ * 어느 시각에 봤는지가 같은 개체인지 가리는 근거라 한국 시간으로 못박음
+ */
+const DAY_TIME = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
 function formatAbsolute(value: string): string {
-  const date = new Date(value);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  return DAY_TIME.format(new Date(value));
 }
 
 export type CandidateDeckProps = {
