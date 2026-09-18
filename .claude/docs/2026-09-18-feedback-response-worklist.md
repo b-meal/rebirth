@@ -359,36 +359,36 @@
 
 ## Phase 9. 공유 카드 레이아웃
 
-- [ ] `apps/web/app/r/[id]/card/route.tsx:14` 의 `force-dynamic` 을 걷고 미리보기 캐시를 붙입니다
-  - [ ] `export const dynamic = "force-dynamic"` 을 `export const revalidate = 300` 으로 바꿉니다
-  - [ ] `ImageResponse` 반환에 `headers` 로 `설계 상수` 의 `Cache-Control` 값을 넣습니다
-  - [ ] `그 헤더 위에 카카오톡 미리보기 크롤러 타임아웃 회피` 한 줄 주석을 붙입니다
-  - [ ] `curl -sI "http://localhost:3000/r/<id>/card" | grep -i cache-control` 로 헤더가 실려 오는 것을 확인합니다
-- [ ] `apps/web/app/r/[id]/card/route.tsx:85-102` 의 `og` 갈래에 글자 띠를 올립니다
-  - [ ] `1200x630` 사진 위에 아래쪽 `180px` 반투명 띠를 겹치고 제목 한 줄과 사실 한 줄을 그립니다
-  - [ ] `제목은 이름 또는 상태, 사실 줄은 지역명과 생김새` 순으로 두고 좌표를 넣지 않습니다
-  - [ ] `brandCard` 폴백은 그대로 두어 사진 없는 제보가 로고 카드로 떨어지게 합니다
-  - [ ] `curl -so /tmp/og.png "http://localhost:3000/r/<id>/card" && file /tmp/og.png` 로 `PNG image data, 1200 x 630` 을 확인합니다
-- [ ] `apps/web/app/r/[id]/card/route.tsx:21` 의 `STORY_PHOTO_SHARE` 를 낮춰 안전 영역을 만듭니다
-  - [ ] `STORY_PHOTO_SHARE` 를 `0.56` 으로 바꾸고 `인스타그램 상하 UI 자리를 비우는 몫` 한 줄 주석을 붙입니다
-  - [ ] `PADDING` 과 별개로 위 `250px` 아래 `250px` 를 비우는 상수 두 개를 더합니다
-  - [ ] `글자 블록을 안전 영역 안으로 옮겨 답장 입력창에 문구가 가리지 않게 합니다`
-  - [ ] `curl -so /tmp/story.png "http://localhost:3000/r/<id>/card?ratio=story" && file /tmp/story.png` 로 `1080 x 1920` 을 확인합니다
-- [ ] `apps/web/app/r/[id]/card/route.tsx` 스토리 카드에 QR 을 박습니다
-  - [ ] `qrcode` 의 `toDataURL` 로 `/r/<id>` 주소를 만들어 아래 안전 영역 위쪽에 `180px` 크기로 그립니다
-  - [ ] `링크 스티커를 못 쓰는 계정도 카드만으로 닿게 하는 우회` 한 줄 주석을 붙입니다
-  - [ ] `QR 옆에 사진으로 찍어 열어 보세요` 한 줄을 작은 글자로 둡니다
-  - [ ] `curl -so /tmp/story.png "http://localhost:3000/r/<id>/card?ratio=story"` 로 종료코드 `0` 을 봅니다
-- [ ] `apps/web/app/r/[id]/card/route.tsx:131-148` 의 문구를 다섯 어휘로 맞춥니다
-  - [ ] `찾는 중 ${searchingDays(...)}일째` 를 `실종 ${searchingDays(...)}일째` 로 바꿉니다
-  - [ ] `찾았어요` 와 `끝난 신고` 를 `찾음` 으로 모으고 `CARE_LABEL` 참조를 `STATUS_LABEL` 로 바꿉니다
-  - [ ] `실종 신고는 발견동물 제보 라는 말을 카드에 쓰지 않게 갈래를 확인합니다`
-  - [ ] `grep -n "찾는 중 \|찾았어요" apps/web/app/r` 을 실행해 `0건` 인 것을 확인합니다
-- [ ] `git add` 로 Phase 9 담당 경로만 담아 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
-  - [ ] `git add "apps/web/app/r/[id]/card/route.tsx"` 로 한 파일만 담습니다
-  - [ ] `feat: 공유 카드에 글자 띠와 QR 을 넣고 스토리 안전 영역을 비움` 으로 커밋합니다
-  - [ ] `git status --short` 에 `apps/web/app/r` 경로가 `0건` 인 것을 확인합니다
+- [x] `apps/web/app/r/[id]/card/route.tsx:14` 의 `force-dynamic` 을 걷고 미리보기 캐시를 붙입니다
+  - [x] `export const dynamic = "force-dynamic"` 을 `export const revalidate = 300` 으로 바꿉니다
+  - [x] `ImageResponse` 반환에 `headers` 로 `설계 상수` 의 `Cache-Control` 값을 넣습니다
+  - [x] `그 헤더 위에 카카오톡 미리보기 크롤러 타임아웃 회피` 한 줄 주석을 붙입니다
+  - [x] `curl -sI "http://localhost:3000/r/<id>/card" | grep -i cache-control` 로 헤더가 실려 오는 것을 확인합니다
+- [x] `apps/web/app/r/[id]/card/route.tsx:85-102` 의 `og` 갈래에 글자 띠를 올립니다
+  - [x] `1200x630` 사진 위에 아래쪽 `180px` 반투명 띠를 겹치고 제목 한 줄과 사실 한 줄을 그립니다
+  - [x] `제목은 이름 또는 상태, 사실 줄은 지역명과 생김새` 순으로 두고 좌표를 넣지 않습니다
+  - [x] `brandCard` 폴백은 그대로 두어 사진 없는 제보가 로고 카드로 떨어지게 합니다
+  - [x] `curl -so /tmp/og.png "http://localhost:3000/r/<id>/card" && file /tmp/og.png` 로 `PNG image data, 1200 x 630` 을 확인합니다
+- [x] `apps/web/app/r/[id]/card/route.tsx:21` 의 `STORY_PHOTO_SHARE` 를 낮춰 안전 영역을 만듭니다
+  - [x] `STORY_PHOTO_SHARE` 를 `0.56` 으로 바꾸고 `인스타그램 상하 UI 자리를 비우는 몫` 한 줄 주석을 붙입니다
+  - [x] `PADDING` 과 별개로 위 `250px` 아래 `250px` 를 비우는 상수 두 개를 더합니다
+  - [x] `글자 블록을 안전 영역 안으로 옮겨 답장 입력창에 문구가 가리지 않게 합니다`
+  - [x] `curl -so /tmp/story.png "http://localhost:3000/r/<id>/card?ratio=story" && file /tmp/story.png` 로 `1080 x 1920` 을 확인합니다
+- [x] `apps/web/app/r/[id]/card/route.tsx` 스토리 카드에 QR 을 박습니다
+  - [x] `qrcode` 의 `toDataURL` 로 `/r/<id>` 주소를 만들어 아래 안전 영역 위쪽에 `180px` 크기로 그립니다
+  - [x] `링크 스티커를 못 쓰는 계정도 카드만으로 닿게 하는 우회` 한 줄 주석을 붙입니다
+  - [x] `QR 옆에 사진으로 찍어 열어 보세요` 한 줄을 작은 글자로 둡니다
+  - [x] `curl -so /tmp/story.png "http://localhost:3000/r/<id>/card?ratio=story"` 로 종료코드 `0` 을 봅니다
+- [x] `apps/web/app/r/[id]/card/route.tsx:131-148` 의 문구를 다섯 어휘로 맞춥니다
+  - [x] `찾는 중 ${searchingDays(...)}일째` 를 `실종 ${searchingDays(...)}일째` 로 바꿉니다
+  - [x] `찾았어요` 와 `끝난 신고` 를 `찾음` 으로 모으고 `CARE_LABEL` 참조를 `STATUS_LABEL` 로 바꿉니다
+  - [x] `실종 신고는 발견동물 제보 라는 말을 카드에 쓰지 않게 갈래를 확인합니다`
+  - [x] `grep -n "찾는 중 \|찾았어요" apps/web/app/r` 을 실행해 `0건` 인 것을 확인합니다
+- [x] `git add` 로 Phase 9 담당 경로만 담아 커밋합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
+  - [x] `git add "apps/web/app/r/[id]/card/route.tsx"` 로 한 파일만 담습니다
+  - [x] `feat: 공유 카드에 글자 띠와 QR 을 넣고 스토리 안전 영역을 비움` 으로 커밋합니다
+  - [x] `git status --short` 에 `apps/web/app/r` 경로가 `0건` 인 것을 확인합니다
 
 ## Phase 10. 링크 미리보기와 공유 사용성
 
@@ -538,6 +538,8 @@
 
 ### 지시서 결함
 
+- Phase 9 실측 행번호. 문구 갈래 `:131-148` 은 `route.tsx:107-145`. `:14` `:21` `:85-102` 도 실제 행과 어긋남
+
 - Phase 10 이 `updatedAt` 을 `lastModified` 로 쓰라 했으나 `listPublicReports` 의 `publicReportColumns` 에 그 열이 없어 `createdAt` 을 씀
 
 - Phase 6 실측 행번호. `home-screen.tsx:738-753` 은 736-753 · `786-790` 은 783-787 · `mine-screen.tsx:62-66` 은 61-66
@@ -602,3 +604,8 @@
 - `occurredAt` 실제 생산자는 `app/page.tsx:32`(MapMarker)와 `app/mine/reports/report-page.ts:49`(MineReportItem). `home-screen.tsx` 와 `mine-report-list.tsx` 는 타입 별칭뿐
 - `app/api/cards/route.ts` 는 반환 타입이 없어 `tsc` 가 잡지 않았으나 `recent-reports.tsx` 가 응답을 `ReportCardItem[]` 로 읽어 값을 함께 넣음
 - 신고 지점 전달은 격자 스냅 좌표 `location.point` 만 씀. 화면 출력은 거리와 여덟 낱말 방향뿐
+- 공유 카드 검증에 쓴 제보 id 는 `4d8acf95-9c53-46ec-bd0e-3895a62d5323`. dev 서버는 `PORT=3100` 으로 띄워 확인 후 내림
+- `ImageResponseOptions` 가 `ResponseInit` 을 확장해 `new ImageResponse(el, { width, height, headers })` 가 Next 16.3.4 에서 동작
+- OG 띠 제목은 이름만 두면 상태가 사라져 `name ? 이름 · 상태 : 상태` 로 둠
+- 스토리 본문 높이가 595px 라 headline 68 → 52 · CTA 52 → 44 · 칩 34 → 28 로 낮춰야 QR 이 아래 안전 영역을 넘지 않음
+- `STATUS_LABEL["unknown"]` 이 빈 문자열이라 공유 카드 배지를 조건부 렌더로 바꿔 빈 알약이 찍히지 않게 함
