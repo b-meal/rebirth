@@ -176,7 +176,8 @@ export function ReportDetail({
         <SectionCard gap="x2">
           <HStack gap="x1_5" align="center" wrap>
             <SectionTitle>제보자가 본 모습</SectionTitle>
-            <Badge label="AI 초안, 수정 가능" tone="neutral" />
+            {/* 읽는 화면이라 고칠 길이 없음. 출처만 밝히고 수정 가능 은 폼에서만 씀 */}
+            <Badge label="AI 초안" tone="neutral" />
           </HStack>
           <Text textStyle="articleBody" color="fg.neutral" whiteSpace="pre-wrap">
             {report.appearance ?? "외형 설명이 없어요"}
