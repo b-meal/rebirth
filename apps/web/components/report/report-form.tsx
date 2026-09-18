@@ -3,7 +3,7 @@
 import { reportClientError } from "@/lib/report-error";
 import { CARE_INPUT_LABEL, CONSENT_DOCUMENT_VERSION, type CareSituation } from "@rebirth/types";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { Box, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 import {
@@ -49,6 +49,31 @@ const MAX_PHOTOS = 2;
 
 // 서버가 문구를 못 내려줬을 때만 쓰는 대비값. 평소에는 guidance 의 문구가 그대로 옴
 const NOT_ANIMAL_FALLBACK = "동물이 보이지 않아요. 동물이 담긴 사진으로 다시 찍어 주세요";
+
+// 서버 필드 오류 앞에 붙이는 칸 이름. 고치기 시트와 화면의 라벨과 같은 말
+const FIELD_LABEL: Record<string, string> = {
+  animalType: "동물 종류",
+  breedGuess: "품종 추정",
+  appearance: "외형 요약",
+  colors: "털색",
+  size: "크기",
+  collar: "목줄이나 하네스",
+  injury: "눈에 보이는 부상",
+  earTip: "귀 끝 절단",
+  conditionTags: "상태",
+  careSituation: "보호 상황",
+  landmarkNote: "찾아갈 단서",
+  locationToken: "위치",
+  uploadIds: "사진",
+  occurredAt: "목격 시각",
+};
+
+/** 필드 오류를 칸 이름과 함께 한 줄씩. 이름을 모르는 키는 메시지만 */
+function errorLines(fieldErrors: Record<string, string> | undefined): string[] {
+  return Object.entries(fieldErrors ?? {}).map(([key, message]) =>
+    FIELD_LABEL[key] ? `${FIELD_LABEL[key]}: ${message}` : message,
+  );
+}
 const ANALYZE_FAILED_FALLBACK = "잠시 후 다시 시도해 주세요";
 
 const STEP_LABEL: Record<ReportStep, string> = {
@@ -87,7 +112,13 @@ export function ReportForm() {
   const router = useRouter();
   const [step, setStep] = useState<ReportStep>(1);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string[] | null>(null);
+  // 오류 줄이 하단 CTA 아래로 빠져 있으면 버튼만 눌리고 아무 일도 없는 것처럼 보임
+  const errorRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!submitError) return;
+    errorRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [submitError]);
   const cameraAvailable = useCameraAvailable();
   // 초안을 고칠 때만 여는 상세 입력
   const [formOpen, setFormOpen] = useState(false);
@@ -284,17 +315,19 @@ export function ReportForm() {
 
       // 앞선 요청이 아직 처리 중, 키를 유지한 채 다시 누르게 함
       if (response.status === 202 || result.pending) {
-        setSubmitError("저장하고 있어요. 잠시 후 다시 눌러 주세요");
+        setSubmitError(["저장하고 있어요. 잠시 후 다시 눌러 주세요"]);
         setSubmitting(false);
         return;
       }
 
       if (!response.ok || !result.id) {
         // 입력값은 그대로 두고 재시도만 노출
-        // 어느 칸이 문제인지는 필드별 메시지가 알고 있어 그것을 먼저 보여 줌
+        // 필드별 메시지를 칸 이름과 함께 모두 보여 줌. 하나만 보이면 나머지는 고칠 길이 없음
         // 되돌릴 걸음은 두지 않음. 오류 줄이 두 번째 걸음에만 있어 옮기면 메시지가 사라짐
-        const message = Object.values(result.fieldErrors ?? {})[0];
-        setSubmitError(message ?? result.message ?? "제보가 저장되지 않았어요. 다시 시도해 주세요");
+        const lines = errorLines(result.fieldErrors);
+        setSubmitError(
+          lines.length > 0 ? lines : [result.message ?? "제보가 저장되지 않았어요. 다시 시도해 주세요"],
+        );
         setSubmitting(false);
         return;
       }
@@ -304,7 +337,7 @@ export function ReportForm() {
       router.replace(`/r/${result.id}/done`);
     } catch (error) {
       reportClientError("report.submit", error);
-      setSubmitError("제보가 저장되지 않았어요. 입력한 내용은 그대로 있어요");
+      setSubmitError(["제보가 저장되지 않았어요. 입력한 내용은 그대로 있어요"]);
       setSubmitting(false);
     }
   }, [phase, draft, reset, router]);
@@ -396,7 +429,18 @@ export function ReportForm() {
               onChange={onLocationChange}
             />
 
-            {submitError ? <Callout tone="critical" description={submitError} /> : null}
+            {submitError ? (
+              <Callout
+                ref={errorRef}
+                tone="critical"
+                description={submitError.map((line, index) => (
+                  <Fragment key={line}>
+                    {index > 0 ? <br /> : null}
+                    {line}
+                  </Fragment>
+                ))}
+              />
+            ) : null}
 
             {/* 하단 CTA 가 화면에 붙어 있어 마지막 입력이 그 아래로 빠져나갈 자리 */}
             <Box height="x8" />
