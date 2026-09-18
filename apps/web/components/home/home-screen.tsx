@@ -879,15 +879,23 @@ export function HomeScreen({
       {/* 첫 화면에서 무엇을 하는 곳인지 읽히도록 급한 일 셋을 지도 위에 올림
           좁은 화면에서는 글자를 줄이지 않고 가로로 넘김. 여백을 뚫고 화면 끝까지 나가
           첫 단추는 본문 선에서 시작하고 마지막 단추가 끝에 걸쳐 보여 더 있다는 것이 읽힘
-          넘기는 상자는 탭을 먹지 않고 단추만 받아 오른쪽 빈 띠에서는 지도가 그대로 움직임
+          넘기는 상자에 pointer-events none 을 걸면 iOS 가 스크롤 대상으로 잡지 않아 상자가 탭을 받음
+          대신 폭을 내용에 맞추고 화면 폭으로만 제한해, 다 들어오는 화면에서는 오른쪽 빈 띠가 지도에 남음
           위아래 여백은 잘리는 그림자 자리 */}
       <Box
         className="rebirth-scroll-row rebirth-bleed"
         py="x2"
         bleedY="x2"
-        style={{ pointerEvents: "none", whiteSpace: "nowrap" }}
+        style={{
+          pointerEvents: "auto",
+          whiteSpace: "nowrap",
+          width: "fit-content",
+          // 폭 제한이 안쪽 여백까지 세어야 상자가 화면 밖으로 나가지 않음
+          boxSizing: "border-box",
+          maxWidth: "calc(100% + 2 * var(--seed-dimension-spacing-x-global-gutter))",
+        }}
       >
-        <HStack gap="x2" align="center" width="fit-content" style={{ pointerEvents: "auto" }}>
+        <HStack gap="x2" align="center" width="fit-content">
           <ContextualFloatingButton variant="layer" asChild>
             <Link href="/lost/new" onClick={markIntroSeen}>
               <PrefixIcon svg={<IconMegaphoneLine />} />
