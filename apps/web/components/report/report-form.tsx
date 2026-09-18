@@ -57,8 +57,8 @@ const STEP_LABEL: Record<ReportStep, string> = {
 
 // 실종 신고에만 쓰는 unknown 은 제보 폼에 내놓지 않음
 const CARE_OPTIONS: { value: Exclude<CareSituation, "unknown">; label: string }[] = [
-  { value: "roaming", label: "배회 중" },
-  { value: "in_care", label: "내가 데리고 있음" },
+  { value: "roaming", label: "발견" },
+  { value: "in_care", label: "보호 중" },
 ];
 
 // 카드가 읽을 권고. 되돌린 갈래도 2단계로 다시 오면 그대로 보임

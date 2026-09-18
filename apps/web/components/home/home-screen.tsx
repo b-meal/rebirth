@@ -11,9 +11,10 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { createPortal } from "react-dom";
-import { Box, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
+import { Box, Grid, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
 import {
   IconBellLine,
+  IconCameraLine,
   IconChevronUpLine,
   IconCrosshairLine,
   IconHospitalcrossShieldLine,
@@ -35,6 +36,7 @@ import { useMap } from "@/hooks/use-map";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
 import { NearbyList } from "@/components/home/nearby-list";
+import { SHORTCUTS } from "@/components/mine/mine-screen";
 import type { ReportCardItem } from "@/components/report/report-card";
 
 // 지도가 맨 아래, 그 위에 시트, 맨 위에 떠 있는 내비게이션을 겹치는 첫 화면
@@ -46,6 +48,18 @@ export type MapMarker = ReportCardItem & {
 
 // 반경 안에 하나도 없을 때 대신 보여 줄 가까운 제보 수
 const NEARBY_FALLBACK_COUNT = 12;
+
+// 첫 행동을 마쳤는지 적어 두는 자리, 안내 한 줄과 시트 머리 타일이 같이 접힘
+const SEEN_INTRO_KEY = "rebirth:seen-intro";
+
+function readSeenIntro(): boolean {
+  try {
+    return localStorage.getItem(SEEN_INTRO_KEY) !== null;
+  } catch {
+    // 저장이 막힌 브라우저는 늘 첫 방문으로 보고 안내만 한 번 더 그림
+    return false;
+  }
+}
 
 // 핀을 고르면 당기는 축척, 주변 골목이 보이는 정도
 const PIN_ZOOM = 16;
@@ -475,6 +489,25 @@ export function HomeScreen({
 
   const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
+  // 서버에는 저장소가 없어 첫 그림에서는 판정을 미루고 안내를 그리지 않음
+  const [seenIntro, setSeenIntro] = useState<boolean | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSeenIntro(readSeenIntro());
+  }, []);
+
+  const markIntroSeen = useCallback(() => {
+    setSeenIntro(true);
+    try {
+      localStorage.setItem(SEEN_INTRO_KEY, "1");
+    } catch {
+      // 저장이 막혀도 이 세션 동안은 접힌 채로 둠
+    }
+  }, []);
+
+  // 판정 전에는 null 이라 안내와 타일 둘 다 자리를 잡지 않음
+  const firstVisit = seenIntro === false;
+
   // 핀을 고르면 지도 위 말풍선으로 요약을 띄움
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = useMemo(
@@ -735,17 +768,49 @@ export function HomeScreen({
         </Box>
       </HStack>
 
-      {/* 첫 화면에서 무엇을 하는 곳인지 읽히도록 급한 일 둘을 지도 위에 올림
-          제보하기는 아래 떠 있는 단추가 이미 가지고 있어 여기서 빼둠 */}
-      <HStack gap="x2" align="center" width="fit-content" style={{ pointerEvents: "auto" }}>
+      {firstVisit ? (
+        // 첫 방문에만 뜨는 한 줄, 아래 단추 셋이 무엇을 하는 자리인지 먼저 말함
+        <HStack
+          align="center"
+          width="fit-content"
+          px="x3"
+          py="x2"
+          borderRadius="r3"
+          bg="bg.layerFloating"
+          boxShadow="s2"
+          style={{ pointerEvents: "auto" }}
+        >
+          <Text textStyle="t3Regular" color="fg.neutral">
+            동물을 봤거나 잃어버렸으면 여기서 시작해요
+          </Text>
+        </HStack>
+      ) : null}
+
+      {/* 첫 화면에서 무엇을 하는 곳인지 읽히도록 급한 일 셋을 지도 위에 올림
+          좁은 화면에서는 단추가 겹치는 대신 가로로 밀림, 위아래 여백은 그림자 자리 */}
+      <HStack
+        gap="x2"
+        align="center"
+        width="fit-content"
+        py="x2"
+        bleedY="x2"
+        overflowX="auto"
+        style={{ pointerEvents: "auto", whiteSpace: "nowrap" }}
+      >
         <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/lost/new">
+          <Link href="/lost/new" onClick={markIntroSeen}>
             <PrefixIcon svg={<IconMegaphoneLine />} />
             우리 아이 찾기
           </Link>
         </ContextualFloatingButton>
         <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/guide/injured">
+          <Link href="/report" onClick={markIntroSeen}>
+            <PrefixIcon svg={<IconCameraLine />} />
+            발견동물 제보
+          </Link>
+        </ContextualFloatingButton>
+        <ContextualFloatingButton variant="layer" asChild>
+          <Link href="/guide/injured" onClick={markIntroSeen}>
             <PrefixIcon svg={<IconHospitalcrossShieldLine />} />
             다친 동물
           </Link>
@@ -783,6 +848,7 @@ export function HomeScreen({
           >
             <Icon svg={<IconCrosshairLine />} />
           </ContextualFloatingButton>
+          {/* 지도 위 발견동물 제보와 같은 곳으로 가지만 엄지에 닿는 자리라 라벨을 그대로 둠 */}
           <FloatingActionButton
             icon={<IconPlusLine />}
             label="제보하기"
@@ -835,6 +901,31 @@ export function HomeScreen({
               <Box width="x9" height="x1" borderRadius="full" bg="bg.neutralWeak" />
             </button>
           </VStack>
+
+          {firstVisit && !expanded ? (
+            // 첫 행동 전에만 머리에 두는 타일 셋, 누르면 접혀 목록 머리가 올라옴
+            <Grid columns={3} gap="x2" px="spacingX.globalGutter">
+              {SHORTCUTS.map((item) => (
+                <VStack
+                  key={item.href}
+                  asChild
+                  align="center"
+                  gap="x2"
+                  py="x4"
+                  borderRadius="r2"
+                  bg="bg.neutralWeak"
+                  minWidth="0"
+                >
+                  <Link href={item.href} className="rebirth-tile" onClick={markIntroSeen}>
+                    <Icon svg={item.icon} size="x6" color="fg.brand" />
+                    <Text textStyle="t3Bold" color="fg.neutral" maxLines={1}>
+                      {item.label}
+                    </Text>
+                  </Link>
+                </VStack>
+              ))}
+            </Grid>
+          ) : null}
 
           <HStack px="spacingX.globalGutter" justify="space-between" align="center" gap="x2">
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>

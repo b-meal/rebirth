@@ -45,7 +45,7 @@ const SIGN_IN_HREF = `${SIGN_IN_PATH}?${NEXT_PARAM}=%2Fmine`;
 /** 동물 사진 한 변 */
 const PET_THUMB = "56px";
 
-type MineLink = {
+export type MineLink = {
   href: string;
   label: string;
   icon: React.ReactNode;
@@ -58,8 +58,8 @@ const LINKS: MineLink[] = [
   { href: "/privacy", label: "개인정보 처리방침", icon: <IconWonShieldLine /> },
 ];
 
-// 길에서 급히 찾는 일 셋. 로그인 전에도 여기서 바로 출발할 수 있어야 함
-const SHORTCUTS: MineLink[] = [
+// 길에서 급히 찾는 일 셋. 홈 시트 머리가 같은 정의를 그리므로 두 화면 문구가 갈라지지 않음
+export const SHORTCUTS: MineLink[] = [
   { href: "/report", label: "제보하기", icon: <IconCameraLine /> },
   { href: "/lost/new", label: "실종 신고", icon: <IconMegaphoneLine /> },
   { href: "/guide/injured", label: "다친 동물", icon: <IconHospitalcrossShieldLine /> },

@@ -27,7 +27,7 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <ActionButton type="submit" variant="brandSolid" size="large" loading={pending}>
-      구조 요청하기
+      구조·보호 요청 보내기
     </ActionButton>
   );
 }
@@ -36,7 +36,7 @@ function SubmitButton() {
 function Done({ reference }: { reference: string }) {
   return (
     <Screen>
-      <AppHeader title="구조 요청" home />
+      <AppHeader title="구조·보호 요청" home />
       <ScreenBody gap="x6" justify="center">
         <VStack align="center" gap="x4">
           <Icon svg={<IconCheckmarkCircleFill />} size="x12" color="fg.positive" />
@@ -83,7 +83,7 @@ export function RescueRequest() {
 
   return (
     <Screen>
-      <AppHeader title="구조 요청" />
+      <AppHeader title="구조·보호 요청" />
       <ScreenBody gap="x6">
         <VStack align="stretch" gap="x2">
           <Text as="h2" textStyle="t8Bold" color="fg.neutral">

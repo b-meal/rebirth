@@ -5,6 +5,7 @@ import {
   SYSTEM,
   TrackReviewError,
   bearingWord,
+  confidenceWithPhotos,
   describeTrack,
   reviewTrack,
   trackReview,
@@ -94,6 +95,13 @@ test("bearingWord 가 여덟 방향으로 나눈다", () => {
   assert.equal(bearingWord(181), "남");
   assert.equal(bearingWord(359), "북");
   assert.equal(bearingWord(-90), "서");
+});
+
+test("confidenceWithPhotos 가 mixed 만 0.6배로 깎는다", () => {
+  assert.equal(confidenceWithPhotos(62, "consistent"), 62);
+  assert.equal(confidenceWithPhotos(62, "unclear"), 62);
+  assert.equal(confidenceWithPhotos(62, null), 62);
+  assert.equal(confidenceWithPhotos(62, "mixed"), 37);
 });
 
 test("reviewTrack 이 키가 없으면 no-config 로 던진다", async () => {

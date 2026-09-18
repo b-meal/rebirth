@@ -113,7 +113,7 @@ export function ReportFeatureForm({ draft, onEdit }: ReportFeatureFormProps) {
           maxGraphemeCount={30}
           onValueChange={(next) => onEdit("breedGuess", next.value)}
         >
-          <TextFieldInput placeholder="말티즈" />
+          <TextFieldInput placeholder="말티즈 계열" />
         </TextField>
         <BreedSuggest
           value={draft.breedGuess}

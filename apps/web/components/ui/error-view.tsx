@@ -76,7 +76,7 @@ export function ErrorView({
           </ActionButton>
           {safetyLink ? (
             <ActionButton variant="ghost" size="medium" asChild>
-              <Link href="/guide/injured">급한 상황이면 구조 요청하기</Link>
+              <Link href="/guide/injured">급한 상황이면 구조·보호 요청</Link>
             </ActionButton>
           ) : null}
         </VStack>

@@ -18,7 +18,13 @@ import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { CARE_LABEL, describeAnimal, searchingDays, sinceLabel } from "@/lib/report-label";
+import {
+  STATUS_LABEL,
+  describeAnimal,
+  searchingDays,
+  sinceLabel,
+  withSubject,
+} from "@/lib/report-label";
 import { LostDetail } from "@/components/lost/lost-detail";
 import { ReportDetail } from "@/components/report/report-detail";
 import type { ReportCardItem } from "@/components/report/report-card";
@@ -64,19 +70,28 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const title = isDone
     ? (petName ?? "끝난 신고")
     : (petName ?? report.appearance?.split("\n")[0] ?? (isLost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
-  // 링크 미리보기에서 한눈에 판단할 값만 앞에 둠. 카카오톡은 두 줄 남짓만 보임
-  // 실종 신고는 보호 상황을 쓰지 않아 그 자리를 비움
-  const facts = [
-    where,
-    isLost ? null : CARE_LABEL[report.careSituation],
-    describeAnimal(report),
-  ].filter(Boolean);
-  const description = isDone
-    ? `${facts.join(", ")} — ${report.lifecycle === "resolved" ? "가족을 만났어요" : "끝난 신고예요"}`
+  // 실종은 lifecycle, 발견은 careSituation 으로 고르는 다섯 어휘 한 값
+  const status = isLost
+    ? report.lifecycle === "resolved"
+      ? STATUS_LABEL.resolved
+      : STATUS_LABEL.lost
+    : STATUS_LABEL[report.careSituation];
+  const facts = [where, status, describeAnimal(report)].filter(Boolean);
+  // 끝난 실종 신고를 닫는 말은 발견자 쪽이 아닌 보호자 쪽 어휘 기준
+  const tail = isDone
+    ? report.lifecycle === "resolved"
+      ? petName
+        ? `${withSubject(petName)} 집으로 돌아왔어요`
+        : "집으로 돌아왔어요"
+      : "끝난 신고예요"
     : isLost
-      ? `${facts.join(", ")} — 이 아이를 본 적 있나요?`
-      : `${facts.join(", ")} — 이 동물을 본 적 있나요?`;
+      ? "이 아이를 본 적 있나요?"
+      : "이 동물을 본 적 있나요?";
+  const description = `${facts.join(", ")} — ${tail}`;
   const image = `${SITE}/r/${id}/card`;
+  // 신고를 고친 뒤 옛 카드가 미리보기에 남는 것을 막는 지문
+  const versioned = `${image}?v=${report.updatedAt.getTime()}`;
+  const imageAlt = `${where}에서 ${isLost ? "잃어버린" : "발견된"} 동물`;
 
   return {
     title,
@@ -88,16 +103,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       siteName: "다시집",
       locale: "ko_KR",
       url: `${SITE}/r/${id}`,
-      images: [
-        {
-          url: image,
-          width: 1200,
-          height: 630,
-          alt: `${where}에서 ${isLost ? "잃어버린" : "발견된"} 동물`,
-        },
-      ],
+      images: [{ url: versioned, width: 1200, height: 630, alt: imageAlt }],
     },
-    twitter: { card: "summary_large_image", title, description, images: [image] },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [{ url: versioned, alt: imageAlt }],
+    },
   };
 }
 
@@ -136,6 +149,7 @@ async function loadNearby(currentId: string, origin: NearbyOrigin): Promise<Repo
       injury: row.injury,
       areaName: row.areaName,
       sinceLabel: sinceLabel(row.occurredAt),
+      occurredAt: row.occurredAt.toISOString(),
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
     }));
   } catch {

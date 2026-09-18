@@ -26,6 +26,19 @@ export const trackReview = z.object({
 
 export type TrackReview = z.infer<typeof trackReview>;
 
+// 사진 특징이 어긋나면 경로 신뢰도를 깎는 계수
+export const PHOTO_MIXED_FACTOR = 0.6;
+
+/** 사진이 서로 어긋난 경로만 신뢰도를 깎음. 나머지는 결정식 값을 그대로 둠 */
+export function confidenceWithPhotos(
+  confidence: number,
+  consistency: TrackReview["photoConsistency"] | null,
+): number {
+  return consistency === "mixed"
+    ? Math.round(confidence * PHOTO_MIXED_FACTOR)
+    : confidence;
+}
+
 export type TrackReviewNode = {
   reportId: string;
   areaName: string | null;

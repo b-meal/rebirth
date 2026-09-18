@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, asc, desc, eq, gte, lte, ne, sql as raw } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, lte, ne, or, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
 import { matchScores, pets, reportPhotos, reports } from '../schema'
@@ -358,11 +358,23 @@ export async function findMatchesForLost(lostId: string, limit = 30) {
  * 수동 지역 제보는 격자 좌표가 제보자가 고른 지역 중심이라 이동 근거로 쓰지 못함
  * 정확 좌표는 고르지 않음. 경로·예측은 전부 격자 좌표로만 계산함
  */
-export async function findTrackSightings(lostId: string, minScore: number) {
+export async function findTrackSightings(
+  lostId: string,
+  minScore: number,
+  minSimilarity: number,
+) {
+  // 임베딩이 한쪽이라도 없으면 행이 없어 null 로 내려가고 점수 경로만 남음
+  const similarity = raw<number | null>`(
+    select (1 - (le.embedding <=> se.embedding))::float8
+    from report_embeddings le, report_embeddings se
+    where le.report_id = ${lostId}::uuid and se.report_id = ${reports.id}
+  )`
+
   return db
     .select({
       id: reports.id,
       score: matchScores.score,
+      similarity,
       coarsePoint: reports.coarsePoint,
       occurredAt: reports.occurredAt,
       areaName: reports.areaName,
@@ -374,7 +386,11 @@ export async function findTrackSightings(lostId: string, minScore: number) {
       and(
         eq(matchScores.lostId, lostId),
         eq(reports.visibility, 'public'),
-        gte(matchScores.score, minScore),
+        // 배점이 하한에 못 미쳐도 외형 벡터가 가까우면 확인할 후보로 남김
+        or(
+          gte(matchScores.score, minScore),
+          raw`${similarity} >= ${minSimilarity}`,
+        ),
         ne(reports.locationSource, 'manual_area'),
       ),
     )

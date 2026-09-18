@@ -14,7 +14,13 @@ import {
 import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
 
-import { describeAnimal, formatAbsolute, withObject, withSubject } from "@/lib/report-label";
+import {
+  STATUS_LABEL,
+  describeAnimal,
+  formatAbsolute,
+  withObject,
+  withSubject,
+} from "@/lib/report-label";
 import { Screen, SectionCard, SectionTitle } from "@/components/ui/screen";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { AreaSubscribeButton } from "@/components/report/area-subscribe-button";
@@ -71,19 +77,16 @@ type PublicLostReport = {
 /**
  * 신고 상태를 한 줄로 알림
  * 며칠째 찾고 있는지가 이 화면에서 가장 먼저 읽혀야 할 값이라 배지로 올림
- * 이름을 아는 신고는 이름으로 부름. 가족을 찾았어요 는 발견자 쪽 말이라 쓰지 않음
+ * 어휘는 실종과 찾음 둘로만 두고, 찾음 아닌 종료는 다섯 어휘 밖이라 배지를 빼고 null 을 냄
  */
 function statusBadge(
   lifecycle: string,
   searchingDays: number,
-  name: string | null,
-): { label: string; tone: BadgeTone } {
-  if (lifecycle === "resolved") {
-    return { label: name ? `${name}, 집에 왔어요` : "집으로 돌아왔어요", tone: "informative" };
-  }
-  if (lifecycle === "closed") return { label: "종료된 신고", tone: "neutral" };
+): { label: string; tone: BadgeTone } | null {
+  if (lifecycle === "resolved") return { label: STATUS_LABEL.resolved, tone: "informative" };
+  if (lifecycle === "closed") return null;
   return {
-    label: searchingDays < 1 ? "오늘 잃어버렸어요" : `실종 ${searchingDays}일째`,
+    label: searchingDays < 1 ? "오늘 잃어버렸어요" : `${STATUS_LABEL.lost} ${searchingDays}일째`,
     tone: "brand",
   };
 }
@@ -136,15 +139,23 @@ export function LostDetail({
     rememberView(report.id);
   }, [report.id]);
 
-  const { options: shareOptions, cardReady } = useReportShare({
+  const { options: shareOptions, cardReady, armCard } = useReportShare({
     reportId: report.id,
     shareUrl,
     areaName: report.areaName,
+    kind: "lost",
+    petName: report.pet?.name ?? null,
+    prefetch: false,
   });
 
+  // 시트를 여는 모든 길이 지나는 자리, 카드는 여기서 한 번만 받음
+  const openShare = (next: boolean) => {
+    if (next) armCard();
+    setShareOpen(next);
+  };
 
   const name = report.pet?.name ?? null;
-  const status = statusBadge(report.lifecycle, searchingDays, name);
+  const status = statusBadge(report.lifecycle, searchingDays);
   const searching = report.lifecycle === "searching";
   const mine = ownership.mine;
   // 보호자가 적어 둔 품종은 아는 값이라 그대로 씀. AI 가 붙인 값만 계열 추정으로 부름
@@ -155,14 +166,16 @@ export function LostDetail({
       <DetailPhotoHero
         reportId={report.id}
         alt={name ? `잃어버린 ${name} 사진` : "잃어버린 동물 사진"}
-        onShare={() => setShareOpen(true)}
+        onShare={() => openShare(true)}
       />
 
       <VStack align="stretch" gap="x2" pb="x4">
         <SectionCard gap="x3">
-          <HStack gap="x1_5" wrap>
-            <Badge label={status.label} tone={status.tone} />
-          </HStack>
+          {status ? (
+            <HStack gap="x1_5" wrap>
+              <Badge label={status.label} tone={status.tone} />
+            </HStack>
+          ) : null}
 
           <ReportBadges
             animalType={report.animalType}
@@ -250,7 +263,11 @@ export function LostDetail({
           {/* 지도의 점과 번호가 어느 지역 어느 시각인지는 글로 한 번 더 읽어야 남음 */}
           {location && searching && track ? (
             <TrackTimeline
-              origin={{ areaName: report.areaName, occurredAt: report.occurredAt }}
+              origin={{
+                areaName: report.areaName,
+                occurredAt: report.occurredAt,
+                point: location.point,
+              }}
               nodes={track.nodes}
             />
           ) : null}
@@ -351,7 +368,7 @@ export function LostDetail({
         {/* 내 신고에 내가 목격 제보를 하지는 않음. 관리 줄이 위에서 할 일을 맡음 */}
         {/* 이미 찾은 신고에 목격 제보를 권하면 헛걸음이 됨 */}
         {mine ? (
-          <ActionButton variant="neutralWeak" size="medium" onClick={() => setShareOpen(true)}>
+          <ActionButton variant="neutralWeak" size="medium" onClick={() => openShare(true)}>
             <Icon svg={<IconAndroidshareLine />} />
             이웃에게 알리기
           </ActionButton>
@@ -371,7 +388,7 @@ export function LostDetail({
 
       <ReportShareSheet
         open={shareOpen}
-        onOpenChange={setShareOpen}
+        onOpenChange={openShare}
         options={shareOptions}
         cardReady={cardReady}
       />

@@ -94,19 +94,26 @@ export function ReportDetail({
     rememberView(report.id);
   }, [report.id]);
 
-  const { options: shareOptions, cardReady } = useReportShare({
+  const { options: shareOptions, cardReady, armCard } = useReportShare({
     reportId: report.id,
     shareUrl,
     areaName: report.areaName,
+    kind: "sighting",
+    prefetch: false,
   });
 
+  // 시트를 여는 모든 길이 지나는 자리, 카드는 여기서 한 번만 받음
+  const openShare = (next: boolean) => {
+    if (next) armCard();
+    setShareOpen(next);
+  };
 
   return (
     <Screen bg="bg.layerBasement">
       <DetailPhotoHero
         reportId={report.id}
         alt="제보된 동물 사진"
-        onShare={() => setShareOpen(true)}
+        onShare={() => openShare(true)}
       />
 
       <VStack align="stretch" gap="x2" pb="x4">
@@ -271,7 +278,7 @@ export function ReportDetail({
 
       <ReportShareSheet
         open={shareOpen}
-        onOpenChange={setShareOpen}
+        onOpenChange={openShare}
         options={shareOptions}
         cardReady={cardReady}
       />

@@ -17,10 +17,14 @@ export const ANIMAL_LABEL: Record<string, string> = {
   unknown: "확인 어려움",
 };
 
-export const CARE_LABEL: Record<string, string> = {
+// 주어 없는 다섯 어휘로 고정, 배회 중과 찾는 중 금지
+export const STATUS_LABEL: Record<string, string> = {
+  lost: "실종",
   roaming: "발견",
   in_care: "보호 중",
-  unknown: "확인되지 않음",
+  rescue: "구조 요청",
+  resolved: "찾음",
+  unknown: "",
 };
 
 export type AnimalLabelInput = {
@@ -139,4 +143,20 @@ export function densityLine({ count, radiusKm }: { count: number; radiusKm: numb
   const r = radiusKm.toFixed(1);
   if (count === 0) return `반경 ${r}km 안에 새 제보가 없어요`;
   return `반경 ${r}km 안에 제보 ${count}건`;
+}
+
+export type SituationInput = {
+  lastSeen: Date;
+  /** 예측 반경 안 제보 수, 경로가 없으면 null 이라 밀도 절이 빠짐 */
+  count: number | null;
+  radiusKm: number | null;
+  now?: Date;
+};
+
+/** 경과·밀도·등급 세 줄을 한 줄로 합침, 절대 날짜는 다른 줄이 맡음 */
+export function situationLine({ lastSeen, count, radiusKm, now = new Date() }: SituationInput): string {
+  const density = count !== null && radiusKm !== null ? densityLine({ count, radiusKm }) : null;
+  return [sinceLabel(lastSeen, now), density, urgencyHint(lastSeen, now)]
+    .filter(Boolean)
+    .join(", ");
 }

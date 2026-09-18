@@ -45,6 +45,7 @@ export {
   legFeasibility,
   predictNext,
   straightness,
+  straightnessEffective,
   type Prediction,
   type Track,
   type TrackLeg,
