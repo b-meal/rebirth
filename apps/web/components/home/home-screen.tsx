@@ -1,16 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { motion } from "motion/react";
 import { Box, Grid, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
 import {
   IconBellLine,
@@ -38,6 +31,7 @@ import { useDeviceHeading } from "@/hooks/use-device-heading";
 import { useMap } from "@/hooks/use-map";
 import { useMyLocationMarker } from "@/hooks/use-my-location-marker";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
+import { useSheetSnap } from "@/hooks/use-sheet-snap";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
 import { holdKeyboard } from "@/components/ui/keyboard-bridge";
 import { NearbyList } from "@/components/home/nearby-list";
@@ -81,13 +75,21 @@ const PIN_ZOOM = 16;
 // 고른 핀을 화면 가운데보다 아래에 두어 위로 열리는 말풍선 자리를 만듦
 const PIN_OFFSET: [number, number] = [0, 90];
 
-// 시트 높이는 화면 비율로 다루고 드래그는 min 과 max 사이에서만 움직임
-// hidden 은 시트를 걷고 손잡이만 남기는 단계, 지도만 보려는 사람의 자리
-const SHEET = { hidden: 0, min: 0.02, collapsed: 0.27, expanded: 0.62, max: 0.72 } as const;
+// 시트가 화면을 덮는 비율. hidden 은 시트를 걷고 손잡이만 남기는 단계, 지도만 보려는 사람의 자리
+// 시트 요소는 늘 full 높이로 서 있고 자리만 transform 으로 옮김
+// 높이를 단계마다 갈면 손가락이 움직일 때마다 레이아웃이 다시 돌고 목록이 자리를 다시 잼
+const SHEET = { hidden: 0, collapsed: 0.54, expanded: 0.78, full: 0.88 } as const;
 const SHEET_MID = (SHEET.collapsed + SHEET.expanded) / 2;
 
-// 손을 떼면 이 세 단계 중 이웃으로만 붙음
-const STOPS: number[] = [SHEET.hidden, SHEET.collapsed, SHEET.expanded];
+// 손을 떼면 이 세 단계 중 하나에 붙음
+const STOPS = [SHEET.hidden, SHEET.collapsed, SHEET.expanded] as const;
+
+// 시트 요소의 높이와, 걷힌 단계를 0 으로 두려고 아래로 내려 둔 만큼
+const SHEET_HEIGHT = `${SHEET.full * 100}dvh`;
+const SHEET_BOTTOM = `${(SHEET.collapsed - SHEET.full) * 100}dvh`;
+
+// 떠 있는 단추가 쉬는 자리, 시트 위에 x3 만큼 띄움
+const FLOATING_BOTTOM = `calc(${SHEET.collapsed * 100}dvh + var(--seed-dimension-x3))`;
 
 // 색은 상황만 알리고 무엇인지는 사진이 알림
 // 단색 위 글자와 아이콘은 SEED 가 제 컴포넌트에서 쓰는 대로 흰색, 노랑만 검정
@@ -323,9 +325,19 @@ export function HomeScreen({
       render: () => <Snackbar message={message} />,
     });
 
-  // 검색창과 시트가 지도를 덮어 그 사이만 실제로 보이는 구간
+  // 검색창이 지도를 덮어 그 아래부터 시트 위까지가 실제로 보이는 구간
   const topBarRef = useRef<HTMLDivElement | null>(null);
-  const sheetRef = useRef<HTMLDivElement | null>(null);
+
+  // 시트 자리는 MotionValue 하나가 쥐고, 상태로 남는 것은 손을 뗀 뒤 붙은 단계뿐
+  const {
+    y,
+    followY,
+    stop: sheetStop,
+    viewport: viewportHeight,
+    snapTo,
+    dragProps,
+    handleProps,
+  } = useSheetSnap({ stops: STOPS, rest: SHEET.collapsed, ceiling: SHEET.full });
 
   // 지도 중심을 보이는 구간 한가운데로 옮겨 내 위치가 시트 쪽으로 밀려 내려가지 않게 함
   useEffect(() => {
@@ -333,9 +345,9 @@ export function HomeScreen({
     const apply = () => {
       const height = window.innerHeight;
       const top = topBarRef.current?.getBoundingClientRect().bottom ?? 0;
-      const sheetTop = sheetRef.current?.getBoundingClientRect().top ?? height;
+      // 시트가 가린 높이는 붙은 단계가 그대로 말해 줘 요소를 재지 않음
       // 시트를 펼친 채 화면이 바뀌면 여백이 지도보다 커져 남는 구간이 사라지므로 절반으로 묶음
-      const bottom = Math.max(Math.min(height - sheetTop, (height - top) / 2), 0);
+      const bottom = Math.max(Math.min(sheetStop * height, (height - top) / 2), 0);
       map.setPadding({ top, bottom, left: 0, right: 0 });
     };
     apply();
@@ -343,7 +355,8 @@ export function HomeScreen({
     return () => {
       window.removeEventListener("resize", apply);
     };
-  }, [map]);
+    // 시트가 다른 단계에 붙으면 지도에서 보이는 구간도 달라짐
+  }, [map, sheetStop]);
 
   // 권한 응답이 늦게 와도 첫 도착에만 옮겨 사용자가 끌어 둔 화면을 되돌리지 않음
   const centered = useRef(false);
@@ -532,17 +545,15 @@ export function HomeScreen({
   }, [map, markers]);
 
   // 묶음을 누르면 그 묶음이 풀리는 축척까지 당김
-  const expandCluster = useCallback(
-    (id: number, at: LatLng) => {
-      const source = map?.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
-      if (!source) return;
-      source
-        .getClusterExpansionZoom(id)
-        .then((zoom) => moveTo(at, { animate: true, zoom }))
-        .catch(() => undefined);
-    },
-    [map, moveTo],
-  );
+  // 핀에 넘기는 함수들의 고정은 React Compiler 가 맡아 useCallback 을 손으로 쓰지 않음
+  const expandCluster = (id: number, at: LatLng) => {
+    const source = map?.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
+    if (!source) return;
+    source
+      .getClusterExpansionZoom(id)
+      .then((zoom) => moveTo(at, { animate: true, zoom }))
+      .catch(() => undefined);
+  };
 
   useMyLocationMarker({
     map,
@@ -554,7 +565,8 @@ export function HomeScreen({
 
   // 지도를 못 띄우면 거리를 셀 기준이 없어 최근 제보를 그대로 보여줌
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
-  const { nearby, widened } = useMemo(() => {
+  // 값이 같으면 React Compiler 가 건너뛰어 useMemo 를 손으로 쓰지 않음
+  const { nearby, widened } = (() => {
     if (!ready) return { nearby: markers, widened: false };
     const inRadius = markers.filter((item) => distanceKm(center, item.point) <= radiusKm);
     if (inRadius.length > 0) return { nearby: inRadius, widened: false };
@@ -564,12 +576,10 @@ export function HomeScreen({
       .slice(0, NEARBY_FALLBACK_COUNT)
       .map((row) => row.item);
     return { nearby: sorted, widened: sorted.length > 0 };
-  }, [ready, center, radiusKm, markers]);
+  })();
 
   // 떠 있는 단추가 여는 쓰기 시트. 지도 위 알약을 대신함
   const [writeOpen, setWriteOpen] = useState(false);
-
-  const [sheetRatio, setSheetRatio] = useState<number>(SHEET.collapsed);
 
   // 서버에는 저장소가 없어 첫 그림에서는 판정을 미루고 안내를 그리지 않음
   const [seenIntro, setSeenIntro] = useState<boolean | null>(null);
@@ -578,24 +588,21 @@ export function HomeScreen({
     setSeenIntro(readSeenIntro());
   }, []);
 
-  const markIntroSeen = useCallback(() => {
+  const markIntroSeen = () => {
     setSeenIntro(true);
     try {
       localStorage.setItem(SEEN_INTRO_KEY, "1");
     } catch {
       // 저장이 막혀도 이 세션 동안은 접힌 채로 둠
     }
-  }, []);
+  };
 
   // 판정 전에는 null 이라 안내와 타일 둘 다 자리를 잡지 않음
   const firstVisit = seenIntro === false;
 
   // 핀을 고르면 지도 위 말풍선으로 요약을 띄움
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = useMemo(
-    () => markers.find((item) => item.id === selectedId) ?? null,
-    [markers, selectedId],
-  );
+  const selected = markers.find((item) => item.id === selectedId) ?? null;
 
   // 말풍선을 닫을 때 돌려놓을 직전 화면, 핀을 옮겨 골라도 처음 값을 지킴
   const beforePreview = useRef<{ point: LatLng; zoom: number } | null>(null);
@@ -608,20 +615,20 @@ export function HomeScreen({
         beforePreview.current = { point: { lat: at.lat, lng: at.lng }, zoom: map.getZoom() };
       }
       setSelectedId(item.id);
-      setSheetRatio(SHEET.hidden);
+      snapTo(SHEET.hidden);
       moveTo(item.point, { animate: true, zoom: PIN_ZOOM, offset: PIN_OFFSET });
     },
-    [map, moveTo],
+    [map, moveTo, snapTo],
   );
 
   const closePreview = useCallback(() => {
     setSelectedId(null);
-    setSheetRatio(SHEET.collapsed);
+    snapTo(SHEET.collapsed);
 
     const before = beforePreview.current;
     beforePreview.current = null;
     if (before) moveTo(before.point, { animate: true, zoom: before.zoom });
-  }, [moveTo]);
+  }, [moveTo, snapTo]);
 
   // 말풍선도 지도가 만든 요소에 포털로 채움, 위치와 방향은 SDK 가 잡음
   const [popupEl, setPopupEl] = useState<HTMLElement | null>(null);
@@ -667,102 +674,8 @@ export function HomeScreen({
     };
   }, [map, closePreview]);
 
-  const expanded = sheetRatio > SHEET_MID;
-  const hidden = sheetRatio === SHEET.hidden;
-
-  // 끄는 동안은 상태를 바꾸지 않고 시트 요소만 transform 으로 옮김
-  // 높이를 상태로 갈면 손가락이 움직일 때마다 화면 전체가 다시 그려지고 목록이 레이아웃을 다시 돎
-  // transform 은 합성만 하고, 손을 뗄 때 한 번 단계에 붙이며 상태를 바꿈
-  const drag = useRef<{
-    startY: number;
-    startRatio: number;
-    moved: boolean;
-    /** 위로 끌 수 있는 최대 px, 시트를 이만큼 아래로 늘려 두어 끌어올려도 바닥이 비지 않음 */
-    reach: number;
-    /** 지금까지 옮긴 px, 아래가 양수 */
-    shift: number;
-    frame: number;
-  } | null>(null);
-
-  const startDrag = useCallback(
-    (event: ReactPointerEvent<HTMLButtonElement>) => {
-      const height = window.innerHeight;
-      const reach = Math.max(0, (SHEET.max - sheetRatio) * height);
-      drag.current = { startY: event.clientY, startRatio: sheetRatio, moved: false, reach, shift: 0, frame: 0 };
-      event.currentTarget.setPointerCapture(event.pointerId);
-
-      const sheet = sheetRef.current;
-      if (!sheet) return;
-      // 아래 여백을 늘리고 같은 만큼 음수 마진을 줘 겉모습과 위 단추 자리는 그대로 두고 상자만 아래로 늘림
-      const padding = Number.parseFloat(getComputedStyle(sheet).paddingBottom) || 0;
-      sheet.style.marginBottom = `${-reach}px`;
-      sheet.style.paddingBottom = `${padding + reach}px`;
-      sheet.style.willChange = "transform";
-    },
-    [sheetRatio],
-  );
-
-  const onDrag = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
-    const current = drag.current;
-    if (!current) return;
-    const dy = event.clientY - current.startY;
-    if (Math.abs(dy) > 4) current.moved = true;
-    const height = window.innerHeight;
-    // 아래로는 min 까지, 위로는 max 까지만
-    const floor = (current.startRatio - SHEET.min) * height;
-    current.shift = Math.max(-current.reach, Math.min(dy, floor));
-
-    const sheet = sheetRef.current;
-    if (!sheet || current.frame) return;
-    // 포인터 이벤트는 프레임보다 잦아 한 프레임에 한 번만 씀
-    current.frame = requestAnimationFrame(() => {
-      current.frame = 0;
-      sheet.style.transform = `translateY(${current.shift}px)`;
-    });
-  }, []);
-
-  const endDrag = useCallback(() => {
-    const current = drag.current;
-    if (!current) return;
-    drag.current = null;
-    if (current.frame) cancelAnimationFrame(current.frame);
-
-    const sheet = sheetRef.current;
-    if (sheet) {
-      sheet.style.transform = "";
-      sheet.style.marginBottom = "";
-      sheet.style.paddingBottom = "";
-      sheet.style.willChange = "";
-    }
-
-    const at = Math.max(0, STOPS.indexOf(current.startRatio));
-    // 움직이지 않았으면 탭으로 보고 한 단 올리되 맨 위에서는 접음
-    if (!current.moved) {
-      setSheetRatio(at === STOPS.length - 1 ? SHEET.collapsed : STOPS[at + 1]);
-      return;
-    }
-    // 끌어올렸으면 한 단 올리고 내렸으면 한 단 내리고, 거의 안 움직였으면 되돌림
-    const value = current.startRatio - current.shift / window.innerHeight;
-    if (value > current.startRatio + 0.03) {
-      setSheetRatio(STOPS[Math.min(at + 1, STOPS.length - 1)]);
-    } else if (value < current.startRatio - 0.03) {
-      setSheetRatio(STOPS[Math.max(at - 1, 0)]);
-    } else {
-      setSheetRatio(current.startRatio);
-    }
-  }, []);
-
-  // 손잡이는 걷었을 때와 펼쳤을 때 생김새만 다르고 동작은 하나
-  const handleProps = useMemo(
-    () => ({
-      onPointerDown: startDrag,
-      onPointerMove: onDrag,
-      onPointerUp: endDrag,
-      onPointerCancel: endDrag,
-      style: { touchAction: "none", cursor: "grab" } as const,
-    }),
-    [startDrag, onDrag, endDrag],
-  );
+  const expanded = sheetStop > SHEET_MID;
+  const hidden = sheetStop === SHEET.hidden;
 
   const recenter = () => {
     // iOS 는 사용자가 누른 안에서만 자기 센서 권한을 물을 수 있어 이 탭에 얹음
@@ -975,26 +888,33 @@ export function HomeScreen({
       </VStack>
 
       {/* 이 묶음은 시트와 떠 있는 버튼의 자리만 잡음
+          둘 다 흐름에서 자리를 바꾸지 않고 transform 으로만 오르내려 끄는 동안 레이아웃이 돌지 않음
           면이 없는 곳까지 탭을 먹으면 지도 아래 절반에서 확대와 이동이 듣지 않음 */}
-      <VStack
+      <Box
         position="absolute"
         bottom="0"
         left="0"
         right="0"
         zIndex={2}
-        gap="x3"
-        align="stretch"
         style={{ pointerEvents: "none" }}
       >
         {selected ? null : (
         <VStack
-          alignSelf="flex-end"
-          width="fit-content"
+          asChild
           align="flex-end"
           gap="x2"
           px="spacingX.globalGutter"
-          style={{ pointerEvents: "auto" }}
         >
+          {/* 시트를 따라 내려오다 알약 자리에서 멈춤, 값은 시트와 같은 MotionValue 하나에서 나옴 */}
+          <motion.div
+            style={{
+              y: followY,
+              position: "absolute",
+              right: 0,
+              bottom: FLOATING_BOTTOM,
+              pointerEvents: "auto",
+            }}
+          >
           <ContextualFloatingButton
             variant="layer"
             layout="iconOnly"
@@ -1014,12 +934,23 @@ export function HomeScreen({
             aria-expanded={writeOpen}
             onClick={() => setWriteOpen(true)}
           />
+          </motion.div>
         </VStack>
         )}
 
         {hidden ? (
           // 시트를 걷으면 지도만 남고 탭바 위에 이 손잡이 하나만 떠 있음
-          <VStack align="center" className="rebirth-above-tabs" style={{ pointerEvents: "auto" }}>
+          <VStack
+            align="center"
+            className="rebirth-above-tabs"
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              pointerEvents: "auto",
+            }}
+          >
             <HStack
               asChild
               align="center"
@@ -1030,7 +961,13 @@ export function HomeScreen({
               bg="bg.layerFloating"
               boxShadow="s2"
             >
-              <button type="button" aria-expanded={false} aria-label="목록 펼치기" {...handleProps}>
+              {/* 눈에 보이는 글자가 이름 안에 그대로 들어가야 음성으로 부르는 말과 화면이 같음 */}
+              <button
+                type="button"
+                aria-expanded={false}
+                aria-label={`제보 ${nearby.length}건, 목록 펼치기`}
+                {...handleProps}
+              >
                 <Icon svg={<IconChevronUpLine />} size="x4" color="fg.neutralSubtle" />
                 <Text textStyle="t2Bold" color="fg.neutral">
                   제보 {nearby.length}건
@@ -1038,10 +975,12 @@ export function HomeScreen({
               </button>
             </HStack>
           </VStack>
-        ) : (
+        ) : null}
+
+        {/* 걷은 단계에서도 요소는 그대로 서 있고 화면 아래로 물러나기만 함
+            높이가 늘 같아 목록이 자리를 다시 재지 않고, 걷힌 동안은 inert 로 초점도 받지 않음 */}
         <VStack
-          ref={sheetRef}
-          as="section"
+          asChild
           align="stretch"
           gap="x2"
           pb="x5"
@@ -1049,8 +988,22 @@ export function HomeScreen({
           borderTopLeftRadius="r5"
           borderTopRightRadius="r5"
           boxShadow="s3"
-          style={{ pointerEvents: "auto" }}
         >
+          <motion.section
+            {...dragProps}
+            inert={hidden}
+            style={{
+              y,
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: SHEET_BOTTOM,
+              height: SHEET_HEIGHT,
+              // 아래 여백이 높이에 더해지면 단계마다 시트가 그만큼 더 올라옴
+              boxSizing: "border-box",
+              pointerEvents: hidden ? "none" : "auto",
+            }}
+          >
           <VStack asChild align="center" pt="x2_5" pb="x0_5">
             <button
               type="button"
@@ -1100,10 +1053,11 @@ export function HomeScreen({
             </Text>
           </HStack>
 
-          <NearbyList items={nearby} height={`${Math.round(sheetRatio * 100)}dvh`} />
+          {/* 화면 밖으로 내려가 있는 만큼을 목록 끝에 더해 어느 단계에서도 마지막 장까지 닿음 */}
+          <NearbyList items={nearby} tailPx={Math.round((SHEET.full - sheetStop) * viewportHeight)} />
+          </motion.section>
         </VStack>
-        )}
-      </VStack>
+      </Box>
 
       <WriteActionSheet open={writeOpen} onOpenChange={setWriteOpen} />
     </Box>

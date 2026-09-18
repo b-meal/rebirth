@@ -26,12 +26,12 @@ const ESTIMATED_ROW = 200;
 
 type NearbyListProps = {
   items: ReportCardItem[];
-  /** 시트를 끌어 올린 만큼 바뀌는 목록 높이 */
-  height: string;
+  /** 시트가 화면 밖으로 내려가 있는 만큼, 마지막 장까지 밀어 올릴 수 있게 목록 끝에 더함 */
+  tailPx: number;
 };
 
-// 홈 화면이 다시 그려져도 반경 안 제보와 높이가 같으면 React Compiler 가 건너뜀, 손으로 memo 하지 않음
-export function NearbyList({ items, height }: NearbyListProps) {
+// 홈 화면이 다시 그려져도 반경 안 제보와 꼬리 길이가 같으면 React Compiler 가 건너뜀, 손으로 memo 하지 않음
+export function NearbyList({ items, tailPx }: NearbyListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -41,24 +41,25 @@ export function NearbyList({ items, height }: NearbyListProps) {
   const [row, setRow] = useState({ height: ESTIMATED_ROW, gap: 0 });
   const [scrolled, setScrolled] = useState(false);
 
-  // 실제 카드에서 줄 높이를 재 토큰 값이 바뀌어도 자리 계산이 따라감
-  const measure = () => {
-    const scroller = scrollRef.current;
-    if (scroller) setViewport(scroller.clientHeight);
-
-    const grid = gridRef.current;
-    const card = grid?.firstElementChild;
-    if (!grid || !card) return;
-    const gap = Number.parseFloat(getComputedStyle(grid).rowGap) || 0;
-    const height = card.getBoundingClientRect().height;
-    if (height <= 0) return;
-    setRow((prev) =>
-      Math.abs(prev.height - (height + gap)) > 1 ? { height: height + gap, gap } : prev,
-    );
-  };
-
   // 시트를 끌면 목록 높이가 바뀌고 글꼴이 늦게 오면 카드 높이가 바뀜, 둘 다 다시 잼
+  // 재는 함수는 이 effect 에서만 쓰여 안에 둠, 밖에 두면 의존성 규칙이 useCallback 을 요구함
   useEffect(() => {
+    // 실제 카드에서 줄 높이를 재 토큰 값이 바뀌어도 자리 계산이 따라감
+    const measure = () => {
+      const scroller = scrollRef.current;
+      if (scroller) setViewport(scroller.clientHeight);
+
+      const grid = gridRef.current;
+      const card = grid?.firstElementChild;
+      if (!grid || !card) return;
+      const gap = Number.parseFloat(getComputedStyle(grid).rowGap) || 0;
+      const height = card.getBoundingClientRect().height;
+      if (height <= 0) return;
+      setRow((prev) =>
+        Math.abs(prev.height - (height + gap)) > 1 ? { height: height + gap, gap } : prev,
+      );
+    };
+
     measure();
     const scroller = scrollRef.current;
     if (!scroller || typeof ResizeObserver === "undefined") return;
@@ -67,7 +68,7 @@ export function NearbyList({ items, height }: NearbyListProps) {
     const card = gridRef.current?.firstElementChild;
     if (card) observer.observe(card);
     return () => observer.disconnect();
-  }, [measure, items.length]);
+  }, [items.length]);
 
   // 스크롤마다 상태를 갈면 손가락보다 렌더가 늦음, 한 프레임에 한 번만 읽음
   const frame = useRef(0);
@@ -96,7 +97,8 @@ export function NearbyList({ items, height }: NearbyListProps) {
 
   const slice = items.slice(startRow * COLUMNS, endRow * COLUMNS);
   const offset = startRow * row.height;
-  const total = Math.max(0, rows * row.height - row.gap);
+  // 화면 밖으로 내려가 있는 만큼을 끝에 더해야 어느 단계에서도 마지막 줄까지 올라옴
+  const total = Math.max(0, rows * row.height - row.gap) + tailPx;
 
   // 다음 줄 사진은 요소를 만들기 전에 받아 둠, 줄이 들어올 때 이미 캐시에 있음
   const prefetched = useRef(new Set<string>());
@@ -115,10 +117,12 @@ export function NearbyList({ items, height }: NearbyListProps) {
   }, [items, endRow, scrolled]);
 
   return (
-    /* 아래 여백은 떠 있는 내비게이션이 가리는 만큼 비워 두는 자리 */
+    /* 아래 여백은 떠 있는 내비게이션이 가리는 만큼 비워 두는 자리
+       높이는 시트가 남긴 만큼 채움, 단계가 바뀌어도 상자 크기가 그대로라 자리를 다시 재지 않음 */
     <Box
       ref={scrollRef}
-      height={height}
+      flexGrow={1}
+      minHeight="0"
       px="spacingX.globalGutter"
       pb="x16"
       overflowY="auto"
