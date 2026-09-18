@@ -551,6 +551,11 @@ body .seed-snackbar__root {
 /* 알림은 글자만큼만 차지하는 알약으로 둠
    폭을 가득 채우면 화면을 가로지르는 띠가 되어 한 줄 알리는 일에 비해 크게 보임
    기본이 width 100% 라 줄이고, 좌우 여백과 모서리도 알약에 맞게 키움 */
+/* 무슨 일인지 한 줄, 할 일 한 줄로 나눈 알림이 줄바꿈을 잃지 않게 함 */
+body .seed-snackbar__message {
+  white-space: pre-line;
+}
+
 body .seed-snackbar__root {
   width: auto;
   max-width: 100%;
