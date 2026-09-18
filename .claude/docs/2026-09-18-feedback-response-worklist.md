@@ -245,55 +245,55 @@
 
 ## Phase 5. 경로 타임라인 카드
 
-- [ ] `apps/web/components/lost/track-section.tsx:73-90` 위에 노드 타임라인을 넣습니다
-  - [ ] `track.nodes` 를 시간순으로 그리고 각 줄에 번호·지역명·`sinceLabel` 을 담는 목록을 추가합니다
-  - [ ] `index + 1` 로 지도 마커 번호와 목록 번호가 같은 값을 쓰게 맞춥니다
-  - [ ] `bearingDeg` 와 좌표 숫자를 화면에 내보내지 않는 기존 규칙을 그대로 지킵니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/lost/track-section.tsx` 의 타임라인 줄 사이에 구간 요약을 넣습니다
-  - [ ] `track.legs` 의 `km` 과 `hours` 를 `3시간 뒤 1.2km 남동쪽` 형태 한 줄로 바꾸는 지역 함수를 만듭니다
-  - [ ] `bearingWord` 를 다리 벡터에 적용해 방향을 여덟 낱말로만 말합니다
-  - [ ] `hours` 가 1 미만이면 `분` 단위로 내려 `0시간 뒤` 가 뜨지 않게 합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/lost/track-section.tsx:58-70` 의 머리글에 유사 후보 건수 한 줄을 넣습니다
-  - [ ] `track.promotedCount` 가 1 이상이면 `외형이 닮아 이어 붙인 확인할 후보 n건` 을 `Callout` 없이 본문 한 줄로 그립니다
-  - [ ] `promotedCount` 가 `0` 이거나 `undefined` 면 아무것도 그리지 않는 분기를 둡니다
-  - [ ] `확인할 후보` 로만 부르고 개체 동일성을 확정하는 말을 쓰지 않습니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/lost/track-section.tsx:74-91` 의 두 줄짜리 상황 문구를 `situationLine` 한 줄로 합칩니다
-  - [ ] `sinceLabel` `densityLine` `urgencyHint` 세 줄을 `situationLine` 한 번 호출로 바꿉니다
-  - [ ] `track.density` 가 `null` 일 때 밀도 절이 빠지고 등급 문구만 남는지 확인합니다
-  - [ ] `pnpm --filter @rebirth/web test` 를 실행해 `fail 0` 을 봅니다
-- [ ] `git add` 로 Phase 5 담당 경로만 담아 커밋합니다
-  - [ ] `git add apps/web/components/lost/track-section.tsx` 로 한 파일만 담습니다
-  - [ ] `feat: 경로 카드에 목격 타임라인과 구간 요약을 넣음` 으로 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/lost/track-section.tsx:73-90` 위에 노드 타임라인을 넣습니다
+  - [x] `track.nodes` 를 시간순으로 그리고 각 줄에 번호·지역명·`sinceLabel` 을 담는 목록을 추가합니다
+  - [x] `index + 1` 로 지도 마커 번호와 목록 번호가 같은 값을 쓰게 맞춥니다
+  - [x] `bearingDeg` 와 좌표 숫자를 화면에 내보내지 않는 기존 규칙을 그대로 지킵니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/lost/track-section.tsx` 의 타임라인 줄 사이에 구간 요약을 넣습니다
+  - [x] `track.legs` 의 `km` 과 `hours` 를 `3시간 뒤 1.2km 남동쪽` 형태 한 줄로 바꾸는 지역 함수를 만듭니다
+  - [x] `bearingWord` 를 다리 벡터에 적용해 방향을 여덟 낱말로만 말합니다
+  - [x] `hours` 가 1 미만이면 `분` 단위로 내려 `0시간 뒤` 가 뜨지 않게 합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/lost/track-section.tsx:58-70` 의 머리글에 유사 후보 건수 한 줄을 넣습니다
+  - [x] `track.promotedCount` 가 1 이상이면 `외형이 닮아 이어 붙인 확인할 후보 n건` 을 `Callout` 없이 본문 한 줄로 그립니다
+  - [x] `promotedCount` 가 `0` 이거나 `undefined` 면 아무것도 그리지 않는 분기를 둡니다
+  - [x] `확인할 후보` 로만 부르고 개체 동일성을 확정하는 말을 쓰지 않습니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/lost/track-section.tsx:74-91` 의 두 줄짜리 상황 문구를 `situationLine` 한 줄로 합칩니다
+  - [x] `sinceLabel` `densityLine` `urgencyHint` 세 줄을 `situationLine` 한 번 호출로 바꿉니다
+  - [x] `track.density` 가 `null` 일 때 밀도 절이 빠지고 등급 문구만 남는지 확인합니다
+  - [x] `pnpm --filter @rebirth/web test` 를 실행해 `fail 0` 을 봅니다
+- [x] `git add` 로 Phase 5 담당 경로만 담아 커밋합니다
+  - [x] `git add apps/web/components/lost/track-section.tsx` 로 한 파일만 담습니다
+  - [x] `feat: 경로 카드에 목격 타임라인과 구간 요약을 넣음` 으로 커밋합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
 
 ## Phase 6. 첫 방문 행동 타일
 
-- [ ] `apps/web/components/home/home-screen.tsx:738-753` 의 지도 위 버튼을 행동 세 개로 늘립니다
-  - [ ] `우리 아이 찾기` 와 `다친 동물` 에 `발견동물 제보` 를 더해 `ContextualFloatingButton` 세 개로 만듭니다
-  - [ ] `HStack` 을 가로 스크롤로 두고 `width="fit-content"` 를 유지해 좁은 화면에서 겹치지 않게 합니다
-  - [ ] `apps/web/components/home/home-screen.tsx:786-790` 의 `FloatingActionButton` 라벨은 `제보하기` 그대로 두고 주석만 고칩니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/home/home-screen.tsx` 에 첫 방문에만 뜨는 안내 한 줄을 넣습니다
-  - [ ] `localStorage` 키 `rebirth:seen-intro` 를 `try` 로 감싸 읽고 없을 때만 지도 위 한 줄을 그립니다
-  - [ ] `동물을 봤거나 잃어버렸으면 여기서 시작해요` 한 줄을 안내 문구로 두고 버튼 위에 놓습니다
-  - [ ] `rebirth:seen-intro` 키를 버튼 셋 중 하나를 누를 때 쓰고 안내를 접는 처리를 더합니다
-  - [ ] `try` 블록 양쪽을 확인해 저장이 막힌 브라우저에서도 화면이 그려지게 합니다
-- [ ] `apps/web/components/mine/mine-screen.tsx:62-66` 의 행동 타일 셋을 홈 시트 머리로 옮겨 씁니다
-  - [ ] `apps/web/components/mine/mine-screen.tsx` 의 타일 정의를 `apps/web/components/home/` 에서 재사용할 수 있게 상수로 내보냅니다
-  - [ ] `apps/web/components/mine/mine-screen.tsx` 의 기존 타일 렌더는 그대로 두고 정의만 공유해 화면 변화 없음을 확인합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/home/nearby-list.tsx` 위 시트 머리에 행동 타일 셋을 그립니다
-  - [ ] `collapsed` 단계일 때만 타일 셋을 그려 목록 자리를 먹지 않게 합니다
-  - [ ] `apps/web/components/mine/mine-screen.tsx` 와 같은 아이콘을 쓰고 SEED 토큰만 씁니다
-  - [ ] `가까운 제보` 목록이 첫 행동 뒤에 머리로 올라오게 타일을 접습니다
-  - [ ] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `git add` 로 Phase 6 담당 경로만 담아 커밋합니다
-  - [ ] `git add apps/web/components/home apps/web/components/mine/mine-screen.tsx` 로 담습니다
-  - [ ] `feat: 첫 화면에 행동 타일 셋을 올려 서비스 목적이 먼저 읽히게 함` 으로 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/home/home-screen.tsx:738-753` 의 지도 위 버튼을 행동 세 개로 늘립니다
+  - [x] `우리 아이 찾기` 와 `다친 동물` 에 `발견동물 제보` 를 더해 `ContextualFloatingButton` 세 개로 만듭니다
+  - [x] `HStack` 을 가로 스크롤로 두고 `width="fit-content"` 를 유지해 좁은 화면에서 겹치지 않게 합니다
+  - [x] `apps/web/components/home/home-screen.tsx:786-790` 의 `FloatingActionButton` 라벨은 `제보하기` 그대로 두고 주석만 고칩니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/home/home-screen.tsx` 에 첫 방문에만 뜨는 안내 한 줄을 넣습니다
+  - [x] `localStorage` 키 `rebirth:seen-intro` 를 `try` 로 감싸 읽고 없을 때만 지도 위 한 줄을 그립니다
+  - [x] `동물을 봤거나 잃어버렸으면 여기서 시작해요` 한 줄을 안내 문구로 두고 버튼 위에 놓습니다
+  - [x] `rebirth:seen-intro` 키를 버튼 셋 중 하나를 누를 때 쓰고 안내를 접는 처리를 더합니다
+  - [x] `try` 블록 양쪽을 확인해 저장이 막힌 브라우저에서도 화면이 그려지게 합니다
+- [x] `apps/web/components/mine/mine-screen.tsx:62-66` 의 행동 타일 셋을 홈 시트 머리로 옮겨 씁니다
+  - [x] `apps/web/components/mine/mine-screen.tsx` 의 타일 정의를 `apps/web/components/home/` 에서 재사용할 수 있게 상수로 내보냅니다
+  - [x] `apps/web/components/mine/mine-screen.tsx` 의 기존 타일 렌더는 그대로 두고 정의만 공유해 화면 변화 없음을 확인합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/home/nearby-list.tsx` 위 시트 머리에 행동 타일 셋을 그립니다
+  - [x] `collapsed` 단계일 때만 타일 셋을 그려 목록 자리를 먹지 않게 합니다
+  - [x] `apps/web/components/mine/mine-screen.tsx` 와 같은 아이콘을 쓰고 SEED 토큰만 씁니다
+  - [x] `가까운 제보` 목록이 첫 행동 뒤에 머리로 올라오게 타일을 접습니다
+  - [x] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `git add` 로 Phase 6 담당 경로만 담아 커밋합니다
+  - [x] `git add apps/web/components/home apps/web/components/mine/mine-screen.tsx` 로 담습니다
+  - [x] `feat: 첫 화면에 행동 타일 셋을 올려 서비스 목적이 먼저 읽히게 함` 으로 커밋합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
 
 ## Phase 7. 전단 QR 과 검색 유입 랜딩
 
@@ -527,9 +527,16 @@
 - [ ] `ReportCardItem.occurredAt` 을 필수로 올리고 생산자 6곳에 값을 넘기기. 지금은 선택이라 값이 없으면 실종 카드가 경과만 그림
 - [ ] `apps/web/components/lost/candidate-deck.tsx:37` 의 파일 지역 `CARE_LABEL` 상수를 `STATUS_LABEL` 로 바꾸기
 - [ ] `MIN_LEG_SIMILARITY` 를 재측정하기. `0.82` 는 현재 임베딩 분포에서 승격 0건이라 유사도 경로가 동작하지 않음
+- [ ] `lost-detail.tsx` 가 신고 지점 좌표를 `TrackTimeline` 에 넘기기. 지금은 신고에서 첫 목격까지의 구간 요약이 빠짐
+- [ ] Phase 12 전체 빌드에서 `/` 번들 크기 확인하기. `home-screen` 이 `mine-screen` 모듈을 통째로 클라이언트 그래프에 끌어옴
+- [ ] `mine-screen` 의 전이 import 에 `server-only` 를 붙이기. 지금은 `@rebirth/core/auth` 주석 언급뿐이라 클라이언트 번들 유입이 가능
 ## 참고
 
 ### 지시서 결함
+
+- Phase 6 실측 행번호. `home-screen.tsx:738-753` 은 736-753 · `786-790` 은 783-787 · `mine-screen.tsx:62-66` 은 61-66
+
+- Phase 5 가 쓰라는 `track.legs` 가 웹 `TrackView` 에 없음. 노드 좌표·시각에 `distanceKm` 을 걸어 구간을 계산함
 
 - Phase 2 의 `scored = true` 중위와 `scored = false` 상위 10% 사이에서 하한을 고르라는 전제가 성립하지 않음. 실측이 `0.5839` 와 `0.6140` 으로 역전
 - Phase 2 실측 행번호. 노드 변환은 126-136 이 아니라 131-145, 응답부는 139-168 이 아니라 147-171
@@ -570,3 +577,9 @@
 - `minSimilarity` 는 기존 시그니처 뒤 세 번째 인자. 호출부가 `track-handlers.ts` 한 곳뿐이라 선택 인자로 두지 않음
 - 주석 `실측 분위수 기준` 이 comment-style 훅 금지어에 걸려 `유사도 분위수 기준` 으로 바꿈
 - `@rebirth/core` 테스트 107 → 108 pass
+- 타임라인은 `track-timeline.tsx` 로 이미 있었고 `lost-detail.tsx:257` 이 렌더 중이라 Phase 5 는 구간 요약만 더함
+- Phase 5 실측 행번호. 상황 문구 블록 73-91 · 머리글 63-71. `bearingWord` 는 이미 있어 export 만 함
+- `SHORTCUTS` 공유 방향은 `mine-screen`(서버) → `home-screen`(클라이언트). 역방향은 `use client` 경계에서 상수 접근이 막힘
+- 발견동물 제보 단추 href 는 FAB 와 같은 `/report`, 아이콘은 `mine-screen` `SHORTCUTS` 와 같은 `IconCameraLine`
+- 가로 스크롤은 `HStack` 에 `overflowX="auto"` 와 `width="fit-content"` 유지, `py="x2" bleedY="x2"` 로 그림자 잘림 방지
+- `map-preview-card.tsx` 의 `CARE_LABEL` 교체로 `apps/web` 에 남은 참조는 `report-label.ts` 의 별칭 정의뿐
