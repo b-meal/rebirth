@@ -297,9 +297,11 @@ function AreaRow({ area }: { area: NotificationArea }) {
           </Text>
         ) : null}
       </HStack>
+      {/* 단추 글자가 절 제목 옆 건수와 같은 오른쪽 선에 서야 세로로 읽힘 */}
       <ActionButton
         variant="ghost"
         size="xsmall"
+        className="rebirth-row-end-action"
         loading={pending}
         onClick={() => start(() => void unsubscribeArea(area.areaCode))}
       >
