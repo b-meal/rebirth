@@ -21,10 +21,11 @@ export const SIZE_LABEL: Record<string, string> = {
   unknown: "확인 어려움",
 };
 
+// web 과 같은 다섯 어휘 기준. unknown 만 값이 없어 admin 의 확인 어려움 표기를 씀
 export const CARE_LABEL: Record<string, string> = {
-  roaming: "배회 중",
-  in_care: "제보자가 보호 중",
-  unknown: "확인되지 않음",
+  roaming: "발견",
+  in_care: "보호 중",
+  unknown: "확인 어려움",
 };
 
 export const VISIBILITY_LABEL: Record<string, string> = {
@@ -33,11 +34,12 @@ export const VISIBILITY_LABEL: Record<string, string> = {
   deleted: "삭제",
 };
 
+// searching 과 resolved 는 실종 신고 쪽이라 다섯 어휘를 그대로 씀
 export const LIFECYCLE_LABEL: Record<string, string> = {
   active: "진행 중",
   closed: "종료",
-  searching: "찾는 중",
-  resolved: "만남",
+  searching: "실종",
+  resolved: "찾음",
 };
 
 export const LOCATION_SOURCE_LABEL: Record<string, string> = {
