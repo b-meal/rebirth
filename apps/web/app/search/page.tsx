@@ -6,6 +6,7 @@ import {
   listTrendingReports,
 } from "@rebirth/db";
 import { LIST_PERIOD_DAYS, listQuery } from "@rebirth/types";
+import type { Metadata } from "next";
 
 import { sinceLabel } from "@/lib/report-label";
 import { SearchScreen } from "@/components/search/search-screen";
@@ -14,6 +15,20 @@ import type { NearbyItem } from "@/components/search/search-screen";
 import type { TrendingItem } from "@/components/search/trending-chart";
 
 // 검색 화면, 글자와 사진 두 갈래로 제보를 찾고 좌표는 다루지 않음
+
+// 검색 유입 경로라 robots 로 막지 않음
+export const metadata: Metadata = {
+  title: "제보 검색",
+  description: "털색과 크기, 지역으로 발견 제보와 실종 신고를 함께 찾습니다.",
+  openGraph: {
+    title: "제보 검색",
+    description: "털색과 크기, 지역으로 발견 제보와 실종 신고를 함께 찾습니다.",
+    type: "website",
+    siteName: "다시집",
+    locale: "ko_KR",
+    url: "/search",
+  },
+};
 
 export const dynamic = "force-dynamic";
 

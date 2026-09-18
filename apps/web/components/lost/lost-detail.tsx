@@ -139,12 +139,20 @@ export function LostDetail({
     rememberView(report.id);
   }, [report.id]);
 
-  const { options: shareOptions, cardReady } = useReportShare({
+  const { options: shareOptions, cardReady, armCard } = useReportShare({
     reportId: report.id,
     shareUrl,
     areaName: report.areaName,
+    kind: "lost",
+    petName: report.pet?.name ?? null,
+    prefetch: false,
   });
 
+  // 시트를 여는 모든 길이 지나는 자리, 카드는 여기서 한 번만 받음
+  const openShare = (next: boolean) => {
+    if (next) armCard();
+    setShareOpen(next);
+  };
 
   const name = report.pet?.name ?? null;
   const status = statusBadge(report.lifecycle, searchingDays);
@@ -158,7 +166,7 @@ export function LostDetail({
       <DetailPhotoHero
         reportId={report.id}
         alt={name ? `잃어버린 ${name} 사진` : "잃어버린 동물 사진"}
-        onShare={() => setShareOpen(true)}
+        onShare={() => openShare(true)}
       />
 
       <VStack align="stretch" gap="x2" pb="x4">
@@ -356,7 +364,7 @@ export function LostDetail({
         {/* 내 신고에 내가 목격 제보를 하지는 않음. 관리 줄이 위에서 할 일을 맡음 */}
         {/* 이미 찾은 신고에 목격 제보를 권하면 헛걸음이 됨 */}
         {mine ? (
-          <ActionButton variant="neutralWeak" size="medium" onClick={() => setShareOpen(true)}>
+          <ActionButton variant="neutralWeak" size="medium" onClick={() => openShare(true)}>
             <Icon svg={<IconAndroidshareLine />} />
             이웃에게 알리기
           </ActionButton>
@@ -376,7 +384,7 @@ export function LostDetail({
 
       <ReportShareSheet
         open={shareOpen}
-        onOpenChange={setShareOpen}
+        onOpenChange={openShare}
         options={shareOptions}
         cardReady={cardReady}
       />
