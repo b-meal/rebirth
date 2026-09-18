@@ -1,5 +1,6 @@
 // 예측 원 위의 탐색 지점 배점. 반경에 가까울수록 우선
 
+import { logFailure } from "../http/log.ts";
 import { distanceKm, type LatLng } from "../location/geo.ts";
 import type { KakaoPlace } from "../location/kakao-local.ts";
 
@@ -80,8 +81,10 @@ export async function searchSpots({
         : [],
     );
     return rankSpots({ candidates, center, radiusKm });
-  } catch {
+  } catch (error) {
     // KakaoLocalError 를 포함한 모든 실패에서 빈 목록. 경로 화면은 지점 없이도 그려짐
+    // 키 만료나 할당량 초과가 여기로 오는데 조용하면 지점이 원래 없는 것처럼 보임
+    logFailure("matching.searchSpots", error);
     return [];
   }
 }

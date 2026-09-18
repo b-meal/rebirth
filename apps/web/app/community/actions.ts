@@ -17,7 +17,7 @@ import {
   softDeleteCommunityPost,
   toggleCommunityLike,
 } from "@rebirth/db";
-import { findDraftSession } from "@rebirth/core/http";
+import { findDraftSession, logFailure } from "@rebirth/core/http";
 import { headers } from "next/headers";
 
 import { getCurrentUser } from "@/lib/auth/session";
@@ -90,8 +90,10 @@ export async function createPost(
   let id: string;
   try {
     id = await insertCommunityPost({ authorId, ...parsed.data, photoPaths });
-  } catch {
+  } catch (error) {
     // 원인을 그대로 내보내지 않음. 화면에 DB 오류가 새면 안 됨
+    // 대신 로그에는 남겨야 함. 글이 안 써진다는 제보만으로는 무엇이 막혔는지 알 수 없음
+    logFailure("community.createPost", error);
     return { message: "글을 저장하지 못했어요. 잠시 후 다시 시도해 주세요" };
   }
 
@@ -117,7 +119,8 @@ export async function createComment(
 
   try {
     await insertCommunityComment({ postId, authorId, body: parsed.data.body });
-  } catch {
+  } catch (error) {
+    logFailure("community.createComment", error);
     return { message: "댓글을 남기지 못했어요. 잠시 후 다시 시도해 주세요" };
   }
 

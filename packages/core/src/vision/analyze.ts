@@ -1,3 +1,4 @@
+import { logNotice } from "../http/log";
 import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -148,7 +149,7 @@ export async function analyzePhoto({
 
   if (analyzeMockEnabled()) {
     // ponytail: 고정 응답. 실제 모델 연결은 크레딧 충전 뒤에 확인해야 함
-    console.warn("[analyze] ANALYZE_MOCK 이 켜져 있어 더미 초안을 돌려줍니다");
+    logNotice("analyze.mock", "ANALYZE_MOCK 이 켜져 있어 더미 초안을 돌려줍니다");
     await new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS));
     if (process.env.ANALYZE_MOCK === MOCK_FAIL) {
       throw new VisionError("api", "ANALYZE_MOCK=fail 로 일부러 낸 오류입니다");

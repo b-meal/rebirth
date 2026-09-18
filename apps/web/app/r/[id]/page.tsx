@@ -1,4 +1,4 @@
-import { DRAFT_COOKIE, hashToken, peekManageAccess } from "@rebirth/core/http";
+import { DRAFT_COOKIE, hashToken, logFailure, peekManageAccess } from "@rebirth/core/http";
 import { distanceKm } from "@rebirth/core/location/geo";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
@@ -153,7 +153,8 @@ async function loadNearby(currentId: string, origin: NearbyOrigin): Promise<Repo
       occurredAt: row.occurredAt.toISOString(),
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
     }));
-  } catch {
+  } catch (error) {
+    logFailure("report.nearby", error);
     return [];
   }
 }
@@ -163,7 +164,8 @@ async function loadShelters(origin: NearbyOrigin): Promise<ShelterItem[]> {
   if (!origin) return [];
   try {
     return await findNearbyShelters({ point: origin, limit: SHELTER_COUNT });
-  } catch {
+  } catch (error) {
+    logFailure("report.shelters", error);
     return [];
   }
 }
@@ -190,7 +192,9 @@ async function loadComments(reportId: string): Promise<CommentPage> {
           ? `${last.createdAt.toISOString()}_${last.id}`
           : null,
     };
-  } catch {
+  } catch (error) {
+    // 댓글이 없는 것과 못 읽은 것이 화면에서 같아 보임
+    logFailure("report.comments", error);
     return { items: [], nextCursor: null };
   }
 }
@@ -204,7 +208,8 @@ async function loadInterest(reportId: string): Promise<{ count: number; mine: bo
       token ? hasReportInterest({ reportId, tokenHash: hashToken(token) }) : false,
     ]);
     return { count, mine };
-  } catch {
+  } catch (error) {
+    logFailure("report.interest", error);
     return { count: 0, mine: false };
   }
 }
@@ -229,7 +234,9 @@ async function loadOwnership(
       reportId,
     );
     return { mine, canManage };
-  } catch {
+  } catch (error) {
+    // 이 값이 조용히 false 가 되면 글쓴이에게 관리 단추가 사라짐
+    logFailure("report.manageAccess", error);
     return { mine: false, canManage: false };
   }
 }
@@ -240,7 +247,8 @@ async function loadAreaSubscribed(reportId: string): Promise<boolean> {
     const user = await getCurrentUser();
     if (!user) return false;
     return await isReportAreaSubscribed(user.id, reportId);
-  } catch {
+  } catch (error) {
+    logFailure("report.areaSubscribed", error);
     return false;
   }
 }

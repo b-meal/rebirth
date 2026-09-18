@@ -1,3 +1,4 @@
+import { logFailure } from "../http/log";
 import "server-only";
 
 import {
@@ -91,7 +92,7 @@ export async function syncSheltersHandler(request: Request): Promise<Response> {
     return ok({ results, counts: await countShelters() });
   } catch (error) {
     if (error instanceof ShelterSyncError) {
-      console.error(`[shelters] 동기화 중단 (${error.reason})`, error.message);
+      logFailure("shelters.sync", error.message, { reason: error.reason });
       return serviceUnavailable(error.message);
     }
     return serverError("shelters-sync", error);

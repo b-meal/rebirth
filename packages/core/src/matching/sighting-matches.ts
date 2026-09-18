@@ -1,5 +1,7 @@
 import "server-only";
 
+import { logFailure } from "../http/log";
+
 import {
   findMyLostForSighting,
   findPublicLostForSighting,
@@ -119,7 +121,7 @@ export async function listSightingLostMatches(input: {
         breakdown: match.breakdown,
       })),
     ).catch((error) => {
-      console.error("[sighting.lostMatches] 점수 캐시 실패", error);
+      logFailure("sighting.lostMatches.cache", error);
     });
   }
 

@@ -1,3 +1,4 @@
+import { logFailure } from "@rebirth/core/http";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
   countUnreadAreaReports,
@@ -45,7 +46,9 @@ async function loadMarkers(): Promise<MapMarker[]> {
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
       point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
     }));
-  } catch {
+  } catch (error) {
+    // 핀이 하나도 없는 첫 화면과 질의가 깨진 첫 화면은 눈으로 구별되지 않음
+    logFailure("home.markers", error);
     return [];
   }
 }
@@ -60,7 +63,8 @@ async function loadUnread(userId: string | undefined): Promise<number> {
       countUnreadMatchAlerts(userId),
     ]);
     return areas + matches;
-  } catch {
+  } catch (error) {
+    logFailure("home.unread", error);
     return 0;
   }
 }

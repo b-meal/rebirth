@@ -1,3 +1,4 @@
+import { logFailure } from "../http/log";
 import "server-only";
 
 import {
@@ -154,7 +155,7 @@ export async function analyzeHandler(request: Request): Promise<Response> {
 
       if (error instanceof VisionError) {
         // 실패는 정상 경로. 화면은 빈 폼을 열어 직접 입력을 받음
-        console.error(`[analyze] ${error.kind} ${error.message}`);
+        logFailure("analyze", error.message, { kind: error.kind });
         return okPrivate(
           {
             jobId: job.id,

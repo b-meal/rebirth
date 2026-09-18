@@ -1,3 +1,4 @@
+import { logFailure } from "@rebirth/core/http";
 import { createSignedUrl } from "@rebirth/core/storage";
 import { findPublicReport, findReportPhotoPaths } from "@rebirth/db";
 import type { Metadata } from "next";
@@ -50,7 +51,8 @@ async function loadPhotoUrl(id: string): Promise<string | null> {
     if (!first || first.visibility !== "public") return null;
     const signed = await createSignedUrl(first.storagePath);
     return signed.url;
-  } catch {
+  } catch (error) {
+    logFailure("poster.photo", error);
     return null;
   }
 }
@@ -59,7 +61,8 @@ async function loadPhotoUrl(id: string): Promise<string | null> {
 async function loadQrSvg(url: string): Promise<string> {
   try {
     return await qrToString(url, { type: "svg", margin: 1, width: QR_SIZE });
-  } catch {
+  } catch (error) {
+    logFailure("poster.qr", error);
     return "";
   }
 }

@@ -1,5 +1,6 @@
 "use server";
 
+import { logFailure } from "@rebirth/core/http";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
@@ -32,7 +33,7 @@ export async function decideFlag(
     revalidatePath("/");
     return { ok: true };
   } catch (error) {
-    console.error("[moderation] 판정 실패", error);
+    logFailure("moderation.decide", error);
     return { ok: false, message: "처리 중 문제가 생겼습니다" };
   }
 }
