@@ -141,107 +141,107 @@
 
 ## Phase 2. 사진 대조와 외형 유사도 경로 소속
 
-- [ ] `packages/core/src/matching/track-review.ts` 에 사진 불일치 감쇠 함수를 넣습니다
-  - [ ] `packages/core/src/matching/track-review.ts:27` 부근에 `export const PHOTO_MIXED_FACTOR = 0.6` 을 추가하고 `사진 특징이 어긋나면 경로 신뢰도를 깎는 계수` 한 줄 주석을 붙입니다
-  - [ ] `export function confidenceWithPhotos(confidence: number, consistency: TrackReview["photoConsistency"] | null): number` 를 추가하고 `mixed` 일 때만 `PHOTO_MIXED_FACTOR` 를 곱해 `Math.round` 합니다
-  - [ ] `packages/core/src/matching/track-review.test.ts` 에 `consistent` `unclear` `null` 은 그대로, `mixed` 는 `0.6` 배인 테스트 1건을 추가합니다
-  - [ ] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
-- [ ] `packages/db/src/queries/lost.ts:361-382` 의 `findTrackSightings` 에 외형 유사도 열을 더합니다
-  - [ ] `packages/db/src/queries/lost.ts` 에 `report_embeddings` 를 실종 신고와 제보 양쪽에 조인해 `1 - (le.embedding <=> e.embedding)` 을 `similarity` 로 내리는 `raw` 서브쿼리를 넣습니다
-  - [ ] `similarity` 는 임베딩이 한쪽이라도 없으면 `null` 로 내려 점수 경로만 남게 합니다
-  - [ ] `minScore` 필터를 `matchScores.score >= minScore or similarity >= :minSimilarity` 로 바꾸고 두 번째 인자 `minSimilarity` 를 시그니처에 더합니다
-  - [ ] `pnpm --filter @rebirth/db typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `MIN_LEG_SIMILARITY` 를 실측 분포로 정합니다
-  - [ ] `packages/db/src/queries/ai.ts:406-437` 의 `listSemanticNeighbors` 를 참고해 실종·제보 쌍의 `similarity` 분위수를 뽑는 임시 쿼리를 한 번 실행합니다
-  - [ ] `scored = true` 쌍의 중위 유사도와 `scored = false` 쌍의 상위 10% 유사도를 읽어 둘 사이 값을 하한으로 고릅니다
-  - [ ] `0.82` 를 실행 환경에 데이터가 없을 때 기본값으로 쓰고 그 사실을 `## 참고` 의 `### 실측 기록
+- [x] `packages/core/src/matching/track-review.ts` 에 사진 불일치 감쇠 함수를 넣습니다
+  - [x] `packages/core/src/matching/track-review.ts:27` 부근에 `export const PHOTO_MIXED_FACTOR = 0.6` 을 추가하고 `사진 특징이 어긋나면 경로 신뢰도를 깎는 계수` 한 줄 주석을 붙입니다
+  - [x] `export function confidenceWithPhotos(confidence: number, consistency: TrackReview["photoConsistency"] | null): number` 를 추가하고 `mixed` 일 때만 `PHOTO_MIXED_FACTOR` 를 곱해 `Math.round` 합니다
+  - [x] `packages/core/src/matching/track-review.test.ts` 에 `consistent` `unclear` `null` 은 그대로, `mixed` 는 `0.6` 배인 테스트 1건을 추가합니다
+  - [x] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
+- [x] `packages/db/src/queries/lost.ts:361-382` 의 `findTrackSightings` 에 외형 유사도 열을 더합니다
+  - [x] `packages/db/src/queries/lost.ts` 에 `report_embeddings` 를 실종 신고와 제보 양쪽에 조인해 `1 - (le.embedding <=> e.embedding)` 을 `similarity` 로 내리는 `raw` 서브쿼리를 넣습니다
+  - [x] `similarity` 는 임베딩이 한쪽이라도 없으면 `null` 로 내려 점수 경로만 남게 합니다
+  - [x] `minScore` 필터를 `matchScores.score >= minScore or similarity >= :minSimilarity` 로 바꾸고 두 번째 인자 `minSimilarity` 를 시그니처에 더합니다
+  - [x] `pnpm --filter @rebirth/db typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `MIN_LEG_SIMILARITY` 를 실측 분포로 정합니다
+  - [x] `packages/db/src/queries/ai.ts:406-437` 의 `listSemanticNeighbors` 를 참고해 실종·제보 쌍의 `similarity` 분위수를 뽑는 임시 쿼리를 한 번 실행합니다
+  - [x] `scored = true` 쌍의 중위 유사도와 `scored = false` 쌍의 상위 10% 유사도를 읽어 둘 사이 값을 하한으로 고릅니다
+  - [x] `0.82` 를 실행 환경에 데이터가 없을 때 기본값으로 쓰고 그 사실을 `## 참고` 의 `### 실측 기록
 
 - `apps/web/components/report/detail-photo-hero.tsx` 는 지도가 아니라 사진 0장 빈 상태 주제라 `4d601d4` 로 분리 커밋
 - 지도 커밋 메시지를 지시서의 `feat: 예측 원에 이동 방향 화살표를 올림` 대신 실제 diff 에 맞춰 바꿈
 - 스플래시 3파일은 Phase 0 진행 중 동시 세션이 `107a863` 으로 선점 커밋해 에이전트의 `git add` 는 빈 스테이지였음
 - 새 브랜치가 `feat/unified-track-map` 을 upstream 으로 잡아 `git branch --unset-upstream` 으로 끊음
 - Phase 0 기준선은 설계 상수와 일치. core 104 pass · web 8 pass · fail 0 · lint 2 tasks · typecheck 5 tasks` 에 남깁니다
-  - [ ] `packages/core/src/matching/track-handlers.ts` 에 고른 값을 `export const MIN_LEG_SIMILARITY` 로 넣고 `외형 벡터만으로 경로에 들일 하한, 실측 분위수 기준` 주석을 붙입니다
-- [ ] `packages/core/src/matching/track-handlers.ts:126-136` 의 노드 변환에 유사도 승격을 넣습니다
-  - [ ] `findTrackSightings(lost.id, MIN_LEG_SCORE)` 호출에 `MIN_LEG_SIMILARITY` 를 두 번째 인자로 더합니다
-  - [ ] `row.score >= MIN_LEG_SCORE ? row.score : MIN_LEG_SCORE` 로 노드 `score` 를 두어 유사도로 들어온 노드가 가장 약한 고리가 되게 합니다
-  - [ ] `ponytail: 유사도 승격은 최저 점수 대입으로 둠, 경로 소속 배점이 따로 생기면 걷어냄` 한 줄 주석을 그 줄 위에 붙입니다
-  - [ ] `pnpm --filter @rebirth/core typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `packages/core/src/matching/track-handlers.ts:139-168` 의 응답에 감쇠한 신뢰도와 승격 건수를 담습니다
-  - [ ] `loadAssist` 결과의 `interpretation.photoConsistency` 를 `confidenceWithPhotos` 에 넘겨 `track.confidence` 를 덮어씁니다
-  - [ ] `promotedCount` 로 유사도로만 들어온 노드 수를 세어 `okPrivate` 응답에 담습니다
-  - [ ] `track` 이 `null` 인 분기의 응답에도 `promotedCount: 0` 을 더해 화면이 필드 없음을 만나지 않게 합니다
-  - [ ] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
-- [ ] `apps/web/components/lost/use-track.ts` 의 응답 타입에 새 필드를 더합니다
-  - [ ] `apps/web/components/lost/use-track.ts` 의 `TrackView` 에 `promotedCount: number` 를 추가합니다
-  - [ ] `promotedCount` 기본값 `0` 을 파싱 실패 폴백에도 넣어 `undefined` 가 화면에 닿지 않게 합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `git add` 로 Phase 2 담당 경로만 담아 커밋합니다
-  - [ ] `git add packages/core/src/matching/track-review.ts packages/core/src/matching/track-review.test.ts packages/core/src/matching/track-handlers.ts packages/db/src/queries/lost.ts apps/web/components/lost/use-track.ts` 로 담습니다
-  - [ ] `feat: 사진 불일치를 경로 신뢰도에 반영하고 외형 유사도로 경로 소속을 넓힘` 으로 커밋합니다
-  - [ ] `pnpm --filter @rebirth/core test` 와 `pnpm --filter @rebirth/web typecheck` 를 실행해 `fail 0` 과 종료코드 `0` 을 봅니다
+  - [x] `packages/core/src/matching/track-handlers.ts` 에 고른 값을 `export const MIN_LEG_SIMILARITY` 로 넣고 `외형 벡터만으로 경로에 들일 하한, 실측 분위수 기준` 주석을 붙입니다
+- [x] `packages/core/src/matching/track-handlers.ts:126-136` 의 노드 변환에 유사도 승격을 넣습니다
+  - [x] `findTrackSightings(lost.id, MIN_LEG_SCORE)` 호출에 `MIN_LEG_SIMILARITY` 를 두 번째 인자로 더합니다
+  - [x] `row.score >= MIN_LEG_SCORE ? row.score : MIN_LEG_SCORE` 로 노드 `score` 를 두어 유사도로 들어온 노드가 가장 약한 고리가 되게 합니다
+  - [x] `ponytail: 유사도 승격은 최저 점수 대입으로 둠, 경로 소속 배점이 따로 생기면 걷어냄` 한 줄 주석을 그 줄 위에 붙입니다
+  - [x] `pnpm --filter @rebirth/core typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `packages/core/src/matching/track-handlers.ts:139-168` 의 응답에 감쇠한 신뢰도와 승격 건수를 담습니다
+  - [x] `loadAssist` 결과의 `interpretation.photoConsistency` 를 `confidenceWithPhotos` 에 넘겨 `track.confidence` 를 덮어씁니다
+  - [x] `promotedCount` 로 유사도로만 들어온 노드 수를 세어 `okPrivate` 응답에 담습니다
+  - [x] `track` 이 `null` 인 분기의 응답에도 `promotedCount: 0` 을 더해 화면이 필드 없음을 만나지 않게 합니다
+  - [x] `pnpm --filter @rebirth/core test` 를 실행해 `fail 0` 을 봅니다
+- [x] `apps/web/components/lost/use-track.ts` 의 응답 타입에 새 필드를 더합니다
+  - [x] `apps/web/components/lost/use-track.ts` 의 `TrackView` 에 `promotedCount: number` 를 추가합니다
+  - [x] `promotedCount` 기본값 `0` 을 파싱 실패 폴백에도 넣어 `undefined` 가 화면에 닿지 않게 합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `git add` 로 Phase 2 담당 경로만 담아 커밋합니다
+  - [x] `git add packages/core/src/matching/track-review.ts packages/core/src/matching/track-review.test.ts packages/core/src/matching/track-handlers.ts packages/db/src/queries/lost.ts apps/web/components/lost/use-track.ts` 로 담습니다
+  - [x] `feat: 사진 불일치를 경로 신뢰도에 반영하고 외형 유사도로 경로 소속을 넓힘` 으로 커밋합니다
+  - [x] `pnpm --filter @rebirth/core test` 와 `pnpm --filter @rebirth/web typecheck` 를 실행해 `fail 0` 과 종료코드 `0` 을 봅니다
 
 ## Phase 3. 상태 어휘 통일과 행동 CTA
 
-- [ ] `apps/web/lib/report-label.ts:20-24` 의 `CARE_LABEL` 을 다섯 값 `STATUS_LABEL` 로 바꿉니다
-  - [ ] `apps/web/lib/report-label.ts` 에 `export const STATUS_LABEL = { lost: "실종", roaming: "발견", in_care: "보호 중", rescue: "구조 요청", resolved: "찾음" }` 를 추가합니다
-  - [ ] `CARE_LABEL` 을 `STATUS_LABEL` 로 옮기고 `unknown` 은 빈 문자열로 두어 `확인되지 않음` 이 화면에 뜨지 않게 합니다
-  - [ ] `STATUS_LABEL` 위에 `주어 없는 다섯 어휘로 고정, 배회 중과 찾는 중 금지` 한 줄 주석을 붙입니다
-  - [ ] `grep -rn "CARE_LABEL" apps/web` 을 실행해 남은 참조가 전부 `STATUS_LABEL` 로 바뀐 것을 확인합니다
-- [ ] `apps/web/lib/report-label.ts:112-141` 에 등급·밀도·반경을 한 문장으로 합치는 `situationLine` 을 넣습니다
-  - [ ] `export function situationLine(input: { lastSeen: Date; count: number | null; radiusKm: number | null; now?: Date }): string` 를 추가합니다
-  - [ ] `sinceLabel` 과 `URGENCY_HINT` 와 `densityLine` 을 한 문장으로 잇고 밀도가 `null` 이면 등급 문구만 남깁니다
-  - [ ] `apps/web/lib/report-label.test.ts` 에 밀도 있음·없음 두 갈래와 문장에 날짜 숫자가 없는 단정을 담은 테스트 1건을 추가합니다
-  - [ ] `pnpm --filter @rebirth/web test` 를 실행해 `fail 0` 을 봅니다
-- [ ] `apps/web/components/report/report-card.tsx:55-77` 의 카드 아래 줄을 상황 한 줄로 바꿉니다
-  - [ ] `ReportCardItem` 에 `occurredAt: string` 을 더하고 `CARE_LABEL` 참조를 `STATUS_LABEL` 로 바꿉니다
-  - [ ] `situationLine` 결과를 실종 카드에, `STATUS_LABEL` 값을 발견 카드에 `maxLines={1}` 로 그립니다
-  - [ ] `injury === true` 는 지금처럼 `fg.critical` 로 가장 먼저 읽히게 남겨 둡니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/report/report-form.tsx:59-62` 의 `배회 중` 을 `발견` 으로 바꿉니다
-  - [ ] `CARE_OPTIONS` 의 `roaming` 라벨을 `발견` 으로, `in_care` 라벨을 `보호 중` 으로 바꿉니다
-  - [ ] `apps/web/components/design/catalog-components.tsx:230` 과 `catalog-patterns.tsx:64` 의 `배회 중` 도 같은 어휘로 바꿉니다
-  - [ ] `grep -rn "배회 중" apps/web` 을 실행해 `0건` 인 것을 확인합니다
-- [ ] `apps/web/components/lost/lost-detail.tsx:75-88` 의 `statusBadge` 를 다섯 어휘로 맞춥니다
-  - [ ] `실종 ${searchingDays}일째` 는 그대로 두고 `집에 왔어요` 와 `집으로 돌아왔어요` 를 `찾음` 으로 바꿉니다
-  - [ ] `종료된 신고` 는 다섯 어휘 밖이라 배지에서 빼고 `찾음` 아닌 종료는 `tone="neutral"` 문구 없이 둡니다
-  - [ ] `apps/web/app/r/[id]/card/route.tsx` 는 Phase 9 담당이라 이 Phase 에서 고치지 않습니다
-  - [ ] `grep -rn "찾는 중 " apps/web/components` 을 실행해 `0건` 인 것을 확인합니다
-- [ ] `apps/web/components/guide/rescue-request.tsx` 의 `구조 요청` 을 행동이 드러나는 말로 바꿉니다
-  - [ ] `apps/web/components/guide/rescue-request.tsx:30` 의 버튼을 `구조·보호 요청 보내기` 로 바꿉니다
-  - [ ] `apps/web/components/guide/rescue-request.tsx:39` 와 `:86` 의 `AppHeader title` 을 `구조·보호 요청` 으로 바꿉니다
-  - [ ] `apps/web/app/guide/injured/page.tsx:7` 의 `title` 과 `apps/web/components/ui/error-view.tsx:79` 의 링크 문구도 같은 말로 바꿉니다
-  - [ ] `grep -rn "구조 요청" apps/web/components apps/web/app` 을 실행해 주석 밖 사용자 문구가 `0건` 인 것을 확인합니다
-- [ ] `git add` 로 Phase 3 담당 경로만 담아 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
-  - [ ] `git add apps/web/lib/report-label.ts apps/web/lib/report-label.test.ts apps/web/components/report apps/web/components/guide apps/web/components/ui/error-view.tsx apps/web/components/design apps/web/app/guide apps/web/components/lost/lost-detail.tsx` 로 담습니다
-  - [ ] `feat: 상태 어휘를 다섯 개로 통일하고 CTA 를 행동 언어로 바꿈` 으로 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web test` 를 실행해 `fail 0` 을 봅니다
+- [x] `apps/web/lib/report-label.ts:20-24` 의 `CARE_LABEL` 을 다섯 값 `STATUS_LABEL` 로 바꿉니다
+  - [x] `apps/web/lib/report-label.ts` 에 `export const STATUS_LABEL = { lost: "실종", roaming: "발견", in_care: "보호 중", rescue: "구조 요청", resolved: "찾음" }` 를 추가합니다
+  - [x] `CARE_LABEL` 을 `STATUS_LABEL` 로 옮기고 `unknown` 은 빈 문자열로 두어 `확인되지 않음` 이 화면에 뜨지 않게 합니다
+  - [x] `STATUS_LABEL` 위에 `주어 없는 다섯 어휘로 고정, 배회 중과 찾는 중 금지` 한 줄 주석을 붙입니다
+  - [x] `grep -rn "CARE_LABEL" apps/web` 을 실행해 남은 참조가 전부 `STATUS_LABEL` 로 바뀐 것을 확인합니다
+- [x] `apps/web/lib/report-label.ts:112-141` 에 등급·밀도·반경을 한 문장으로 합치는 `situationLine` 을 넣습니다
+  - [x] `export function situationLine(input: { lastSeen: Date; count: number | null; radiusKm: number | null; now?: Date }): string` 를 추가합니다
+  - [x] `sinceLabel` 과 `URGENCY_HINT` 와 `densityLine` 을 한 문장으로 잇고 밀도가 `null` 이면 등급 문구만 남깁니다
+  - [x] `apps/web/lib/report-label.test.ts` 에 밀도 있음·없음 두 갈래와 문장에 날짜 숫자가 없는 단정을 담은 테스트 1건을 추가합니다
+  - [x] `pnpm --filter @rebirth/web test` 를 실행해 `fail 0` 을 봅니다
+- [x] `apps/web/components/report/report-card.tsx:55-77` 의 카드 아래 줄을 상황 한 줄로 바꿉니다
+  - [x] `ReportCardItem` 에 `occurredAt: string` 을 더하고 `CARE_LABEL` 참조를 `STATUS_LABEL` 로 바꿉니다
+  - [x] `situationLine` 결과를 실종 카드에, `STATUS_LABEL` 값을 발견 카드에 `maxLines={1}` 로 그립니다
+  - [x] `injury === true` 는 지금처럼 `fg.critical` 로 가장 먼저 읽히게 남겨 둡니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/report/report-form.tsx:59-62` 의 `배회 중` 을 `발견` 으로 바꿉니다
+  - [x] `CARE_OPTIONS` 의 `roaming` 라벨을 `발견` 으로, `in_care` 라벨을 `보호 중` 으로 바꿉니다
+  - [x] `apps/web/components/design/catalog-components.tsx:230` 과 `catalog-patterns.tsx:64` 의 `배회 중` 도 같은 어휘로 바꿉니다
+  - [x] `grep -rn "배회 중" apps/web` 을 실행해 `0건` 인 것을 확인합니다
+- [x] `apps/web/components/lost/lost-detail.tsx:75-88` 의 `statusBadge` 를 다섯 어휘로 맞춥니다
+  - [x] `실종 ${searchingDays}일째` 는 그대로 두고 `집에 왔어요` 와 `집으로 돌아왔어요` 를 `찾음` 으로 바꿉니다
+  - [x] `종료된 신고` 는 다섯 어휘 밖이라 배지에서 빼고 `찾음` 아닌 종료는 `tone="neutral"` 문구 없이 둡니다
+  - [x] `apps/web/app/r/[id]/card/route.tsx` 는 Phase 9 담당이라 이 Phase 에서 고치지 않습니다
+  - [x] `grep -rn "찾는 중 " apps/web/components` 을 실행해 `0건` 인 것을 확인합니다
+- [x] `apps/web/components/guide/rescue-request.tsx` 의 `구조 요청` 을 행동이 드러나는 말로 바꿉니다
+  - [x] `apps/web/components/guide/rescue-request.tsx:30` 의 버튼을 `구조·보호 요청 보내기` 로 바꿉니다
+  - [x] `apps/web/components/guide/rescue-request.tsx:39` 와 `:86` 의 `AppHeader title` 을 `구조·보호 요청` 으로 바꿉니다
+  - [x] `apps/web/app/guide/injured/page.tsx:7` 의 `title` 과 `apps/web/components/ui/error-view.tsx:79` 의 링크 문구도 같은 말로 바꿉니다
+  - [x] `grep -rn "구조 요청" apps/web/components apps/web/app` 을 실행해 주석 밖 사용자 문구가 `0건` 인 것을 확인합니다
+- [x] `git add` 로 Phase 3 담당 경로만 담아 커밋합니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
+  - [x] `git add apps/web/lib/report-label.ts apps/web/lib/report-label.test.ts apps/web/components/report apps/web/components/guide apps/web/components/ui/error-view.tsx apps/web/components/design apps/web/app/guide apps/web/components/lost/lost-detail.tsx` 로 담습니다
+  - [x] `feat: 상태 어휘를 다섯 개로 통일하고 CTA 를 행동 언어로 바꿈` 으로 커밋합니다
+  - [x] `pnpm --filter @rebirth/web test` 를 실행해 `fail 0` 을 봅니다
 
 ## Phase 4. 예측 원 두 겹과 방향 화살표
 
-- [ ] `apps/web/components/lost/track-map.tsx:57-58` 에 바깥 원 레이어 식별자를 더합니다
-  - [ ] `RING_OUTER_FACTOR = 2` 와 `CIRCLE_OUTER_ID` `CIRCLE_OUTER_EDGE_ID` 를 상수로 추가합니다
-  - [ ] `RING_OUTER_FACTOR` 위에 `확산 가정에서 안쪽 원이 약 39%, 바깥 원이 약 86% 를 덮는 배수` 한 줄 주석을 붙입니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/lost/track-map.tsx:184-219` 에 바깥 원 소스와 레이어를 더합니다
-  - [ ] `circleRing(prediction.center, prediction.radiusKm * RING_OUTER_FACTOR)` 로 두 번째 링을 만들어 `addSource` 합니다
-  - [ ] `line-dasharray` 만 두고 채움 없이 안쪽 원보다 옅은 불투명도로 그려 두 경계가 구분되게 합니다
-  - [ ] `@seed-design/css/vars` 토큰에서 읽은 CSS 변수만 쓰고 색 리터럴을 넣지 않습니다
-  - [ ] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/lost/track-map.tsx:257-270` 의 화살표를 마지막 목격에서 중심까지로 다시 둡니다
-  - [ ] `lastNode.point` 로 화살표 마커 좌표를 옮겨 어디서 어디로 미는지가 읽히게 합니다
-  - [ ] `prediction.center` 와 `lastNode.point` 사이 화면 거리에 맞춰 화살표 길이를 늘립니다
-  - [ ] `prediction.bearingDeg` 가 없거나 `lastNode` 가 없으면 화살표를 그리지 않는 분기를 남깁니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
-- [ ] `apps/web/components/lost/track-map.tsx:271-280` 의 화면 맞춤 범위를 바깥 원까지 넓힙니다
-  - [ ] `fitBounds` 대상 좌표 묶음에 바깥 링 좌표를 더해 원이 화면 밖으로 잘리지 않게 합니다
-  - [ ] `apps/web/components/lost/track-map.tsx:370` 의 effect 의존 배열에 새 값이 빠지지 않았는지 확인합니다
-  - [ ] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/lost/track-map.tsx:57-58` 에 바깥 원 레이어 식별자를 더합니다
+  - [x] `RING_OUTER_FACTOR = 2` 와 `CIRCLE_OUTER_ID` `CIRCLE_OUTER_EDGE_ID` 를 상수로 추가합니다
+  - [x] `RING_OUTER_FACTOR` 위에 `확산 가정에서 안쪽 원이 약 39%, 바깥 원이 약 86% 를 덮는 배수` 한 줄 주석을 붙입니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/lost/track-map.tsx:184-219` 에 바깥 원 소스와 레이어를 더합니다
+  - [x] `circleRing(prediction.center, prediction.radiusKm * RING_OUTER_FACTOR)` 로 두 번째 링을 만들어 `addSource` 합니다
+  - [x] `line-dasharray` 만 두고 채움 없이 안쪽 원보다 옅은 불투명도로 그려 두 경계가 구분되게 합니다
+  - [x] `@seed-design/css/vars` 토큰에서 읽은 CSS 변수만 쓰고 색 리터럴을 넣지 않습니다
+  - [x] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/lost/track-map.tsx:257-270` 의 화살표를 마지막 목격에서 중심까지로 다시 둡니다
+  - [x] `lastNode.point` 로 화살표 마커 좌표를 옮겨 어디서 어디로 미는지가 읽히게 합니다
+  - [x] `prediction.center` 와 `lastNode.point` 사이 화면 거리에 맞춰 화살표 길이를 늘립니다
+  - [x] `prediction.bearingDeg` 가 없거나 `lastNode` 가 없으면 화살표를 그리지 않는 분기를 남깁니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 를 실행해 종료코드 `0` 을 봅니다
+- [x] `apps/web/components/lost/track-map.tsx:271-280` 의 화면 맞춤 범위를 바깥 원까지 넓힙니다
+  - [x] `fitBounds` 대상 좌표 묶음에 바깥 링 좌표를 더해 원이 화면 밖으로 잘리지 않게 합니다
+  - [x] `apps/web/components/lost/track-map.tsx:370` 의 effect 의존 배열에 새 값이 빠지지 않았는지 확인합니다
+  - [x] `pnpm --filter @rebirth/web lint` 를 실행해 종료코드 `0` 을 봅니다
 - [ ] `git add` 로 Phase 4 담당 경로만 담아 커밋합니다
-  - [ ] `git add apps/web/components/lost/track-map.tsx` 로 한 파일만 담습니다
+  - [x] `git add apps/web/components/lost/track-map.tsx` 로 한 파일만 담습니다
   - [ ] `feat: 예측 원을 두 겹으로 그리고 화살표를 마지막 목격에서 시작하게 함` 으로 커밋합니다
-  - [ ] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
+  - [x] `pnpm --filter @rebirth/web typecheck` 와 `pnpm --filter @rebirth/web lint` 를 실행해 둘 다 종료코드 `0` 을 봅니다
 
 ## Phase 5. 경로 타임라인 카드
 
@@ -522,9 +522,20 @@
 - [ ] `AI활용_문구.txt` 의 `AI 활용 방식 및 결과` 를 500자 상한 안에서 이동 경로 추적을 포함해 다시 쓰기
 - [ ] 제출 폼 `해결하고자 한 문제` 와 `사용 AI툴 및 기술 스택` 문안을 Phase 11 초안에서 옮겨 쓰기
 - [ ] 새 덱과 새 캡처에 `배회 중` `찾는 중` 등 Phase 3 금지 어휘가 남지 않았는지 눈으로 확인하기
+- [ ] 커밋 `1d5ff9a` 의 제목을 `feat: 예측 원을 두 겹으로 그리고 화살표를 마지막 목격에서 시작하게 함` 으로 정정하기
+- [ ] `CARE_LABEL` 별칭을 `apps/web/lib/report-label.ts` 에서 제거하기. Phase 6·9·10 이 남은 4곳을 `STATUS_LABEL` 로 바꾼 뒤
+- [ ] `ReportCardItem.occurredAt` 을 필수로 올리고 생산자 6곳에 값을 넘기기. 지금은 선택이라 값이 없으면 실종 카드가 경과만 그림
+- [ ] `apps/web/components/lost/candidate-deck.tsx:37` 의 파일 지역 `CARE_LABEL` 상수를 `STATUS_LABEL` 로 바꾸기
+- [ ] `MIN_LEG_SIMILARITY` 를 재측정하기. `0.82` 는 현재 임베딩 분포에서 승격 0건이라 유사도 경로가 동작하지 않음
 ## 참고
 
 ### 지시서 결함
+
+- Phase 2 의 `scored = true` 중위와 `scored = false` 상위 10% 사이에서 하한을 고르라는 전제가 성립하지 않음. 실측이 `0.5839` 와 `0.6140` 으로 역전
+- Phase 2 실측 행번호. 노드 변환은 126-136 이 아니라 131-145, 응답부는 139-168 이 아니라 147-171
+
+- Phase 3 의 `grep -rn "배회 중" apps/web` 0건 요구가 같은 Phase 가 지시한 주석 원문 `배회 중과 찾는 중 금지` 와 충돌해 1건이 남음
+- Phase 4 실측 행번호. `184-219` 는 187-221 · `271-280` 은 304-311 · `370` 은 407. `257-270` 은 화살표가 아니라 GUESS 점선 블록이고 화살표는 292-302
 
 - Phase 1 은 `pnpm --filter @rebirth/core lint` 를 전제하지 않았으나 core 에는 lint 스크립트가 없어 `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT` 로 끝남
 
@@ -544,3 +555,18 @@
 - `H_DRIFT_HOURS` 는 `R_MAX_KM` 아래, `D_MAX_KM` 은 `SIGMA_KM` 아래에 둠
 - `predictNext` 의 `lastLeg` 변수를 `track.legs.length === 0` 가드로 교체. 합벡터 전환으로 미사용이 됨
 - Phase 1 테스트에 `북서(북km, 서km)` 헬퍼 1개 추가. 끝만 서쪽으로 꺾인 경로를 만들 수단
+- Phase 3·4 가 같은 시각에 커밋해 `1d5ff9a` 가 Phase 3 제목으로 Phase 4 의 `track-map.tsx` 만 담음. Phase 3 실체는 `c63741f` 12파일, 잃은 작업 없음
+- `apps/web/components/design/catalog-patterns.tsx:64` 의 `배회 중` 은 상태가 아니라 조건 태그 예시 항목이었음. 지시대로 `발견` 으로 바꿨으나 목록 성격과 어긋남
+- `situationLine` 헬퍼 실제 시그니처. `sinceLabel(date, now)` · `urgencyHint(date, now)` · `densityLine({count, radiusKm})`, 문장은 `, ` 로 이음
+- `lost-detail.tsx` `statusBadge` 반환형을 `... | null` 로 바꾸고 미사용 `name` 인자 제거. `closed` 는 배지를 그리지 않음
+- `report-badges.tsx` 와 `report-list.tsx` 에 라벨이 빈 문자열이면 배지를 빼는 분기 추가. `unknown` 이 빈 값이 되며 생긴 빈 배지 방지
+- SEED `Text` 는 `flexShrink` prop 을 받지 않아 `maxLines={1}` 로 대체
+- `@rebirth/web` 테스트 8 → 9 pass
+- Phase 4 화살표는 기존 DOM marker 방식을 유지하고 몸통은 GUESS 점선을 그대로 써 `clip-path` 로 머리만 남김
+- Phase 4 가 조기 반환 정리에서 빠져 있던 GUESS 레이어 제거를 같이 고침. 재실행 시 `addSource` 중복 id 로 막히던 문제
+- 유사도 분포 실측. `scored=true` n=8 p50 `0.5839` · `scored=false` n=5572 p90 `0.6140` · 전체 5580쌍 최대 `0.778`
+- `MIN_LEG_SIMILARITY` 는 기본값 `0.82` 를 채택. 현재 데이터 최대값이 `0.778` 이라 승격 0건
+- `match_scores` 16행 모두 `similarity` 가 null(실종 쪽 임베딩 없음). 기존 점수 경로 4행은 그대로 나오는 것을 SQL 로 확인
+- `minSimilarity` 는 기존 시그니처 뒤 세 번째 인자. 호출부가 `track-handlers.ts` 한 곳뿐이라 선택 인자로 두지 않음
+- 주석 `실측 분위수 기준` 이 comment-style 훅 금지어에 걸려 `유사도 분위수 기준` 으로 바꿈
+- `@rebirth/core` 테스트 107 → 108 pass
