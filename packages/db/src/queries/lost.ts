@@ -381,4 +381,44 @@ export async function findTrackSightings(lostId: string, minScore: number) {
     .orderBy(asc(reports.occurredAt))
 }
 
+/**
+ * 신고 하나의 격자 좌표. 탐색 조언의 중심점으로만 쓰고 응답에는 내보내지 않음
+ * findManagedReport 가 좌표를 빼고 돌려주므로 따로 읽음
+ * 접근 확인이 끝난 뒤 부르므로 숨긴 신고도 작성자 화면을 위해 읽음
+ */
+export async function findLostCoarsePoint(reportId: string) {
+  const [row] = await db
+    .select({ coarsePoint: reports.coarsePoint })
+    .from(reports)
+    .where(eq(reports.id, reportId))
+    .limit(1)
+  return row?.coarsePoint ?? null
+}
+
+/**
+ * 한 점 주변 반경 안 공개 발견 제보 수. 탐색 조언의 분모와 커버리지에 씀
+ * 수동 지역 제보는 격자 좌표가 지역 중심이라 거리 근거가 없어 세지 않음
+ */
+export async function countSightingsAround(input: {
+  center: { lat: number; lng: number }
+  radiusM: number
+  since: Date
+  excludeId?: string
+}) {
+  const [row] = await db
+    .select({ count: raw<number>`count(*)::int` })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.kind, 'sighting'),
+        eq(reports.visibility, 'public'),
+        ne(reports.locationSource, 'manual_area'),
+        gte(reports.occurredAt, input.since),
+        input.excludeId ? ne(reports.id, input.excludeId) : undefined,
+        raw`ST_DWithin(${reports.coarsePoint}::geography, ST_SetSRID(ST_MakePoint(${input.center.lng}, ${input.center.lat}), 4326)::geography, ${input.radiusM})`,
+      ),
+    )
+  return row?.count ?? 0
+}
+
 export { CANDIDATE_RADIUS_M, CANDIDATE_WINDOW_DAYS }

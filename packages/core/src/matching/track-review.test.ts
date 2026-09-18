@@ -88,6 +88,29 @@ test("describeTrack 이 좌표 숫자를 문장에 담지 않는다", () => {
   assert.ok(text.includes("북동쪽"));
 });
 
+test("describeTrack 이 주변 상황을 규칙이 센 숫자 그대로 적는다", () => {
+  const text = describeTrack({
+    ...입력,
+    situation: {
+      phase: "stale",
+      hoursSinceLost: 30.4,
+      radiusKm: 1.24,
+      around: { sightings: 9, candidates: 2 },
+      coverage: "quiet",
+    },
+  });
+  assert.ok(text.includes("[주변 상황]"));
+  assert.ok(text.includes("실종 이후: 30시간 (사흘 안)"));
+  assert.ok(text.includes("반경 1.2km 안 발견 제보 9건, 그중 닮은 후보 2건"));
+  assert.ok(text.includes("보는 눈이 적은 곳"));
+  // 상황이 없으면 절 자체가 빠져 모델이 빈 절을 읽지 않음
+  assert.ok(!describeTrack(입력).includes("[주변 상황]"));
+});
+
+test("SYSTEM 이 숫자를 다시 세지 않게 막는다", () => {
+  assert.ok(SYSTEM.includes("숫자는 주어진 값만 인용"));
+});
+
 test("bearingWord 가 여덟 방향으로 나눈다", () => {
   assert.equal(bearingWord(0), "북");
   assert.equal(bearingWord(44), "북동");
