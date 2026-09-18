@@ -513,7 +513,7 @@
 
 ## 추가 항목
 
-- [ ] `straightnessEffective` 를 `packages/core/src/matching/index.ts` 에 export 하기
+- [x] `straightnessEffective` 를 `packages/core/src/matching/index.ts` 에 export 하기
 
 - [ ] Phase 12 통과 뒤 `playwright` 로 `m-01` 부터 `m-19` 와 신규 화면(`/find` `/r/[id]/poster` 경로 타임라인 두 겹 예측 원)을 다시 캡처하기
 - [ ] `/Users/hahmjuntae/Desktop/rebirth-제출자료` 의 `card-share.png` 를 Phase 9 산출물로 다시 굽기
@@ -524,14 +524,16 @@
 - [ ] 새 덱과 새 캡처에 `배회 중` `찾는 중` 등 Phase 3 금지 어휘가 남지 않았는지 눈으로 확인하기
 - [ ] 커밋 `1d5ff9a` 의 제목을 `feat: 예측 원을 두 겹으로 그리고 화살표를 마지막 목격에서 시작하게 함` 으로 정정하기
 - [ ] `CARE_LABEL` 별칭을 `apps/web/lib/report-label.ts` 에서 제거하기. Phase 6·9·10 이 남은 4곳을 `STATUS_LABEL` 로 바꾼 뒤
-- [ ] `ReportCardItem.occurredAt` 을 필수로 올리고 생산자 6곳에 값을 넘기기. 지금은 선택이라 값이 없으면 실종 카드가 경과만 그림
-- [ ] `apps/web/components/lost/candidate-deck.tsx:37` 의 파일 지역 `CARE_LABEL` 상수를 `STATUS_LABEL` 로 바꾸기
+- [x] `ReportCardItem.occurredAt` 을 필수로 올리고 생산자 6곳에 값을 넘기기. 지금은 선택이라 값이 없으면 실종 카드가 경과만 그림
+- [x] `apps/web/components/lost/candidate-deck.tsx:37` 의 파일 지역 `CARE_LABEL` 상수를 `STATUS_LABEL` 로 바꾸기
 - [ ] `MIN_LEG_SIMILARITY` 를 재측정하기. `0.82` 는 현재 임베딩 분포에서 승격 0건이라 유사도 경로가 동작하지 않음
-- [ ] `lost-detail.tsx` 가 신고 지점 좌표를 `TrackTimeline` 에 넘기기. 지금은 신고에서 첫 목격까지의 구간 요약이 빠짐
+- [x] `lost-detail.tsx` 가 신고 지점 좌표를 `TrackTimeline` 에 넘기기. 지금은 신고에서 첫 목격까지의 구간 요약이 빠짐
 - [ ] Phase 12 전체 빌드에서 `/` 번들 크기 확인하기. `home-screen` 이 `mine-screen` 모듈을 통째로 클라이언트 그래프에 끌어옴
 - [ ] `mine-screen` 의 전이 import 에 `server-only` 를 붙이기. 지금은 `@rebirth/core/auth` 주석 언급뿐이라 클라이언트 번들 유입이 가능
 - [ ] `/find` 와 `/r/[id]/poster` 의 실제 렌더 스모크를 Phase 12 에서 돌리기. Phase 7 은 dev 서버 경합을 피해 건너뜀
 - [ ] 전단 페이지에 인쇄 버튼을 넣을지 정하기. 지금은 사용자가 `Cmd+P` 를 눌러야 함
+- [ ] `apps/admin/lib/labels.ts:24` 의 별도 `CARE_LABEL` 정의를 상태 어휘 단일 원천으로 합칠지 정하기. admin 4개 화면이 씀
+
 ## 참고
 
 ### 지시서 결함
@@ -596,3 +598,7 @@
 - `manifest.ts` 는 JSON 이라 SEED CSS 변수를 못 읽어 `globals.css` 의 carrot 700 `#5ea740` 을 `design-system-allow:color` 로 적음
 - 끝난 실종 신고의 미리보기 마무리 문구를 `가족을 만났어요` 에서 `<이름>이 집으로 돌아왔어요` 로 바꿈
 - `sitemap.xml` loc 1414건(고정 5 + 제보). `robots.txt` 에 `Disallow: /mine` 확인
+- `candidate-deck` 지역 `CARE_LABEL` 은 `unknown` 을 `확인 중` 으로 뒀고 `STATUS_LABEL` 은 빈 문자열이라 후자를 따름. `join` 앞에 `filter(Boolean)` 추가
+- `occurredAt` 실제 생산자는 `app/page.tsx:32`(MapMarker)와 `app/mine/reports/report-page.ts:49`(MineReportItem). `home-screen.tsx` 와 `mine-report-list.tsx` 는 타입 별칭뿐
+- `app/api/cards/route.ts` 는 반환 타입이 없어 `tsc` 가 잡지 않았으나 `recent-reports.tsx` 가 응답을 `ReportCardItem[]` 로 읽어 값을 함께 넣음
+- 신고 지점 전달은 격자 스냅 좌표 `location.point` 만 씀. 화면 출력은 거리와 여덟 낱말 방향뿐
