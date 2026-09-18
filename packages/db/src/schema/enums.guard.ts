@@ -8,6 +8,7 @@ import type {
   animalType,
   areaCodeSystem,
   authProvider,
+  errorLevel,
   precheckSource,
   precheckVerdict,
   careSituation,
@@ -44,6 +45,7 @@ const _community: Same<Values<typeof communityCategory>, t.CommunityCategory> = 
 const _shelterKind: Same<Values<typeof shelterKind>, t.ShelterKind> = true
 const _precheckVerdict: Same<Values<typeof precheckVerdict>, t.PrecheckVerdict> = true
 const _precheckSource: Same<Values<typeof precheckSource>, t.PrecheckSource> = true
+const _errorLevel: Same<Values<typeof errorLevel>, t.ErrorLevel> = true
 
 void [
   _kind,
@@ -64,4 +66,5 @@ void [
   _shelterKind,
   _precheckVerdict,
   _precheckSource,
+  _errorLevel,
 ]

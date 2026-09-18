@@ -1,5 +1,6 @@
 "use client";
 
+import { reportClientError } from "@/lib/report-error";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { HStack, Icon, Text, VisuallyHidden, VStack } from "@seed-design/react";
@@ -496,7 +497,9 @@ export function LostForm({ pets = [], initialPetId }: LostFormProps) {
         return;
       }
       setToken(result.manageToken);
-    } catch {
+    } catch (error) {
+      // 저장이 막힌 이유는 화면에 내지 않고 서버에만 남김
+      reportClientError("lost.submit", error);
       setError("신고를 저장하지 못했어요. 적은 내용은 그대로 있어요");
       setSubmitting(false);
     }

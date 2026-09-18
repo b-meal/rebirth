@@ -22,6 +22,7 @@ export {
 } from "./responses";
 
 export { logFailure, logNotice } from "./log";
+export { clientErrorHandler } from "./client-error-handler";
 
 export {
   createCatchAll,

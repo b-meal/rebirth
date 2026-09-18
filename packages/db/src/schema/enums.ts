@@ -114,6 +114,9 @@ export const precheckVerdict = pgEnum('precheck_verdict', [
 ])
 export const precheckSource = pgEnum('precheck_source', ['device', 'server'])
 
+// 서버 기록의 심각도. failure 는 고쳐야 할 것, notice 는 알고만 있으면 되는 것
+export const errorLevel = pgEnum('error_level', ['failure', 'notice'])
+
 // 위치 출처. POL-08. manual_area 는 정확 좌표가 없어 거리 점수를 받지 않음
 export const locationSource = pgEnum('location_source', [
   'gps',

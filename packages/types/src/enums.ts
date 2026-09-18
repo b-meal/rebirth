@@ -85,6 +85,11 @@ export const precheckSource = z.enum(['device', 'server'], {
   error: '선검사 판정 출처가 올바르지 않습니다',
 })
 
+// 서버 기록의 심각도
+export const errorLevel = z.enum(['failure', 'notice'], {
+  error: '기록 심각도가 올바르지 않습니다',
+})
+
 // 위치 출처. POL-08. manual_area 는 정확 좌표가 없어 거리 점수를 받지 않음
 export const locationSource = z.enum(['gps', 'place', 'manual_area'], {
   error: '위치 출처가 올바르지 않습니다',
@@ -156,6 +161,7 @@ export type ConsentKind = z.infer<typeof consentKind>
 export type UploadStatus = z.infer<typeof uploadStatus>
 export type PrecheckVerdict = z.infer<typeof precheckVerdict>
 export type PrecheckSource = z.infer<typeof precheckSource>
+export type ErrorLevel = z.infer<typeof errorLevel>
 
 // kind 별로 허용되는 lifecycle. DB CHECK 제약과 같은 규칙
 export const LIFECYCLE_BY_KIND = {

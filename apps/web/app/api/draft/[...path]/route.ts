@@ -1,5 +1,5 @@
 import { resolveLocationHandler, createUploadHandler } from "@rebirth/core/drafts";
-import { createCatchAll } from "@rebirth/core/http";
+import { clientErrorHandler, createCatchAll } from "@rebirth/core/http";
 import {
   analyzeHandler,
   getAnalysisJobHandler,
@@ -20,5 +20,7 @@ export const { GET, POST } = createCatchAll({
     precheck: precheckHandler,
     // 그 판정이 무엇이었는지만 받아 적음. 사진도 세션도 받지 않음
     "precheck/log": precheckLogHandler,
+    // 화면에서 난 오류. 초안과 상관없지만 무료 배포의 함수 수 상한 때문에 이 묶음에 얹음
+    "client-error": clientErrorHandler,
   },
 });
