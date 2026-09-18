@@ -5,7 +5,7 @@ import { createSignedUrl } from "@rebirth/core/storage";
 import { findPublicReport, findReportPhotoPaths } from "@rebirth/db";
 import { ImageResponse } from "next/og";
 
-import { CARE_LABEL, SIZE_LABEL, breedLabel, searchingDays, withObject } from "@/lib/report-label";
+import { CARE_LABEL, SIZE_LABEL, breedLabel, formatMonthDay, withObject } from "@/lib/report-label";
 
 // 공유 카드. ratio=story 는 인스타 스토리용 9:16, 기본은 링크 미리보기용 OG 1.91:1
 // 정확 좌표와 제보자 정보, 품종 확정 표현을 넣지 않음
@@ -125,16 +125,14 @@ export async function GET(
         (lost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
   const where = report?.areaName ?? "위치 미확인";
   // 실종은 보호 상황을 쓰지 않아 확인되지 않음 이 박히면 안 됨
-  // 당일 실종은 1일째 로 적지 않음. 상세 화면과 같은 기준을 씀
+  // 며칠째 와 오늘 은 긁힌 그림에 굳어 시간이 지나면 거짓이 됨. 언제부터 찾는지는 날짜로만 적음
   const care =
     lost && report
       ? done
         ? found
           ? "찾았어요"
           : "끝난 신고"
-        : searchingDays(report.occurredAt) <= 1
-          ? "오늘 잃어버렸어요"
-          : `찾는 중 ${searchingDays(report.occurredAt)}일째`
+        : `${formatMonthDay(report.occurredAt)}부터 찾고 있어요`
       : (CARE_LABEL[report?.careSituation ?? "unknown"] ?? "확인 중");
   // 보호자가 적어 둔 품종은 추정이 아니라 아는 값이라 계열 추정을 붙이지 않음
   const breed = report?.pet?.breedGuess ?? breedLabel(report?.breedGuess ?? null);

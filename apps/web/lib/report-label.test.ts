@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { densityLine, searchingDays, sinceLabel, urgencyHint, urgencyLevel } from "./report-label.ts";
+import {
+  densityLine,
+  formatMonthDay,
+  searchingDays,
+  sinceLabel,
+  urgencyHint,
+  urgencyLevel,
+} from "./report-label.ts";
 
 const NOW = new Date("2026-09-17T12:00:00+09:00");
 
@@ -72,6 +79,12 @@ test("며칠째는 잃어버린 날을 1일째로 세고 자정마다 하루 올
 
 test("며칠째는 시계 오차로 미래 시각이 들어와도 1일째로 눌린다", () => {
   assert.equal(searchingDays(hoursAgo(-3), NOW), 1);
+});
+
+test("공유 카드 날짜는 한국 시간으로 적는다", () => {
+  // UTC 로는 17일 저녁이지만 한국은 이미 18일임. 서버 시간대가 UTC 라도 흔들리지 않아야 함
+  assert.equal(formatMonthDay(new Date("2026-09-17T16:00:00Z")), "9월 18일");
+  assert.equal(formatMonthDay("2026-09-17T14:59:00Z"), "9월 17일");
 });
 
 test("제보 밀도는 0건도 문장으로 말한다", () => {

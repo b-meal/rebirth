@@ -117,6 +117,21 @@ export function formatAbsolute(value: Date | string): string {
   return ABSOLUTE.format(new Date(value));
 }
 
+/**
+ * 월과 날짜만 적음
+ * 공유 카드처럼 남의 캐시에 들어가는 표면에는 며칠째 같은 상대값을 넣지 않음
+ * 카카오와 슬랙이 긁어 간 이미지는 우리가 지울 수 없어 3일째로 구워진 그림이 30일째에도 뿌려짐
+ */
+const MONTH_DAY = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "long",
+  day: "numeric",
+});
+
+export function formatMonthDay(value: Date | string): string {
+  return MONTH_DAY.format(new Date(value));
+}
+
 const RELATIVE = new Intl.RelativeTimeFormat("ko", { numeric: "auto" });
 
 /** 목격 시각을 방금, n분 전, n시간 전, 어제, 그저께, n일 전으로 표기 */
