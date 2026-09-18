@@ -419,7 +419,8 @@ export function ReportForm() {
               variant="brandSolid"
               size="large"
               loading={submitting || pending}
-              disabled={!canSubmit}
+              // loading 은 모양만 바꾸고 클릭을 막지 않아 보내는 동안은 실제로 비활성화함
+              disabled={!canSubmit || submitting}
               onClick={handleSubmit}
             >
               제보하기
