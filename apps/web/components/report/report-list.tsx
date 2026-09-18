@@ -239,7 +239,6 @@ export function ReportList({ kind, items, nextCursor }: ReportListProps) {
   });
 
   const rows = [...items, ...extra];
-  const filtered = Boolean(animalType) || days !== LIST_DEFAULT_DAYS;
 
   return (
     <Screen>
@@ -265,15 +264,12 @@ export function ReportList({ kind, items, nextCursor }: ReportListProps) {
         {/* 기간은 고르는 값이 셋뿐이고 한 번 정하면 잘 바꾸지 않아 건수 옆 오른쪽 끝에 접어 둠
             칩으로 늘어놓으면 종류 칩과 두 줄이 되어 목록이 그만큼 아래로 내려감 */}
         <HStack justify="space-between" align="center" gap="x2">
+          {/* 불러오는 동안에도 앞서 본 수를 그대로 두고 새 목록이 닿을 때 숫자만 바뀜
+              자리를 문구로 바꾸면 줄 폭이 흔들리고 방금 본 수도 사라짐 */}
           <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {pending ? "불러오는 중" : `${rows.length}건`}
+            {rows.length}건
           </Text>
           <HStack align="center" gap="x2">
-            {filtered ? (
-              <ActionButton variant="ghost" size="xsmall" onClick={() => router.replace(pathname)}>
-                조건 초기화
-              </ActionButton>
-            ) : null}
             <Box className="rebirth-period-select">
               {/* 건수와 같은 줄에 앉는 보조 조작이라 폼 입력 크기인 large 대신 medium 으로 둠
                   크기는 Root 에 주어 트리거와 펼친 목록이 같은 치수를 씀 */}
@@ -293,25 +289,20 @@ export function ReportList({ kind, items, nextCursor }: ReportListProps) {
           </HStack>
         </HStack>
 
-        {rows.length === 0 ? (
+        {pending ? (
+          // 조건을 바꾸는 동안에는 옛 목록을 치우고 이 자리에서 돌림
+          // 흐린 옛 목록을 남기면 바뀐 조건의 결과로 잘못 읽힘
+          <HStack justify="center" py="x10">
+            <ProgressCircle size="24" tone="neutral" />
+          </HStack>
+        ) : rows.length === 0 ? (
           <ResultSection
             size="medium"
             title={copy.empty}
             description="조건을 줄이면 더 많은 제보를 볼 수 있어요"
-            {...(filtered && {
-              primaryActionProps: {
-                children: "전체 보기",
-                onClick: () => router.replace(pathname),
-              },
-            })}
           />
         ) : (
-          // 조건을 바꾸는 동안 문구 대신 목록을 흐려 전환 중임을 보여 줌
-          <VStack
-            align="stretch"
-            gap="x2"
-            style={{ opacity: pending ? 0.4 : 1, transition: "opacity 120ms ease" }}
-          >
+          <VStack align="stretch" gap="x2">
             {rows.map((item) => (
               <Card key={item.id} item={item} kind={kind} />
             ))}

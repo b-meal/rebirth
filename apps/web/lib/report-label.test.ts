@@ -116,8 +116,12 @@ test("상황 한 줄은 밀도가 없으면 등급 문구만 남긴다", () => {
   const withDensity = situationLine({ lastSeen, count: 3, radiusKm: 2, now: NOW });
   const withoutDensity = situationLine({ lastSeen, count: null, radiusKm: null, now: NOW });
 
-  assert.equal(withDensity, "3일 전, 반경 2.0km 안에 제보 3건, 이동 가능 지역을 넓혀 찾아보세요");
-  assert.equal(withoutDensity, "3일 전, 이동 가능 지역을 넓혀 찾아보세요");
+  // 하루가 넘은 목격은 sinceLabel 이 시각대를 붙여 낮 목격과 새벽 목격을 가름
+  assert.equal(
+    withDensity,
+    "3일 전 새벽, 반경 2.0km 안에 제보 3건, 이동 가능 지역을 넓혀 찾아보세요",
+  );
+  assert.equal(withoutDensity, "3일 전 새벽, 이동 가능 지역을 넓혀 찾아보세요");
   // 절대 날짜는 아래 기록 줄이 맡고 이 줄은 경과와 할 일만 말함
   assert.doesNotMatch(withDensity, /년|월/);
   assert.doesNotMatch(withoutDensity, /년|월/);

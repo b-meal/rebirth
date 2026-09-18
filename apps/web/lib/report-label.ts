@@ -195,6 +195,38 @@ export function sinceLabel(date: Date, now: Date = new Date()): string {
   return `${RELATIVE.format(days, "day")} ${dayPart(date)}`;
 }
 
+export type UrgencyLevel = "fresh" | "recent" | "stale" | "cold";
+
+/** 마지막 목격부터 지난 시간을 6, 24, 72 시간 경계로 네 등급에 넣음 */
+export function urgencyLevel(date: Date, now: Date = new Date()): UrgencyLevel {
+  const hours = (now.getTime() - date.getTime()) / 3_600_000;
+  // 시계 오차로 미래 시각이 들어와도 등급 역전 방지
+  if (hours < 6) return "fresh";
+  if (hours < 24) return "recent";
+  if (hours < 72) return "stale";
+  return "cold";
+}
+
+// 숫자를 빼고 지금 할 행동만 남긴 등급 문구
+export const URGENCY_HINT: Record<UrgencyLevel, string> = {
+  fresh: "지금 주변을 확인해 보세요",
+  recent: "주변 추가 제보를 확인해 보세요",
+  stale: "마지막 목격지 주변 이동 경로를 확인해 보세요",
+  cold: "이동 가능 지역을 넓혀 찾아보세요",
+};
+
+/** 목격 시각을 지금 할 행동 한 줄로 옮김 */
+export function urgencyHint(date: Date, now: Date = new Date()): string {
+  return URGENCY_HINT[urgencyLevel(date, now)];
+}
+
+/** 예측 반경 안 제보 수를 한 줄로 옮김, 0건도 빈칸 대신 문장으로 말함 */
+export function densityLine({ count, radiusKm }: { count: number; radiusKm: number }): string {
+  const r = radiusKm.toFixed(1);
+  if (count === 0) return `반경 ${r}km 안에 새 제보가 없어요`;
+  return `반경 ${r}km 안에 제보 ${count}건`;
+}
+
 export type SituationInput = {
   lastSeen: Date;
   /** 예측 반경 안 제보 수, 경로가 없으면 null 이라 밀도 절이 빠짐 */

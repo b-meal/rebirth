@@ -16,7 +16,9 @@ import {
   IconCameraLine,
   IconChevronUpLine,
   IconCrosshairLine,
+  IconHospitalcrossShieldLine,
   IconMagnifyingglassLine,
+  IconMegaphoneLine,
   IconPawprintFill,
   IconPlusLine,
 } from "@karrotmarket/react-monochrome-icon";

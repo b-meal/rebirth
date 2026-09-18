@@ -160,7 +160,7 @@ apps/web/app/r/[id]/poster/page.tsx          A4 전단과 제보 QR, 색인 제�
 apps/web/app/find/page.tsx                   검색 유입 랜딩
 ```
 
-회귀 검증은 `track.test.ts`, `search-spots.test.ts`, `track-review.test.ts`, `search-advice.test.ts` 입니다. 패키지 전체 건수는 병합 뒤 다시 셉니다.
+회귀 검증은 `track.test.ts`, `search-spots.test.ts`, `track-review.test.ts`, `search-advice.test.ts` 입니다. 패키지 전체는 `@rebirth/core` 133건, `@rebirth/web` 23건, `@rebirth/types` 6건이고 모두 `fail 0` 입니다.
 
 ## 한계
 
