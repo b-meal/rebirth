@@ -290,56 +290,62 @@ export function ReportList({ kind, items, nextCursor }: ReportListProps) {
         </HStack>
 
         {pending ? (
-          // 조건을 바꾸는 동안에는 옛 목록을 치우고 이 자리에서 돌림
-          // 흐린 옛 목록을 남기면 바뀐 조건의 결과로 잘못 읽힘
-          <HStack justify="center" py="x10">
+          /* 조건을 바꾸는 동안에는 옛 목록을 치우고 이 자리에서만 돌림
+             흐린 옛 목록을 남기면 바뀐 조건의 결과로 잘못 읽힘
+             아래 꼬리까지 함께 걷음. 목록이 빠져 화면이 짧아지면 다음 장 감지기가
+             그대로 시야에 들어와 옛 커서로 다음 장을 부르고 스피너가 둘이 됨 */
+          <VStack align="center" justify="center" grow={1} py="x10">
             <ProgressCircle size="24" tone="neutral" />
-          </HStack>
-        ) : rows.length === 0 ? (
-          <ResultSection
-            size="medium"
-            title={copy.empty}
-            description="조건을 줄이면 더 많은 제보를 볼 수 있어요"
-          />
+          </VStack>
         ) : (
-          <VStack align="stretch" gap="x2">
-            {rows.map((item) => (
-              <Card key={item.id} item={item} kind={kind} />
-            ))}
-          </VStack>
+          <>
+            {rows.length === 0 ? (
+              <ResultSection
+                size="medium"
+                title={copy.empty}
+                description="조건을 줄이면 더 많은 제보를 볼 수 있어요"
+              />
+            ) : (
+              <VStack align="stretch" gap="x2">
+                {rows.map((item) => (
+                  <Card key={item.id} item={item} kind={kind} />
+                ))}
+              </VStack>
+            )}
+
+            {/* 실패했을 때만 손으로 다시 부름. 자동으로 되풀이하면 같은 오류를 계속 부름 */}
+            {loadError ? (
+              <VStack align="stretch" gap="x3">
+                <Callout tone="critical" description={loadError} />
+                <ActionButton
+                  variant="neutralOutline"
+                  size="large"
+                  loading={loadingMore}
+                  onClick={loadMore}
+                >
+                  다시 시도
+                </ActionButton>
+              </VStack>
+            ) : null}
+
+            {/* 목록 끝에 닿기 전에 다음 쪽을 미리 부르는 표식
+                보이지 않지만 자리를 차지해야 관찰자가 걸림 */}
+            {cursor && !loadError ? <Box ref={sentinel} height="x1" /> : null}
+
+            {/* 불러오는 동안만 표시를 둠. 미리 불러 두면 대개 보이지 않고 지나감 */}
+            {loadingMore && !loadError ? (
+              <HStack justify="center" py="x4">
+                <ProgressCircle size="24" tone="neutral" />
+              </HStack>
+            ) : null}
+
+            {!cursor && rows.length > 0 ? (
+              <Text textStyle="t2Regular" color="fg.neutralSubtle" align="center">
+                {copy.end}
+              </Text>
+            ) : null}
+          </>
         )}
-
-        {/* 실패했을 때만 손으로 다시 부름. 자동으로 되풀이하면 같은 오류를 계속 부름 */}
-        {loadError ? (
-          <VStack align="stretch" gap="x3">
-            <Callout tone="critical" description={loadError} />
-            <ActionButton
-              variant="neutralOutline"
-              size="large"
-              loading={loadingMore}
-              onClick={loadMore}
-            >
-              다시 시도
-            </ActionButton>
-          </VStack>
-        ) : null}
-
-        {/* 목록 끝에 닿기 전에 다음 쪽을 미리 부르는 표식
-            보이지 않지만 자리를 차지해야 관찰자가 걸림 */}
-        {cursor && !loadError ? <Box ref={sentinel} height="x1" /> : null}
-
-        {/* 불러오는 동안만 표시를 둠. 미리 불러 두면 대개 보이지 않고 지나감 */}
-        {loadingMore && !loadError ? (
-          <HStack justify="center" py="x4">
-            <ProgressCircle size="24" tone="neutral" />
-          </HStack>
-        ) : null}
-
-        {!cursor && rows.length > 0 ? (
-          <Text textStyle="t2Regular" color="fg.neutralSubtle" align="center">
-            {copy.end}
-          </Text>
-        ) : null}
       </ScreenBody>
     </Screen>
   );
