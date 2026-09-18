@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { HStack, Icon, ImageFrame, Text, VStack } from "@seed-design/react";
-import { IconPictureLine } from "@karrotmarket/react-monochrome-icon";
+import { IconPictureLine, IconXmarkFill } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import {
   BottomSheetBody,
@@ -46,6 +46,8 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
   const run = useCallback(
     async (next: File) => {
       setError(null);
+      // 앞 사진의 판정이 남아 있으면 새 사진에 그대로 붙어 보임
+      analyze.clear();
       const uploadId = await upload.upload(next);
       if (!uploadId) {
         setError("사진을 올리지 못했어요. 다시 골라 주세요");
@@ -64,10 +66,26 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
   }, [file, run]);
 
   const draft = analyze.draft;
-  const busy = upload.status === "uploading" || analyze.status === "loading";
+  // 사진이 있는데 아직 결과가 없으면 살펴보는 중. 올리기 전 한 프레임도 여기에 들어감
+  const settled =
+    analyze.status === "done" || analyze.status === "failed" || upload.status === "failed";
+  const busy = Boolean(photo) && !settled;
+
+  // 동물이 안 보이면 종류도 털색도 못 뽑아 찾을 조건이 남지 않음
+  const rejected = analyze.advice === "not-animal";
+  const ready = Boolean(draft) && !rejected;
+
+  const discard = () => {
+    if (!photo) return;
+    picker.removePhoto(photo.id);
+    started.current = null;
+    analyze.clear();
+    upload.clear();
+    setError(null);
+  };
 
   const search = () => {
-    if (!draft) return;
+    if (!draft || rejected) return;
     const params = new URLSearchParams({ animalType: draft.animalType });
     if (draft.size !== "unknown") params.set("size", draft.size);
     if (draft.color.length > 0) params.set("colors", draft.color.join(","));
@@ -75,12 +93,13 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
     router.push(`/search?${params.toString()}`);
   };
 
-  const found = draft
-    ? [ANIMAL_LABEL[draft.animalType], breedLabel(draft.breedGuess), SIZE_LABEL[draft.size]]
-        .filter((value): value is string => Boolean(value))
-        .concat(draft.color)
-        .join(", ")
-    : null;
+  const found =
+    ready && draft
+      ? [ANIMAL_LABEL[draft.animalType], breedLabel(draft.breedGuess), SIZE_LABEL[draft.size]]
+          .filter((value): value is string => Boolean(value))
+          .concat(draft.color)
+          .join(", ")
+      : null;
 
   const notice = error ?? picker.error ?? (analyze.status === "failed" ? analyze.message : null);
 
@@ -101,7 +120,40 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
                   src={photo.previewUrl}
                   alt="고른 사진"
                   borderRadius="r3"
-                />
+                >
+                  {/* 제보하기 1단계와 같은 표시. 덮개 전체가 지우는 자리라 누를 곳을 찾지 않아도 됨 */}
+                  {rejected ? (
+                    <VStack
+                      asChild
+                      position="absolute"
+                      top="0"
+                      right="0"
+                      bottom="0"
+                      left="0"
+                      align="center"
+                      justify="center"
+                      bg="palette.staticBlackAlpha500"
+                    >
+                      {/* design-system-allow:raw-element 사진 전체를 덮는 자리라 button 이 필요함 */}
+                      <button
+                        type="button"
+                        aria-label="사진에서 동물이 보이지 않음, 눌러서 지우기"
+                        onClick={discard}
+                      >
+                        <VStack
+                          align="center"
+                          justify="center"
+                          width="x7"
+                          height="x7"
+                          borderRadius="full"
+                          bg="bg.criticalSolid"
+                        >
+                          <Icon svg={<IconXmarkFill />} size="x5" color="fg.criticalContrast" />
+                        </VStack>
+                      </button>
+                    </VStack>
+                  ) : null}
+                </ImageFrame>
                 <VStack align="stretch" gap="x1" minWidth="0">
                   {busy ? (
                     <HStack gap="x2" align="center">
@@ -110,6 +162,15 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
                         사진을 살펴보고 있어요
                       </Text>
                     </HStack>
+                  ) : rejected ? (
+                    <>
+                      <Text textStyle="t4Bold" color="fg.critical">
+                        동물이 보이지 않아요
+                      </Text>
+                      <Text textStyle="t3Regular" color="fg.neutralSubtle">
+                        사진을 지우고 동물이 담긴 사진으로 다시 골라 주세요
+                      </Text>
+                    </>
                   ) : found ? (
                     <>
                       <Text textStyle="t4Bold" color="fg.neutral">
@@ -123,11 +184,7 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
                     <Text textStyle="t4Regular" color="fg.neutralMuted">
                       사진을 살펴보지 못했어요. 글자로 검색하거나 잠시 후 다시 시도해 주세요
                     </Text>
-                  ) : (
-                    <Text textStyle="t4Regular" color="fg.neutralMuted">
-                      사진에서 동물을 찾지 못했어요. 다른 사진을 골라 주세요
-                    </Text>
-                  )}
+                  ) : null}
                 </VStack>
               </HStack>
             ) : null}
@@ -154,7 +211,7 @@ export function PhotoSearchSheet({ open, onOpenChange }: PhotoSearchSheetProps) 
           </VStack>
         </BottomSheetBody>
         <BottomSheetFooter>
-          <ActionButton variant="brandSolid" size="large" disabled={!draft || busy} onClick={search}>
+          <ActionButton variant="brandSolid" size="large" disabled={!ready || busy} onClick={search}>
             비슷한 제보 찾기
           </ActionButton>
         </BottomSheetFooter>
