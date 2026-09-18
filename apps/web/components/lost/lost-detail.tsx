@@ -263,7 +263,11 @@ export function LostDetail({
           {/* 지도의 점과 번호가 어느 지역 어느 시각인지는 글로 한 번 더 읽어야 남음 */}
           {location && searching && track ? (
             <TrackTimeline
-              origin={{ areaName: report.areaName, occurredAt: report.occurredAt }}
+              origin={{
+                areaName: report.areaName,
+                occurredAt: report.occurredAt,
+                point: location.point,
+              }}
               nodes={track.nodes}
             />
           ) : null}

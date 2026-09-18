@@ -28,8 +28,11 @@ function legBearing(from: LatLng, to: LatLng): number {
   return (Math.atan2(east, north) * DEG + 360) % 360;
 }
 
+// 구간 셈에 필요한 것은 좌표와 시각뿐이라 신고 지점도 같은 함수를 탐
+type LegPoint = { point: LatLng; occurredAt: Date | string };
+
 // 구간 하나를 걸린 시간과 거리와 여덟 낱말 방향 한 줄로 옮김
-function legSummary(from: TrackNodeView, to: TrackNodeView): string {
+function legSummary(from: LegPoint, to: LegPoint): string {
   const hours =
     (new Date(to.occurredAt).getTime() - new Date(from.occurredAt).getTime()) / 3_600_000;
   // 한 시간 미만을 반올림하면 0시간 뒤가 떠서 분으로 내림
@@ -45,13 +48,13 @@ type TimelineRow = {
   areaName: string | null;
   at: Date;
   origin: boolean;
-  /** 이 줄에서 다음 줄로 넘어간 구간 요약, 마지막 줄과 신고 줄은 null */
+  /** 이 줄에서 다음 줄로 넘어간 구간 요약, 마지막 줄과 좌표 없는 신고 줄은 null */
   legAfter: string | null;
 };
 
 export type TrackTimelineProps = {
-  /** 보호자가 마지막으로 본 곳, 경로의 시작 */
-  origin: { areaName: string | null; occurredAt: Date | string };
+  /** 보호자가 마지막으로 본 곳, 경로의 시작. 좌표는 격자 스냅본이고 없으면 구간 요약만 빠짐 */
+  origin: { areaName: string | null; occurredAt: Date | string; point?: LatLng | null };
   /** 뒤따른 목격, 시간순이고 마지막 원소가 가장 최근 */
   nodes: TrackNodeView[];
 };
@@ -66,8 +69,11 @@ export function TrackTimeline({ origin, nodes }: TrackTimelineProps) {
       areaName: origin.areaName,
       at: new Date(origin.occurredAt),
       origin: true,
-      // 신고 지점의 좌표를 받지 않아 첫 목격까지의 구간은 셈이 불가
-      legAfter: null,
+      // 좌표 없는 지역 선택 신고는 첫 목격까지의 구간을 셈이 불가
+      legAfter:
+        origin.point && nodes[0]
+          ? legSummary({ point: origin.point, occurredAt: origin.occurredAt }, nodes[0])
+          : null,
     },
     ...nodes.map((node, index) => {
       const next = nodes[index + 1];
