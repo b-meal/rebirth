@@ -70,11 +70,32 @@ export function withSubject(name: string): string {
 }
 
 /**
- * 마지막 목격부터 지난 날수, 실종 신고가 며칠째인지 세는 값
+ * 한국 시간으로 읽은 날짜의 일련번호
+ * 어제와 그저께, 며칠째는 자정 경계로 세는 값이라 경과 시간을 24로 나누면 안 됨
+ * 35시간 전이 어제가 되고 38시간 전이 그저께가 되는 뒤집힘이 여기서 생김
+ */
+const KST_DATE = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function kstDayIndex(date: Date): number {
+  // 자리 순서는 ICU 판마다 달라 종류로 집어 옮김
+  const part = new Map(KST_DATE.formatToParts(date).map((p) => [p.type, p.value]));
+  const day = `${part.get("year")}-${part.get("month")}-${part.get("day")}`;
+  return Date.parse(`${day}T00:00:00Z`) / 86_400_000;
+}
+
+/**
+ * 며칠째 찾고 있는지, 잃어버린 날이 1일째이고 자정마다 하루 오름
+ * 뺄셈으로 세면 어제 저녁 신고가 20시간밖에 안 지나 오늘 잃어버린 것으로 읽힘
  * 서버에서 한 번 계산해 넘김. 화면에서 세면 다시 그릴 때마다 값이 흔들림
  */
 export function searchingDays(date: Date, now: Date = new Date()): number {
-  return Math.max(Math.floor((now.getTime() - date.getTime()) / 86_400_000), 0);
+  // 시계 오차로 미래 시각이 들어와도 1일째 아래로 내려가지 않음
+  return Math.max(kstDayIndex(now) - kstDayIndex(date), 0) + 1;
 }
 
 /**
@@ -98,15 +119,19 @@ export function formatAbsolute(value: Date | string): string {
 
 const RELATIVE = new Intl.RelativeTimeFormat("ko", { numeric: "auto" });
 
-/** 목격 시각을 방금, n분 전, n시간 전, n일 전으로 표기 */
+/** 목격 시각을 방금, n분 전, n시간 전, 어제, 그저께, n일 전으로 표기 */
 export function sinceLabel(date: Date, now: Date = new Date()): string {
   const minutes = Math.round((date.getTime() - now.getTime()) / 60_000);
   // 시계 오차로 미래가 되면 방금으로 눌러 표시함
   if (minutes >= -1) return "방금";
   if (minutes > -60) return RELATIVE.format(minutes, "minute");
   const hours = Math.round(minutes / 60);
+  // 하루가 지나지 않았으면 자정을 넘었어도 경과 시간이 달력 낱말보다 정확함
   if (hours > -24) return RELATIVE.format(hours, "hour");
-  return RELATIVE.format(Math.round(hours / 24), "day");
+  const days = kstDayIndex(date) - kstDayIndex(now);
+  // 반올림으로 24시간이 됐어도 달력으로 같은 날이면 어제가 아님
+  if (days === 0) return RELATIVE.format(-23, "hour");
+  return RELATIVE.format(days, "day");
 }
 
 export type UrgencyLevel = "fresh" | "recent" | "stale" | "cold";

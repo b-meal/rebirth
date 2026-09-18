@@ -125,14 +125,14 @@ export async function GET(
         (lost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
   const where = report?.areaName ?? "위치 미확인";
   // 실종은 보호 상황을 쓰지 않아 확인되지 않음 이 박히면 안 됨
-  // 당일 실종은 0일째 로 적지 않음. 상세 화면과 같은 기준을 씀
+  // 당일 실종은 1일째 로 적지 않음. 상세 화면과 같은 기준을 씀
   const care =
     lost && report
       ? done
         ? found
           ? "찾았어요"
           : "끝난 신고"
-        : searchingDays(report.occurredAt) < 1
+        : searchingDays(report.occurredAt) <= 1
           ? "오늘 잃어버렸어요"
           : `찾는 중 ${searchingDays(report.occurredAt)}일째`
       : (CARE_LABEL[report?.careSituation ?? "unknown"] ?? "확인 중");

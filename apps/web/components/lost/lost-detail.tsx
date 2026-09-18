@@ -83,7 +83,7 @@ function statusBadge(
   }
   if (lifecycle === "closed") return { label: "종료된 신고", tone: "neutral" };
   return {
-    label: searchingDays < 1 ? "오늘 잃어버렸어요" : `실종 ${searchingDays}일째`,
+    label: searchingDays <= 1 ? "오늘 잃어버렸어요" : `실종 ${searchingDays}일째`,
     tone: "brand",
   };
 }
@@ -93,7 +93,7 @@ export type LostDetailProps = {
   shareUrl: string;
   /** 마지막 목격을 방금, n일 전으로 줄인 표기, 서버에서 계산해 넘김 */
   sinceLabel: string;
-  /** 마지막 목격부터 오늘까지 지난 날수, 서버에서 계산해 넘겨 렌더마다 흔들리지 않게 함 */
+  /** 며칠째 찾고 있는지, 잃어버린 날이 1일째. 서버에서 계산해 넘겨 렌더마다 흔들리지 않게 함 */
   searchingDays: number;
   /** 격자 스냅 좌표, 좌표가 없는 지역 선택 신고는 null */
   location: { point: LatLng; gridMeters: number } | null;
