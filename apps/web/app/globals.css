@@ -95,55 +95,70 @@ a {
   display: none;
 }
 
-/* 지도 위 내 위치. 점은 정중앙, 부채꼴은 북쪽(위)을 가리키고 MapLibre 가 래퍼를 돌림
-   색은 SEED 변수만 쓰고, 지도 위라 탭을 먹지 않게 pointer-events 를 끔 */
+/* 지도 위 내 위치. 넓고 부드러운 후광, 굵은 흰 테두리의 점, 점에 붙은 화살촉
+   배회 중 제보 핀이 브랜드 초록이라 내 위치는 informative 파랑으로 갈라 둠
+   점은 정중앙, 화살촉은 북쪽(위)을 가리키고 MapLibre 가 래퍼를 돌림
+   제보 핀이 나중에 그려져 위로 올라오므로 z-index 로 내 위치를 위에 두고 탭은 통과시킴 */
 .rebirth-my-location {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   pointer-events: none;
+  z-index: 1;
+}
+
+/* 가운데는 고르게, 가장자리로 갈수록 사라지는 반투명 파랑 */
+.rebirth-my-location-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--seed-color-bg-informative-solid) 26%, transparent) 0 30%,
+    color-mix(in srgb, var(--seed-color-bg-informative-solid) 12%, transparent) 62%,
+    transparent 100%
+  );
 }
 
 .rebirth-my-location-dot {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 14px;
-  height: 14px;
-  margin: -7px;
+  width: 22px;
+  height: 22px;
+  margin: -11px;
   border-radius: 50%;
-  background: var(--seed-color-fg-brand);
-  border: 2px solid var(--seed-color-bg-layer-floating);
-  box-shadow: 0 0 0 6px var(--seed-color-bg-brand-weak);
+  background: var(--seed-color-bg-informative-solid);
+  border: 4px solid var(--seed-color-bg-layer-floating);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--seed-color-bg-informative-solid) 35%, transparent);
 }
 
-/* 바깥 흰 삼각형 위에 브랜드색 삼각형을 올려 윤곽을 냄
-   clip-path 뒤에는 filter 그림자가 잘려 나가 두 겹으로 그림 */
+/* 화살촉 밑변이 점의 흰 테두리에 닿게 둠, 안의 SVG 가 흰 윤곽과 둥근 모서리를 그림 */
 .rebirth-my-location-heading {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 20px;
-  height: 16px;
-  margin-left: -10px;
-  margin-top: -32px;
-  background: var(--seed-color-bg-layer-floating);
-  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+  width: 18px;
+  height: 18px;
+  margin-left: -9px;
+  margin-top: -28px;
+  color: var(--seed-color-bg-informative-solid);
 }
 
-.rebirth-my-location-heading::after {
-  content: "";
-  position: absolute;
-  inset: 3px 3px 2px;
-  background: var(--seed-color-fg-brand);
-  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+.rebirth-my-location-heading svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: currentColor;
+  stroke: var(--seed-color-bg-layer-floating);
 }
 
 /* 정확도 원. 크기는 미터를 축척에 맞춰 px 로 환산해 스크립트가 넣음 */
 .rebirth-my-location-accuracy {
   border-radius: 50%;
-  background: var(--seed-color-bg-brand-weak);
-  border: 1px solid var(--seed-color-fg-brand);
+  background: var(--seed-color-bg-informative-weak);
+  border: 1px solid var(--seed-color-stroke-informative-weak);
   opacity: 0.45;
   pointer-events: none;
 }

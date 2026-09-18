@@ -27,7 +27,7 @@ const EASE = 0.25;
 const SETTLE_DEG = 0.1;
 
 // 정확도 원이 점의 후광보다 작으면 겹쳐 보여 그리지 않음
-const MIN_CIRCLE_PX = 36;
+const MIN_CIRCLE_PX = 72;
 
 type Layer = {
   dot: Marker;
@@ -36,15 +36,22 @@ type Layer = {
   circleEl: HTMLElement;
 };
 
+// 화살촉. 모서리를 둥글게 하려고 clip-path 대신 SVG 의 round join 을 씀, 색은 CSS 가 넣음
+const ARROW_SVG =
+  '<svg viewBox="0 0 18 18" aria-hidden="true"><path d="M9 2.5 L15.5 15 L2.5 15 Z" stroke-width="2.5" stroke-linejoin="round"/></svg>';
+
 function build(): Layer {
   const wrap = document.createElement("div");
   wrap.className = "rebirth-my-location";
+  const glow = document.createElement("div");
+  glow.className = "rebirth-my-location-glow";
   const cone = document.createElement("div");
   cone.className = "rebirth-my-location-heading";
+  cone.innerHTML = ARROW_SVG;
   cone.hidden = true;
   const dotEl = document.createElement("div");
   dotEl.className = "rebirth-my-location-dot";
-  wrap.append(cone, dotEl);
+  wrap.append(glow, cone, dotEl);
 
   const circleEl = document.createElement("div");
   circleEl.className = "rebirth-my-location-accuracy";
