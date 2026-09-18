@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useEffectEvent, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { Box, Grid, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
@@ -607,28 +607,25 @@ export function HomeScreen({
   // 말풍선을 닫을 때 돌려놓을 직전 화면, 핀을 옮겨 골라도 처음 값을 지킴
   const beforePreview = useRef<{ point: LatLng; zoom: number } | null>(null);
 
-  // 핀이 memo 라 같은 함수를 넘겨야 지도가 움직일 때 핀이 다시 그려지지 않음
-  const selectPin = useCallback(
-    (item: MapMarker) => {
-      if (map && !beforePreview.current) {
-        const at = map.getCenter();
-        beforePreview.current = { point: { lat: at.lat, lng: at.lng }, zoom: map.getZoom() };
-      }
-      setSelectedId(item.id);
-      snapTo(SHEET.hidden);
-      moveTo(item.point, { animate: true, zoom: PIN_ZOOM, offset: PIN_OFFSET });
-    },
-    [map, moveTo, snapTo],
-  );
+  // 핀이 memo 라 같은 함수를 넘겨야 지도가 움직일 때 핀이 다시 그려지지 않음, 함수 고정은 컴파일러가 맡음
+  const selectPin = (item: MapMarker) => {
+    if (map && !beforePreview.current) {
+      const at = map.getCenter();
+      beforePreview.current = { point: { lat: at.lat, lng: at.lng }, zoom: map.getZoom() };
+    }
+    setSelectedId(item.id);
+    snapTo(SHEET.hidden);
+    moveTo(item.point, { animate: true, zoom: PIN_ZOOM, offset: PIN_OFFSET });
+  };
 
-  const closePreview = useCallback(() => {
+  const closePreview = () => {
     setSelectedId(null);
     snapTo(SHEET.collapsed);
 
     const before = beforePreview.current;
     beforePreview.current = null;
     if (before) moveTo(before.point, { animate: true, zoom: before.zoom });
-  }, [moveTo, snapTo]);
+  };
 
   // 말풍선도 지도가 만든 요소에 포털로 채움, 위치와 방향은 SDK 가 잡음
   const [popupEl, setPopupEl] = useState<HTMLElement | null>(null);
@@ -659,20 +656,22 @@ export function HomeScreen({
   }, [map, selected]);
 
   // 지도 빈 곳을 누르면 닫음, 핀 클릭도 지도 클릭으로 올라와 표식으로 걸러냄
+  // 닫는 함수를 effect 의존성에 넣으면 렌더마다 리스너를 다시 묶어 Effect Event 로 최신 것을 부름
+  const onMapClick = useEffectEvent((event: MapMouseEvent) => {
+    const target = event.originalEvent.target;
+    if (target instanceof Element && target.closest("[data-report-pin], [data-report-popup]")) {
+      return;
+    }
+    closePreview();
+  });
   useEffect(() => {
     if (!map) return;
-    const close = (event: MapMouseEvent) => {
-      const target = event.originalEvent.target;
-      if (target instanceof Element && target.closest("[data-report-pin], [data-report-popup]")) {
-        return;
-      }
-      closePreview();
-    };
+    const close = (event: MapMouseEvent) => onMapClick(event);
     map.on("click", close);
     return () => {
       map.off("click", close);
     };
-  }, [map, closePreview]);
+  }, [map]);
 
   const expanded = sheetStop > SHEET_MID;
   const hidden = sheetStop === SHEET.hidden;
