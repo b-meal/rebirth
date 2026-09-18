@@ -46,9 +46,10 @@ html {
   overflow-x: clip;
 }
 
+/* 프레임 상자 높이를 넘어간 자리에 흰 캔버스가 드러나던 것 방지 */
 body {
   margin: 0;
-  background: var(--seed-color-bg-layer-default);
+  background: var(--seed-color-bg-layer-basement);
   color: var(--seed-color-fg-neutral);
   /* 길에서 한 손으로 쓰는 화면이라 가로 스크롤 차단 */
   overflow-x: clip;
