@@ -5,7 +5,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Box, Text, VStack } from "@seed-design/react";
+import { Box, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 
 import { armSplashGate, releaseSplashGate } from "@/lib/splash-gate";
@@ -134,13 +134,23 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
         </Text>
       </Box>
 
-      {/* 로고가 올라간 자리 아래. 진입한 사람이 곧바로 할 일 하나만 둠 */}
-      <VStack className={styles.actions} align="stretch" gap="x3" px="spacingX.globalGutter">
+      {/* 로고가 올라간 자리 아래. 이 앱으로 하는 일 셋을 여기서 한 번에 보여 줌
+          첫 사용자가 목적을 읽는 비용은 한 번뿐이라 늘 보이는 메뉴가 아니라 이 덮개가 갚음
+          제보가 가장 잦아 크게 두고 나머지 둘은 보조로 둠 */}
+      <VStack className={styles.actions} align="stretch" gap="x2" px="spacingX.globalGutter">
         <ActionButton size="large" asChild onClick={dismiss}>
           <Link href="/report">제보하기</Link>
         </ActionButton>
+        <HStack gap="x2" align="stretch">
+          <ActionButton variant="neutralWeak" size="medium" flexGrow={1} asChild onClick={dismiss}>
+            <Link href="/lost/new">우리 아이 찾기</Link>
+          </ActionButton>
+          <ActionButton variant="neutralWeak" size="medium" flexGrow={1} asChild onClick={dismiss}>
+            <Link href="/guide/injured">다친 동물</Link>
+          </ActionButton>
+        </HStack>
         {/* ghost 는 마우스가 있는 기기에만 호버 면을 깔고 터치에서는 누르는 동안만 반응함 */}
-        <ActionButton variant="ghost" size="large" color="fg.neutralSubtle" onClick={dismiss}>
+        <ActionButton variant="ghost" size="medium" color="fg.neutralSubtle" onClick={dismiss}>
           지도 둘러보기
         </ActionButton>
       </VStack>

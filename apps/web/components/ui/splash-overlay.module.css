@@ -3,8 +3,9 @@
   --join-delay: 520ms;
   --join-duration: 680ms;
   --join-end: calc(var(--join-delay) + var(--join-duration));
-  /* 로고가 올라가 비우는 아래 여백, 단추 두 줄이 들어가는 높이 */
-  --rise: 16dvh;
+  /* 로고가 올라가 비우는 아래 여백, 단추 세 줄이 들어가는 높이
+     큰 단추 한 줄과 보조 두 칸 한 줄, 둘러보기 한 줄 */
+  --rise: 23dvh;
   --rise-duration: 560ms;
   transform: translateX(-50%);
   pointer-events: none;
