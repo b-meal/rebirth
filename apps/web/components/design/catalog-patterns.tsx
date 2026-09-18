@@ -61,7 +61,7 @@ const SECTIONS = Object.fromEntries(
   CATALOG.flatMap((group) => group.sections).map((section) => [section.id, section]),
 );
 
-const SCROLL_ITEMS = ["발견", "한곳에 머묾", "사람을 피함", "사람에게 다가옴", "차도 근처"];
+const SCROLL_ITEMS = ["길에 있음", "한곳에 머묾", "사람을 피함", "사람에게 다가옴", "차도 근처"];
 
 export function CatalogPatterns() {
   const snackbar = useSnackbarAdapter();

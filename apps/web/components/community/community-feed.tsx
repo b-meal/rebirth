@@ -45,9 +45,6 @@ import { PostCard, type PostCardItem } from "./post-card";
 /** 동네 이름이 들어올 자리. 양재2동 같은 네 글자에 맞춰 두어 값이 와도 줄이 들썩이지 않음 */
 const AREA_SKELETON_WIDTH = "4.5rem";
 
-/** 이웃 글을 먼저 보여 줘요 가 들어올 자리 */
-const NOTE_SKELETON_WIDTH = "9.5rem";
-
 /** 반응 많은 글을 세울 최소 목록 길이. 골라 세운 수의 곱절은 돼야 같은 글이 두 번 보이지 않음 */
 const MIN_FOR_HOT = 12;
 
@@ -278,12 +275,13 @@ export function CommunityFeed({
       <AppHeader
         title="커뮤니티"
         action={
+          // 기다리는 신호는 아래 배너 뼈대 하나가 맡음
+          // 여기까지 함께 돌리면 한 번 기다리는 일을 두 곳에서 알리게 됨
           <ActionButton
             variant="ghost"
             size="medium"
             layout="iconOnly"
             aria-label="내 동네 다시 잡기"
-            loading={locating}
             onClick={retry}
           >
             <Icon svg={<IconLocationpinLine />} />
@@ -304,25 +302,25 @@ export function CommunityFeed({
           bg="bg.neutralWeak"
         >
           <Icon svg={<IconLocationpinLine />} size="x4" color="fg.neutralMuted" />
-          {updating ? (
-            // 바뀔 값만 뼈대로 덮음. 줄을 통째로 비우면 목록까지 갈아엎는 것처럼 보임
-            // 읽을 글자가 없는 동안 무엇을 기다리는지는 이 줄이 대신 알림
-            <HStack
-              gap="x1_5"
-              align="center"
-              grow={1}
-              minWidth="0"
-              role="status"
-              aria-label="내 동네를 다시 확인하고 있어요"
-            >
-              <Skeleton width={AREA_SKELETON_WIDTH} />
-              <Skeleton width={NOTE_SKELETON_WIDTH} />
-            </HStack>
-          ) : areaName ? (
+          {updating || areaName ? (
             <HStack gap="x1" align="center" grow={1} minWidth="0">
-              <Text textStyle="t3Bold" color="fg.neutral" maxLines={1}>
-                {areaName}
-              </Text>
+              {updating ? (
+                // 바뀌는 값은 동네 이름 하나뿐이라 그 자리만 뼈대로 덮음
+                // 뼈대는 스스로 알리지 않아 무엇을 기다리는지는 감싸는 쪽이 말함
+                <HStack
+                  align="center"
+                  role="status"
+                  aria-label="내 동네를 다시 확인하고 있어요"
+                >
+                  <Skeleton width={AREA_SKELETON_WIDTH} />
+                </HStack>
+              ) : (
+                <Text textStyle="t3Bold" color="fg.neutral" maxLines={1}>
+                  {areaName}
+                </Text>
+              )}
+              {/* 값이 와도 같은 말이라 뼈대로 덮지 않음
+                  함께 가리면 바뀌지 않는 줄까지 갈아엎는 것처럼 보임 */}
               <Text textStyle="t3Regular" color="fg.neutralMuted" maxLines={1}>
                 이웃 글을 먼저 보여 줘요
               </Text>

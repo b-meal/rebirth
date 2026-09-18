@@ -70,6 +70,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const title = isDone
     ? (petName ?? "끝난 신고")
     : (petName ?? report.appearance?.split("\n")[0] ?? (isLost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
+  // 링크 미리보기에서 한눈에 판단할 값만 앞에 둠. 카카오톡은 두 줄 남짓만 보임
   // 실종은 lifecycle, 발견은 careSituation 으로 고르는 다섯 어휘 한 값
   const status = isLost
     ? report.lifecycle === "resolved"

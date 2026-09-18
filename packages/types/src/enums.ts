@@ -33,8 +33,9 @@ export const careSituation = z.enum(['roaming', 'in_care', 'unknown'], {
   error: '보호 상황을 선택해 주십시오',
 })
 
-// SNS 로그인 제공자. Supabase Auth 의 provider 문자열과 같은 값
-export const authProvider = z.enum(['google', 'kakao'], {
+// 로그인 제공자. Supabase Auth 의 provider 문자열과 같은 값
+// anonymous 는 진입 시 자동으로 만드는 익명 계정. 심사와 시연에서 SNS 로그인을 대신함
+export const authProvider = z.enum(['google', 'kakao', 'anonymous'], {
   error: '지원하지 않는 로그인 방식입니다',
 })
 // 문의·권리 요청 분류. WEB-24

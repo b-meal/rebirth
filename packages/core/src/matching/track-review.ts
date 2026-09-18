@@ -2,6 +2,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
+import { promptTime } from "./prompt-time.ts";
+
 /**
  * 이동 경로와 노드 사진을 모델이 읽고 먼저 가 볼 순서를 적음
  * 배점과 예측은 결정식이 이미 끝냈고 여기서는 읽는 법만 만듦
@@ -56,6 +58,23 @@ export type TrackReviewInput = {
     hoursSinceLast: number;
     bearingDeg: number;
   } | null;
+  /** 규칙이 이미 센 탐색 단계와 주변 제보 수. 모델은 이 숫자만 인용하고 다시 세지 않음 */
+  situation?: TrackSituation | null;
+};
+
+export type TrackSituation = {
+  phase: "fresh" | "recent" | "stale" | "cold";
+  hoursSinceLost: number;
+  radiusKm: number;
+  around: { sightings: number; candidates: number } | null;
+  coverage: "quiet" | "active" | null;
+};
+
+const PHASE_WORD: Record<TrackSituation["phase"], string> = {
+  fresh: "직후",
+  recent: "하루 안",
+  stale: "사흘 안",
+  cold: "사흘 넘음",
 };
 
 export type TrackReviewErrorKind =
@@ -85,6 +104,8 @@ export const SYSTEM = `당신은 목격 제보를 이은 이동 경로와 노드
 - 사진은 털색, 크기, 목줄 같은 눈에 보이는 특징이 서로 어긋나는지만 봅니다. 사진을 근거로 같은 개체라고 말하지 않습니다
 - 좌표 숫자를 쓰지 않습니다. 위치는 지역명과 방향 낱말로만 말합니다
 - 주어진 값에 없는 사실을 만들지 않습니다. 목격 시각과 지역명 밖의 일을 추측하지 않습니다
+- 숫자는 주어진 값만 인용합니다. 제보 수와 후보 수와 반경을 다시 세거나 어림하지 않습니다
+- 주변 상황이 주어지면 그 위에서 읽습니다. 제보가 없는 곳과 제보는 있는데 후보가 없는 곳은 다르게 말합니다
 - movement 는 경로가 어느 쪽으로 이어졌는지 한 문장으로 적습니다
 - searchOrder 는 먼저 가 볼 곳을 최대 세 개까지, 앞에 올수록 먼저 가 볼 곳으로 적습니다
 - caution 은 경로를 읽을 때 주의할 점 하나이고 없으면 null 로 둡니다
@@ -98,15 +119,11 @@ export function bearingWord(deg: number): string {
   return BEARING_WORDS[Math.round(normalized / 45) % 8]!;
 }
 
-// 분 단위까지만 남겨 초와 밀리초의 소수점 숫자 제거
-const atMinute = (value: Date) =>
-  value.toISOString().slice(0, 16).replace("T", " ");
-
 /** 경로를 모델이 읽을 문장으로 옮김. 좌표는 어떤 형태로도 담지 않음 */
 export function describeTrack(input: TrackReviewInput): string {
   const nodes = input.nodes.map(
     (node, index) =>
-      `${index + 1}. ${node.areaName ?? "지역 미확인"} · ${atMinute(node.occurredAt)}`,
+      `${index + 1}. ${node.areaName ?? "지역 미확인"} · ${promptTime(node.occurredAt)}`,
   );
 
   const prediction = input.prediction
@@ -118,6 +135,8 @@ export function describeTrack(input: TrackReviewInput): string {
       ]
     : ["예측 없음"];
 
+  const situation = input.situation ? describeSituation(input.situation) : [];
+
   return [
     "[이동 경로]",
     ...nodes,
@@ -125,7 +144,28 @@ export function describeTrack(input: TrackReviewInput): string {
     "",
     "[다음 목격 예측]",
     ...prediction,
+    ...(situation.length > 0 ? ["", "[주변 상황]", ...situation] : []),
   ].join("\n");
+}
+
+/** 규칙이 센 숫자를 그대로 적음. 실종 시각 기준이며 후보 시각을 기준으로 삼지 않음 */
+function describeSituation(situation: TrackSituation): string[] {
+  const lines = [
+    `실종 이후: ${Math.round(situation.hoursSinceLost)}시간 (${PHASE_WORD[situation.phase]})`,
+  ];
+  if (situation.around) {
+    lines.push(
+      `반경 ${situation.radiusKm.toFixed(1)}km 안 발견 제보 ${situation.around.sightings}건, 그중 닮은 후보 ${situation.around.candidates}건`,
+    );
+  }
+  if (situation.coverage) {
+    lines.push(
+      situation.coverage === "quiet"
+        ? "주변 제보 활동: 적음 (보는 눈이 적은 곳)"
+        : "주변 제보 활동: 있음",
+    );
+  }
+  return lines;
 }
 
 const PHOTO_MEDIA_TYPES = [

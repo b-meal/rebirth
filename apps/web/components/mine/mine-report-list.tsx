@@ -12,7 +12,7 @@ import { Callout } from "seed-design/ui/callout";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
 
-import type { Lifecycle, Visibility } from "@rebirth/types";
+import { LIFECYCLE_LABEL, type Lifecycle, type Visibility } from "@rebirth/types";
 
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { AppHeader } from "@/components/ui/app-header";
@@ -179,8 +179,8 @@ function stateBadge(
   item: MineReportItem,
 ): { label: string; tone: BadgeTone } | null {
   if (item.visibility === "hidden") return { label: "숨김", tone: "critical" };
-  if (item.lifecycle === "resolved") return { label: "찾음", tone: "brand" };
-  if (item.lifecycle === "closed") return { label: "종료", tone: "neutral" };
+  if (item.lifecycle === "resolved") return { label: LIFECYCLE_LABEL.resolved, tone: "informative" };
+  if (item.lifecycle === "closed") return { label: LIFECYCLE_LABEL.closed, tone: "neutral" };
   return null;
 }
 

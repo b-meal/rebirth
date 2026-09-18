@@ -6,15 +6,18 @@ import {
   LAST_SEEN_MAX_AGE_SECONDS,
   NEXT_PARAM,
   SIGN_IN_PATH,
+  isAuthFlowPath,
+  isAutoSignInEnabled,
   isIdleExpired,
   isProtectedPath,
+  shouldAutoSignIn,
   shouldRefreshSeenAt,
 } from "@rebirth/core/auth";
 
 import { isAuthConfigured, supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 
 // Next.js 16 에서 middleware 는 proxy 로 이름이 바뀜
-// 하는 일은 세 가지. 만료된 토큰 갱신, 유휴 세션 정리, 보호 경로의 낙관적 차단
+// 하는 일은 네 가지. 만료된 토큰 갱신, 유휴 세션 정리, 시연용 익명 자동 로그인, 보호 경로의 낙관적 차단
 // 여기서는 쿠키만 읽음. 모든 경로에서 돌기 때문에 DB 를 건드리면 프리페치마다 질의가 생김
 // 실제 권한 확인은 화면과 라우트가 데이터에 가까운 곳에서 다시 함
 
@@ -60,7 +63,26 @@ export async function proxy(request: NextRequest) {
     return expired;
   }
 
-  if (!data?.claims && isProtectedPath(pathname)) {
+  let signedIn = Boolean(data?.claims);
+
+  // 세션이 없는 사람을 진입과 동시에 익명 계정으로 들여보냄. 심사와 시연용이며 환경 변수로만 켬
+  // 실패하면 비로그인으로 계속 감. 대시보드에서 익명 로그인이 꺼져 있어도 화면이 죽지 않음
+  if (
+    !signedIn &&
+    isAutoSignInEnabled() &&
+    !isAuthFlowPath(pathname) &&
+    shouldAutoSignIn({
+      method: request.method,
+      secFetchMode: request.headers.get("sec-fetch-mode"),
+      accept: request.headers.get("accept"),
+      userAgent: request.headers.get("user-agent"),
+    })
+  ) {
+    const { error } = await supabase.auth.signInAnonymously();
+    signedIn = !error;
+  }
+
+  if (!signedIn && isProtectedPath(pathname)) {
     const target = request.nextUrl.clone();
     target.pathname = SIGN_IN_PATH;
     target.search = "";
@@ -70,7 +92,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // 활동 시각은 하루에 한 번만 갱신함. 매 요청 Set-Cookie 는 응답만 키움
-  if (data?.claims && shouldRefreshSeenAt(lastSeen)) {
+  if (signedIn && shouldRefreshSeenAt(lastSeen)) {
     response.cookies.set(LAST_SEEN_COOKIE, String(Date.now()), {
       path: "/",
       maxAge: LAST_SEEN_MAX_AGE_SECONDS,

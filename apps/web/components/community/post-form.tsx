@@ -1,6 +1,13 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useRef, useState } from "react";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { useFormStatus } from "react-dom";
 import { Badge, Box, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -11,7 +18,13 @@ import {
   TextFieldTextarea,
 } from "seed-design/ui/text-field";
 
-import { BODY_MAX, TITLE_MAX, type CategoryDescriptor } from "@rebirth/core/community";
+import {
+  BODY_MAX,
+  TITLE_MAX,
+  communityPostInput,
+  fieldErrors,
+  type CategoryDescriptor,
+} from "@rebirth/core/community";
 
 import { createPost, type PostFormState } from "@/app/community/actions";
 import { useNeighborhood } from "@/components/location/neighborhood-provider";
@@ -54,9 +67,29 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
     {},
   );
   const [dirty, setDirty] = useState(false);
-  const errors = state.errors ?? {};
+  // 서버와 같은 스키마로 보내기 전에 먼저 거름. 빈 제목으로 왕복하면 오류가 한 박자 늦게 옴
+  // 제출마다 새 객체를 만들어 같은 오류가 이어져도 포커스가 다시 감
+  const [clientState, setClientState] = useState<PostFormState>({});
+  const shown = clientState.errors ? clientState : state;
+  const errors = shown.errors ?? {};
   const formRef = useRef<HTMLFormElement>(null);
-  useFocusError(formRef, state);
+  useFocusError(formRef, shown);
+
+  const validateBeforeSubmit = (event: FormEvent<HTMLFormElement>) => {
+    const data = new FormData(event.currentTarget);
+    const parsed = communityPostInput.safeParse({
+      category: data.get("category"),
+      title: data.get("title"),
+      body: data.get("body"),
+      areaName: data.get("areaName") ?? undefined,
+    });
+    if (parsed.success) {
+      setClientState({});
+      return;
+    }
+    event.preventDefault();
+    setClientState({ errors: fieldErrors(parsed.error) });
+  };
 
   const { areaName, blocked, ensure, retry } = useNeighborhood();
 
@@ -100,7 +133,12 @@ export function PostFormFields({ category }: { category: CategoryDescriptor }) {
 
       {/* 칸마다 글자 수가 아래에 붙어 그 높이까지 더해지면 사이가 비어 보임
           칸과 칸 사이는 좁히고 마지막 버튼만 따로 띄움 */}
-      <form ref={formRef} action={formAction} onChange={() => setDirty(true)}>
+      <form
+        ref={formRef}
+        action={formAction}
+        onSubmit={validateBeforeSubmit}
+        onChange={() => setDirty(true)}
+      >
         <VStack align="stretch" gap="x3">
           {/* 주제는 앞 화면에서 이미 골랐으므로 값만 싣고 배지로만 보여 줌 */}
           <input type="hidden" name="category" value={category.id} />

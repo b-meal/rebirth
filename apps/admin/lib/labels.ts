@@ -1,11 +1,15 @@
-// 신고 사유 라벨은 @rebirth/types 가 단일 원천이라 여기서 다시 만들지 않음
-// 운영 화면 표기. 제품 언어 규칙을 그대로 따르고 품종을 단정하지 않음
+import {
+  CARE_LABEL as CARE,
+  KIND_LABEL as KIND,
+  LIFECYCLE_LABEL as LIFECYCLE,
+} from "@rebirth/types";
 
-export const KIND_LABEL: Record<string, string> = {
-  sighting: "발견 제보",
-  lost: "실종 신고",
-  sheltered: "임시보호",
-};
+// 신고 사유와 상태 어휘는 @rebirth/types 가 단일 원천이라 여기서 다시 만들지 않음
+// 운영 화면의 행 타입이 string 이라 넓혀서 내보냄. 값은 카탈로그 그대로
+// 운영 화면 표기. 제품 언어 규칙을 그대로 따르고 품종을 단정하지 않음
+export const KIND_LABEL: Record<string, string> = KIND;
+export const CARE_LABEL: Record<string, string> = CARE;
+export const LIFECYCLE_LABEL: Record<string, string> = LIFECYCLE;
 
 export const ANIMAL_LABEL: Record<string, string> = {
   dog: "개",
@@ -21,25 +25,10 @@ export const SIZE_LABEL: Record<string, string> = {
   unknown: "확인 어려움",
 };
 
-// web 과 같은 다섯 어휘 기준. unknown 만 값이 없어 admin 의 확인 어려움 표기를 씀
-export const CARE_LABEL: Record<string, string> = {
-  roaming: "발견",
-  in_care: "보호 중",
-  unknown: "확인 어려움",
-};
-
 export const VISIBILITY_LABEL: Record<string, string> = {
   public: "공개",
   hidden: "숨김",
   deleted: "삭제",
-};
-
-// searching 과 resolved 는 실종 신고 쪽이라 다섯 어휘를 그대로 씀
-export const LIFECYCLE_LABEL: Record<string, string> = {
-  active: "진행 중",
-  closed: "종료",
-  searching: "실종",
-  resolved: "찾음",
 };
 
 export const LOCATION_SOURCE_LABEL: Record<string, string> = {
@@ -48,14 +37,37 @@ export const LOCATION_SOURCE_LABEL: Record<string, string> = {
   manual_area: "지역 직접 선택",
 };
 
-const pad = (value: number) => String(value).padStart(2, "0");
+/**
+ * 운영 화면의 시각 표기, 시간대를 한국으로 못박음
+ * getHours 는 돌리는 쪽 시간대를 따라 서버 컴포넌트에서는 배포 서버의 UTC 로,
+ * 브라우저에서는 현지로 갈려 같은 제보가 목록과 상세에서 아홉 시간 다르게 보임
+ * h23 을 못박음. 판에 따라 자정을 24 로 내주는 구현이 있음
+ */
+const WHEN = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
 
 /** 날짜와 분까지. 초는 운영 판단에 쓰이지 않음 */
 export function when(value: string | Date | null | undefined): string {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  // 자리 순서는 ICU 판마다 달라 종류로 집어 옮김
+  const part = new Map(WHEN.formatToParts(date).map((p) => [p.type, p.value]));
+  const day = `${part.get("year")}-${part.get("month")}-${part.get("day")}`;
+  return `${day} ${part.get("hour")}:${part.get("minute")}`;
+}
+
+/** 연도를 뗀 짧은 표기. 지표 칸처럼 좁은 자리에만 씀 */
+export function whenShort(value: string | Date | null | undefined): string {
+  const full = when(value);
+  return full === "-" ? full : full.slice("YYYY-".length);
 }
 
 /** 품종은 단정하지 않고 털색과 크기로만 부름 */

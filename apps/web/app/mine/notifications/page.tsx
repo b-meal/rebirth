@@ -11,6 +11,12 @@ import {
   type MatchAlertItem,
 } from "@/components/mine/notification-list";
 import { encodeAreaReportCursor, readNotificationPage } from "./notification-page";
+import {
+  previewAreas,
+  previewItems,
+  previewMatches,
+  wantsPreview,
+} from "./notification-fixtures";
 
 // REQ-019 를 앱 안 알림함으로만 제공하는 화면
 // 구독한 동네에 올라온 제보를 모아 보여 주고 안 읽은 것에만 점을 붙임
@@ -24,10 +30,27 @@ export const metadata: Metadata = {
 // 새 제보가 바로 보여야 해 캐시하지 않음
 export const dynamic = "force-dynamic";
 
-export default async function NotificationsPage() {
+export default async function NotificationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const user = await getCurrentUser();
   if (!user) {
     redirect(`${SIGN_IN_PATH}?${NEXT_PARAM}=%2Fmine%2Fnotifications`);
+  }
+
+  // 찬 화면을 눈으로 보려고 두는 자리. 개발에서 preview=1 일 때만 들어옴
+  if (wantsPreview((await searchParams).preview)) {
+    return (
+      <NotificationList
+        preview
+        areas={previewAreas}
+        items={previewItems}
+        nextCursor={null}
+        matches={previewMatches}
+      />
+    );
   }
 
   const [areas, matchRows] = await Promise.all([

@@ -7,6 +7,7 @@ import { ReportList, type ListItem } from "@/components/report/report-list";
 
 // WEB-08. 첫 장은 서버에서 그리고 다음 장은 목록 API 로 이어 받음
 // 숨김과 종료는 질의에서 빠지고 좌표는 응답에 담기지 않음
+// 이 화면은 발견 제보만 다룸, 실종 신고는 /lost 가 맡음
 
 // 검색 유입 경로라 robots 로 막지 않음
 export const metadata: Metadata = {
@@ -50,6 +51,7 @@ export default async function ReportsPage({
 
   // 한 건 더 읽어 다음 장이 있는지 판단함
   const rows = await listPublicReports({
+    kind: "sighting",
     ...(parsedType.success && { animalType: parsedType.data }),
     fromOccurredAt: since,
     limit: LIST_PAGE_SIZE + 1,
@@ -63,6 +65,7 @@ export default async function ReportsPage({
 
   return (
     <ReportList
+      kind="sighting"
       items={items}
       // 목록 API 의 커서 형식과 같아야 다음 장을 이어 받을 수 있음
       nextCursor={hasMore && last ? `${last.occurredAt.toISOString()}_${last.id}` : null}

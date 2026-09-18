@@ -6,7 +6,15 @@ import { findPublicReport, findReportPhotoPaths } from "@rebirth/db";
 import { ImageResponse } from "next/og";
 import { toDataURL } from "qrcode";
 
-import { SIZE_LABEL, STATUS_LABEL, breedLabel, searchingDays, withObject } from "@/lib/report-label";
+import { LIFECYCLE_LABEL } from "@rebirth/types";
+
+import {
+  SIZE_LABEL,
+  STATUS_LABEL,
+  breedLabel,
+  formatMonthDay,
+  withObject,
+} from "@/lib/report-label";
 
 // 공유 카드. ratio=story 는 인스타 스토리용 9:16, 기본은 링크 미리보기용 OG 1.91:1
 // 정확 좌표와 제보자 정보, 품종 확정 표현을 넣지 않음
@@ -126,14 +134,15 @@ export async function GET(
       : (report?.appearance?.split("\n")[0] ??
         (lost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
   const where = report?.areaName ?? "위치 미확인";
-  // 당일 실종은 0일째 로 적지 않고 보호 상황 없는 실종은 빈 값으로 두어 배지 감춤
+  // 보호 상황 없는 실종은 빈 값으로 두어 배지를 감춤
+  // 며칠째 와 오늘 은 긁힌 그림에 굳어 시간이 지나면 거짓이 됨. 언제부터 찾는지는 날짜로만 적음
   const care =
     lost && report
       ? done
-        ? "찾음"
-        : searchingDays(report.occurredAt) < 1
-          ? "오늘 잃어버렸어요"
-          : `실종 ${searchingDays(report.occurredAt)}일째`
+        ? found
+          ? LIFECYCLE_LABEL.resolved
+          : LIFECYCLE_LABEL.closed
+        : `${formatMonthDay(report.occurredAt)}부터 찾고 있어요`
       : (STATUS_LABEL[report?.careSituation ?? "unknown"] ?? "");
   // 보호자가 적어 둔 품종은 추정이 아니라 아는 값이라 계열 추정을 붙이지 않음
   const breed = report?.pet?.breedGuess ?? breedLabel(report?.breedGuess ?? null);

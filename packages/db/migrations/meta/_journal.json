@@ -274,6 +274,13 @@
       "when": 1789579991528,
       "tag": "0038_add_report_photo_uk",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1789710187757,
+      "tag": "0039_add_anonymous_provider",
+      "breakpoints": true
     }
   ]
 }

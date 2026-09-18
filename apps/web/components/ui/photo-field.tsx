@@ -28,6 +28,7 @@ import { ProgressCircle } from "seed-design/ui/progress-circle";
 
 import type { PhotoItem } from "@/lib/image";
 import type { PhotoPickerState } from "@/hooks/use-photo-picker";
+import { useNativePhotoChooser } from "@/hooks/use-native-photo-chooser";
 import { PhotoPickerInput, type PhotoPickerInputHandle } from "./photo-picker-input";
 
 // 촬영과 앨범 선택을 한 자리에서 다루는 사진 입력, 미리보기는 SEED ImageFrame
@@ -35,6 +36,7 @@ import { PhotoPickerInput, type PhotoPickerInputHandle } from "./photo-picker-in
 // 누르는 자리는 언제나 하나뿐임
 // 빈 자리와 촬영 버튼과 앨범 버튼을 나란히 두면 셋이 같은 일을 해 어디를 눌러야 할지 고르게 됨
 // 갈 곳이 둘이면 누른 뒤에 시트로 묻고, 하나뿐이면 묻지 않고 바로 엶
+// 휴대폰은 기기가 스스로 묻는 자리라 갈 곳을 하나로 봄. 시트를 세우면 물음이 두 번 나옴
 
 export type PhotoFieldProps = {
   picker: PhotoPickerState;
@@ -95,7 +97,10 @@ export function PhotoField({
   // capture 는 명세상 힌트라 카메라가 없는 기기는 알아서 파일 선택기로 떨어지고
   // 권한 전에는 videoinput 을 안 내놓는 브라우저가 있어 확인 중에는 열어 둠
   const hasCamera = cameraAvailable !== false;
-  const bothSources = hasCamera && libraryAvailable;
+  // 휴대폰은 파일 입력 하나가 보관함과 촬영을 함께 묻는다
+  // 그 앞에 시트를 세우면 같은 물음이 두 번 나오고 앨범을 고른 사람이 촬영을 또 본다
+  const nativeChooser = useNativePhotoChooser();
+  const bothSources = hasCamera && libraryAvailable && !nativeChooser;
 
   const open = (source: Source) => {
     setChooserOpen(false);
@@ -108,7 +113,8 @@ export function PhotoField({
       setChooserOpen(true);
       return;
     }
-    open(hasCamera ? "camera" : "library");
+    // 앨범 쪽 입력이라야 기기가 촬영까지 함께 물어 한 번으로 끝남
+    open(libraryAvailable ? "library" : "camera");
   };
 
   const handleFiles = (source: Source) => async (files: File[]) => {

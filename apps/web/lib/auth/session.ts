@@ -44,5 +44,10 @@ async function recoverProfile(): Promise<UserProfile | undefined> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return undefined;
-  return syncSignedInUser(data.user);
+  try {
+    return await syncSignedInUser(data.user);
+  } catch {
+    // 프로필을 못 남겨도 화면은 비로그인으로 그림. 여기서 던지면 모든 화면이 함께 죽음
+    return undefined;
+  }
 }

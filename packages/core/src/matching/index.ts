@@ -44,6 +44,7 @@ export {
   isFeasibleLeg,
   legFeasibility,
   predictNext,
+  searchRadiusKm,
   straightness,
   straightnessEffective,
   type Prediction,
@@ -73,6 +74,24 @@ export {
   type TrackReview,
   type TrackReviewInput,
   type TrackReviewNode,
+  type TrackSituation,
 } from "./track-review";
+
+export {
+  COVERAGE_DAYS,
+  COVERAGE_MIN_REPORTS,
+  COVERAGE_RADIUS_KM,
+  PHASE_HOURS,
+  actionLine,
+  buildSearchAdvice,
+  coverageLine,
+  densityLine,
+  densityRadiusKm,
+  searchPhase,
+  type Coverage,
+  type SearchAdvice,
+  type SearchAround,
+  type SearchPhase,
+} from "./search-advice";
 
 export { getLostTrackHandler } from "./track-handlers";
