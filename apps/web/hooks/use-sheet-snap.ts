@@ -115,11 +115,18 @@ export function useSheetSnap({ stops, rest, ceiling }: SheetSnapOptions) {
     followLimit === null ? value : Math.min(value, followLimit),
   );
 
-  const handleProps = {
+  // 끌기 시작만 맡는 면. 손잡이 말고 제목 줄처럼 넓은 자리에도 얹어 어디를 잡아도 시트가 따라옴
+  // touch-action none 이 없으면 브라우저가 같은 손짓을 문서 스크롤로 받아 iOS 에서 페이지가 고무줄처럼 늘어남
+  const grabProps = {
     onPointerDown: (event: ReactPointerEvent) => {
       dragged.current = false;
       dragControls.start(event);
     },
+    style: { touchAction: "none" } as const,
+  };
+
+  const handleProps = {
+    onPointerDown: grabProps.onPointerDown,
     // 탭과 Enter, Space 가 같은 길로 들어와 손가락과 키보드가 같은 동작을 함
     onClick: () => {
       if (dragged.current) return;
@@ -134,5 +141,5 @@ export function useSheetSnap({ stops, rest, ceiling }: SheetSnapOptions) {
     style: { touchAction: "none", cursor: "grab" } as const,
   };
 
-  return { y, followY, stop, viewport, snapTo, dragProps, handleProps };
+  return { y, followY, stop, viewport, snapTo, dragProps, grabProps, handleProps };
 }

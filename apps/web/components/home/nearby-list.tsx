@@ -126,6 +126,8 @@ export function NearbyList({ items, tailPx }: NearbyListProps) {
       px="spacingX.globalGutter"
       pb="x16"
       overflowY="auto"
+      // 맨 위나 아래에 닿은 뒤의 손짓이 문서로 이어지지 않음. 시트 안에서만 스크롤이 끝남
+      className="rebirth-scroll-contain"
       onScroll={onScroll}
     >
       {items.length === 0 ? (
