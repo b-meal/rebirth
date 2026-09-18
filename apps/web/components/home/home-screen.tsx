@@ -49,6 +49,14 @@ export type MapMarker = ReportCardItem & {
 // 반경 안에 하나도 없을 때 대신 보여 줄 가까운 제보 수
 const NEARBY_FALLBACK_COUNT = 12;
 
+// 훅의 문구는 제보 폼 기준이라 동이나 면을 고르라고 말함
+// 홈 지도에는 고를 자리가 없어 이 화면에서 할 수 있는 일로 바꿔 알림
+const POSITION_NOTICE: Record<"denied" | "timeout" | "unavailable", string> = {
+  denied: "현재 위치를 허용하지 않아도 둘러볼 수 있어요. 지도를 끌어 동네를 찾아보세요",
+  timeout: "현재 위치를 확인하는 데 오래 걸려요. 지도를 끌어 동네를 찾아보세요",
+  unavailable: "현재 위치를 가져오지 못했어요. 지도를 끌어 동네를 찾아보세요",
+};
+
 // 핀을 고르면 당기는 축척, 주변 골목이 보이는 정도
 const PIN_ZOOM = 16;
 
@@ -588,8 +596,9 @@ export function HomeScreen({
       moveTo(position.point, { animate: true });
       return;
     }
-    if (position.error) {
-      notice(position.error);
+    const failed = POSITION_NOTICE[position.status as keyof typeof POSITION_NOTICE];
+    if (failed) {
+      notice(failed);
       return;
     }
     position.request();

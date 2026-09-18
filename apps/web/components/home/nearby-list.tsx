@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Box, Grid, Text, VStack } from "@seed-design/react";
+import Link from "next/link";
+import { Box, Grid, HStack, Text, VStack } from "@seed-design/react";
+import { ActionButton } from "seed-design/ui/action-button";
 
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
 
@@ -122,13 +124,23 @@ export function NearbyList({ items, height }: NearbyListProps) {
       onScroll={onScroll}
     >
       {items.length === 0 ? (
-        <VStack py="x2" gap="x1" align="stretch">
-          <Text textStyle="t4Regular" color="fg.neutralMuted">
-            이 지역에는 아직 제보가 없어요
-          </Text>
-          <Text textStyle="t3Regular" color="fg.neutralSubtle">
-            지도를 옮기면 다른 지역의 제보를 볼 수 있어요
-          </Text>
+        /* 핀이 없는 지도가 이 앱을 처음 여는 사람의 첫 화면이 되므로
+           여기서 무엇을 하는 곳인지와 바로 할 일 하나를 말함 */
+        <VStack py="x2" gap="x3" align="stretch">
+          <VStack gap="x1" align="stretch">
+            <Text textStyle="t4Regular" color="fg.neutralMuted">
+              이 지역에는 아직 제보가 없어요
+            </Text>
+            <Text textStyle="t3Regular" color="fg.neutralSubtle">
+              다시집은 길에서 만난 동물을 제보하고 잃어버린 가족을 찾는 곳이에요. 지도를 옮기면
+              다른 지역의 제보를 볼 수 있어요
+            </Text>
+          </VStack>
+          <HStack align="stretch">
+            <ActionButton variant="brandSolid" size="medium" flexGrow={1} asChild>
+              <Link href="/report">제보하기</Link>
+            </ActionButton>
+          </HStack>
         </VStack>
       ) : (
         /* 안 그린 줄만큼 높이를 비워 둬야 스크롤 막대가 목록 길이를 그대로 말함 */
