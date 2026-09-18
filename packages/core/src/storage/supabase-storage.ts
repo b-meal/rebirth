@@ -210,6 +210,15 @@ function cachedThumbUrl(path: string, expiresIn: number): Promise<string> {
 }
 
 /**
+ * 화면 하나가 스토리지로 한 번에 띄우는 서명 요청 수의 상한
+ *
+ * 경로 수만큼 그대로 띄우면 목록 한 장이 예순 번을 동시에 오가고, 스토리지가 느려진 순간에는
+ * 예순 개가 같은 10초를 함께 태운 뒤 한꺼번에 비어 돌아옴
+ * 실제로 60장을 여러 동시 수로 재 보면 16 과 60 의 소요가 다르지 않아 이 상한은 값을 잃지 않음
+ */
+const SIGN_CONCURRENCY = 16;
+
+/**
  * 축소 사진 서명 URL 묶음. 일괄 서명 경로가 transform 을 무시해 경로마다 따로 서명함
  */
 export async function createSignedThumbUrls(
@@ -218,20 +227,40 @@ export async function createSignedThumbUrls(
 ): Promise<Map<string, string>> {
   if (paths.length === 0) return new Map();
 
-  const signed = await Promise.all(
-    paths.map(async (path) => {
+  const signed = new Map<string, string>();
+  // 한 장이 실패해도 나머지 카드는 사진을 보여 줌
+  const failures: unknown[] = [];
+  let next = 0;
+
+  async function sign(): Promise<void> {
+    while (next < paths.length) {
+      const path = paths[next++];
       try {
-        return [path, await cachedThumbUrl(path, expiresIn)] as const;
+        signed.set(path, await cachedThumbUrl(path, expiresIn));
       } catch (error) {
-        // 한 장이 실패해도 나머지 카드는 사진을 보여 줌
-        // 다만 조용히 두면 사진이 통째로 빠진 화면과 사진이 없는 제보를 구별할 수 없음
-        logFailure("storage.signThumb", error);
-        return null;
+        failures.push(error);
       }
-    }),
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(SIGN_CONCURRENCY, paths.length) }, sign),
   );
 
-  return new Map(signed.filter((row): row is [string, string] => row !== null));
+  // 조용히 두면 사진이 통째로 빠진 화면과 사진이 없는 제보를 구별할 수 없음
+  // 장마다 한 줄씩 남기면 목록 한 장이 표를 예순 줄로 채우므로 묶음마다 한 줄만 남김
+  // 몇 장 중 몇 장인지와 어떤 종류인지가 없으면 기록을 봐도 할 수 있는 일이 없음
+  if (failures.length > 0) {
+    const first = failures[0];
+    logFailure("storage.signThumb", first, {
+      failed: failures.length,
+      total: paths.length,
+      ...(first instanceof StorageError && { kind: first.kind }),
+      ...(first instanceof StorageError && first.status !== undefined && { status: first.status }),
+    });
+  }
+
+  return signed;
 }
 
 /** 여러 경로를 한 번에 서명함. 목록 화면이 사진 수만큼 요청을 보내지 않게 함 */
