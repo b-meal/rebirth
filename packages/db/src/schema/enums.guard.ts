@@ -8,6 +8,8 @@ import type {
   animalType,
   areaCodeSystem,
   authProvider,
+  precheckSource,
+  precheckVerdict,
   careSituation,
   closeReason,
   communityCategory,
@@ -40,6 +42,8 @@ const _closeReason: Same<Values<typeof closeReason>, t.CloseReason> = true
 const _authProvider: Same<Values<typeof authProvider>, t.AuthProvider> = true
 const _community: Same<Values<typeof communityCategory>, t.CommunityCategory> = true
 const _shelterKind: Same<Values<typeof shelterKind>, t.ShelterKind> = true
+const _precheckVerdict: Same<Values<typeof precheckVerdict>, t.PrecheckVerdict> = true
+const _precheckSource: Same<Values<typeof precheckSource>, t.PrecheckSource> = true
 
 void [
   _kind,
@@ -58,4 +62,6 @@ void [
   _authProvider,
   _community,
   _shelterKind,
+  _precheckVerdict,
+  _precheckSource,
 ]

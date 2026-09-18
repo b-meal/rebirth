@@ -29,6 +29,21 @@ const MODEL_WAIT_MS = 500;
 // 앞은 판정 없음으로 확정해야 하고 뒤는 쓸 곳이 없어 버림
 const TIMED_OUT = Symbol("precheck-timeout");
 
+/** 서버에 남기는 한 건. 사진과 사람을 가리키는 값은 담지 않음 */
+type PrecheckEvent = {
+  deviceScore: number | null;
+  threshold: number;
+  deviceMs: number;
+  deviceVerdict: PhotoVerdict | null;
+  serverVerdict: PhotoVerdict | null;
+  verdict: PhotoVerdict;
+  source: VerdictSource;
+  photoWidth: number;
+  photoHeight: number;
+};
+
+const LOG_URL = "/api/draft/precheck/log";
+
 export type PhotoPrecheckState = {
   /** 아직 묻지 않은 사진은 checking. 화면은 checking 에 아무 표시도 하지 않아도 됨 */
   verdictOf: (photoId: string) => PhotoVerdict;
@@ -38,11 +53,21 @@ export type PhotoPrecheckState = {
   sourceOf: (photoId: string) => VerdictSource | null;
 };
 
-/** 기기에서 재 봄. 모델이 아직이거나 실패하면 null 을 돌려 서버로 넘김 */
-async function askDevice(photo: PhotoItem): Promise<PhotoVerdict | null> {
+/** 기기가 낸 것. 모델이 아직이거나 실패하면 verdict 가 null 이고 부르는 쪽이 서버로 넘김 */
+type DeviceAnswer = {
+  verdict: PhotoVerdict | null;
+  /** 동물 점수. 판정을 못 냈으면 null */
+  score: number | null;
+  /** 모델을 기다린 시간까지 포함한 걸린 시간 */
+  ms: number;
+};
+
+async function askDevice(photo: PhotoItem): Promise<DeviceAnswer> {
+  const startedAt = Date.now();
   const score = await scoreAnimal(photo.precheckFile, { waitMs: MODEL_WAIT_MS });
-  if (score === null) return null;
-  return score >= ANIMAL_THRESHOLD ? "animal" : "not-animal";
+  const ms = Date.now() - startedAt;
+  if (score === null) return { verdict: null, score: null, ms };
+  return { verdict: score >= ANIMAL_THRESHOLD ? "animal" : "not-animal", score, ms };
 }
 
 async function askServer(photo: PhotoItem, signal: AbortSignal): Promise<PhotoVerdict> {
@@ -73,14 +98,47 @@ async function askServer(photo: PhotoItem, signal: AbortSignal): Promise<PhotoVe
  * 거부만 서버로 넘기면 최종 답이 늘 서버 쪽이라 누가 보든 같고,
  * 통과는 기기에서 끝나 대부분의 사진은 여전히 왕복 없이 판정됨
  */
-async function ask(
-  photo: PhotoItem,
-  signal: AbortSignal,
-): Promise<{ verdict: PhotoVerdict; source: VerdictSource }> {
+async function ask(photo: PhotoItem, signal: AbortSignal): Promise<PrecheckEvent> {
   const device = await askDevice(photo);
-  if (device === "animal") return { verdict: device, source: "device" };
-  if (signal.aborted) return { verdict: "unknown", source: "device" };
-  return { verdict: await askServer(photo, signal), source: "server" };
+  const base = {
+    deviceScore: device.score,
+    threshold: ANIMAL_THRESHOLD,
+    deviceMs: device.ms,
+    deviceVerdict: device.verdict,
+    photoWidth: photo.width,
+    photoHeight: photo.height,
+  };
+
+  if (device.verdict === "animal") {
+    return { ...base, serverVerdict: null, verdict: device.verdict, source: "device" };
+  }
+  if (signal.aborted) {
+    return { ...base, serverVerdict: null, verdict: "unknown", source: "device" };
+  }
+
+  const server = await askServer(photo, signal);
+  return { ...base, serverVerdict: server, verdict: server, source: "server" };
+}
+
+/**
+ * 판정이 무엇이었는지만 서버에 남김. 사진도 좌표도 보내지 않음
+ * 실제로 올라오는 사진의 점수 분포를 봐야 문턱을 표본이 아니라 데이터로 다시 잡을 수 있음
+ * 보내지 못해도 화면에서 할 일은 없어 결과를 보지 않음
+ */
+function logEvent(event: PrecheckEvent): void {
+  try {
+    const body = JSON.stringify({ events: [event] });
+    // 화면을 떠나는 중에도 남게 sendBeacon 을 먼저 씀
+    if (navigator.sendBeacon?.(LOG_URL, new Blob([body], { type: "application/json" }))) return;
+    void fetch(LOG_URL, {
+      method: "POST",
+      body,
+      headers: { "content-type": "application/json" },
+      keepalive: true,
+    }).catch(() => undefined);
+  } catch {
+    // 기록은 곁가지라 여기서 끝냄
+  }
 }
 
 export function usePhotoPrecheck(photos: PhotoItem[]): PhotoPrecheckState {
@@ -115,11 +173,13 @@ export function usePhotoPrecheck(photos: PhotoItem[]): PhotoPrecheckState {
       const timer = setTimeout(() => controller.abort(TIMED_OUT), CLIENT_TIMEOUT_MS);
       inflight.current.set(photo.id, controller);
 
-      void ask(photo, controller.signal).then(({ verdict, source }) => {
+      void ask(photo, controller.signal).then((event) => {
+        const { verdict, source } = event;
         clearTimeout(timer);
         inflight.current.delete(photo.id);
         // 시간 초과를 여기서 버리면 판정이 영영 checking 에 머물러 기다리는 표시가 안 걷힘
         if (controller.signal.aborted && controller.signal.reason !== TIMED_OUT) return;
+        logEvent(event);
         sources.current.set(photo.id, source);
         setResults((previous) => ({ ...previous, [photo.id]: verdict }));
       });
