@@ -77,18 +77,34 @@ TRACK_PHOTO_MAX         4      최근 노드부터 첫 사진 한 장씩
 예측 반경       1.03km
 직선성          1.000
 방위            135도 (남동)
-밀도            반경 안 제보 1건, 마지막 목격 6.8시간 전
+조언            stale 27.2시간 · 반경 1.2km 안 발견 제보 6건, 그중 닮은 후보 4건 · 커버리지 active
 탐색 지점       통도골천 · 당골공원 · 태현공원 · 점골어린이공원   Kakao 실호출
 해석            백현동에서 정자동 거쳐 금곡동으로 남동쪽 이동      Anthropic 실호출
 순서            금곡동 일대 → 금곡동 남동쪽 인근 → 정자동과 금곡동 경계
 응답 exactPoint 0건
 ```
 
+## 탐색 조언
+
+시간과 위치와 제보 밀도를 서버가 한 번에 읽어 지금 할 일 한 줄과 그 근거 한 줄로 바꿉니다. 모델이 아니라 규칙이 만드는 문장이라 화면에 AI 초안 표기를 붙이지 않고, 모델에는 규칙이 센 숫자만 넘겨 해석이 같은 사실 위에 서게 합니다.
+
+```
+기준 시각   보호자가 적은 실종 시각 하나. 후보 제보 시각은 개체가 확정되지 않아 기준으로 쓰지 않음
+단계        fresh <6h · recent <24h · stale <72h · cold >=72h
+행동        단계 × 동물로 고름. 고양이는 가까운 곳 반복 탐색, 개는 반경 확장
+근거        반경 r km 안 발견 제보 n건(분모), 그중 닮은 후보 m건(분자)
+커버리지    최근 7일 반경 3km 발견 제보 3건 미만이면 보는 눈이 적은 곳으로 보고 공유를 권함
+반경 하한   격자 두 배. 300m 격자면 0.6km, 1000m 격자면 2km. 스냅 오차보다 작은 반경은 빈 문장
+```
+
+제보가 없는 것과 제보는 있는데 후보가 없는 것은 다음 행동이 다릅니다. 앞은 공유로 눈을 늘려야 하고 뒤는 지역을 옮겨야 합니다. 분모 없이 후보 수만 말하면 이 둘을 가를 수 없어 두 수를 함께 냅니다.
+
+경계 시간 6·24·72와 커버리지 하한은 회수 데이터가 없어 정한 경험 규칙입니다. 단계가 응답에 남으므로 어떤 단계를 본 보호자가 무엇을 했는지 셀 수 있고, 그 데이터로 경계를 보정하는 것이 다음 일입니다. 제출 자료에는 데이터 기반이 아니라 규칙 기반, 보정 예정으로 적습니다.
+
 ## 함께 반영한 UX
 
 ```
-시간 → 행동     fresh <6h · recent <24h · stale <72h · cold >=72h 네 등급에 다음 행동 한 줄
-밀도 문구       반경 r km 안에 제보 n건, 0건이면 새 제보가 없어요
+할 일 → 근거 → 갈 곳   경로 카드는 세 덩이만. 지도와 타임라인이 이미 보여 주는 지역명과 시각은 되풀이하지 않음
 상태 어휘       실종 · 발견 · 보호 중 · 구조 요청 · 찾음 으로 통일, 주어 없는 표기
 CTA            구조 요청 → 구조·보호 요청, 내 가족 같아요 → 우리 아이인지 확인
 검색 분리       발견 제보 찾기 / 실종 신고 찾기, 실종은 반려동물 이름으로도 검색
@@ -105,11 +121,12 @@ packages/core/src/matching/track-review.ts   모델 해석과 사진 대조
 packages/core/src/matching/track-handlers.ts GET /api/lost/:id/track
 packages/db/src/queries/lost.ts              findTrackSightings
 apps/web/components/lost/track-map.tsx       경로선 · 예측 원 · 번호 마커
-apps/web/components/lost/track-section.tsx   요약 카드와 탐색 순서
-apps/web/lib/report-label.ts                 긴급도 등급과 밀도 문구
+packages/core/src/matching/search-advice.ts  탐색 단계·행동 문구·밀도·커버리지 순수 함수
+packages/db/src/queries/lost.ts              countSightingsAround 분모 집계
+apps/web/components/lost/track-section.tsx   할 일 · 근거 · 갈 곳 카드
 ```
 
-회귀 검증은 `track.test.ts` 7건, `search-spots.test.ts` 3건, `track-review.test.ts` 7건입니다.
+회귀 검증은 `track.test.ts` 7건, `search-spots.test.ts` 3건, `track-review.test.ts` 9건, `search-advice.test.ts` 8건입니다.
 
 ## 남은 것
 
