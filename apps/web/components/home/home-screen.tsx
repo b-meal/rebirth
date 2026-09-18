@@ -336,7 +336,7 @@ export function HomeScreen({
     viewport: viewportHeight,
     snapTo,
     dragProps,
-    grabProps,
+    sheetProps,
     handleProps,
     contentRef,
   } = useSheetSnap({ stops: STOPS, rest: SHEET.collapsed, ceiling: SHEET.full });
@@ -999,8 +999,11 @@ export function HomeScreen({
         >
           <motion.section
             {...dragProps}
+            // 시트 어디를 잡아도 끌리고 같은 손짓이 문서 스크롤로 가지 않음. 목록 안은 손짓 넘김이 따로 정함
+            onPointerDown={sheetProps.onPointerDown}
             inert={hidden}
             style={{
+              ...sheetProps.style,
               y,
               position: "absolute",
               left: 0,
@@ -1048,14 +1051,7 @@ export function HomeScreen({
             </Grid>
           ) : null}
 
-          {/* 제목 줄도 끌기 면. 손잡이만 잡게 두면 여기를 잡은 손짓이 문서로 흘러 페이지가 함께 움직임 */}
-          <HStack
-            px="spacingX.globalGutter"
-            justify="space-between"
-            align="center"
-            gap="x2"
-            {...grabProps}
-          >
+          <HStack px="spacingX.globalGutter" justify="space-between" align="center" gap="x2">
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
               {!ready
                 ? "최근 제보"
