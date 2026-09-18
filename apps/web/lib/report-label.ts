@@ -27,9 +27,6 @@ export const STATUS_LABEL: Record<string, string> = {
   unknown: "",
 };
 
-// 담당 밖 경로가 아직 참조하는 이름, 이관 뒤 제거 대상
-export const CARE_LABEL = STATUS_LABEL;
-
 export type AnimalLabelInput = {
   animalType: AnimalType;
   colors: string[];
