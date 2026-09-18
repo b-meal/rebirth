@@ -20,6 +20,8 @@ export function findNearbyShelters(input: {
   point: { lat: number; lng: number }
   kind?: (typeof shelters.kind.enumValues)[number]
   limit?: number
+  /** 이어 읽을 자리. 기관 목록은 거의 바뀌지 않아 건너뛴 수로 셈 */
+  offset?: number
 }) {
   const origin = raw`ST_SetSRID(ST_MakePoint(${input.point.lng}, ${input.point.lat}), 4326)::geography`
   const distance = raw`ST_Distance(${shelters.point}::geography, ${origin})`
@@ -49,8 +51,10 @@ export function findNearbyShelters(input: {
         input.kind ? eq(shelters.kind, input.kind) : undefined,
       ),
     )
-    .orderBy(distance)
+    // 거리가 같은 기관이 쪽을 넘나들지 않도록 id 까지 순서를 못 박음
+    .orderBy(distance, shelters.id)
     .limit(input.limit ?? 3)
+    .offset(input.offset ?? 0)
 }
 
 // 시드가 여러 번 돌아도 같은 행을 다시 쌓지 않게 출처 키로 덮어씀
@@ -88,6 +92,8 @@ export function listSheltersByRegion(input: {
   region?: string
   kind?: (typeof shelters.kind.enumValues)[number]
   limit?: number
+  /** 이어 읽을 자리. 기관 목록은 거의 바뀌지 않아 건너뛴 수로 셈 */
+  offset?: number
 }) {
   return db
     .select({
@@ -114,8 +120,10 @@ export function listSheltersByRegion(input: {
         input.kind ? eq(shelters.kind, input.kind) : undefined,
       ),
     )
-    .orderBy(shelters.name)
+    // 이름이 같은 기관이 쪽을 넘나들지 않도록 id 까지 순서를 못 박음
+    .orderBy(shelters.name, shelters.id)
     .limit(input.limit ?? 50)
+    .offset(input.offset ?? 0)
 }
 
 export function countShelters() {
