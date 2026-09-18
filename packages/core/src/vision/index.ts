@@ -26,3 +26,4 @@ export {
 
 export { analyzeHandler, getAnalysisJobHandler } from "./handlers";
 export { precheckHandler, type PrecheckVerdict } from "./precheck-handler";
+export { precheckLogHandler } from "./precheck-log-handler";

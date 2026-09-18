@@ -106,6 +106,14 @@ export const uploadStatus = pgEnum('upload_status', [
   'failed',
 ])
 
+// 1단계 선검사 판정과 그 판정을 낸 곳
+export const precheckVerdict = pgEnum('precheck_verdict', [
+  'animal',
+  'not-animal',
+  'unknown',
+])
+export const precheckSource = pgEnum('precheck_source', ['device', 'server'])
+
 // 위치 출처. POL-08. manual_area 는 정확 좌표가 없어 거리 점수를 받지 않음
 export const locationSource = pgEnum('location_source', [
   'gps',
