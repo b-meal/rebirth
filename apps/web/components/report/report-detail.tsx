@@ -250,13 +250,14 @@ export function ReportDetail({
           mine={interest.mine}
         />
         <HStack gap="x2" align="center">
-          {/* 안내 시트를 거치지 않고 접수 화면으로 바로 보냄 */}
+          {/* 안내 시트를 거치지 않고 접수 화면으로 바로 보냄
+              from 을 달아 이 화면에 이미 있는 값으로 세 칸이 채워진 채 열림 */}
           <ActionButton
             variant={report.injury === true ? "brandSolid" : "neutralWeak"}
             size="medium"
             asChild
           >
-            <Link href="/guide/injured">{CTA.rescue}</Link>
+            <Link href={`/guide/injured?from=${report.id}`}>{CTA.rescue}</Link>
           </ActionButton>
           <ActionButton
             variant={report.injury === true ? "neutralWeak" : "brandSolid"}
