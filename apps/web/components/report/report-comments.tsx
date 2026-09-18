@@ -176,6 +176,11 @@ export function CommentComposer({ reportId }: { reportId: string }) {
   const submit = async () => {
     const text = body.trim();
     if (!text || sending) return;
+    // 서버가 같은 상한으로 거절하므로 보내기 전에 여기서 알림
+    if (text.length > COMMENT_MAX) {
+      notice(`댓글은 ${COMMENT_MAX}자까지 쓸 수 있어요`);
+      return;
+    }
     setSending(true);
     try {
       const response = await fetch(`/api/reports/${reportId}/comments`, {
