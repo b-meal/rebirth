@@ -782,7 +782,11 @@ export function HomeScreen({
           boxShadow="s2"
           style={{ pointerEvents: "auto" }}
         >
-          <Text textStyle="t3Regular" color="fg.neutral">
+          <Text
+            textStyle="t3Regular"
+            color="fg.neutral"
+            style={{ wordBreak: "keep-all", maxWidth: 240 }}
+          >
             동물을 봤거나 잃어버렸으면 여기서 시작해요
           </Text>
         </HStack>
