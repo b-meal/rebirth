@@ -23,6 +23,9 @@ async function loadPrefill(reportId: string): Promise<RescuePrefill | null> {
   const report = await findPublicReport(reportId).catch(() => undefined);
   // 실종 신고에서는 구조할 대상이 이 화면에 없음
   if (!report || report.kind === "lost") return null;
+  // 보호 중인 기록의 장소는 동물이 있는 곳이 아니라 보호소의 공고 정보임
+  // 그대로 채우면 어디에 있나요 에 공고 번호가 들어가 빈 폼보다 못함
+  if (report.careSituation === "in_care") return null;
 
   // 격자 좌표도 정확 좌표도 넣지 않음. 지역명과 제보자가 적은 표지물만 씀. POL-09
   const where = [report.areaName, report.landmarkNote].filter(Boolean).join(" ");

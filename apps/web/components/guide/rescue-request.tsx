@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { HStack, Icon, Text, VStack } from "@seed-design/react";
@@ -90,6 +90,16 @@ export function RescueRequest({ prefill }: { prefill?: RescuePrefill | null }) {
     {},
   );
 
+  /**
+   * 채워 넣은 값을 상태로 쥠
+   * SEED TextField 는 값을 root 가 쥐고 스니펫이 defaultValue 를 훅으로 넘기지 않아
+   * 입력에 defaultValue 를 주면 root 가 빈 값으로 덮음
+   * 첫 그림에 값이 실려 나가므로 자바스크립트 없이 열어도 채워진 채로 보임
+   */
+  const [where, setWhere] = useState(prefill?.where ?? "");
+  const [what, setWhat] = useState(prefill?.what ?? "");
+  const [condition, setCondition] = useState(prefill?.condition ?? "");
+
   if (state.reference) {
     return <Done reference={state.reference} reportId={prefill?.reportId} />;
   }
@@ -136,37 +146,34 @@ export function RescueRequest({ prefill }: { prefill?: RescuePrefill | null }) {
           <VStack align="stretch" gap="x5">
             <TextField
               label="어디에 있나요"
+              value={where}
+              onValueChange={({ value }) => setWhere(value)}
               errorMessage={errors.where}
               invalid={Boolean(errors.where)}
             >
-              <TextFieldInput
-                name="where"
-                defaultValue={prefill?.where}
-                placeholder="건물 이름이나 눈에 띄는 표지물"
-              />
+              <TextFieldInput name="where" placeholder="건물 이름이나 눈에 띄는 표지물" />
             </TextField>
 
             <TextField
               label="어떤 동물인가요"
+              value={what}
+              onValueChange={({ value }) => setWhat(value)}
               errorMessage={errors.what}
               invalid={Boolean(errors.what)}
             >
-              <TextFieldInput
-                name="what"
-                defaultValue={prefill?.what}
-                placeholder="흰색 소형견"
-              />
+              <TextFieldInput name="what" placeholder="흰색 소형견" />
             </TextField>
 
             <TextField
               label="어떤 상태인가요"
               description="잘 모르겠다면 비워 두셔도 괜찮아요"
+              value={condition}
+              onValueChange={({ value }) => setCondition(value)}
               errorMessage={errors.condition}
               invalid={Boolean(errors.condition)}
             >
               <TextFieldTextarea
                 name="condition"
-                defaultValue={prefill?.condition}
                 placeholder="다리를 절어요. 움직이지 않아요"
               />
             </TextField>
