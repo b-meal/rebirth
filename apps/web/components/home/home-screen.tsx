@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  memo,
   useCallback,
   useEffect,
   useMemo,
@@ -29,6 +30,7 @@ import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-but
 import { FloatingActionButton } from "seed-design/ui/floating-action-button";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
+import { reconcilePins } from "@/lib/pin-registry";
 import { describeAnimal } from "@/lib/report-label";
 import { SHORTCUTS } from "@/lib/shortcuts";
 import { useCurrentPosition } from "@/hooks/use-current-position";
@@ -53,10 +55,14 @@ const NEARBY_FALLBACK_COUNT = 12;
 
 // 훅의 문구는 제보 폼 기준이라 동이나 면을 고르라고 말함
 // 홈 지도에는 고를 자리가 없어 이 화면에서 할 수 있는 일로 바꿔 알림
+// 첫 줄은 무슨 일인지, 둘째 줄은 지금 할 일 하나. 현재 위치 를 되풀이하지 않고 위치 로 줄임
 const POSITION_NOTICE: Record<"denied" | "timeout" | "unavailable", string> = {
-  denied: "현재 위치를 허용하지 않아도 둘러볼 수 있어요. 지도를 끌어 동네를 찾아보세요",
-  timeout: "현재 위치를 확인하는 데 오래 걸려요. 지도를 끌어 동네를 찾아보세요",
-  unavailable: "현재 위치를 가져오지 못했어요. 지도를 끌어 동네를 찾아보세요",
+  denied: "위치 권한 없이도 둘러볼 수 있어요
+지도를 움직여 동네를 찾아보세요",
+  timeout: "위치를 확인하는 데 오래 걸려요
+지도를 움직여 동네를 찾아보세요",
+  unavailable: "위치를 확인할 수 없어요
+지도를 움직여 동네를 찾아보세요",
 };
 
 // 첫 행동을 마쳤는지 적어 두는 자리, 안내 한 줄과 시트 머리 타일이 같이 접힘
@@ -120,7 +126,8 @@ type ReportPinProps = {
   onSelect: (item: MapMarker) => void;
 };
 
-function ReportPin({ item, selected, onSelect }: ReportPinProps) {
+// 지도가 움직일 때마다 화면이 다시 그려져 값이 같은 핀은 건너뜀. 핀 요소는 장부가 붙들어 마운트가 유지됨
+const ReportPin = memo(function ReportPin({ item, selected, onSelect }: ReportPinProps) {
   const tone = toneOf(item);
   return (
     <Box
@@ -158,7 +165,7 @@ function ReportPin({ item, selected, onSelect }: ReportPinProps) {
       </button>
     </Box>
   );
-}
+});
 
 // 클러스터 묶기는 지도에 맡기고 그리기는 SEED 로 함, 레이어 paint 는 토큰을 읽지 못함
 const PIN_SOURCE = "report-pins";
@@ -173,13 +180,15 @@ const CLUSTER_MAX_ZOOM = 15;
 const CLUSTER_RADIUS_PX = 56;
 
 type ClusterPinProps = {
+  id: number;
+  at: LatLng;
   count: number;
   /** 묶음을 대표할 제보. 지도에서 사진이 사라지지 않게 한 장을 세움 */
   item: MapMarker | null;
-  onClick: () => void;
+  onExpand: (id: number, at: LatLng) => void;
 };
 
-function ClusterPin({ count, item, onClick }: ClusterPinProps) {
+const ClusterPin = memo(function ClusterPin({ id, at, count, item, onExpand }: ClusterPinProps) {
   // 묶인 수가 많을수록 크게 그려 어디에 몰려 있는지 축척을 바꾸기 전에 보이게 함
   const size = count >= 100 ? "x14" : count >= 10 ? "x12" : "x10";
   const tone = item ? toneOf(item) : PIN_TONE.roaming;
@@ -196,7 +205,11 @@ function ClusterPin({ count, item, onClick }: ClusterPinProps) {
         bg={tone.bg}
         boxShadow="s2"
       >
-        <button type="button" aria-label={`제보 ${count}건 묶음, 눌러서 확대`} onClick={onClick}>
+        <button
+          type="button"
+          aria-label={`제보 ${count}건 묶음, 눌러서 확대`}
+          onClick={() => onExpand(id, at)}
+        >
           {item?.photoUrl ? (
             <ImageFrame
               ratio={1}
@@ -236,7 +249,7 @@ function ClusterPin({ count, item, onClick }: ClusterPinProps) {
       </HStack>
     </Box>
   );
-}
+});
 
 // 화면에 실제로 그릴 것. 낱개도 묶음도 사진 핀, 묶음에만 수 배지가 붙음
 type Pin =
@@ -251,6 +264,14 @@ type Pin =
       // 대표 제보는 지도에 물어봐야 알 수 있어 그린 뒤에 채움
       item: MapMarker | null;
     };
+
+// 장부 한 줄. 지도에 올린 마커와 포털이 그릴 핀을 함께 붙듦
+type PinEntry = { pin: Pin; marker: Marker };
+
+// 타일에서 읽은 것을 장부와 맞출 때 넘기는 값
+type PinFeature =
+  | { kind: "report"; item: MapMarker; at: LatLng }
+  | { kind: "cluster"; id: number; count: number; at: LatLng };
 
 // 훅의 초기값. 렌더마다 새 배열을 넘기지 않도록 바깥에 둠
 const EMPTY_MARKERS: MapMarker[] = [];
@@ -335,11 +356,147 @@ export function HomeScreen({
   }, [position.point, moveTo]);
 
   // 핀은 SEED 컴포넌트로 그려야 해 오버레이에 빈 요소만 올리고 포털로 채움
-  // 천 건이 넘어 낱개로 다 그리면 폰에서 버벅여 지도에 묶게 하고 보이는 것만 그림
+  // 천 건이 넘어 낱개로 다 그리면 폰에서 버벅여 지도에 묶게 하고 타일이 실린 구간만 그림
   const [pins, setPins] = useState<Pin[]>([]);
+  // 지도에 올라간 핀 장부. 키가 같은 핀은 요소를 그대로 두어 지도가 움직여도 다시 마운트되지 않음
+  // 매번 지우고 새로 만들면 포털 대상이 바뀌어 React 가 핀을 다시 마운트하고 사진이 한 프레임 비어 깜빡임
+  const registry = useRef(new Map<string, PinEntry>());
+  const byIdRef = useRef(new Map<string, MapMarker>());
+
   useEffect(() => {
     if (!map) return;
-    const byId = new Map(markers.map((item) => [item.id, item]));
+    const book = registry.current;
+
+    // 장부에서 지금 핀 목록을 뽑아 화면에 넘김. 순서는 포털 키가 있어 뜻이 없음
+    const publish = () => setPins(Array.from(book.values(), (entry) => entry.pin));
+
+    // 묶음에 세울 사진은 지도에게 물어봐야 알 수 있어 핀을 올린 뒤에 채움
+    const fillClusterPhotos = async (keys: string[]) => {
+      const source = map.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
+      if (!source || keys.length === 0) return;
+      let filled = 0;
+      await Promise.all(
+        keys.map(async (key) => {
+          const entry = book.get(key);
+          if (!entry || entry.pin.kind !== "cluster") return;
+          // 사진 없는 제보가 앞에 설 수 있어 몇 장 받아 첫 사진을 고름
+          const leaves = await source.getClusterLeaves(entry.pin.id, 4, 0).catch(() => []);
+          const items = leaves
+            .map((leaf) => byIdRef.current.get(leaf.properties?.id as string))
+            .filter((item): item is MapMarker => Boolean(item));
+          const item = items.find((candidate) => candidate.photoUrl) ?? items[0] ?? null;
+          // 그사이 지도가 움직여 장부에서 빠졌으면 버림
+          const current = book.get(key);
+          if (!current || current.pin.kind !== "cluster" || !item) return;
+          current.pin = { ...current.pin, item };
+          filled += 1;
+        }),
+      );
+      if (filled > 0) publish();
+    };
+
+    const redraw = () => {
+      if (!map.getLayer(PIN_PROBE_LAYER)) return;
+      // 화면에 그려진 것만 물으면 가장자리를 넘는 순간 지워져 되돌아올 때 새로 만듦
+      // 실린 타일 전체를 물어 뷰포트 둘레에 여유를 두고 붙들어 둠
+      const features = map.querySourceFeatures(PIN_SOURCE);
+      const incoming: { key: string; feature: PinFeature }[] = [];
+      for (const feature of features) {
+        if (feature.geometry.type !== "Point") continue;
+        const props = feature.properties ?? {};
+        const [lng, lat] = feature.geometry.coordinates as [number, number];
+        const at = { lat, lng };
+        if (props.cluster) {
+          incoming.push({
+            key: `c${props.cluster_id}`,
+            feature: {
+              kind: "cluster",
+              id: props.cluster_id as number,
+              count: props.point_count as number,
+              at,
+            },
+          });
+          continue;
+        }
+        const item = byIdRef.current.get(props.id as string);
+        if (item) incoming.push({ key: `r${item.id}`, feature: { kind: "report", item, at } });
+      }
+
+      const result = reconcilePins(book, incoming, {
+        create: (feature) => {
+          const el = document.createElement("div");
+          el.dataset.reportPin = "";
+          const marker = new Marker({ element: el, anchor: "center" })
+            .setLngLat([feature.at.lng, feature.at.lat])
+            .addTo(map);
+          const key = feature.kind === "cluster" ? `c${feature.id}` : `r${feature.item.id}`;
+          const pin: Pin =
+            feature.kind === "cluster"
+              ? { kind: "cluster", key, el, id: feature.id, count: feature.count, at: feature.at, item: null }
+              : { kind: "report", key, el, item: feature.item };
+          return { pin, marker };
+        },
+        update: (entry, feature) => {
+          let changed = false;
+          // 같은 묶음도 타일에 따라 좌표가 조금 다를 수 있어 요소는 두고 자리만 옮김
+          const here = entry.marker.getLngLat();
+          if (here.lng !== feature.at.lng || here.lat !== feature.at.lat) {
+            entry.marker.setLngLat([feature.at.lng, feature.at.lat]);
+          }
+          if (entry.pin.kind === "cluster" && feature.kind === "cluster") {
+            if (entry.pin.count !== feature.count || entry.pin.at !== feature.at) {
+              entry.pin = { ...entry.pin, count: feature.count, at: feature.at };
+              changed = true;
+            }
+          } else if (entry.pin.kind === "report" && feature.kind === "report") {
+            if (entry.pin.item !== feature.item) {
+              entry.pin = { ...entry.pin, item: feature.item };
+              changed = true;
+            }
+          }
+          return changed;
+        },
+        remove: (entry) => entry.marker.remove(),
+      });
+
+      if (result.created + result.updated + result.removed === 0) return;
+      publish();
+      void fillClusterPhotos(
+        result.entries
+          .filter((entry) => entry.pin.kind === "cluster" && entry.pin.item === null)
+          .map((entry) => entry.pin.key),
+      );
+    };
+
+    // sourcedata 는 타일마다 오고 moveend 와 겹치기도 해 한 프레임에 한 번만 맞춤
+    let frame = 0;
+    const schedule = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        redraw();
+      });
+    };
+    const onSourceData = (event: { sourceId?: string; isSourceLoaded?: boolean }) => {
+      if (event.sourceId === PIN_SOURCE && event.isSourceLoaded) schedule();
+    };
+    map.on("moveend", schedule);
+    map.on("sourcedata", onSourceData);
+    schedule();
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      map.off("moveend", schedule);
+      map.off("sourcedata", onSourceData);
+      for (const entry of book.values()) entry.marker.remove();
+      book.clear();
+    };
+  }, [map]);
+
+  // 마커 데이터를 지도 소스에 넣음. 다시 그리는 일은 sourcedata 가 위 effect 를 깨워 맡음
+  useEffect(() => {
+    if (!map) return;
+    byIdRef.current = new Map(markers.map((item) => [item.id, item]));
     const data = {
       type: "FeatureCollection" as const,
       features: markers.map((item) => ({
@@ -350,102 +507,30 @@ export function HomeScreen({
     };
 
     const source = map.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
-    if (source) source.setData(data);
-    else {
-      map.addSource(PIN_SOURCE, {
-        type: "geojson",
-        data,
-        cluster: true,
-        clusterRadius: CLUSTER_RADIUS_PX,
-        clusterMaxZoom: CLUSTER_MAX_ZOOM,
-      });
-      map.addLayer({
-        id: PIN_PROBE_LAYER,
-        type: "circle",
-        source: PIN_SOURCE,
-        paint: { "circle-radius": 1, "circle-opacity": 0 },
-      });
-    }
-
-    let drawn: Marker[] = [];
-    const redraw = () => {
-      if (!map.getLayer(PIN_PROBE_LAYER)) return;
-      const features = map.queryRenderedFeatures({ layers: [PIN_PROBE_LAYER] });
-      for (const marker of drawn) marker.remove();
-      drawn = [];
-
-      const next: Pin[] = [];
-      const seen = new Set<string>();
-      for (const feature of features) {
-        if (feature.geometry.type !== "Point") continue;
-        const props = feature.properties ?? {};
-        const key = props.cluster ? `c${props.cluster_id}` : `r${props.id}`;
-        // 타일 경계에 걸친 것은 두 번 올라옴
-        if (seen.has(key)) continue;
-        seen.add(key);
-
-        const [lng, lat] = feature.geometry.coordinates as [number, number];
-        const el = document.createElement("div");
-        el.dataset.reportPin = "";
-        drawn.push(new Marker({ element: el, anchor: "center" }).setLngLat([lng, lat]).addTo(map));
-
-        if (props.cluster) {
-          next.push({
-            kind: "cluster",
-            key,
-            el,
-            id: props.cluster_id as number,
-            count: props.point_count as number,
-            at: { lat, lng },
-            item: null,
-          });
-          continue;
-        }
-        const item = byId.get(props.id as string);
-        if (item) next.push({ kind: "report", key, el, item });
+    if (source) {
+      // 데이터가 바뀌면 묶음 번호가 다시 매겨져 묶음 핀은 장부에서 지움. 낱개는 키가 id 라 그대로 둠
+      for (const [key, entry] of registry.current) {
+        if (entry.pin.kind !== "cluster") continue;
+        entry.marker.remove();
+        registry.current.delete(key);
       }
-      // 마커 요소는 지도가 만든 뒤에야 존재해 포털 대상은 마운트 후 넣음
-      setPins(next);
-      void fillClusterPhotos(next);
-    };
-
-    // 묶음에 세울 사진은 지도에게 물어봐야 알 수 있어 핀을 그린 뒤에 채움
-    let turn = 0;
-    const fillClusterPhotos = async (pins: Pin[]) => {
-      const clusters = pins.filter((pin) => pin.kind === "cluster");
-      if (clusters.length === 0) return;
-      const clustered = map.getSource(PIN_SOURCE) as GeoJSONSource | undefined;
-      if (!clustered) return;
-
-      const mine = ++turn;
-      await Promise.all(
-        clusters.map(async (pin) => {
-          // 사진 없는 제보가 앞에 설 수 있어 몇 장 받아 첫 사진을 고름
-          const leaves = await clustered.getClusterLeaves(pin.id, 4, 0).catch(() => []);
-          const items = leaves
-            .map((leaf) => byId.get(leaf.properties?.id as string))
-            .filter((item): item is MapMarker => Boolean(item));
-          pin.item = items.find((item) => item.photoUrl) ?? items[0] ?? null;
-        }),
-      );
-      // 그사이 지도가 움직였으면 이미 다른 핀이 올라와 있음
-      if (mine === turn) setPins([...pins]);
-    };
-
-    // 묶음은 축척과 위치에 따라 다시 계산돼 화면이 멈출 때마다 새로 읽음
-    const onSourceData = (event: { sourceId?: string; isSourceLoaded?: boolean }) => {
-      if (event.sourceId === PIN_SOURCE && event.isSourceLoaded) redraw();
-    };
-    map.on("moveend", redraw);
-    map.on("sourcedata", onSourceData);
-    redraw();
-
-    return () => {
-      map.off("moveend", redraw);
-      map.off("sourcedata", onSourceData);
-      for (const marker of drawn) marker.remove();
-      setPins([]);
-    };
+      source.setData(data);
+      return;
+    }
+    map.addSource(PIN_SOURCE, {
+      type: "geojson",
+      data,
+      cluster: true,
+      clusterRadius: CLUSTER_RADIUS_PX,
+      clusterMaxZoom: CLUSTER_MAX_ZOOM,
+    });
+    // 소스를 쓰는 레이어가 있어야 타일이 실리고 물어볼 수 있음
+    map.addLayer({
+      id: PIN_PROBE_LAYER,
+      type: "circle",
+      source: PIN_SOURCE,
+      paint: { "circle-radius": 1, "circle-opacity": 0 },
+    });
   }, [map, markers]);
 
   // 묶음을 누르면 그 묶음이 풀리는 축척까지 당김
@@ -517,15 +602,19 @@ export function HomeScreen({
   // 말풍선을 닫을 때 돌려놓을 직전 화면, 핀을 옮겨 골라도 처음 값을 지킴
   const beforePreview = useRef<{ point: LatLng; zoom: number } | null>(null);
 
-  const selectPin = (item: MapMarker) => {
-    if (map && !beforePreview.current) {
-      const at = map.getCenter();
-      beforePreview.current = { point: { lat: at.lat, lng: at.lng }, zoom: map.getZoom() };
-    }
-    setSelectedId(item.id);
-    setSheetRatio(SHEET.hidden);
-    moveTo(item.point, { animate: true, zoom: PIN_ZOOM, offset: PIN_OFFSET });
-  };
+  // 핀이 memo 라 같은 함수를 넘겨야 지도가 움직일 때 핀이 다시 그려지지 않음
+  const selectPin = useCallback(
+    (item: MapMarker) => {
+      if (map && !beforePreview.current) {
+        const at = map.getCenter();
+        beforePreview.current = { point: { lat: at.lat, lng: at.lng }, zoom: map.getZoom() };
+      }
+      setSelectedId(item.id);
+      setSheetRatio(SHEET.hidden);
+      moveTo(item.point, { animate: true, zoom: PIN_ZOOM, offset: PIN_OFFSET });
+    },
+    [map, moveTo],
+  );
 
   const closePreview = useCallback(() => {
     setSelectedId(null);
@@ -659,9 +748,11 @@ export function HomeScreen({
         createPortal(
           pin.kind === "cluster" ? (
             <ClusterPin
+              id={pin.id}
+              at={pin.at}
               count={pin.count}
               item={pin.item}
-              onClick={() => expandCluster(pin.id, pin.at)}
+              onExpand={expandCluster}
             />
           ) : (
             <ReportPin
