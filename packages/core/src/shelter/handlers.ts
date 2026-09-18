@@ -18,11 +18,15 @@ import { ShelterSyncError, syncAllShelters } from "./sync";
 // 보호·구조 기관 안내. 공공데이터 사본이라 인증 없이 읽게 둠
 // 쓰기는 공공데이터 한도를 태우므로 운영 토큰을 요구함
 
+// 이어 읽을 자리. 기관 목록은 거의 바뀌지 않아 건너뛴 수로 셈
+const offset = z.coerce.number().int().min(0).max(10_000).default(0);
+
 const nearbyQuery = z.object({
   lat: z.coerce.number(),
   lng: z.coerce.number(),
   kind: shelterKind.optional(),
   limit: z.coerce.number().int().min(1).max(50).default(3),
+  offset,
 });
 
 // 좌표가 없으면 지역 이름으로 찾음. 시도 이름은 표준 코드에서 온 값만 받음
@@ -30,6 +34,7 @@ const regionQuery = z.object({
   region: z.string().min(2).max(20).optional(),
   kind: shelterKind.optional(),
   limit: z.coerce.number().int().min(1).max(50).default(30),
+  offset,
 });
 
 export async function nearbySheltersHandler(request: Request): Promise<Response> {
@@ -42,8 +47,10 @@ export async function nearbySheltersHandler(request: Request): Promise<Response>
       return badRequest("조회 조건이 올바르지 않습니다", fieldErrors(byRegion.error));
     }
     try {
-      const items = await listSheltersByRegion(byRegion.data);
-      return ok({ items });
+      // 한 건 더 받아 다음 쪽이 있는지 봄. 총 건수 질의를 피함
+      const { limit } = byRegion.data;
+      const rows = await listSheltersByRegion({ ...byRegion.data, limit: limit + 1 });
+      return ok({ items: rows.slice(0, limit), hasMore: rows.length > limit });
     } catch (error) {
       return serverError("shelters", error);
     }
@@ -54,7 +61,7 @@ export async function nearbySheltersHandler(request: Request): Promise<Response>
     return badRequest("좌표가 올바르지 않습니다", fieldErrors(parsed.error));
   }
 
-  const { lat, lng, kind, limit } = parsed.data;
+  const { lat, lng, kind, limit, offset: skip } = parsed.data;
   if (!isInKorea({ lat, lng })) {
     return badRequest("국내 좌표만 조회할 수 있습니다", {
       lat: "국내 범위를 벗어났습니다",
@@ -62,8 +69,14 @@ export async function nearbySheltersHandler(request: Request): Promise<Response>
   }
 
   try {
-    const items = await findNearbyShelters({ point: { lat, lng }, kind, limit });
-    return ok({ items });
+    // 한 건 더 받아 다음 쪽이 있는지 봄. 총 건수 질의를 피함
+    const rows = await findNearbyShelters({
+      point: { lat, lng },
+      kind,
+      limit: limit + 1,
+      offset: skip,
+    });
+    return ok({ items: rows.slice(0, limit), hasMore: rows.length > limit });
   } catch (error) {
     return serverError("shelters", error);
   }

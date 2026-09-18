@@ -2,19 +2,15 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { attachPhotoUrls } from "@rebirth/core/reports";
-import {
-  listAreaSubscriptions,
-  listMatchAlerts,
-  listSubscribedAreaReports,
-} from "@rebirth/db";
+import { listAreaSubscriptions, listMatchAlerts } from "@rebirth/db";
 import { NEXT_PARAM, SIGN_IN_PATH } from "@rebirth/core/auth";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import {
   NotificationList,
   type MatchAlertItem,
-  type NotificationItem,
 } from "@/components/mine/notification-list";
+import { encodeAreaReportCursor, readNotificationPage } from "./notification-page";
 
 // REQ-019 를 앱 안 알림함으로만 제공하는 화면
 // 구독한 동네에 올라온 제보를 모아 보여 주고 안 읽은 것에만 점을 붙임
@@ -41,21 +37,10 @@ export default async function NotificationsPage() {
   ]);
 
   // 구독이 없으면 목록 질의가 어차피 비어 있어 건너뜀
-  const rows = areas.length > 0 ? await listSubscribedAreaReports(user.id) : [];
-  const withPhotos = await attachPhotoUrls(rows);
-
-  const items: NotificationItem[] = withPhotos.map((row) => ({
-    id: row.id,
-    animalType: row.animalType,
-    colors: row.colors,
-    size: row.size,
-    careSituation: row.careSituation,
-    injury: row.injury,
-    areaName: row.areaName,
-    createdAt: row.createdAt,
-    photoUrl: row.photoUrl,
-    unread: row.readAt ? row.createdAt > row.readAt : true,
-  }));
+  const page =
+    areas.length > 0
+      ? await readNotificationPage({ userId: user.id })
+      : { items: [], nextCursor: null };
 
   const withMatchPhotos = await attachPhotoUrls(matchRows);
   const matches: MatchAlertItem[] = withMatchPhotos.map((row) => ({
@@ -82,7 +67,8 @@ export default async function NotificationsPage() {
         areaName: area.areaName,
         unread: area.unread,
       }))}
-      items={items}
+      items={page.items}
+      nextCursor={encodeAreaReportCursor(page.nextCursor)}
       matches={matches}
     />
   );

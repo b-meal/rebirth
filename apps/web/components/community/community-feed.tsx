@@ -30,6 +30,7 @@ import { COMMUNITY_CATEGORIES } from "@rebirth/core/community";
 import { useNeighborhood } from "@/components/location/neighborhood-provider";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useDragScroll } from "@/hooks/use-drag-scroll";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { ComposeSheet } from "./compose-sheet";
@@ -40,6 +41,12 @@ import { PostCard, type PostCardItem } from "./post-card";
 // 동네를 알면 내 동네 글을 먼저 보여 줌
 // 지난번에 알아낸 동네가 쿠키에 있으면 서버가 이미 그렇게 그려 보내므로 다시 읽지 않음
 // 처음 오는 사람은 서버가 동네를 몰라 전국 목록을 그리고, 위치를 잡은 뒤 한 번 다시 읽음
+
+/** 동네 이름이 들어올 자리. 양재2동 같은 네 글자에 맞춰 두어 값이 와도 줄이 들썩이지 않음 */
+const AREA_SKELETON_WIDTH = "4.5rem";
+
+/** 이웃 글을 먼저 보여 줘요 가 들어올 자리 */
+const NOTE_SKELETON_WIDTH = "9.5rem";
 
 /** 반응 많은 글을 세울 최소 목록 길이. 골라 세운 수의 곱절은 돼야 같은 글이 두 번 보이지 않음 */
 const MIN_FOR_HOT = 12;
@@ -141,6 +148,8 @@ export function CommunityFeed({
 
   // 동네로 다시 읽은 목록. null 이면 서버가 그린 목록을 그대로 씀
   const [local, setLocal] = useState<PostCardItem[] | null>(null);
+  // 동네를 새로 잡은 뒤 그 동네 목록을 받아 오는 동안. 배너가 바뀔 값을 미리 비워 둠
+  const [reloading, setReloading] = useState(false);
   // 내 동네 글이 몇 번째까지인지. 그 뒤부터 다른 동네라 구분선을 놓음
   const [nearCount, setNearCount] = useState(serverNearCount);
 
@@ -164,6 +173,10 @@ export function CommunityFeed({
 
   // 서버가 쓴 동네를 먼저 믿음. 위치를 다시 잡기 전에도 글자가 비어 있지 않음
   const areaName = found ?? serverArea;
+
+  // 배너의 값이 바뀔 수 있는 구간 전체. 측위와 행정동 조회에 목록 재조회까지 이어 붙임
+  // 측위가 끝나는 순간 표시를 끄면 목록이 갈리는 동안 옛 동네 이름이 맞는 값처럼 남음
+  const updating = locating || reloading;
 
   // 커뮤니티를 열면 동네를 물음. 권한 팝업은 Provider 가 한 번만 띄움
   useEffect(() => {
@@ -197,6 +210,7 @@ export function CommunityFeed({
     query.set("areaName", found);
 
     void (async () => {
+      setReloading(true);
       try {
         const response = await fetch(`/api/community?${query}`);
         if (!response.ok) throw new Error("list");
@@ -210,6 +224,9 @@ export function CommunityFeed({
       } catch {
         // 동네로 읽지 못해도 서버가 그린 전국 목록이 남아 있어 조용히 둠
         if (reloadId.current === id) setLocal(null);
+      } finally {
+        // 뒤진 응답은 표시도 끄지 않음. 더 최근 요청이 아직 돌고 있음
+        if (reloadId.current === id) setReloading(false);
       }
     })();
   }, [found, serverArea, category]);
@@ -287,7 +304,21 @@ export function CommunityFeed({
           bg="bg.neutralWeak"
         >
           <Icon svg={<IconLocationpinLine />} size="x4" color="fg.neutralMuted" />
-          {areaName ? (
+          {updating ? (
+            // 바뀔 값만 뼈대로 덮음. 줄을 통째로 비우면 목록까지 갈아엎는 것처럼 보임
+            // 읽을 글자가 없는 동안 무엇을 기다리는지는 이 줄이 대신 알림
+            <HStack
+              gap="x1_5"
+              align="center"
+              grow={1}
+              minWidth="0"
+              role="status"
+              aria-label="내 동네를 다시 확인하고 있어요"
+            >
+              <Skeleton width={AREA_SKELETON_WIDTH} />
+              <Skeleton width={NOTE_SKELETON_WIDTH} />
+            </HStack>
+          ) : areaName ? (
             <HStack gap="x1" align="center" grow={1} minWidth="0">
               <Text textStyle="t3Bold" color="fg.neutral" maxLines={1}>
                 {areaName}

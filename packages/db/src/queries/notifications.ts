@@ -74,10 +74,18 @@ export async function countUnreadAreaReports(userId: string): Promise<number> {
 /** 알림함 한 줄. readAt 보다 나중에 올라왔으면 안 읽음 */
 export type SubscribedAreaReport = PublicReport & { readAt: Date | null }
 
+/** 이어 읽을 자리. 올라온 시각이 같은 줄이 있어 id 까지 함께 봄 */
+export type AreaReportCursor = { createdAt: Date; id: string }
+
+export type SubscribedAreaReportOptions = {
+  cursor?: AreaReportCursor
+  limit?: number
+}
+
 /** 구독한 동네에 올라온 제보를 최신순으로. 알림함 목록이 이 결과를 그대로 그림 */
 export async function listSubscribedAreaReports(
   userId: string,
-  limit = 30,
+  { cursor, limit = 30 }: SubscribedAreaReportOptions = {},
 ): Promise<SubscribedAreaReport[]> {
   // 구독 전에 올라온 제보는 알림이 아니므로 목록에 넣지 않음
   const subscribed = raw`
@@ -107,9 +115,13 @@ export async function listSubscribedAreaReports(
         raw`${reports.lifecycle} in ('active', 'searching')`,
         raw`(${reports.reporterId} is null or ${reports.reporterId} <> ${userId})`,
         subscribed,
+        cursor
+          ? raw`(${reports.createdAt}, ${reports.id}) < (${cursor.createdAt.toISOString()}::timestamptz, ${cursor.id})`
+          : undefined,
       ),
     )
-    .orderBy(desc(reports.createdAt))
+    // 같은 시각에 올라온 줄이 쪽을 넘나들지 않도록 id 까지 순서를 못 박음
+    .orderBy(desc(reports.createdAt), desc(reports.id))
     .limit(limit)
 }
 

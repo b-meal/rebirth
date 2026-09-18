@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { Box, Divider, Grid, HStack, Icon, Text, VStack } from "@seed-design/react";
 import {
   IconCameraLine,
@@ -11,12 +11,16 @@ import {
   IconXmarkLine,
 } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
+import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
 
+import { sinceLabel } from "@/lib/report-label";
 import { useCurrentPosition } from "@/hooks/use-current-position";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
 import { PhotoSearchSheet } from "@/components/search/photo-search-sheet";
@@ -92,16 +96,87 @@ export type SearchScreenProps = {
   kind: SearchKind;
   /** 조건이 없으면 null, 조건이 있고 결과가 없으면 빈 배열 */
   results: ReportCardItem[] | null;
+  /** 결과의 다음 쪽. 없으면 이 목록이 전부임 */
+  resultCursor: string | null;
   trending: Record<ChartKey, TrendingItem[]>;
   nearby: NearbyItem[];
 };
 
-export function SearchScreen({ query, kind, results, trending, nearby }: SearchScreenProps) {
+/** 이어 읽은 쪽. 목록 API 는 카드가 쓰는 말 대신 원본 시각을 내려 줌 */
+type ResultResponse = {
+  items: (Omit<ReportCardItem, "sinceLabel" | "kind"> & {
+    occurredAt: string;
+    kind: string;
+  })[];
+  nextCursor: string | null;
+};
+
+function toCards(rows: ResultResponse["items"]): ReportCardItem[] {
+  return rows.map(({ occurredAt, kind, ...rest }) => ({
+    ...rest,
+    sinceLabel: sinceLabel(new Date(occurredAt)),
+    kind: kind === "lost" ? ("lost" as const) : ("sighting" as const),
+  }));
+}
+
+export function SearchScreen({
+  query,
+  kind,
+  results,
+  resultCursor,
+  trending,
+  nearby,
+}: SearchScreenProps) {
   const router = useRouter();
+  const params = useSearchParams();
   const position = useCurrentPosition({ immediate: true });
   const [keyword, setKeyword] = useState(query);
   const [chart, setChart] = useState<ChartKey>("interest");
   const [photoOpen, setPhotoOpen] = useState(false);
+
+  const [extra, setExtra] = useState<ReportCardItem[]>([]);
+  const [cursor, setCursor] = useState(resultCursor);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // 조건을 바꾸면 서버가 새 쪽을 그려 보냄. 쌓아 둔 것을 비우지 않으면 옛 결과가 남음
+  const drawn = `${resultCursor ?? ""}|${results?.length ?? -1}|${params.toString()}`;
+  const [seen, setSeen] = useState(drawn);
+  if (seen !== drawn) {
+    setSeen(drawn);
+    setExtra([]);
+    setCursor(resultCursor);
+    setLoadError(null);
+  }
+
+  const loadMore = useCallback(async () => {
+    if (!cursor) return;
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const query = new URLSearchParams(params.toString());
+      query.set("cursor", cursor);
+      const response = await fetch(`/api/reports?${query}`);
+      if (!response.ok) throw new Error("load failed");
+      const data = (await response.json()) as ResultResponse;
+      setExtra((prev) => [...prev, ...toCards(data.items)]);
+      setCursor(data.nextCursor);
+    } catch {
+      setLoadError("더 불러오지 못했어요. 다시 눌러 주세요");
+    } finally {
+      setLoading(false);
+    }
+  }, [cursor, params]);
+
+  const sentinel = useInfiniteScroll({
+    // 실패하면 관찰을 끊음. 자동으로 되풀이하면 같은 오류를 계속 부름
+    hasMore: Boolean(cursor) && !loadError,
+    loading,
+    onLoad: () => void loadMore(),
+  });
+
+  // 조건이 없으면 결과 절 자체를 그리지 않아 이어 읽은 것도 없음
+  const rows = results ? [...results, ...extra] : null;
 
   // 서버 렌더에는 저장소가 없어 빈 목록으로 시작함
   const stored = useSyncExternalStore(subscribeRecent, recentSnapshot, () => EMPTY);
@@ -234,18 +309,19 @@ export function SearchScreen({ query, kind, results, trending, nearby }: SearchS
           </Box>
         </SectionCard>
 
-        {results ? (
+        {rows ? (
           <SectionCard gap="x3">
             <HStack justify="space-between" align="center">
               <Text as="h2" textStyle="t4Bold" color="fg.neutral">
                 검색 결과
               </Text>
+              {/* 더 남았으면 지금 그린 수가 전부가 아니라는 것을 함께 알림 */}
               <Text textStyle="t3Regular" color="fg.neutralMuted">
-                {results.length}건
+                {rows.length}건{cursor ? " 이상" : ""}
               </Text>
             </HStack>
 
-            {results.length === 0 ? (
+            {rows.length === 0 ? (
               <VStack align="stretch" gap="x1">
                 <Text textStyle="t4Regular" color="fg.neutralMuted">
                   조건과 맞는 제보가 없어요
@@ -258,11 +334,37 @@ export function SearchScreen({ query, kind, results, trending, nearby }: SearchS
               </VStack>
             ) : (
               <Grid columns={2} gap="x4">
-                {results.map((item) => (
+                {rows.map((item) => (
                   <ReportCard key={item.id} item={item} />
                 ))}
               </Grid>
             )}
+
+            {/* 실패했을 때만 손으로 다시 부름. 자동으로 되풀이하면 같은 오류를 계속 부름 */}
+            {loadError ? (
+              <VStack align="stretch" gap="x3">
+                <Callout tone="critical" description={loadError} />
+                <ActionButton
+                  variant="neutralOutline"
+                  size="large"
+                  loading={loading}
+                  onClick={() => void loadMore()}
+                >
+                  다시 시도
+                </ActionButton>
+              </VStack>
+            ) : null}
+
+            {/* 목록 끝에 닿기 전에 다음 쪽을 미리 부르는 표식
+                보이지 않지만 자리를 차지해야 관찰자가 걸림 */}
+            {cursor && !loadError ? <Box ref={sentinel} height="x1" /> : null}
+
+            {/* 불러오는 동안만 표시를 둠. 미리 불러 두면 대개 보이지 않고 지나감 */}
+            {loading && !loadError ? (
+              <HStack justify="center" py="x4">
+                <ProgressCircle size="24" tone="neutral" />
+              </HStack>
+            ) : null}
           </SectionCard>
         ) : null}
 

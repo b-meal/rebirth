@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { Box, HStack, ImageFrame, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
+import { Callout } from "seed-design/ui/callout";
+import { ProgressCircle } from "seed-design/ui/progress-circle";
 import type { AnimalType } from "@rebirth/types";
 
 import { markNotificationsRead, unsubscribeArea } from "@/app/mine/notifications/actions";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { AppHeader } from "@/components/ui/app-header";
 import { Screen, SectionCard } from "@/components/ui/screen";
 import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
@@ -47,11 +50,58 @@ export type MatchAlertItem = NotificationItem & {
 export type NotificationListProps = {
   areas: NotificationArea[];
   items: NotificationItem[];
+  /** 더 읽을 곳. 없으면 이 목록이 전부임 */
+  nextCursor: string | null;
   matches: MatchAlertItem[];
 };
 
-export function NotificationList({ areas, items, matches }: NotificationListProps) {
+/** 이어 읽은 쪽. 날짜는 JSON 을 거치며 문자열이 됨 */
+type NotificationPageResponse = {
+  items: (Omit<NotificationItem, "createdAt"> & { createdAt: string })[];
+  nextCursor: string | null;
+};
+
+function toItems(rows: NotificationPageResponse["items"]): NotificationItem[] {
+  return rows.map((item) => ({ ...item, createdAt: new Date(item.createdAt) }));
+}
+
+export function NotificationList({
+  areas,
+  items,
+  nextCursor,
+  matches,
+}: NotificationListProps) {
   const [opened, setOpened] = useState<string[]>([]);
+  const [extra, setExtra] = useState<NotificationItem[]>([]);
+  const [cursor, setCursor] = useState(nextCursor);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const loadMore = useCallback(async () => {
+    if (!cursor) return;
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const response = await fetch(`/api/mine/notifications?cursor=${encodeURIComponent(cursor)}`);
+      if (!response.ok) throw new Error("load failed");
+      const data = (await response.json()) as NotificationPageResponse;
+      setExtra((prev) => [...prev, ...toItems(data.items)]);
+      setCursor(data.nextCursor);
+    } catch {
+      setLoadError("더 불러오지 못했어요. 다시 눌러 주세요");
+    } finally {
+      setLoading(false);
+    }
+  }, [cursor]);
+
+  const sentinel = useInfiniteScroll({
+    // 실패하면 관찰을 끊음. 자동으로 되풀이하면 같은 오류를 계속 부름
+    hasMore: Boolean(cursor) && !loadError,
+    loading,
+    onLoad: () => void loadMore(),
+  });
+
+  const rows = [...items, ...extra];
 
   // 목록을 그린 뒤에 읽음으로 올림. 이번에 본 점은 남고 다음에 들어오면 사라짐
   useEffect(() => {
@@ -125,7 +175,7 @@ export function NotificationList({ areas, items, matches }: NotificationListProp
             새 제보
           </Text>
 
-          {items.length === 0 ? (
+          {rows.length === 0 ? (
             <Text textStyle="t3Regular" color="fg.neutralMuted">
               {areas.length === 0
                 ? "동네를 구독하면 그 동네 제보가 여기에 쌓여요"
@@ -133,7 +183,7 @@ export function NotificationList({ areas, items, matches }: NotificationListProp
             </Text>
           ) : (
             <VStack align="stretch" gap="x3">
-              {items.map((item) => (
+              {rows.map((item) => (
                 <NotificationRow
                   key={item.id}
                   item={item}
@@ -143,6 +193,32 @@ export function NotificationList({ areas, items, matches }: NotificationListProp
               ))}
             </VStack>
           )}
+
+          {/* 실패했을 때만 손으로 다시 부름. 자동으로 되풀이하면 같은 오류를 계속 부름 */}
+          {loadError ? (
+            <VStack align="stretch" gap="x3">
+              <Callout tone="critical" description={loadError} />
+              <ActionButton
+                variant="neutralOutline"
+                size="large"
+                loading={loading}
+                onClick={() => void loadMore()}
+              >
+                다시 시도
+              </ActionButton>
+            </VStack>
+          ) : null}
+
+          {/* 목록 끝에 닿기 전에 다음 쪽을 미리 부르는 표식
+              보이지 않지만 자리를 차지해야 관찰자가 걸림 */}
+          {cursor && !loadError ? <Box ref={sentinel} height="x1" /> : null}
+
+          {/* 불러오는 동안만 표시를 둠. 미리 불러 두면 대개 보이지 않고 지나감 */}
+          {loading && !loadError ? (
+            <HStack justify="center" py="x4">
+              <ProgressCircle size="24" tone="neutral" />
+            </HStack>
+          ) : null}
         </SectionCard>
       </VStack>
     </Screen>

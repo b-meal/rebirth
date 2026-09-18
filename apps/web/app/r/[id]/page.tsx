@@ -12,7 +12,7 @@ import {
   listMapReports,
   listReportComments,
 } from "@rebirth/db";
-import { LIST_PERIOD_DAYS } from "@rebirth/types";
+import { COMMENT_PAGE_SIZE, LIST_PERIOD_DAYS } from "@rebirth/types";
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
@@ -153,17 +153,30 @@ async function loadShelters(origin: NearbyOrigin): Promise<ShelterItem[]> {
   }
 }
 
-async function loadComments(reportId: string): Promise<ReportComment[]> {
+/** 첫 쪽과 이어 읽을 자리. 커서 모양은 댓글 API 와 같게 둠 */
+type CommentPage = { items: ReportComment[]; nextCursor: string | null };
+
+async function loadComments(reportId: string): Promise<CommentPage> {
   try {
-    const rows = await listReportComments(reportId);
-    return rows.map((row) => ({
-      id: row.id,
-      authorSeq: row.authorSeq,
-      body: row.body,
-      sinceLabel: sinceLabel(row.createdAt),
-    }));
+    // 한 건 더 받아 다음 쪽이 있는지 봄. 개수를 따로 세면 목록과 어긋날 수 있음
+    const rows = await listReportComments(reportId, { limit: COMMENT_PAGE_SIZE + 1 });
+    const page = rows.slice(0, COMMENT_PAGE_SIZE);
+    const last = page.at(-1);
+
+    return {
+      items: page.map((row) => ({
+        id: row.id,
+        authorSeq: row.authorSeq,
+        body: row.body,
+        sinceLabel: sinceLabel(row.createdAt),
+      })),
+      nextCursor:
+        rows.length > COMMENT_PAGE_SIZE && last
+          ? `${last.createdAt.toISOString()}_${last.id}`
+          : null,
+    };
   } catch {
-    return [];
+    return { items: [], nextCursor: null };
   }
 }
 
@@ -247,7 +260,8 @@ export default async function ReportDetailPage({ params }: Params) {
         sinceLabel={sinceLabel(report.occurredAt)}
         searchingDays={searchingDays(report.occurredAt)}
         location={point ? { point, gridMeters: spot?.coarseGridM ?? 300 } : null}
-        comments={comments}
+        comments={comments.items}
+        commentCursor={comments.nextCursor}
         nearby={nearby}
         shelters={shelters}
         interest={interest}
@@ -262,7 +276,8 @@ export default async function ReportDetailPage({ params }: Params) {
       shareUrl={`${SITE}/r/${id}`}
       sinceLabel={sinceLabel(report.occurredAt)}
       location={point ? { point, gridMeters: spot?.coarseGridM ?? 300 } : null}
-      comments={comments}
+      comments={comments.items}
+      commentCursor={comments.nextCursor}
       nearby={nearby}
       shelters={shelters}
       interest={interest}

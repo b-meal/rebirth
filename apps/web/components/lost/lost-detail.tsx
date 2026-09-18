@@ -96,6 +96,8 @@ export type LostDetailProps = {
   /** 격자 스냅 좌표, 좌표가 없는 지역 선택 신고는 null */
   location: { point: LatLng; gridMeters: number } | null;
   comments: ReportComment[];
+  /** 댓글의 다음 쪽. 없으면 첫 쪽이 전부임 */
+  commentCursor: string | null;
   /** 마지막 목격 지점에서 가까운 발견 제보. 이 화면에서 가장 쓸모 있는 이어보기 */
   nearby: ReportCardItem[];
   shelters: ShelterItem[];
@@ -115,6 +117,7 @@ export function LostDetail({
   searchingDays,
   location,
   comments,
+  commentCursor,
   nearby,
   shelters,
   interest,
@@ -279,14 +282,22 @@ export function LostDetail({
         ) : null}
 
         <SectionCard gap="x4">
-          <SectionTitle>댓글 {comments.length}</SectionTitle>
+          {/* 첫 쪽이 다 찼으면 지금 센 수가 전부가 아니라 + 를 붙임 */}
+          <SectionTitle>
+            댓글 {comments.length}
+            {commentCursor ? "+" : ""}
+          </SectionTitle>
           {/* 목격담이 모이는 자리라 무엇을 적어야 하는지 먼저 알림 */}
           <Text textStyle="t3Regular" color="fg.neutralMuted">
             {mine
               ? "이웃이 본 곳을 여기에 적어 줘요"
               : `${name ? `${withObject(name)}` : "비슷한 동물을"} 봤다면 언제 어디서 봤는지 적어 주세요`}
           </Text>
-          <ReportComments comments={comments} />
+          <ReportComments
+            reportId={report.id}
+            comments={comments}
+            nextCursor={commentCursor}
+          />
           <CommentComposer reportId={report.id} />
         </SectionCard>
 
