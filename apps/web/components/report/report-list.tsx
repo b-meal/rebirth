@@ -20,6 +20,24 @@ import { AppHeader } from "@/components/ui/app-header";
 import { Badge } from "@/components/ui/badge";
 
 // WEB-08 최근 제보를 조건으로 좁혀 훑되 품종 필터와 거리 정렬은 두지 않음
+// 한 화면에 한 종류만 담음. 발견 제보와 실종 신고는 찾는 말과 읽는 목적이 달라 섞지 않음
+
+/** 목록이 담는 제보 종류 */
+export type ListKind = "sighting" | "lost";
+
+// 종류마다 부르는 말이 달라 화면 문구를 한곳에 모아 둠
+const COPY: Record<ListKind, { title: string; empty: string; end: string }> = {
+  sighting: {
+    title: "발견 제보",
+    empty: "조건에 맞는 제보가 없어요",
+    end: "마지막 제보까지 다 봤어요",
+  },
+  lost: {
+    title: "실종 신고",
+    empty: "조건에 맞는 실종 신고가 없어요",
+    end: "마지막 신고까지 다 봤어요",
+  },
+};
 
 export type ListItem = {
   id: string;
@@ -58,8 +76,15 @@ const TYPE_OPTIONS: { value: AnimalType; label: string }[] = [
 /** 카드 사진 한 변. 글 두세 줄과 높이가 맞는 크기 */
 const THUMB = "88px";
 
-function Card({ item }: { item: ListItem }) {
-  const status = reportStatusBadge({ kind: item.kind ?? "sighting", careSituation: item.careSituation });
+function Card({ item, kind }: { item: ListItem; kind: ListKind }) {
+  // 실종만 모인 목록에서는 모든 줄이 같은 배지라 알려 주는 것이 없어 뺌
+  const status =
+    kind === "lost"
+      ? null
+      : reportStatusBadge({
+          kind: item.kind ?? "sighting",
+          careSituation: item.careSituation,
+        });
   // 이름을 아는 기록은 이름이 먼저 읽혀야 함
   const title = item.petName || describeAnimal(item);
 
@@ -122,11 +147,14 @@ function Card({ item }: { item: ListItem }) {
 }
 
 export type ReportListProps = {
+  /** 이 목록이 담는 종류. 다음 장 요청과 화면 문구가 이 값을 따름 */
+  kind: ListKind;
   items: ListItem[];
   nextCursor: string | null;
 };
 
-export function ReportList({ items, nextCursor }: ReportListProps) {
+export function ReportList({ kind, items, nextCursor }: ReportListProps) {
+  const copy = COPY[kind];
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -167,6 +195,8 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
     try {
       const query = new URLSearchParams(params.toString());
       query.set("cursor", cursor);
+      // 첫 장을 그린 서버 질의와 같은 종류로 묶어야 둘째 장부터 다른 종류가 섞이지 않음
+      query.set("kind", kind);
       const response = await fetch(`/api/reports?${query}`);
       if (!response.ok) throw new Error("list");
       const data = (await response.json()) as ListResponse;
@@ -178,7 +208,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
     } finally {
       setLoadingMore(false);
     }
-  }, [cursor, params]);
+  }, [cursor, params, kind]);
 
   // 끝에 닿기 전에 다음 쪽을 미리 불러 둠. 실패한 뒤에는 손으로 누를 때만 다시 부름
   const sentinel = useInfiniteScroll({
@@ -192,7 +222,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
 
   return (
     <Screen>
-      <AppHeader title="발견 제보" />
+      <AppHeader title={copy.title} />
       <ScreenBody gap="x4" pt="x3">
         <Section gap="x2">
           {/* 조건이 늘면 줄바꿈 대신 옆으로 밀림, 목록이 아래로 내려가지 않음 */}
@@ -238,7 +268,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
         {rows.length === 0 ? (
           <ResultSection
             size="medium"
-            title="조건에 맞는 제보가 없어요"
+            title={copy.empty}
             description="조건을 줄이면 더 많은 제보를 볼 수 있어요"
             {...(filtered && {
               primaryActionProps: {
@@ -255,7 +285,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
             style={{ opacity: pending ? 0.4 : 1, transition: "opacity 120ms ease" }}
           >
             {rows.map((item) => (
-              <Card key={item.id} item={item} />
+              <Card key={item.id} item={item} kind={kind} />
             ))}
           </VStack>
         )}
@@ -288,7 +318,7 @@ export function ReportList({ items, nextCursor }: ReportListProps) {
 
         {!cursor && rows.length > 0 ? (
           <Text textStyle="t2Regular" color="fg.neutralSubtle" align="center">
-            마지막 제보까지 다 봤어요
+            {copy.end}
           </Text>
         ) : null}
       </ScreenBody>
