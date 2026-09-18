@@ -528,9 +528,9 @@
 - [x] `apps/web/components/lost/candidate-deck.tsx:37` 의 파일 지역 `CARE_LABEL` 상수를 `STATUS_LABEL` 로 바꾸기
 - [ ] `MIN_LEG_SIMILARITY` 를 재측정하기. `0.82` 는 현재 임베딩 분포에서 승격 0건이라 유사도 경로가 동작하지 않음
 - [x] `lost-detail.tsx` 가 신고 지점 좌표를 `TrackTimeline` 에 넘기기. 지금은 신고에서 첫 목격까지의 구간 요약이 빠짐
-- [ ] Phase 12 전체 빌드에서 `/` 번들 크기 확인하기. `home-screen` 이 `mine-screen` 모듈을 통째로 클라이언트 그래프에 끌어옴
+- [x] Phase 12 전체 빌드에서 `/` 번들 크기 확인하기. `home-screen` 이 `mine-screen` 모듈을 통째로 클라이언트 그래프에 끌어옴
 - [ ] `mine-screen` 의 전이 import 에 `server-only` 를 붙이기. 지금은 `@rebirth/core/auth` 주석 언급뿐이라 클라이언트 번들 유입이 가능
-- [ ] `/find` 와 `/r/[id]/poster` 의 실제 렌더 스모크를 Phase 12 에서 돌리기. Phase 7 은 dev 서버 경합을 피해 건너뜀
+- [x] `/find` 와 `/r/[id]/poster` 의 실제 렌더 스모크를 Phase 12 에서 돌리기. Phase 7 은 dev 서버 경합을 피해 건너뜀
 - [ ] 전단 페이지에 인쇄 버튼을 넣을지 정하기. 지금은 사용자가 `Cmd+P` 를 눌러야 함
 - [ ] `apps/admin/lib/labels.ts:24` 의 별도 `CARE_LABEL` 정의를 상태 어휘 단일 원천으로 합칠지 정하기. admin 4개 화면이 씀
 
