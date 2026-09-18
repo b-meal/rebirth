@@ -37,6 +37,7 @@ import { DeletePetButton } from "./delete-pet-button";
 const PROVIDER_LABEL: Record<string, string> = {
   kakao: "카카오",
   google: "구글",
+  anonymous: "체험",
 };
 
 // 계정 없이도 쓰는 기능이라 로그인 화면으로 보낼 곳을 미리 정해 둠

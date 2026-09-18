@@ -40,6 +40,11 @@ export function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some((prefix) => matches(pathname, prefix));
 }
 
+/** SNS 로그인이 진행 중인 경로. 시연용 자동 로그인이 여기에 끼어들면 제공자 로그인이 막힘 */
+export function isAuthFlowPath(pathname: string): boolean {
+  return matches(pathname, SIGN_IN_PATH) || matches(pathname, AUTH_CALLBACK_PATH);
+}
+
 /** 로그인 없이 열리는 경로인지 */
 export function isPublicPath(pathname: string): boolean {
   return !isProtectedPath(pathname);

@@ -36,10 +36,11 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
   const error = readParam(params.error);
 
   // 이미 로그인했으면 머무를 이유가 없음
+  // 자동으로 받은 익명 계정은 예외. 여기서 돌려보내면 SNS 로그인으로 갈 길이 없어짐
   if (isAuthConfigured()) {
     const supabase = await createClient();
     const { data } = await supabase.auth.getClaims();
-    if (data?.claims) redirect(next);
+    if (data?.claims && !data.claims.is_anonymous) redirect(next);
   }
 
   return (
