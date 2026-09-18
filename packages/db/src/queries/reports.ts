@@ -2,6 +2,7 @@ import 'server-only'
 
 import {
   and,
+  arrayOverlaps,
   count,
   desc,
   eq,
@@ -204,7 +205,8 @@ export function listPublicReports({
         animalType ? eq(reports.animalType, animalType) : undefined,
         size ? eq(reports.size, size) : undefined,
         // 고른 털색 중 하나라도 겹치면 후보. 교집합이 아니라 합집합 조건
-        colors?.length ? raw`${reports.colors} && ${colors}` : undefined,
+        // 템플릿에 배열을 그대로 넣으면 원소가 스칼라로 바인딩돼 배열 리터럴 오류가 남
+        colors?.length ? arrayOverlaps(reports.colors, colors) : undefined,
         fromOccurredAt ? gte(reports.occurredAt, fromOccurredAt) : undefined,
         toOccurredAt ? lte(reports.occurredAt, toOccurredAt) : undefined,
         cursor
