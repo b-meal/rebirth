@@ -877,35 +877,37 @@ export function HomeScreen({
       ) : null}
 
       {/* 첫 화면에서 무엇을 하는 곳인지 읽히도록 급한 일 셋을 지도 위에 올림
-          좁은 화면에서는 단추가 겹치는 대신 가로로 밀림, 위아래 여백은 그림자 자리 */}
-      <HStack
-        gap="x2"
-        align="center"
-        width="fit-content"
+          좁은 화면에서는 글자를 줄이지 않고 가로로 넘김. 여백을 뚫고 화면 끝까지 나가
+          첫 단추는 본문 선에서 시작하고 마지막 단추가 끝에 걸쳐 보여 더 있다는 것이 읽힘
+          넘기는 상자는 탭을 먹지 않고 단추만 받아 오른쪽 빈 띠에서는 지도가 그대로 움직임
+          위아래 여백은 잘리는 그림자 자리 */}
+      <Box
+        className="rebirth-scroll-row rebirth-bleed"
         py="x2"
         bleedY="x2"
-        overflowX="auto"
-        style={{ pointerEvents: "auto", whiteSpace: "nowrap" }}
+        style={{ pointerEvents: "none", whiteSpace: "nowrap" }}
       >
-        <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/lost/new" onClick={markIntroSeen}>
-            <PrefixIcon svg={<IconMegaphoneLine />} />
-            우리 아이 찾기
-          </Link>
-        </ContextualFloatingButton>
-        <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/report" onClick={markIntroSeen}>
-            <PrefixIcon svg={<IconCameraLine />} />
-            발견동물 제보
-          </Link>
-        </ContextualFloatingButton>
-        <ContextualFloatingButton variant="layer" asChild>
-          <Link href="/guide/injured" onClick={markIntroSeen}>
-            <PrefixIcon svg={<IconHospitalcrossShieldLine />} />
-            다친 동물
-          </Link>
-        </ContextualFloatingButton>
-      </HStack>
+        <HStack gap="x2" align="center" width="fit-content" style={{ pointerEvents: "auto" }}>
+          <ContextualFloatingButton variant="layer" asChild>
+            <Link href="/lost/new" onClick={markIntroSeen}>
+              <PrefixIcon svg={<IconMegaphoneLine />} />
+              우리 아이 찾기
+            </Link>
+          </ContextualFloatingButton>
+          <ContextualFloatingButton variant="layer" asChild>
+            <Link href="/report" onClick={markIntroSeen}>
+              <PrefixIcon svg={<IconCameraLine />} />
+              발견동물 제보
+            </Link>
+          </ContextualFloatingButton>
+          <ContextualFloatingButton variant="layer" asChild>
+            <Link href="/guide/injured" onClick={markIntroSeen}>
+              <PrefixIcon svg={<IconHospitalcrossShieldLine />} />
+              다친 동물
+            </Link>
+          </ContextualFloatingButton>
+        </HStack>
+      </Box>
       </VStack>
 
       {/* 이 묶음은 시트와 떠 있는 버튼의 자리만 잡음
