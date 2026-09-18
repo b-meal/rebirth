@@ -72,7 +72,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     describeAnimal(report),
   ].filter(Boolean);
   const description = isDone
-    ? `${facts.join(", ")} — ${report.lifecycle === "resolved" ? "가족을 만났어요" : "끝난 신고예요"}`
+    ? `${facts.join(", ")} — ${report.lifecycle === "resolved" ? "집으로 돌아왔어요" : "끝난 신고예요"}`
     : isLost
       ? `${facts.join(", ")} — 이 아이를 본 적 있나요?`
       : `${facts.join(", ")} — 이 동물을 본 적 있나요?`;

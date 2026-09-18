@@ -14,7 +14,13 @@ import {
 import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
 
-import { describeAnimal, formatAbsolute, withObject, withSubject } from "@/lib/report-label";
+import {
+  describeAnimal,
+  formatAbsolute,
+  searchingLabel,
+  withObject,
+  withSubject,
+} from "@/lib/report-label";
 import { Screen, SectionCard, SectionTitle } from "@/components/ui/screen";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { AreaSubscribeButton } from "@/components/report/area-subscribe-button";
@@ -82,10 +88,7 @@ function statusBadge(
     return { label: name ? `${name}, 집에 왔어요` : "집으로 돌아왔어요", tone: "informative" };
   }
   if (lifecycle === "closed") return { label: "종료된 신고", tone: "neutral" };
-  return {
-    label: searchingDays <= 1 ? "오늘 잃어버렸어요" : `실종 ${searchingDays}일째`,
-    tone: "brand",
-  };
+  return { label: searchingLabel(searchingDays), tone: "brand" };
 }
 
 export type LostDetailProps = {

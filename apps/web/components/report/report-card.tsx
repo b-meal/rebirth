@@ -2,7 +2,7 @@ import Link from "next/link";
 import { AspectRatio, Box, HStack, ImageFrame, Text, VStack } from "@seed-design/react";
 import type { AnimalType } from "@rebirth/types";
 
-import { CARE_LABEL, describeAnimal } from "@/lib/report-label";
+import { describeAnimal, reportStatusBadge } from "@/lib/report-label";
 
 // 지도 시트와 상세 화면 아래가 같은 카드를 쓰게 모아 둔 격자용 카드
 
@@ -26,7 +26,6 @@ export type ReportCardItem = {
 export const NEARBY_CARD_WIDTH = "136px";
 
 export function ReportCard({ item }: { item: ReportCardItem }) {
-  const lost = item.kind === "lost";
   // 이름을 아는 기록은 이름이 먼저 읽혀야 함. 생김새는 아래 줄로 내림
   const title = item.petName || describeAnimal(item);
 
@@ -62,14 +61,11 @@ export function ReportCard({ item }: { item: ReportCardItem }) {
             <Text textStyle="t2Regular" color="fg.critical">
               다친 것으로 보임
             </Text>
-          ) : lost ? (
-            // 실종은 보호 상황을 쓰지 않아 unknown 이 박혀 있음. 확인되지 않음 이 뜨면 안 됨
-            <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
-              실종
-            </Text>
           ) : (
+            // 종류와 보호 상황을 한 줄로 고름. 실종은 보호 상황을 쓰지 않아 여기서 갈림
             <Text textStyle="t2Regular" color="fg.neutralSubtle" maxLines={1}>
-              {CARE_LABEL[item.careSituation] ?? ""}
+              {reportStatusBadge({ kind: item.kind ?? "sighting", careSituation: item.careSituation })
+                ?.label ?? ""}
             </Text>
           )}
         </HStack>

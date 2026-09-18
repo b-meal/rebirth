@@ -1,6 +1,6 @@
 "use client";
 
-import { CONSENT_DOCUMENT_VERSION, type CareSituation } from "@rebirth/types";
+import { CARE_INPUT_LABEL, CONSENT_DOCUMENT_VERSION, type CareSituation } from "@rebirth/types";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Box, HStack, Text, VStack } from "@seed-design/react";
@@ -56,10 +56,10 @@ const STEP_LABEL: Record<ReportStep, string> = {
 };
 
 // 실종 신고에만 쓰는 unknown 은 제보 폼에 내놓지 않음
-const CARE_OPTIONS: { value: Exclude<CareSituation, "unknown">; label: string }[] = [
-  { value: "roaming", label: "배회 중" },
-  { value: "in_care", label: "내가 데리고 있음" },
-];
+// 문구는 저장 뒤 배지와 끝말이 같아야 해 카탈로그에서 가져옴
+const CARE_OPTIONS = (Object.keys(CARE_INPUT_LABEL) as Exclude<CareSituation, "unknown">[]).map(
+  (value) => ({ value, label: CARE_INPUT_LABEL[value] }),
+);
 
 // 카드가 읽을 권고. 되돌린 갈래도 2단계로 다시 오면 그대로 보임
 function adviceOf(phase: ReportPipelinePhase): AnalyzeAdviceState | null {

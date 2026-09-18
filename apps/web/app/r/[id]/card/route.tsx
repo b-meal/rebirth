@@ -5,6 +5,8 @@ import { createSignedUrl } from "@rebirth/core/storage";
 import { findPublicReport, findReportPhotoPaths } from "@rebirth/db";
 import { ImageResponse } from "next/og";
 
+import { LIFECYCLE_LABEL } from "@rebirth/types";
+
 import { CARE_LABEL, SIZE_LABEL, breedLabel, formatMonthDay, withObject } from "@/lib/report-label";
 
 // 공유 카드. ratio=story 는 인스타 스토리용 9:16, 기본은 링크 미리보기용 OG 1.91:1
@@ -130,8 +132,8 @@ export async function GET(
     lost && report
       ? done
         ? found
-          ? "찾았어요"
-          : "끝난 신고"
+          ? LIFECYCLE_LABEL.resolved
+          : LIFECYCLE_LABEL.closed
         : `${formatMonthDay(report.occurredAt)}부터 찾고 있어요`
       : (CARE_LABEL[report?.careSituation ?? "unknown"] ?? "확인 중");
   // 보호자가 적어 둔 품종은 추정이 아니라 아는 값이라 계열 추정을 붙이지 않음

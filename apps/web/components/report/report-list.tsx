@@ -13,7 +13,7 @@ import { Chip } from "seed-design/ui/chip";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
 import { ResultSection } from "seed-design/ui/result-section";
 
-import { CARE_LABEL, describeAnimal, sinceLabel } from "@/lib/report-label";
+import { describeAnimal, reportStatusBadge, sinceLabel } from "@/lib/report-label";
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { Screen, ScreenBody, Section } from "@/components/ui/screen";
 import { AppHeader } from "@/components/ui/app-header";
@@ -59,7 +59,7 @@ const TYPE_OPTIONS: { value: AnimalType; label: string }[] = [
 const THUMB = "88px";
 
 function Card({ item }: { item: ListItem }) {
-  const lost = item.kind === "lost";
+  const status = reportStatusBadge({ kind: item.kind ?? "sighting", careSituation: item.careSituation });
   // 이름을 아는 기록은 이름이 먼저 읽혀야 함
   const title = item.petName || describeAnimal(item);
 
@@ -108,15 +108,8 @@ function Card({ item }: { item: ListItem }) {
             </Text>
             {/* 상황은 색으로 먼저 읽히고 글자가 뜻을 확인해 줌 */}
             <HStack gap="x1" align="center" wrap>
-              {/* 실종은 보호 상황을 쓰지 않아 확인되지 않음 이 박히면 안 됨 */}
-              {lost ? (
-                <Badge label="실종" tone="brand" />
-              ) : (
-                <Badge
-                  label={CARE_LABEL[item.careSituation] ?? "확인되지 않음"}
-                  tone={item.careSituation === "in_care" ? "informative" : "neutral"}
-                />
-              )}
+              {/* 종류와 보호 상황을 한 배지로 고름. 실종은 보호 상황을 쓰지 않아 여기서 갈림 */}
+              {status ? <Badge label={status.label} tone={status.tone} /> : null}
               {item.injury === true ? (
                 <Badge label="다친 것으로 보임" tone="critical" />
               ) : null}

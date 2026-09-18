@@ -7,7 +7,7 @@ import { ResultSection } from "seed-design/ui/result-section";
 import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { ScreenBody } from "@/components/ui/screen";
-import { formatDayTime } from "@/lib/report-label";
+import { CARE_LABEL, formatDayTime } from "@/lib/report-label";
 import { CandidatePhoto } from "./candidate-photo";
 
 // 확인할 후보를 카드로 훑음, 좌우 스와이프 대신 버튼과 키보드로 동작
@@ -33,12 +33,6 @@ export type Candidate = {
   conditionTags: string[];
   areaName: string | null;
   occurredAt: string;
-};
-
-const CARE_LABEL: Record<Candidate["careSituation"], string> = {
-  roaming: "발견",
-  in_care: "보호 중",
-  unknown: "확인 중",
 };
 
 export type CandidateDeckProps = {

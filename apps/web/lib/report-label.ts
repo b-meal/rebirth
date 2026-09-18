@@ -1,7 +1,19 @@
-import type { AnimalType } from "@rebirth/types";
+import {
+  CARE_LABEL as CARE,
+  reportStatus,
+  type AnimalType,
+  type ReportStatusInput,
+  type ReportStatusOptions,
+  type ReportStatusTone,
+} from "@rebirth/types";
 import { bareBreed } from "@rebirth/core/reports/breed";
 
+import type { BadgeTone } from "@/components/ui/badge";
+
 // 목록과 지도가 같은 문구를 쓰게 모아 둔 표기 규칙
+// 상태 어휘는 @rebirth/types 가 단일 원천이라 여기서 다시 만들지 않음
+// 화면의 행 타입이 string 이라 넓혀서 내보냄. 값은 카탈로그 그대로
+export const CARE_LABEL: Record<string, string> = CARE;
 
 export const SIZE_LABEL: Record<string, string> = {
   small: "소형",
@@ -17,11 +29,29 @@ export const ANIMAL_LABEL: Record<string, string> = {
   unknown: "확인 어려움",
 };
 
-export const CARE_LABEL: Record<string, string> = {
-  roaming: "발견",
-  in_care: "보호 중",
-  unknown: "확인되지 않음",
+// 의미 톤을 SEED 배지 색으로 옮김. 끝난 건과 보호 중은 안내색, 실종은 브랜드색
+const STATUS_TONE: Record<ReportStatusTone, BadgeTone> = {
+  lost: "brand",
+  done: "informative",
+  closed: "neutral",
+  care: "informative",
+  roaming: "neutral",
+  sheltered: "informative",
 };
+
+/** 카드에 붙는 상태 배지 하나. 문구와 우선순위는 @rebirth/types 가 정함 */
+export function reportStatusBadge(
+  input: Omit<ReportStatusInput, "careSituation"> & { careSituation: string },
+  options?: ReportStatusOptions,
+): { label: string; tone: BadgeTone } | null {
+  const status = reportStatus(input as ReportStatusInput, options);
+  return status ? { label: status.label, tone: STATUS_TONE[status.tone] } : null;
+}
+
+/** 실종 신고가 며칠째인지. 잃어버린 날이 1일째라 당일은 숫자 대신 문장으로 말함 */
+export function searchingLabel(days: number): string {
+  return days <= 1 ? "오늘 잃어버렸어요" : `실종 ${days}일째`;
+}
 
 export type AnimalLabelInput = {
   animalType: AnimalType;

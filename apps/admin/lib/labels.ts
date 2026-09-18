@@ -1,11 +1,15 @@
-// 신고 사유 라벨은 @rebirth/types 가 단일 원천이라 여기서 다시 만들지 않음
-// 운영 화면 표기. 제품 언어 규칙을 그대로 따르고 품종을 단정하지 않음
+import {
+  CARE_LABEL as CARE,
+  KIND_LABEL as KIND,
+  LIFECYCLE_LABEL as LIFECYCLE,
+} from "@rebirth/types";
 
-export const KIND_LABEL: Record<string, string> = {
-  sighting: "발견 제보",
-  lost: "실종 신고",
-  sheltered: "임시보호",
-};
+// 신고 사유와 상태 어휘는 @rebirth/types 가 단일 원천이라 여기서 다시 만들지 않음
+// 운영 화면의 행 타입이 string 이라 넓혀서 내보냄. 값은 카탈로그 그대로
+// 운영 화면 표기. 제품 언어 규칙을 그대로 따르고 품종을 단정하지 않음
+export const KIND_LABEL: Record<string, string> = KIND;
+export const CARE_LABEL: Record<string, string> = CARE;
+export const LIFECYCLE_LABEL: Record<string, string> = LIFECYCLE;
 
 export const ANIMAL_LABEL: Record<string, string> = {
   dog: "개",
@@ -21,23 +25,10 @@ export const SIZE_LABEL: Record<string, string> = {
   unknown: "확인 어려움",
 };
 
-export const CARE_LABEL: Record<string, string> = {
-  roaming: "배회 중",
-  in_care: "제보자가 보호 중",
-  unknown: "확인되지 않음",
-};
-
 export const VISIBILITY_LABEL: Record<string, string> = {
   public: "공개",
   hidden: "숨김",
   deleted: "삭제",
-};
-
-export const LIFECYCLE_LABEL: Record<string, string> = {
-  active: "진행 중",
-  closed: "종료",
-  searching: "찾는 중",
-  resolved: "만남",
 };
 
 export const LOCATION_SOURCE_LABEL: Record<string, string> = {
