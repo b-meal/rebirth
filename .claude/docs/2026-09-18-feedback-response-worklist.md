@@ -483,18 +483,18 @@
 
 ## Phase 12. 최종 게이트
 
-- [ ] `pnpm lint` 와 `pnpm typecheck` 를 전체 워크스페이스에서 다시 돌립니다
-  - [ ] `pnpm lint` 를 실행해 `Tasks: 2 successful, 2 total` 을 확인합니다
-  - [ ] `pnpm typecheck` 를 실행해 `Tasks: 5 successful, 5 total` 을 확인합니다
-  - [ ] `## 추가 항목` 에 실패한 패키지의 Phase 번호를 한 줄로 남기고 멈춥니다
-- [ ] `pnpm test` 로 전체 테스트를 돌려 기준선보다 늘어난 것을 확인합니다
-  - [ ] `pnpm test 2>&1 | grep -E "ℹ (tests|pass|fail)"` 로 `fail 0` 을 봅니다
-  - [ ] `@rebirth/core` 테스트 수가 104 보다 크고 `@rebirth/web` 이 8 보다 큰 것을 확인합니다
-  - [ ] `## 추가 항목` 에 사라진 테스트 이름을 한 줄로 남깁니다
-- [ ] `pnpm build` 로 전체 빌드를 돌립니다
-  - [ ] `pnpm build` 를 실행해 종료코드 `0` 을 봅니다
-  - [ ] `apps/web/app/find` `apps/web/app/r/[id]/poster` `robots.txt` `sitemap.xml` `manifest.webmanifest` 가 빌드 출력에 있는 것을 확인합니다
-  - [ ] `## 참고` 의 `### 실측 기록
+- [x] `pnpm lint` 와 `pnpm typecheck` 를 전체 워크스페이스에서 다시 돌립니다
+  - [x] `pnpm lint` 를 실행해 `Tasks: 2 successful, 2 total` 을 확인합니다
+  - [x] `pnpm typecheck` 를 실행해 `Tasks: 5 successful, 5 total` 을 확인합니다
+  - [x] `## 추가 항목` 에 실패한 패키지의 Phase 번호를 한 줄로 남기고 멈춥니다
+- [x] `pnpm test` 로 전체 테스트를 돌려 기준선보다 늘어난 것을 확인합니다
+  - [x] `pnpm test 2>&1 | grep -E "ℹ (tests|pass|fail)"` 로 `fail 0` 을 봅니다
+  - [x] `@rebirth/core` 테스트 수가 104 보다 크고 `@rebirth/web` 이 8 보다 큰 것을 확인합니다
+  - [x] `## 추가 항목` 에 사라진 테스트 이름을 한 줄로 남깁니다
+- [x] `pnpm build` 로 전체 빌드를 돌립니다
+  - [x] `pnpm build` 를 실행해 종료코드 `0` 을 봅니다
+  - [x] `apps/web/app/find` `apps/web/app/r/[id]/poster` `robots.txt` `sitemap.xml` `manifest.webmanifest` 가 빌드 출력에 있는 것을 확인합니다
+  - [x] `## 참고` 의 `### 실측 기록
 
 - `apps/web/components/report/detail-photo-hero.tsx` 는 지도가 아니라 사진 0장 빈 상태 주제라 `4d601d4` 로 분리 커밋
 - 지도 커밋 메시지를 지시서의 `feat: 예측 원에 이동 방향 화살표를 올림` 대신 실제 diff 에 맞춰 바꿈
@@ -502,14 +502,14 @@
 - 새 브랜치가 `feat/unified-track-map` 을 upstream 으로 잡아 `git branch --unset-upstream` 으로 끊음
 - Phase 0 기준선은 설계 상수와 일치. core 104 pass · web 8 pass · fail 0 · lint 2 tasks · typecheck 5 tasks` 에 새로 생긴 빌드 경고를 한 줄로 남깁니다
 - [ ] `grep` 으로 정확 좌표 유출과 금지 어휘가 없는지 훑습니다
-  - [ ] `grep -rn "exactPoint" apps/web packages/core/src/matching` 을 실행해 새로 늘어난 참조가 `0건` 인 것을 확인합니다
+  - [x] `grep -rn "exactPoint" apps/web packages/core/src/matching` 을 실행해 새로 늘어난 참조가 `0건` 인 것을 확인합니다
   - [ ] `grep -rn "유기동물 판별\|AI 진단\|동일 개체 확정\|배회 중\|찾는 중 " apps/web/components apps/web/app` 을 실행해 `0건` 인 것을 확인합니다
-  - [ ] `grep -rn "말티즈" apps/web/components apps/web/app` 을 실행해 계열 추정 없이 쓰인 곳이 `0건` 인 것을 확인합니다
+  - [x] `grep -rn "말티즈" apps/web/components apps/web/app` 을 실행해 계열 추정 없이 쓰인 곳이 `0건` 인 것을 확인합니다
 - [ ] `git status --short` 로 남은 변경을 논리 단위로 커밋하고 브랜치 상태를 확인합니다
-  - [ ] `git status --short` 를 실행해 미커밋 변경이 있으면 주제별로 나눠 커밋합니다
-  - [ ] `git log --oneline origin/develop..HEAD` 를 실행해 Phase 0 부터 Phase 11 의 커밋이 전부 있는 것을 확인합니다
+  - [x] `git status --short` 를 실행해 미커밋 변경이 있으면 주제별로 나눠 커밋합니다
+  - [x] `git log --oneline origin/develop..HEAD` 를 실행해 Phase 0 부터 Phase 11 의 커밋이 전부 있는 것을 확인합니다
   - [ ] `NEXT_PUBLIC_SITE_URL=https://re-birth.kr pnpm smoke` 를 실행해 아홉 경로가 `200` 인 것을 확인합니다
-  - [ ] `git status --short` 가 빈 줄이고 `pnpm test` 가 `fail 0` 인 것을 확인합니다
+  - [x] `git status --short` 가 빈 줄이고 `pnpm test` 가 `fail 0` 인 것을 확인합니다
 
 ## 추가 항목
 
@@ -537,9 +537,13 @@
 - [ ] 제출 전 `develop` → `main` PR 을 올려 이동 경로 추적·`/find`·`robots`·`sitemap`·`manifest` 를 운영에 반영하기. 심사 기간 `2026-09-21` 이전
 - [ ] 제출 전 `/Users/hahmjuntae/Desktop/rebirth-제출자료/AI활용_문구.txt` 를 문서의 472자 새 초안으로 교체하기
 - [ ] 배포본 실사용 수치를 낼 집계 도구 붙이기. 본선 실사용 질문 답의 근거가 지금 없음
+- [ ] 배포 환경에 `NEXT_PUBLIC_SITE_URL` 이 설정돼 있는지 확인하기. 미설정이면 전단 QR 에 `localhost:3000` 이 박힘
+- [ ] `/r/[id]/poster` 의 `notFound()` 가 404 가 아니라 200 을 반환하는 것 고치기
 ## 참고
 
 ### 지시서 결함
+
+- Phase 12 의 금지 어휘 grep 이 규칙을 지킨 부정문까지 잡음. `catalog-patterns.tsx:124` 의 `동일 개체 확정이 아니에요` 때문에 0건 달성이 불가능
 
 - Phase 8 이 고치라는 `## 경로 신뢰도` 절이 문서에 없음. `가장 약한 고리` 문장은 `## 공식` 코드블록의 T2 헤더 줄이었음
 - `MIN_LEG_SIMILARITY` 의 실제 위치는 `track-handlers.ts:34`. 지시서 설계 상수 표는 Phase 2 소관으로 적었음
@@ -626,3 +630,12 @@
 - 시연용 실종 신고는 `https://re-birth.kr/r/457847fe-4042-4419-9740-fdf10f0e6818`. 응답 본문에 `exactPoint` 0건·소수점 5자리 좌표 0건 확인
 - `AI 활용 방식 및 결과` 새 초안은 472자로 500자 상한 안. 시연 대본 다섯 단계 합계 165초
 - 배포본 실사용 수치는 집계 도구가 없어 미측정. 김호민 예상 질문 답에 미측정으로 적음
+- 전체 `pnpm build` 가 이 작업에서 처음 돌았고 `EXIT=0`, 신규 경고 0건
+- Phase 6 번들 우려는 사실이 아님. Turbopack 이 `mine-screen` 전용 상수를 트리셰이킹해 `/` 청크에 없음
+- Next.js 16 빌드 출력에 First Load JS 열이 없음. 번들 확인은 서빙 HTML 의 script 합산으로 해야 함
+- 서빙 HTML script 합산 실측. `/` 590.0 KiB gz · `/reports` 308.2 · `/mine` 225.8 · `/support` 209.0 · `/find` 207.5
+- `/` 의 무게는 maplibre-gl 단일 청크 980 KiB 가 지배
+- 로컬 `pnpm start`(3100) 스모크에서 아홉 경로 전부 `200`, `total 9 · fail 0`
+- `/r/[id]/poster` 실렌더 확인. 200x200 QR SVG · `실종` 라벨 · 지역명까지만 · `흰색 소형견`
+- 공개 신고 20건 중 `lost/searching` 은 2건. 나머지 18건은 `sighting/active` 라 전단 대상이 좁음
+- `/find` 실렌더 확인. 행동 타일 셋 · 이동 경로 추적 설명 · 이름으로 실종 신고 찾기 모두 출력
