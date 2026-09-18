@@ -14,17 +14,21 @@
 
 ```
 T1  연결 가능성 - 두 목격을 한 개체의 연속으로 볼 수 있는가
-    feasible(A→B) = d(A,B) / (v_max × Δt) ≤ 1
+    feasible(A→B) = d(A,B) / min(v_max × Δt, D_MAX) ≤ 1
     v_max = 소형 3.0 · 중형 4.5 · 대형 6.0 km/h
+    D_MAX = 소형 5 · 중형 10 · 대형 15 km
 
-T2  경로 신뢰도 - 가장 약한 고리가 경로 전체를 결정
-    track = min(match_i) × (1 − mean(d_i / (v_max × Δt_i)))
+T2  경로 신뢰도 - 점수는 노드 최소값, 이동성은 다리 평균값
+    track = min(match_i) × (1 − mean(d_i / min(v_max × Δt_i, D_MAX)))
 
-T3  방향성 - 이동생태학의 straightness index
+T3  방향성 - 이동생태학의 straightness index, 다리 수로 수축
     κ = |Σ v⃗_i| / Σ|v⃗_i|      0 = 제자리 맴돎, 1 = 한 방향 직진
+    κ_eff = κ × n_leg / (n_leg + 1)
 
 T4  다음 목격 예측 - 중심은 방향으로 밀고, 원은 √t 로 퍼짐
-    중심 C = P_last + κ × v_eff × h × û
+    중심 C = P_last + κ_eff × v_eff × min(h, H_DRIFT) × û
+    û = Σ v⃗_i / |Σ v⃗_i|   마지막 다리가 아니라 다리 합벡터의 단위벡터
+    H_DRIFT = 8h            이후로는 중심이 더 밀리지 않음
     반경 r = σ × √h + ε_gps,   0.4km ≤ r ≤ 8km
     σ = 소형 0.28 · 중형 0.38 · 대형 0.50 km/√h
 
@@ -50,22 +54,34 @@ T5  탐색 우선순위 - 예측 원의 경계에 가까운 지점이 앞
 ## 설계 상수
 
 ```
-MIN_LEG_SCORE           45     경로에 넣을 매칭 점수 하한
-MIN_TRACK_NODES         2      경로가 성립할 최소 목격 수
-MAX_TRACK_NODES         12     최근 것부터 자르는 상한
-GPS_EPSILON_KM          0.3    격자 300m 에서 오는 바닥 오차
-R_MIN_KM / R_MAX_KM     0.4 / 8
-SPOT_LIMIT              4      탐색 지점 개수
+MIN_LEG_SCORE           45            경로에 넣을 매칭 점수 하한
+MIN_LEG_SIMILARITY      0.82          외형 벡터만으로 경로에 들일 하한, 표본으로 못 정해 기본값 유지
+MIN_TRACK_NODES         2             경로가 성립할 최소 목격 수
+MAX_TRACK_NODES         12            최근 것부터 자르는 상한, 오래된 다리는 예측에 덜 쓰임
+D_MAX_KM                5 / 10 / 15   체급별 이동 거리 상한 추정, unknown 은 10. 공백이 길어도 상한이 무한히 늘지 않게 둠
+H_DRIFT_HOURS           8             방향 지속 시간 추정, 이 시간을 넘으면 표류가 포화
+PHOTO_MIXED_FACTOR      0.6           사진이 mixed 일 때만 신뢰도를 깎는 감쇠 계수 추정
+GPS_EPSILON_KM          0.3           격자 300m 에서 오는 바닥 오차
+R_MIN_KM / R_MAX_KM     0.4 / 8       반경이 0 으로 수렴하거나 시 전체로 퍼지는 것 제한
+SPOT_LIMIT              4             탐색 지점 개수
 TRACK_MODEL             claude-sonnet-5
 TRACK_PROMPT_VERSION    track-1
-TRACK_PHOTO_MAX         4      최근 노드부터 첫 사진 한 장씩
+TRACK_PHOTO_MAX         4             최근 노드부터 첫 사진 한 장씩
+```
+
+공식마다 기댄 근거입니다.
+
+```
+T3  straightness index   이동생태학의 경로 직선성 지표, 합벡터 길이를 다리 길이 합으로 나눔
+T4  평균제곱변위          등방 확산에서 변위가 √t 에 비례해 반경을 σ × √h 로 둠
+T5  Rayleigh 최빈 거리    2차원 등방 확산의 반경 분포 최빈값이 σ 라 경계 부근이 밀도 최대
 ```
 
 ## 데이터와 안전
 
 새 마이그레이션 없이 `reports` 와 `match_scores` 를 읽기만 합니다. 좌표는 `coarsePoint` 즉 300m 격자로 넓힌 공개용 값만 쓰고 `exactPoint` 를 읽는 코드는 0줄입니다. 노드 좌표는 지도에 이미 낱개로 떠 있는 지점들이라 경로가 새로 드러내는 위치 정보가 없습니다.
 
-공개된 찾는 중 신고는 관리 세션 없이 경로를 볼 수 있습니다. 어디를 찾아봐야 하는지 아는 사람이 많을수록 다시 만날 확률이 올라가고, 실종 신고는 보호자가 널리 퍼지기를 바라는 글이기 때문입니다. 숨겼거나 끝난 신고, 그리고 후보 덱과 연락 경로는 POL-03 대로 작성자 전용으로 남습니다.
+공개된 실종 신고는 관리 세션 없이 경로를 볼 수 있습니다. 어디를 찾아봐야 하는지 아는 사람이 많을수록 다시 만날 확률이 올라가고, 실종 신고는 보호자가 널리 퍼지기를 바라는 글이기 때문입니다. 숨겼거나 끝난 신고, 그리고 후보 덱과 연락 경로는 POL-03 대로 작성자 전용으로 남습니다.
 
 ## 실측 결과
 
@@ -84,12 +100,25 @@ TRACK_PHOTO_MAX         4      최근 노드부터 첫 사진 한 장씩
 응답 exactPoint 0건
 ```
 
+같은 시연 데이터에서 탐색 대상 면적입니다.
+
+```
+가정                   반경      면적
+v_max × h 순진한 원     20.4km   1307km²
+고정 2km 원            2km      12.6km²
+T4 예측 원             1.03km   3.3km²
+조건                   소형, 마지막 목격 6.8시간 전, 직선성 1.000
+```
+
+순수 확산에 방향 지속을 더한 가정 아래의 계산값입니다. 면적이 줄어드는 것이 재회로 이어지는지는 측정하지 않았습니다.
+
 ## 함께 반영한 UX
 
 ```
 시간 → 행동     fresh <6h · recent <24h · stale <72h · cold >=72h 네 등급에 다음 행동 한 줄
 밀도 문구       반경 r km 안에 제보 n건, 0건이면 새 제보가 없어요
-상태 어휘       실종 · 발견 · 보호 중 · 구조 요청 · 찾음 으로 통일, 주어 없는 표기
+상태 어휘       실종 · 발견 · 보호 중 · 구조 요청 · 찾음 다섯 개만, unknown 은 빈 문자열
+              배회 중 과 찾는 중 은 사용자 문구에서 빠짐. 단일 원천은 STATUS_LABEL
 CTA            구조 요청 → 구조·보호 요청, 내 가족 같아요 → 우리 아이인지 확인
 검색 분리       발견 제보 찾기 / 실종 신고 찾기, 실종은 반려동물 이름으로도 검색
 ```
@@ -106,10 +135,24 @@ packages/core/src/matching/track-handlers.ts GET /api/lost/:id/track
 packages/db/src/queries/lost.ts              findTrackSightings
 apps/web/components/lost/track-map.tsx       경로선 · 예측 원 · 번호 마커
 apps/web/components/lost/track-section.tsx   요약 카드와 탐색 순서
-apps/web/lib/report-label.ts                 긴급도 등급과 밀도 문구
+apps/web/lib/report-label.ts                 긴급도 등급과 밀도 문구, 상태 어휘 단일 원천
+apps/web/app/r/[id]/poster/page.tsx          A4 전단과 제보 QR, 색인 제외
+apps/web/app/find/page.tsx                   검색 유입 랜딩
 ```
 
-회귀 검증은 `track.test.ts` 7건, `search-spots.test.ts` 3건, `track-review.test.ts` 7건입니다.
+회귀 검증은 `track.test.ts` 7건, `search-spots.test.ts` 3건, `track-review.test.ts` 8건입니다. 패키지 전체는 `@rebirth/core` 108건과 `@rebirth/web` 9건이고 둘 다 `fail 0` 입니다.
+
+## 한계
+
+경로는 단일 사슬 하나만 만들고 갈라지는 경로를 다루지 않습니다. 비슷한 시각에 서로 다른 방향으로 남은 두 목격 중 하나만 사슬에 들어갑니다.
+
+`buildTrack` 은 시간순으로 훑으며 이동 가능한 노드를 앞에서부터 담는 탐욕 선택이라, 앞 노드가 틀리면 그 뒤 판정이 전부 밀립니다.
+
+사진 대조는 `photoConsistency` 가 `mixed` 일 때 `PHOTO_MIXED_FACTOR` 로 신뢰도를 깎는 감쇠뿐이라, 두 개체를 한 경로로 합칠 수 있습니다. 경로는 확인할 후보이고 개체 동일성을 확정하지 않습니다.
+
+`scoreMatch` 는 실종 지점과 실종 시각을 기준으로 배점하므로 15km 14일 창 밖의 제보는 외형 유사도 `MIN_LEG_SIMILARITY` 로만 경로에 들어옵니다.
+
+`MIN_LEG_SIMILARITY = 0.82` 는 실측에서 승격 0건입니다. 유사도 분포는 `scored=true` n=8 중위 `0.5839`, `scored=false` n=5572 상위 10% `0.6140`, 전체 5580쌍 최대 `0.778` 이고 두 분위수가 역전돼 표본으로 하한을 정할 수 없어 기본값을 그대로 두었습니다.
 
 ## 남은 것
 
