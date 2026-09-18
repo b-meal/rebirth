@@ -26,6 +26,8 @@ export type TrackView = {
     searchOrder: string[];
     caution: string | null;
   } | null;
+  // 배점 하한을 못 넘고 외형 유사도로만 경로에 들어온 노드 수
+  promotedCount: number;
 };
 
 /** loading 은 조회 중, none 은 이을 목격이 없음, hidden 은 볼 권한이 없음 */
@@ -37,6 +39,7 @@ type TrackResponse = {
   density: TrackView["density"];
   spots?: { name: string }[] | null;
   interpretation?: TrackView["interpretation"];
+  promotedCount?: number | null;
 };
 
 export function useTrack(reportId: string): {
@@ -67,6 +70,7 @@ export function useTrack(reportId: string): {
           density: body.density,
           spots: body.spots ?? [],
           interpretation: body.interpretation ?? null,
+          promotedCount: body.promotedCount ?? 0,
         });
         setStatus("ready");
       })

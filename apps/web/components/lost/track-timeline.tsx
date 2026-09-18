@@ -3,8 +3,10 @@
 // design-system-allow:space 2px 는 stroke 두께라 간격 토큰 단계로 표현할 수 없음
 
 import { Box, HStack, Text, VStack } from "@seed-design/react";
+import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
 
 import { formatAbsolute, sinceLabel } from "@/lib/report-label";
+import { bearingWord } from "./track-section";
 import type { TrackNodeView } from "./use-track";
 
 /**
@@ -17,7 +19,28 @@ const DOT = "x6";
 
 const RAIL_WIDTH = "2px";
 
+const DEG = 180 / Math.PI;
 
+// 경도 한 도의 실제 폭은 위도에 따라 줄어 방위각을 내기 전에 보정 필요
+function legBearing(from: LatLng, to: LatLng): number {
+  const east = (to.lng - from.lng) * Math.cos((((from.lat + to.lat) / 2) * Math.PI) / 180);
+  const north = to.lat - from.lat;
+  return (Math.atan2(east, north) * DEG + 360) % 360;
+}
+
+// 구간 셈에 필요한 것은 좌표와 시각뿐이라 신고 지점도 같은 함수를 탐
+type LegPoint = { point: LatLng; occurredAt: Date | string };
+
+// 구간 하나를 걸린 시간과 거리와 여덟 낱말 방향 한 줄로 옮김
+function legSummary(from: LegPoint, to: LegPoint): string {
+  const hours =
+    (new Date(to.occurredAt).getTime() - new Date(from.occurredAt).getTime()) / 3_600_000;
+  // 한 시간 미만을 반올림하면 0시간 뒤가 떠서 분으로 내림
+  const gap = hours < 1 ? `${Math.max(Math.round(hours * 60), 1)}분 뒤` : `${Math.round(hours)}시간 뒤`;
+  const km = distanceKm(from.point, to.point);
+  const span = km < 1 ? `${Math.round(km * 1000)}m` : `${km.toFixed(1)}km`;
+  return `${gap} ${span} ${bearingWord(legBearing(from.point, to.point))}쪽`;
+}
 
 type TimelineRow = {
   key: string;
@@ -25,11 +48,13 @@ type TimelineRow = {
   areaName: string | null;
   at: Date;
   origin: boolean;
+  /** 이 줄에서 다음 줄로 넘어간 구간 요약, 마지막 줄과 좌표 없는 신고 줄은 null */
+  legAfter: string | null;
 };
 
 export type TrackTimelineProps = {
-  /** 보호자가 마지막으로 본 곳, 경로의 시작 */
-  origin: { areaName: string | null; occurredAt: Date | string };
+  /** 보호자가 마지막으로 본 곳, 경로의 시작. 좌표는 격자 스냅본이고 없으면 구간 요약만 빠짐 */
+  origin: { areaName: string | null; occurredAt: Date | string; point?: LatLng | null };
   /** 뒤따른 목격, 시간순이고 마지막 원소가 가장 최근 */
   nodes: TrackNodeView[];
 };
@@ -44,14 +69,23 @@ export function TrackTimeline({ origin, nodes }: TrackTimelineProps) {
       areaName: origin.areaName,
       at: new Date(origin.occurredAt),
       origin: true,
+      // 좌표 없는 지역 선택 신고는 첫 목격까지의 구간을 셈이 불가
+      legAfter:
+        origin.point && nodes[0]
+          ? legSummary({ point: origin.point, occurredAt: origin.occurredAt }, nodes[0])
+          : null,
     },
-    ...nodes.map((node, index) => ({
-      key: node.id,
-      label: String(index + 1),
-      areaName: node.areaName,
-      at: new Date(node.occurredAt),
-      origin: false,
-    })),
+    ...nodes.map((node, index) => {
+      const next = nodes[index + 1];
+      return {
+        key: node.id,
+        label: String(index + 1),
+        areaName: node.areaName,
+        at: new Date(node.occurredAt),
+        origin: false,
+        legAfter: next ? legSummary(node, next) : null,
+      };
+    }),
   ];
 
   return (
@@ -105,6 +139,12 @@ export function TrackTimeline({ origin, nodes }: TrackTimelineProps) {
               {row.origin ? (
                 <Text textStyle="t2Regular" color="fg.neutralSubtle">
                   보호자가 마지막으로 본 곳, 지도의 주황 점
+                </Text>
+              ) : null}
+              {/* 다음 줄로 내려가는 세로선 옆에 두어 구간이 어디에서 어디로인지 읽힘 */}
+              {row.legAfter ? (
+                <Text textStyle="t2Regular" color="fg.neutralSubtle">
+                  {row.legAfter}
                 </Text>
               ) : null}
             </VStack>
