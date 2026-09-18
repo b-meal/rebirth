@@ -4,6 +4,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import { z } from "zod";
 
+import { promptTime } from "./prompt-time.ts";
+
 // 결정식 배점이 올린 후보를 모델이 다시 읽고 근거 문장을 만듦
 // 배점은 왜 위에 있는지 말해 주지 않음. 사람이 사진을 열기 전에 읽을 한 문단이 필요함
 // 개체 동일성은 어떤 경우에도 확정하지 않고 확인할 값어치만 말함
@@ -90,7 +92,7 @@ function describe(subject: ReviewSubject, label: string): string {
     `귀 끝: ${tri(subject.earTip)}`,
     `상태 표시: ${subject.conditionTags.join(", ") || "없음"}`,
     `지역: ${subject.areaName ?? "미확인"}`,
-    `시각: ${subject.occurredAt.toISOString()}`,
+    `시각: ${promptTime(subject.occurredAt)}`,
     `설명: ${subject.appearance ?? "없음"}`,
   ].join("\n");
 }
