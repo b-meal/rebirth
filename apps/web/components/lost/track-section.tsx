@@ -3,7 +3,7 @@
 import { Text, VStack } from "@seed-design/react";
 import { Callout } from "seed-design/ui/callout";
 
-import { densityLine, sinceLabel, urgencyHint } from "@/lib/report-label";
+import { situationLine } from "@/lib/report-label";
 import { SectionCard, SectionTitle } from "@/components/ui/screen";
 import type { TrackStatus, TrackView } from "./use-track";
 
@@ -16,7 +16,7 @@ import type { TrackStatus, TrackView } from "./use-track";
 // 방위각을 낱말로 옮기는 표, 북에서 시계 방향 45도 간격
 const BEARING_WORD = ["북", "북동", "동", "남동", "남", "남서", "서", "북서"] as const;
 
-function bearingWord(degree: number): string {
+export function bearingWord(degree: number): string {
   const normalized = ((degree % 360) + 360) % 360;
   return BEARING_WORD[Math.round(normalized / 45) % BEARING_WORD.length] ?? "북";
 }
@@ -70,17 +70,23 @@ export function TrackSection({ status, track }: TrackSectionProps) {
         </Text>
       ) : null}
 
+      {/* 배점 하한을 못 넘고 외형만 닮아 이어 붙인 노드는 따로 세어 둠 */}
+      {track.promotedCount > 0 ? (
+        <Text textStyle="t2Regular" color="fg.neutralMuted">
+          외형이 닮아 이어 붙인 확인할 후보 {track.promotedCount}건
+        </Text>
+      ) : null}
+
       <VStack align="stretch" gap="x1">
         <Text textStyle="t3Regular" color="fg.neutral">
-          {last.areaName ?? "지역 미확인"}에서 {sinceLabel(lastSeen)} 마지막으로 봤어요
+          {last.areaName ?? "지역 미확인"}에서 마지막으로 봤어요
         </Text>
-        {track.density ? (
-          <Text textStyle="t3Regular" color="fg.neutralMuted">
-            {densityLine(track.density)}
-          </Text>
-        ) : null}
         <Text textStyle="t3Regular" color="fg.neutralMuted">
-          {urgencyHint(lastSeen)}
+          {situationLine({
+            lastSeen,
+            count: track.density?.count ?? null,
+            radiusKm: track.density?.radiusKm ?? null,
+          })}
         </Text>
         {track.prediction ? (
           <Text textStyle="t3Regular" color="fg.neutralMuted">
