@@ -795,7 +795,7 @@ export function HomeScreen({
         py="x2"
         bleedY="x2"
         overflowX="auto"
-        style={{ pointerEvents: "auto" }}
+        style={{ pointerEvents: "auto", whiteSpace: "nowrap" }}
       >
         <ContextualFloatingButton variant="layer" asChild>
           <Link href="/lost/new" onClick={markIntroSeen}>
