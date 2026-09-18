@@ -15,10 +15,25 @@ export type TrackNodeView = {
   areaName: string | null;
 };
 
+/**
+ * 서버가 계산한 탐색 단계와 주변 제보 상황
+ * 기준 시각은 보호자가 적은 실종 시각이고 문장은 규칙에서 나와 AI 초안 표기를 붙이지 않음
+ */
+export type SearchAdviceView = {
+  phase: "fresh" | "recent" | "stale" | "cold";
+  hoursSinceLost: number;
+  coverage: "quiet" | "active" | null;
+  radiusKm: number;
+  around: { sightings: number; candidates: number } | null;
+  latestCandidateAt: string | null;
+  lines: { density: string | null; action: string; coverage: string | null };
+};
+
 export type TrackView = {
+  /** 이을 목격이 두 건 미만이면 빈 배열. 조언은 그래도 옴 */
   nodes: TrackNodeView[];
   prediction: { center: LatLng; radiusKm: number; bearingDeg: number } | null;
-  density: { count: number; radiusKm: number } | null;
+  advice: SearchAdviceView | null;
   spots: { name: string }[];
   interpretation: {
     movement: string;
@@ -28,13 +43,13 @@ export type TrackView = {
   } | null;
 };
 
-/** loading 은 조회 중, none 은 이을 목격이 없음, hidden 은 볼 권한이 없음 */
-export type TrackStatus = "loading" | "none" | "hidden" | "ready";
+/** loading 은 조회 중, hidden 은 볼 권한이 없음. 경로가 없어도 조언이 있으면 ready */
+export type TrackStatus = "loading" | "hidden" | "ready";
 
 type TrackResponse = {
   track: { nodes: TrackNodeView[] } | null;
   prediction: TrackView["prediction"];
-  density: TrackView["density"];
+  advice?: SearchAdviceView | null;
   spots?: { name: string }[] | null;
   interpretation?: TrackView["interpretation"];
 };
@@ -57,14 +72,10 @@ export function useTrack(reportId: string): {
           return;
         }
         const body = (await response.json()) as TrackResponse;
-        if (!body.track || body.track.nodes.length === 0) {
-          setStatus("none");
-          return;
-        }
         setTrack({
-          nodes: body.track.nodes,
+          nodes: body.track?.nodes ?? [],
           prediction: body.prediction,
-          density: body.density,
+          advice: body.advice ?? null,
           spots: body.spots ?? [],
           interpretation: body.interpretation ?? null,
         });
