@@ -16,6 +16,7 @@ import {
   IconAndroidshareLine,
   IconChevronLeftLine,
   IconHouseLine,
+  IconPawprintFill,
 } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-button";
@@ -27,9 +28,9 @@ import { PhotoCarousel } from "@/components/ui/photo-carousel";
 // 발견 제보와 실종 신고가 같은 로딩·만료 처리를 써야 해 한 자리에 둠
 // 여러 장이면 옆으로 넘기고 누르면 전체 화면으로 열림. 그 일은 PhotoCarousel 이 함
 
-type PhotoState = "loading" | "ready" | "expired";
+type PhotoState = "loading" | "ready" | "empty" | "expired";
 
-type Outcome = { state: "ready" | "expired"; urls: string[] };
+type Outcome = { state: "ready" | "empty" | "expired"; urls: string[] };
 
 export type DetailPhotoHeroProps = {
   reportId: string;
@@ -54,7 +55,8 @@ export function DetailPhotoHero({ reportId, alt, onShare }: DetailPhotoHeroProps
       const urls = [...(body.photos ?? [])]
         .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
         .map((photo) => photo.url);
-      if (urls.length === 0) return { state: "expired", urls: [] };
+      // 사진 없이 올린 신고도 있어 0장을 만료로 말하면 거짓이 됨
+      if (urls.length === 0) return { state: "empty", urls: [] };
 
       return { state: "ready", urls };
     } catch {
@@ -83,6 +85,15 @@ export function DetailPhotoHero({ reportId, alt, onShare }: DetailPhotoHeroProps
         <Skeleton width="full" height="320px" radius="0" />
       ) : photoState === "ready" && photoUrls.length > 0 ? (
         <PhotoCarousel urls={photoUrls} fullBleed alt={alt} />
+      ) : photoState === "empty" ? (
+        <AspectRatio ratio={4 / 3} bg="bg.neutralWeak">
+          <VStack align="center" justify="center" gap="x2" px="spacingX.globalGutter">
+            <Icon svg={<IconPawprintFill />} size="x10" color="fg.neutralSubtle" />
+            <Text textStyle="t4Regular" color="fg.neutralMuted">
+              사진 없이 올린 기록이에요
+            </Text>
+          </VStack>
+        </AspectRatio>
       ) : (
         <AspectRatio ratio={4 / 3} bg="bg.neutralWeak">
           <VStack align="center" justify="center" gap="x2" px="spacingX.globalGutter">

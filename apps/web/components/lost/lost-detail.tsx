@@ -32,13 +32,15 @@ import {
 } from "@/components/report/report-comments";
 import { ReportFeatures } from "@/components/report/report-features";
 import { ReportInterestButton } from "@/components/report/report-interest-button";
-import { ReportLocationMap } from "@/components/report/report-location-map";
 import { ReportShelters, type ShelterItem } from "@/components/report/report-shelters";
 import { ReportFlagSheet } from "@/components/report/report-flag-sheet";
 import { ReportShareSheet, useReportShare } from "@/components/share/report-share";
 import { rememberView } from "@/components/mine/recent-views";
 import { LostOwnerPanel } from "./lost-owner-panel";
+import { TrackMap } from "./track-map";
 import { TrackSection } from "./track-section";
+import { TrackTimeline } from "./track-timeline";
+import { useTrack } from "./use-track";
 
 // 실종 신고 상세. 발견 제보와 같은 표에 담기지만 읽는 사람도 다음 행동도 달라 화면을 따로 둠
 // 보호자가 적은 기록이라 AI 초안 표시가 없고, 보는 사람이 할 일은 목격 제보임
@@ -125,6 +127,8 @@ export function LostDetail({
   ownership,
 }: LostDetailProps) {
   const [flagOpen, setFlagOpen] = useState(false);
+  // 지도와 설명이 같은 응답을 쓰게 조회를 화면에서 한 번만 함
+  const { status: trackStatus, track } = useTrack(report.id);
   const [shareOpen, setShareOpen] = useState(false);
 
   // 마이페이지의 최근 본 목록에 남김
@@ -235,10 +239,19 @@ export function LostDetail({
             </Text>
           ) : null}
           {location ? (
-            <ReportLocationMap
-              point={location.point}
+            <TrackMap
+              origin={location.point}
               gridMeters={location.gridMeters}
               destinationName={report.areaName ?? "마지막 목격 위치"}
+              nodes={searching ? (track?.nodes ?? []) : []}
+              prediction={searching ? (track?.prediction ?? null) : null}
+            />
+          ) : null}
+          {/* 지도의 점과 번호가 어느 지역 어느 시각인지는 글로 한 번 더 읽어야 남음 */}
+          {location && searching && track ? (
+            <TrackTimeline
+              origin={{ areaName: report.areaName, occurredAt: report.occurredAt }}
+              nodes={track.nodes}
             />
           ) : null}
           {report.areaName ? (
@@ -252,7 +265,9 @@ export function LostDetail({
 
         {/* 마지막으로 본 곳 바로 다음이 다음에 갈 곳이라 경로를 이어 붙임 */}
         {/* 내 신고인지와 무관하게 보여 이웃도 어디를 찾을지 알게 함 */}
-        {location && searching ? <TrackSection reportId={report.id} /> : null}
+        {location && searching ? (
+          <TrackSection status={trackStatus} track={track} />
+        ) : null}
 
         {/* 실종 신고에서 보호소는 맡길 곳이 아니라 찾아볼 곳임 */}
         <ReportShelters
