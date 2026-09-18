@@ -93,7 +93,7 @@ async function loadAssist(
   };
 }
 
-/* GET /api/lost/[id]/track  목격 경로와 다음 목격 예측. 작성자만 봄 */
+/* GET /api/lost/[id]/track  공개된 찾는 중 신고의 목격 경로와 다음 목격 예측 */
 
 export async function getLostTrackHandler(
   request: Request,
@@ -104,16 +104,25 @@ export async function getLostTrackHandler(
   try {
     if (!isUuid(id)) return notFound(NOT_FOUND);
 
-    const access = await checkManageAccess(request, id);
-    if (!access.ok) {
-      // 세션 만료와 권한 부족을 구분해 다음 행동을 안내함
-      return access.reason === "no_session"
-        ? unauthorized(NEED_AUTH)
-        : forbidden("이 신고를 관리할 권한이 없습니다");
-    }
-
     const lost = await findManagedReport(id);
     if (!lost || lost.kind !== "lost") return notFound(NOT_FOUND);
+
+    /**
+     * 공개된 찾는 중 신고는 이웃도 봄
+     * 어디를 찾아봐야 하는지 아는 사람이 많을수록 다시 만날 확률이 올라감
+     * 좌표는 격자로 넓힌 값이고 개체 동일성을 확정하지 않아 후보 목록과 다름
+     * 숨겼거나 끝난 신고는 남에게 보일 까닭이 없어 작성자에게만 남김
+     */
+    const open = lost.visibility === "public" && lost.lifecycle === "searching";
+    if (!open) {
+      const access = await checkManageAccess(request, id);
+      if (!access.ok) {
+        // 세션 만료와 권한 부족을 구분해 다음 행동을 안내함
+        return access.reason === "no_session"
+          ? unauthorized(NEED_AUTH)
+          : forbidden("이 신고를 관리할 권한이 없습니다");
+      }
+    }
 
     // 화면이 그릴 격자 원 크기는 신고가 가진 공개 격자 값을 따름
     const gridMeters = lost.coarseGridM;
