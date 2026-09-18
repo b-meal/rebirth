@@ -54,8 +54,6 @@ export type NotificationListProps = {
   /** 더 읽을 곳. 없으면 이 목록이 전부임 */
   nextCursor: string | null;
   matches: MatchAlertItem[];
-  /** 가짜 데이터로 화면만 보는 중. 서버를 건드리는 동작을 모두 막음 */
-  preview?: boolean;
 };
 
 /** 이어 읽은 쪽. 날짜는 JSON 을 거치며 문자열이 됨 */
@@ -73,7 +71,6 @@ export function NotificationList({
   items,
   nextCursor,
   matches,
-  preview = false,
 }: NotificationListProps) {
   const [opened, setOpened] = useState<string[]>([]);
   const [extra, setExtra] = useState<NotificationItem[]>([]);
@@ -109,11 +106,9 @@ export function NotificationList({
 
   // 목록을 그린 뒤에 읽음으로 올림. 이번에 본 점은 남고 다음에 들어오면 사라짐
   useEffect(() => {
-    // 가짜 화면이 진짜 읽은 시각을 올리면 안 읽은 알림이 소리 없이 사라짐
-    if (preview) return;
     if (areas.length === 0 && matches.length === 0) return;
     void markNotificationsRead();
-  }, [preview, areas.length, matches.length]);
+  }, [areas.length, matches.length]);
 
   const markOpened = (id: string) =>
     setOpened((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -257,7 +252,7 @@ export function NotificationList({
 
             <VStack align="stretch" gap="x2">
               {areas.map((area) => (
-                <AreaRow key={area.areaCode} area={area} preview={preview} />
+                <AreaRow key={area.areaCode} area={area} />
               ))}
             </VStack>
           </SectionCard>
@@ -287,7 +282,7 @@ function groupByDay(
   return [...buckets].map(([label, items]) => ({ label, items }));
 }
 
-function AreaRow({ area, preview }: { area: NotificationArea; preview: boolean }) {
+function AreaRow({ area }: { area: NotificationArea }) {
   const [pending, start] = useTransition();
 
   return (
@@ -308,12 +303,7 @@ function AreaRow({ area, preview }: { area: NotificationArea; preview: boolean }
         size="xsmall"
         className="rebirth-row-end-action"
         loading={pending}
-        onClick={() => {
-          // 가짜 동네 코드로 부르면 서버가 없는 것을 지우러 감
-          // 잠그지 않고 부르는 쪽만 막음. 잠그면 색이 죽어 실제 화면과 다르게 보임
-          if (preview) return;
-          start(() => void unsubscribeArea(area.areaCode));
-        }}
+        onClick={() => start(() => void unsubscribeArea(area.areaCode))}
       >
         해제
       </ActionButton>
