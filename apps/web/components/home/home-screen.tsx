@@ -668,25 +668,72 @@ export function HomeScreen({
 
   const expanded = sheetRatio > SHEET_MID;
   const hidden = sheetRatio === SHEET.hidden;
-  const drag = useRef<{ startY: number; startRatio: number; moved: boolean } | null>(null);
 
-  const startDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    drag.current = { startY: event.clientY, startRatio: sheetRatio, moved: false };
-    event.currentTarget.setPointerCapture(event.pointerId);
-  };
+  // 끄는 동안은 상태를 바꾸지 않고 시트 요소만 transform 으로 옮김
+  // 높이를 상태로 갈면 손가락이 움직일 때마다 화면 전체가 다시 그려지고 목록이 레이아웃을 다시 돎
+  // transform 은 합성만 하고, 손을 뗄 때 한 번 단계에 붙이며 상태를 바꿈
+  const drag = useRef<{
+    startY: number;
+    startRatio: number;
+    moved: boolean;
+    /** 위로 끌 수 있는 최대 px, 시트를 이만큼 아래로 늘려 두어 끌어올려도 바닥이 비지 않음 */
+    reach: number;
+    /** 지금까지 옮긴 px, 아래가 양수 */
+    shift: number;
+    frame: number;
+  } | null>(null);
 
-  const onDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const startDrag = useCallback(
+    (event: ReactPointerEvent<HTMLButtonElement>) => {
+      const height = window.innerHeight;
+      const reach = Math.max(0, (SHEET.max - sheetRatio) * height);
+      drag.current = { startY: event.clientY, startRatio: sheetRatio, moved: false, reach, shift: 0, frame: 0 };
+      event.currentTarget.setPointerCapture(event.pointerId);
+
+      const sheet = sheetRef.current;
+      if (!sheet) return;
+      // 아래 여백을 늘리고 같은 만큼 음수 마진을 줘 겉모습과 위 단추 자리는 그대로 두고 상자만 아래로 늘림
+      const padding = Number.parseFloat(getComputedStyle(sheet).paddingBottom) || 0;
+      sheet.style.marginBottom = `${-reach}px`;
+      sheet.style.paddingBottom = `${padding + reach}px`;
+      sheet.style.willChange = "transform";
+    },
+    [sheetRatio],
+  );
+
+  const onDrag = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
     const current = drag.current;
     if (!current) return;
-    if (Math.abs(event.clientY - current.startY) > 4) current.moved = true;
-    const next = current.startRatio + (current.startY - event.clientY) / window.innerHeight;
-    setSheetRatio(Math.min(SHEET.max, Math.max(SHEET.min, next)));
-  };
+    const dy = event.clientY - current.startY;
+    if (Math.abs(dy) > 4) current.moved = true;
+    const height = window.innerHeight;
+    // 아래로는 min 까지, 위로는 max 까지만
+    const floor = (current.startRatio - SHEET.min) * height;
+    current.shift = Math.max(-current.reach, Math.min(dy, floor));
 
-  const endDrag = () => {
+    const sheet = sheetRef.current;
+    if (!sheet || current.frame) return;
+    // 포인터 이벤트는 프레임보다 잦아 한 프레임에 한 번만 씀
+    current.frame = requestAnimationFrame(() => {
+      current.frame = 0;
+      sheet.style.transform = `translateY(${current.shift}px)`;
+    });
+  }, []);
+
+  const endDrag = useCallback(() => {
     const current = drag.current;
     if (!current) return;
     drag.current = null;
+    if (current.frame) cancelAnimationFrame(current.frame);
+
+    const sheet = sheetRef.current;
+    if (sheet) {
+      sheet.style.transform = "";
+      sheet.style.marginBottom = "";
+      sheet.style.paddingBottom = "";
+      sheet.style.willChange = "";
+    }
+
     const at = Math.max(0, STOPS.indexOf(current.startRatio));
     // 움직이지 않았으면 탭으로 보고 한 단 올리되 맨 위에서는 접음
     if (!current.moved) {
@@ -694,21 +741,27 @@ export function HomeScreen({
       return;
     }
     // 끌어올렸으면 한 단 올리고 내렸으면 한 단 내리고, 거의 안 움직였으면 되돌림
-    setSheetRatio((value) => {
-      if (value > current.startRatio + 0.03) return STOPS[Math.min(at + 1, STOPS.length - 1)];
-      if (value < current.startRatio - 0.03) return STOPS[Math.max(at - 1, 0)];
-      return current.startRatio;
-    });
-  };
+    const value = current.startRatio - current.shift / window.innerHeight;
+    if (value > current.startRatio + 0.03) {
+      setSheetRatio(STOPS[Math.min(at + 1, STOPS.length - 1)]);
+    } else if (value < current.startRatio - 0.03) {
+      setSheetRatio(STOPS[Math.max(at - 1, 0)]);
+    } else {
+      setSheetRatio(current.startRatio);
+    }
+  }, []);
 
   // 손잡이는 걷었을 때와 펼쳤을 때 생김새만 다르고 동작은 하나
-  const handleProps = {
-    onPointerDown: startDrag,
-    onPointerMove: onDrag,
-    onPointerUp: endDrag,
-    onPointerCancel: endDrag,
-    style: { touchAction: "none", cursor: "grab" } as const,
-  };
+  const handleProps = useMemo(
+    () => ({
+      onPointerDown: startDrag,
+      onPointerMove: onDrag,
+      onPointerUp: endDrag,
+      onPointerCancel: endDrag,
+      style: { touchAction: "none", cursor: "grab" } as const,
+    }),
+    [startDrag, onDrag, endDrag],
+  );
 
   const recenter = () => {
     // iOS 는 사용자가 누른 안에서만 자기 센서 권한을 물을 수 있어 이 탭에 얹음
@@ -726,7 +779,8 @@ export function HomeScreen({
   };
 
   return (
-    <Box position="relative" height="100dvh" bg="bg.layerDefault">
+    // 시트를 끄는 동안 아래로 늘린 상자가 화면 밖으로 나가도 문서가 스크롤되지 않게 가둠
+    <Box position="relative" height="100dvh" bg="bg.layerDefault" style={{ overflow: "clip" }}>
       {/* zIndex 를 줘서 SDK 가 넣는 내부 레이어가 시트 위로 올라오지 않게 가둠 */}
       {/* MapLibre 가 컨테이너에 position relative 를 걸어 크기 잡는 요소를 따로 둠 */}
       <Box
