@@ -56,6 +56,18 @@ body {
   font-feature-settings: "tnum";
 }
 
+/* 지도 화면이 떠 있는 동안은 문서를 당겨도 고무줄처럼 늘어나지 않음
+   시트를 끄는 손짓이 문서로 흘러가면 iOS 가 페이지 전체를 당겨 지도와 시트가 함께 내려감
+   다른 화면은 그대로 두어 브라우저의 당겨서 새로고침이 막히지 않음 */
+body:has([data-map-screen]) {
+  overscroll-behavior: none;
+}
+
+/* 시트 안 목록처럼 스스로 스크롤하는 상자. 끝에 닿은 뒤의 손짓을 바깥으로 넘기지 않음 */
+.rebirth-scroll-contain {
+  overscroll-behavior: contain;
+}
+
 /* 덮개가 떠 있는 동안은 캔버스도 흰 면
    덮개는 position fixed 라 뷰포트 바닥까지만 덮고 그 아래 안전 영역은 캔버스가 칠함
    다크 모드에서 그 값이 거의 검정이라 흰 덮개 밑에 검은 띠로 남음 */

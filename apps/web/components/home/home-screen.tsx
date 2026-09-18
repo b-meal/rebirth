@@ -336,6 +336,7 @@ export function HomeScreen({
     viewport: viewportHeight,
     snapTo,
     dragProps,
+    grabProps,
     handleProps,
   } = useSheetSnap({ stops: STOPS, rest: SHEET.collapsed, ceiling: SHEET.full });
 
@@ -693,7 +694,14 @@ export function HomeScreen({
 
   return (
     // 시트를 끄는 동안 아래로 늘린 상자가 화면 밖으로 나가도 문서가 스크롤되지 않게 가둠
-    <Box position="relative" height="100dvh" bg="bg.layerDefault" style={{ overflow: "clip" }}>
+    <Box
+      position="relative"
+      height="100dvh"
+      bg="bg.layerDefault"
+      style={{ overflow: "clip" }}
+      // 이 화면이 떠 있는 동안 문서 오버스크롤을 끄는 표식. 시트를 끄는 손짓이 페이지를 당기지 않음
+      data-map-screen=""
+    >
       {/* zIndex 를 줘서 SDK 가 넣는 내부 레이어가 시트 위로 올라오지 않게 가둠 */}
       {/* MapLibre 가 컨테이너에 position relative 를 걸어 크기 잡는 요소를 따로 둠 */}
       <Box
@@ -1039,7 +1047,14 @@ export function HomeScreen({
             </Grid>
           ) : null}
 
-          <HStack px="spacingX.globalGutter" justify="space-between" align="center" gap="x2">
+          {/* 제목 줄도 끌기 면. 손잡이만 잡게 두면 여기를 잡은 손짓이 문서로 흘러 페이지가 함께 움직임 */}
+          <HStack
+            px="spacingX.globalGutter"
+            justify="space-between"
+            align="center"
+            gap="x2"
+            {...grabProps}
+          >
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
               {!ready
                 ? "최근 제보"
