@@ -133,15 +133,11 @@ a {
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--seed-color-bg-informative-solid) 35%, transparent);
 }
 
-/* 화살촉 밑변이 점의 흰 테두리에 닿게 둠, 안의 SVG 가 흰 윤곽과 둥근 모서리를 그림 */
+/* 화살촉. 래퍼 전체를 덮는 SVG 가 점 중심을 기준으로 북쪽에 그려 회전축이 점과 일치함
+   밑변은 점 밑에 숨고 흰 윤곽은 옆면에만 있어 점에서 솟아난 모양이 됨 */
 .rebirth-my-location-heading {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 14px;
-  height: 14px;
-  margin-left: -7px;
-  margin-top: -21px;
+  inset: 0;
   color: var(--seed-color-bg-informative-solid);
 }
 
@@ -149,8 +145,10 @@ a {
   display: block;
   width: 100%;
   height: 100%;
-  overflow: visible;
   fill: currentColor;
+}
+
+.rebirth-my-location-heading-edge {
   stroke: var(--seed-color-bg-layer-floating);
 }
 
