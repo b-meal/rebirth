@@ -515,12 +515,12 @@
 
 - [x] `straightnessEffective` 를 `packages/core/src/matching/index.ts` 에 export 하기
 
-- [ ] Phase 12 통과 뒤 `playwright` 로 `m-01` 부터 `m-19` 와 신규 화면(`/find` `/r/[id]/poster` 경로 타임라인 두 겹 예측 원)을 다시 캡처하기
-- [ ] `/Users/hahmjuntae/Desktop/rebirth-제출자료` 의 `card-share.png` 를 Phase 9 산출물로 다시 굽기
-- [ ] `HERO-hero-16x9.png` 와 `HERO-hero-1x1.png` 를 새 커버 문구와 새 캡처로 다시 만들기
-- [ ] `DECK-1` 부터 `DECK-5` 를 이동 경로 추적·공식·전단 QR 을 넣은 8장 구성으로 재구성해 다시 굽기
-- [ ] `AI활용_문구.txt` 의 `AI 활용 방식 및 결과` 를 500자 상한 안에서 이동 경로 추적을 포함해 다시 쓰기
-- [ ] 제출 폼 `해결하고자 한 문제` 와 `사용 AI툴 및 기술 스택` 문안을 Phase 11 초안에서 옮겨 쓰기
+- [x] Phase 12 통과 뒤 `playwright` 로 `m-01` 부터 `m-19` 와 신규 화면(`/find` `/r/[id]/poster` 경로 타임라인 두 겹 예측 원)을 다시 캡처하기
+- [x] `/Users/hahmjuntae/Desktop/rebirth-제출자료` 의 `card-share.png` 를 Phase 9 산출물로 다시 굽기
+- [x] `HERO-hero-16x9.png` 와 `HERO-hero-1x1.png` 를 새 커버 문구와 새 캡처로 다시 만들기
+- [ ] `DECK-1` 부터 `DECK-5` 를 제출 슬롯 5장에 맞춰 재구성해 다시 굽기. 장당 목업 3개 이상
+- [x] `AI활용_문구.txt` 의 `AI 활용 방식 및 결과` 를 500자 상한 안에서 이동 경로 추적을 포함해 다시 쓰기
+- [x] 제출 폼 `해결하고자 한 문제` 와 `사용 AI툴 및 기술 스택` 문안을 Phase 11 초안에서 옮겨 쓰기
 - [ ] 새 덱과 새 캡처에 `배회 중` `찾는 중` 등 Phase 3 금지 어휘가 남지 않았는지 눈으로 확인하기
 - [ ] 커밋 `1d5ff9a` 의 제목을 `feat: 예측 원을 두 겹으로 그리고 화살표를 마지막 목격에서 시작하게 함` 으로 정정하기
 - [x] `CARE_LABEL` 별칭을 `apps/web/lib/report-label.ts` 에서 제거하기. Phase 6·9·10 이 남은 4곳을 `STATUS_LABEL` 로 바꾼 뒤
@@ -529,10 +529,10 @@
 - [ ] `MIN_LEG_SIMILARITY` 를 재측정하기. `0.82` 는 현재 임베딩 분포에서 승격 0건이라 유사도 경로가 동작하지 않음
 - [x] `lost-detail.tsx` 가 신고 지점 좌표를 `TrackTimeline` 에 넘기기. 지금은 신고에서 첫 목격까지의 구간 요약이 빠짐
 - [x] Phase 12 전체 빌드에서 `/` 번들 크기 확인하기. `home-screen` 이 `mine-screen` 모듈을 통째로 클라이언트 그래프에 끌어옴
-- [ ] `mine-screen` 의 전이 import 에 `server-only` 를 붙이기. 지금은 `@rebirth/core/auth` 주석 언급뿐이라 클라이언트 번들 유입이 가능
+- [x] `mine-screen` 의 전이 import 에 `server-only` 를 붙이기. 지금은 `@rebirth/core/auth` 주석 언급뿐이라 클라이언트 번들 유입이 가능
 - [x] `/find` 와 `/r/[id]/poster` 의 실제 렌더 스모크를 Phase 12 에서 돌리기. Phase 7 은 dev 서버 경합을 피해 건너뜀
-- [ ] 전단 페이지에 인쇄 버튼을 넣을지 정하기. 지금은 사용자가 `Cmd+P` 를 눌러야 함
-- [ ] `apps/admin/lib/labels.ts:24` 의 별도 `CARE_LABEL` 정의를 상태 어휘 단일 원천으로 합칠지 정하기. admin 4개 화면이 씀
+- [x] 전단 페이지에 인쇄 버튼을 넣을지 정하기. 지금은 사용자가 `Cmd+P` 를 눌러야 함
+- [x] `apps/admin/lib/labels.ts:24` 의 별도 `CARE_LABEL` 정의를 상태 어휘 단일 원천으로 합칠지 정하기. admin 4개 화면이 씀
 
 - [ ] 제출 전 `develop` → `main` PR 을 올려 이동 경로 추적·`/find`·`robots`·`sitemap`·`manifest` 를 운영에 반영하기. 심사 기간 `2026-09-21` 이전
 - [ ] 제출 전 `/Users/hahmjuntae/Desktop/rebirth-제출자료/AI활용_문구.txt` 를 문서의 472자 새 초안으로 교체하기
@@ -639,3 +639,8 @@
 - `/r/[id]/poster` 실렌더 확인. 200x200 QR SVG · `실종` 라벨 · 지역명까지만 · `흰색 소형견`
 - 공개 신고 20건 중 `lost/searching` 은 2건. 나머지 18건은 `sighting/active` 라 전단 대상이 좁음
 - `/find` 실렌더 확인. 행동 타일 셋 · 이동 경로 추적 설명 · 이름으로 실종 신고 찾기 모두 출력
+- admin 의 `careSituation.unknown` 은 다섯 어휘에 대응값이 없어 기존 표기 `확인 어려움` 을 유지. `LIFECYCLE_LABEL` 도 운영 상태라 그대로 둠
+- `SHORTCUTS` 와 `MineLink` 타입을 `apps/web/lib/shortcuts.tsx` 로 분리해 `mine-screen` 에 `server-only` 를 붙임
+- SEED 아이콘 레지스트리에 프린터 아이콘이 없어 전단 인쇄 단추는 글자만 씀
+- 전단 인쇄 단추가 종이에 안 찍히는 것을 `--print-to-pdf` 후 `pdftotext` 로 확인. `전단 인쇄: 0` · `보신 적 있나요: 1`
+- 서비스명 표기를 `RE:Birth` 에서 `Rebirth` 로 통일. 저장소와 제출자료 모두 잔여 0건
