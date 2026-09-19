@@ -12,6 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "typecheck": "tsc --noEmit",
+    "db:check-rls": "node scripts/check-rls.mjs",
+    "db:check-cron": "node scripts/check-cron.mjs",
     "db:embed": "node scripts/embed-reports.mjs",
     "db:project": "node scripts/project-embeddings.mjs"
   },

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Box, Grid, HStack, Text, VStack } from "@seed-design/react";
 import { ActionButton } from "seed-design/ui/action-button";
 
+import { hasPhoto, prefetchThumb } from "@/hooks/use-thumb-url";
 import { ReportCard, type ReportCardItem } from "@/components/report/report-card";
 
 // 시트 목록은 반경 안 제보가 몇백 건이어도 화면에 든 줄만 그림
@@ -105,16 +106,11 @@ export function NearbyList({ items, tailPx, scrollElementRef }: NearbyListProps)
   // 다음 줄 사진은 요소를 만들기 전에 받아 둠, 줄이 들어올 때 이미 캐시에 있음
   const prefetched = useRef(new Set<string>());
   useEffect(() => {
-    if (typeof Image === "undefined") return;
     const reach = scrolled ? PREFETCH_ROWS : IDLE_PREFETCH_ROWS;
     for (const item of items.slice(endRow * COLUMNS, (endRow + reach) * COLUMNS)) {
-      const url = item.photoUrl;
-      if (!url || prefetched.current.has(url)) continue;
-      prefetched.current.add(url);
-      const image = new Image();
-      image.decoding = "async";
-      image.fetchPriority = "low";
-      image.src = url;
+      if (!hasPhoto(item) || prefetched.current.has(item.id)) continue;
+      prefetched.current.add(item.id);
+      prefetchThumb(item);
     }
   }, [items, endRow, scrolled]);
 

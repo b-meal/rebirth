@@ -59,6 +59,10 @@ export const errorEvents = pgTable(
     fingerprint: text().primaryKey(),
 
     level: errorLevel().notNull(),
+    // 어디서 난 것인지. local, development, preview, production
+    // 로컬과 배포가 같은 DB 에 쓰므로 이 칸이 없으면 둘을 가릴 방법이 없음
+    // fingerprint 에도 들어가 로컬에서 난 것이 배포 기록에 섞여 세지 않음
+    env: text().notNull().default('unknown'),
     // 기능.동작 꼴. 어디서 난 것인지가 먼저 읽힘
     tag: text().notNull(),
     // 마지막으로 본 메시지. 종류가 같아도 값은 달라질 수 있어 최근 것으로 덮음

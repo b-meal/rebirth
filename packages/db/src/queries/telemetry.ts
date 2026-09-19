@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { desc, lt, sql } from 'drizzle-orm'
+import { desc, sql } from 'drizzle-orm'
 
 import { db } from '../client'
 import { errorEvents, precheckEvents } from '../schema'
@@ -25,6 +25,8 @@ export async function insertPrecheckEvents(rows: PrecheckEventInput[]) {
 export type ErrorEventInput = {
   fingerprint: string
   level: 'failure' | 'notice'
+  /** local, development, preview, production */
+  env: string
   tag: string
   message: string
   stack?: string | null
@@ -44,6 +46,7 @@ export async function recordErrorEvent(event: ErrorEventInput) {
       .values({
         fingerprint: event.fingerprint,
         level: event.level,
+        env: event.env,
         tag: event.tag,
         message: event.message,
         stack: event.stack ?? null,
@@ -75,7 +78,5 @@ export async function listErrorEvents(limit = 50) {
     .limit(limit)
 }
 
-/** 오래돼 다시 나타나지 않는 기록을 지움 */
-export async function deleteErrorEventsBefore(cutoff: Date) {
-  await db.delete(errorEvents).where(lt(errorEvents.lastSeenAt, cutoff))
-}
+// 오래된 기록을 지우는 일은 0043 의 pg_cron 일정이 함
+// 여기에도 같은 함수를 두면 보존 기간이 두 곳에 적혀 한쪽만 바뀜

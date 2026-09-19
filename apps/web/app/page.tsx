@@ -1,5 +1,4 @@
 import { logFailure } from "@rebirth/core/http";
-import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
   countUnreadAreaReports,
   countUnreadMatchAlerts,
@@ -26,10 +25,8 @@ async function loadMarkers(): Promise<MapMarker[]> {
       (row) => row.coarsePoint !== null,
     );
 
-    // 비공개 버킷이라 서명이 필요하고 여러 제보가 같은 사진을 가리켜 경로를 접음
-    const paths = [...new Set(rows.flatMap((row) => (row.photoPath ? [row.photoPath] : [])))];
-    const signed = await createSignedThumbUrls(paths).catch(() => new Map<string, string>());
-
+    // 사진 주소는 여기서 만들지 않음. 서명 URL 하나가 550자라 천 건이면 페이로드의 절반이 주소가 되고
+    // 서버도 첫 요청마다 천 번을 서명함. 핀과 카드가 화면에 들 때 /api/thumbs 로 묶어 받음
     return rows.map((row) => ({
       id: row.id,
       animalType: row.animalType,
@@ -43,7 +40,8 @@ async function loadMarkers(): Promise<MapMarker[]> {
       petName: row.petName,
       sinceLabel: sinceLabel(row.occurredAt),
       occurredAt: row.occurredAt.toISOString(),
-      photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
+      photoUrl: null,
+      photoLazy: row.photoPath !== null,
       point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
     }));
   } catch (error) {

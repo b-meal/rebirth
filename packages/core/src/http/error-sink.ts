@@ -85,6 +85,15 @@ const THROTTLE_MS = 10_000;
 
 const pending = new Map<string, { at: number; count: number }>();
 
+/**
+ * 로컬과 Preview 와 Production 이 모두 같은 DB 에 씀
+ * 이 값을 남기지 않으면 오류 화면에서 내 노트북에서 난 것과 사용자에게서 난 것이 같아 보임
+ * Vercel 이 아닌 곳에는 VERCEL_ENV 가 없음
+ */
+function environment(): string {
+  return process.env.VERCEL_ENV ?? "local";
+}
+
 export async function recordError(
   level: "failure" | "notice",
   tag: string,
@@ -95,8 +104,11 @@ export async function recordError(
   const message = scrub(described.message).slice(0, MAX_MESSAGE);
   const stack = described.stack ? scrub(described.stack).slice(0, MAX_STACK) : null;
 
+  // env 를 함께 넣어 로컬에서 난 것이 배포 행의 count 를 올리지 않게 함
+  // 섞이면 칸에는 마지막에 쓴 쪽만 남아 값이 거짓말을 함
+  const env = environment();
   const fingerprint = createHash("sha256")
-    .update(`${level}|${tag}|${normalize(message)}`)
+    .update(`${level}|${env}|${tag}|${normalize(message)}`)
     .digest("hex")
     .slice(0, 32);
 
@@ -114,6 +126,7 @@ export async function recordError(
   await recordErrorEvent({
     fingerprint,
     level,
+    env,
     tag,
     message,
     stack,

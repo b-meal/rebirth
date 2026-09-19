@@ -32,9 +32,14 @@ import { useMap } from "@/hooks/use-map";
 import { useMyLocationMarker } from "@/hooks/use-my-location-marker";
 import { useReverseGeocode } from "@/hooks/use-reverse-geocode";
 import { useSheetSnap } from "@/hooks/use-sheet-snap";
+import { hasPhoto, useThumbUrl } from "@/hooks/use-thumb-url";
 import { MapPreviewCard } from "@/components/home/map-preview-card";
 import { NearbyList } from "@/components/home/nearby-list";
-import { WriteActionSheet } from "@/components/home/write-action-sheet";
+import {
+  WriteActionSheet,
+  WriteSheetProvider,
+  WriteSheetTrigger,
+} from "@/components/home/write-action-sheet";
 import type { ReportCardItem } from "@/components/report/report-card";
 
 // 지도가 맨 아래, 그 위에 시트, 맨 위에 떠 있는 내비게이션을 겹치는 첫 화면
@@ -128,6 +133,8 @@ type ReportPinProps = {
 // 지도가 움직일 때마다 화면이 다시 그려져 값이 같은 핀은 건너뜀. 핀 요소는 장부가 붙들어 마운트가 유지됨
 const ReportPin = memo(function ReportPin({ item, selected, onSelect }: ReportPinProps) {
   const tone = toneOf(item);
+  // 사진 주소는 핀이 화면에 들 때 받음. 마커마다 실어 오면 페이로드가 사진 주소로 채워짐
+  const photoUrl = useThumbUrl(item);
   return (
     <Box
       asChild
@@ -146,13 +153,13 @@ const ReportPin = memo(function ReportPin({ item, selected, onSelect }: ReportPi
         aria-pressed={selected}
         onClick={() => onSelect(item)}
       >
-        {item.photoUrl ? (
+        {photoUrl ? (
           // 지도는 화면에 든 것만 핀으로 만들어 이미 걸러져 있음
           // lazy 를 걸면 마커가 transform 으로 얹혀 있어 브라우저가 화면에 든 줄 모르고 사진을 안 받음
           <ImageFrame
             ratio={1}
             width="full"
-            src={item.photoUrl}
+            src={photoUrl}
             alt=""
             borderRadius="full"
             decoding="async"
@@ -191,6 +198,7 @@ const ClusterPin = memo(function ClusterPin({ id, at, count, item, onExpand }: C
   // 묶인 수가 많을수록 크게 그려 어디에 몰려 있는지 축척을 바꾸기 전에 보이게 함
   const size = count >= 100 ? "x14" : count >= 10 ? "x12" : "x10";
   const tone = item ? toneOf(item) : PIN_TONE.roaming;
+  const photoUrl = useThumbUrl(item);
   return (
     <Box position="relative" width={size} height={size}>
       <Box
@@ -209,11 +217,11 @@ const ClusterPin = memo(function ClusterPin({ id, at, count, item, onExpand }: C
           aria-label={`제보 ${count}건 묶음, 눌러서 확대`}
           onClick={() => onExpand(id, at)}
         >
-          {item?.photoUrl ? (
+          {photoUrl ? (
             <ImageFrame
               ratio={1}
               width="full"
-              src={item.photoUrl}
+              src={photoUrl}
               alt=""
               borderRadius="full"
               decoding="async"
@@ -396,7 +404,7 @@ export function HomeScreen({
           const items = leaves
             .map((leaf) => byIdRef.current.get(leaf.properties?.id as string))
             .filter((item): item is MapMarker => Boolean(item));
-          const item = items.find((candidate) => candidate.photoUrl) ?? items[0] ?? null;
+          const item = items.find((candidate) => hasPhoto(candidate)) ?? items[0] ?? null;
           // 그사이 지도가 움직여 장부에서 빠졌으면 버림
           const current = book.get(key);
           if (!current || current.pin.kind !== "cluster" || !item) return;
@@ -579,9 +587,6 @@ export function HomeScreen({
     return { nearby: sorted, widened: sorted.length > 0 };
   })();
 
-  // 떠 있는 단추가 여는 쓰기 시트. 지도 위 알약을 대신함
-  const [writeOpen, setWriteOpen] = useState(false);
-
   // 서버에는 저장소가 없어 첫 그림에서는 판정을 미루고 안내를 그리지 않음
   const [seenIntro, setSeenIntro] = useState<boolean | null>(null);
   useEffect(() => {
@@ -693,7 +698,10 @@ export function HomeScreen({
   };
 
   return (
-    // 시트를 끄는 동안 아래로 늘린 상자가 화면 밖으로 나가도 문서가 스크롤되지 않게 가둠
+    // 쓰기 시트의 열림 상태는 이 안에서만 쥠. 떠 있는 단추가 Trigger 라 여기서 감싸야 같은 시트를 봄
+    // 상태가 바뀌어도 이 화면의 요소는 그대로라 지도와 목록은 다시 그려지지 않음
+    <WriteSheetProvider>
+    {/* 시트를 끄는 동안 아래로 늘린 상자가 화면 밖으로 나가도 문서가 스크롤되지 않게 가둠 */}
     <Box
       position="relative"
       height="100dvh"
@@ -937,14 +945,11 @@ export function HomeScreen({
           </ContextualFloatingButton>
           {/* 글을 남기는 길 셋을 이 단추 하나에 모음
               엄지가 닿는 자리라 급할 때 한 손으로 고를 수 있음
-              누르면 고르는 시트가 열리므로 라벨도 제보하기 가 아니라 알리기 로 둠 */}
-          <FloatingActionButton
-            icon={<IconPlusLine />}
-            label="알리기"
-            aria-haspopup="dialog"
-            aria-expanded={writeOpen}
-            onClick={() => setWriteOpen(true)}
-          />
+              누르면 고르는 시트가 열리므로 라벨도 제보하기 가 아니라 알리기 로 둠
+              열림 상태는 시트 쪽이 쥐어 누를 때 이 화면이 다시 그려지지 않음 */}
+          <WriteSheetTrigger>
+            <FloatingActionButton icon={<IconPlusLine />} label="알리기" />
+          </WriteSheetTrigger>
           </motion.div>
         </VStack>
         )}
@@ -1077,7 +1082,8 @@ export function HomeScreen({
         </VStack>
       </Box>
 
-      <WriteActionSheet open={writeOpen} onOpenChange={setWriteOpen} />
+      <WriteActionSheet />
     </Box>
+    </WriteSheetProvider>
   );
 }

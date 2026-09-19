@@ -7,6 +7,7 @@ import { IconXmarkLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 
 import { STATUS_LABEL, describeAnimal } from "@/lib/report-label";
+import { useThumbUrl } from "@/hooks/use-thumb-url";
 import { ReportBadges } from "@/components/report/report-badges";
 import type { MapMarker } from "@/components/home/home-screen";
 
@@ -35,6 +36,7 @@ export type MapPreviewCardProps = {
 
 export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
   const [detail, setDetail] = useState<Detail | null>(null);
+  const photoUrl = useThumbUrl(item);
 
   // 핀이 바뀌면 부르는 쪽이 key 로 다시 마운트해 상태를 비움
   useEffect(() => {
@@ -71,8 +73,8 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
       style={GLASS}
     >
       <Box position="relative">
-        {item.photoUrl ? (
-          <ImageFrame ratio={16 / 9} width="full" src={item.photoUrl} alt={describeAnimal(item)} />
+        {photoUrl ? (
+          <ImageFrame ratio={16 / 9} width="full" src={photoUrl} alt={describeAnimal(item)} />
         ) : (
           <AspectRatio ratio={16 / 9} bg="bg.neutralWeak">
             <Box />

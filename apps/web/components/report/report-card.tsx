@@ -1,9 +1,12 @@
+"use client";
+
 import { memo } from "react";
 import Link from "next/link";
 import { AspectRatio, Box, HStack, ImageFrame, Text, VStack } from "@seed-design/react";
 import type { AnimalType } from "@rebirth/types";
 
 import { STATUS_LABEL, describeAnimal, situationLine } from "@/lib/report-label";
+import { useThumbUrl } from "@/hooks/use-thumb-url";
 
 // 지도 시트와 상세 화면 아래가 같은 카드를 쓰게 모아 둔 격자용 카드
 
@@ -19,6 +22,8 @@ export type ReportCardItem = {
   /** 목격 시각 원본. 실종 카드가 등급 문구를 뽑는 자리 */
   occurredAt: string;
   photoUrl: string | null;
+  /** 사진은 있지만 주소는 화면에 들 때 받음. 홈 마커처럼 수백 건을 한 번에 받는 화면이 씀 */
+  photoLazy?: boolean;
   /** 발견 제보와 실종 신고가 한 표에 담겨 있어 카드가 부르는 말이 갈림 */
   kind?: "sighting" | "lost";
   /** 보호자가 적어 둔 이름. 실종 신고에만 있고 없으면 생김새로 부름 */
@@ -30,6 +35,7 @@ export const NEARBY_CARD_WIDTH = "136px";
 
 // 목록이 스크롤마다 다시 그려져도 같은 제보의 카드는 건너뜀
 export const ReportCard = memo(function ReportCard({ item }: { item: ReportCardItem }) {
+  const photoUrl = useThumbUrl(item);
   const lost = item.kind === "lost";
   // 이름을 아는 기록은 이름이 먼저 읽혀야 함. 생김새는 아래 줄로 내림
   const title = item.petName || describeAnimal(item);
@@ -44,11 +50,11 @@ export const ReportCard = memo(function ReportCard({ item }: { item: ReportCardI
   return (
     <VStack asChild align="stretch" gap="x1" minWidth="0">
       <Link href={`/r/${item.id}`}>
-        {item.photoUrl ? (
+        {photoUrl ? (
           /* 이름은 옆 제목이 이미 읽어 줌. 사진은 생김새를 말해야 보탬이 됨 */
           <ImageFrame
             ratio={1}
-            src={item.photoUrl}
+            src={photoUrl}
             alt={describeAnimal(item)}
             borderRadius="r3"
           />

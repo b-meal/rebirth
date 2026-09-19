@@ -24,6 +24,16 @@ function when(value: Date): string {
   return value.toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false });
 }
 
+// 로컬과 배포가 같은 DB 에 쓰므로 어느 쪽에서 난 것인지가 먼저 읽혀야 함
+// 내 노트북에서 난 것을 사용자 고장으로 읽으면 없는 문제를 쫓게 됨
+const ENV_LABEL: Record<string, string> = {
+  production: "배포",
+  preview: "미리보기",
+  development: "개발",
+  local: "로컬",
+  unknown: "미상",
+};
+
 export default async function ErrorsPage() {
   let rows: Awaited<ReturnType<typeof listErrorEvents>> = [];
   try {
@@ -48,6 +58,7 @@ export default async function ErrorsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-20">환경</TableHead>
                 <TableHead>태그</TableHead>
                 <TableHead className="w-16 text-right">건수</TableHead>
                 <TableHead>메시지</TableHead>
@@ -58,6 +69,9 @@ export default async function ErrorsPage() {
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.fingerprint}>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {ENV_LABEL[row.env] ?? row.env}
+                  </TableCell>
                   <TableCell className="whitespace-nowrap font-medium">
                     {row.level === "notice" ? "· " : ""}
                     {row.tag}
