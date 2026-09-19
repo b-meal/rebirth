@@ -282,9 +282,22 @@ export function SearchScreen({
     router.push(`/search?${next}`);
   };
 
+  // 검색어를 비우면 탭만 남기고 주소의 조건을 털어 처음 진입한 화면으로 돌림
+  // 새 자리로 가는 것이 아니라 방금 건 검색을 무르는 것이라 replace 로 둠
+  const conditionNames = ["q", "animalType", "size", "colors"] as const;
+  const clearConditions = () => {
+    if (!conditionNames.some((name) => params.has(name))) return;
+    router.replace(`/search?kind=${activeKind}`);
+  };
+
   const submit = (next: string) => {
     const text = next.trim();
-    if (!text) return;
+    // 공백만 넣고 검색해도 지운 것으로 봄
+    if (!text) {
+      setKeyword("");
+      clearConditions();
+      return;
+    }
 
     writeRecent([text, ...recent.filter((item) => item !== text)].slice(0, RECENT_MAX));
     router.push(`/search?kind=${activeKind}&q=${encodeURIComponent(text)}`);
@@ -338,7 +351,11 @@ export function SearchScreen({
             size="large"
             prefixIcon={<IconMagnifyingglassLine />}
             value={keyword}
-            onValueChange={(next) => setKeyword(next.value)}
+            onValueChange={(next) => {
+              setKeyword(next.value);
+              // 마지막 글자를 지우면 따로 검색을 누르지 않아도 처음 화면으로 돌아옴
+              if (!next.value) clearConditions();
+            }}
           >
             <TextFieldInput
               ref={inputRef}
