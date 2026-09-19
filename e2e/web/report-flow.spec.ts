@@ -74,7 +74,7 @@ test("사진에서 제보 완료까지 끝낸다", async ({ page }) => {
   const id = page.url().split("/r/")[1]!.split("/")[0]!;
   await page.goto(`/r/${id}`);
   await dismissSplash(page);
-  await expect(page.getByText("AI 초안, 수정 가능")).toBeVisible();
+  await expect(page.getByText("AI 초안")).toBeVisible();
   await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
   await expect(page.getByText("계열 추정 계열 추정")).toHaveCount(0);
   // 정확 좌표를 공개 화면에 넣지 않음

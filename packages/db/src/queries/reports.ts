@@ -2,6 +2,7 @@ import 'server-only'
 
 import {
   and,
+  arrayOverlaps,
   count,
   desc,
   eq,
@@ -99,6 +100,59 @@ const _noLeak: Extract<keyof typeof publicReportColumns, SensitiveKey> extends n
   : never = true
 void _noLeak
 
+// 공개 상세에 나갈 컬럼. 제외 목록이면 새 컬럼이 그대로 새므로 포함 목록으로 둠
+// 목록 컬럼에 화면이 쓰는 세 개만 더함. updatedAt 은 카드 캐시 지문, version 과 matchAlert 는 실종 관리 줄
+const publicReportDetailColumns = {
+  id: true,
+  kind: true,
+  visibility: true,
+  lifecycle: true,
+  careSituation: true,
+  animalType: true,
+  breedGuess: true,
+  appearance: true,
+  colors: true,
+  size: true,
+  sex: true,
+  neutered: true,
+  conditionTags: true,
+  collar: true,
+  injury: true,
+  earTip: true,
+  areaName: true,
+  landmarkNote: true,
+  occurredAt: true,
+  shareCount: true,
+  createdAt: true,
+  updatedAt: true,
+  version: true,
+  matchAlert: true,
+} as const satisfies Record<keyof typeof publicReportColumns, true> &
+  Partial<Record<keyof typeof reports.$inferSelect, true>>
+
+// 상세에 관리 전용 컬럼이 섞이면 typecheck 가 깨짐
+// closeNote 는 작성자가 종료 때 적는 자유 텍스트라 공개 금지. 위치 코드·격자·출처는 운영 컬럼
+// pets 행 id 는 내주지 않음. 여러 신고를 한 마리로 이어 볼 수 있게 됨. 이름과 품종은 pet 관계로만 내보냄
+const _noDetailLeak: Extract<
+  keyof typeof publicReportDetailColumns,
+  | SensitiveKey
+  | 'closeNote'
+  | 'closeReason'
+  | 'closedAt'
+  | 'petId'
+  | 'areaCode'
+  | 'areaCodeSystem'
+  | 'areaCodeVersion'
+  | 'coarseGridM'
+  | 'locationSource'
+  | 'matchAlertReadAt'
+  | 'aiModel'
+  | 'aiAnalyzedAt'
+> extends never
+  ? true
+  : never = true
+void _noDetailLeak
+
 /**
  * 공개 상세. visibility 가 public 이 아니거나 행이 없으면 똑같이 undefined
  * 숨김·삭제·없는 ID 를 구분해 알려주면 신고 남용의 정찰 수단이 됨. WEB-07-E01
@@ -106,20 +160,7 @@ void _noLeak
 export function findPublicReport(id: string) {
   return db.query.reports.findFirst({
     where: and(eq(reports.id, id), eq(reports.visibility, 'public')),
-    columns: {
-      exactPoint: false,
-      coarsePoint: false,
-      reporterId: false,
-      manageTokenHash: false,
-      manageTokenIssuedAt: false,
-      manageTokenRotatedAt: false,
-      aiRaw: false,
-      aiEditedFields: false,
-      locationAccuracyM: false,
-      // pets 행 id 는 내주지 않음. 여러 신고를 한 마리로 이어 볼 수 있게 됨
-      // 이름과 품종은 아래 pet 관계로만 내보냄. 0016 이 pets 직접 접근을 막아 둔 취지
-      petId: false,
-    },
+    columns: publicReportDetailColumns,
     with: {
       photos: publicPhotoSelection,
       // 실종 신고에만 붙음. 이름과 품종은 찾는 데 쓰라고 공개하는 값임
@@ -204,7 +245,8 @@ export function listPublicReports({
         animalType ? eq(reports.animalType, animalType) : undefined,
         size ? eq(reports.size, size) : undefined,
         // 고른 털색 중 하나라도 겹치면 후보. 교집합이 아니라 합집합 조건
-        colors?.length ? raw`${reports.colors} && ${colors}` : undefined,
+        // 템플릿에 배열을 그대로 넣으면 원소가 스칼라로 바인딩돼 배열 리터럴 오류가 남
+        colors?.length ? arrayOverlaps(reports.colors, colors) : undefined,
         fromOccurredAt ? gte(reports.occurredAt, fromOccurredAt) : undefined,
         toOccurredAt ? lte(reports.occurredAt, toOccurredAt) : undefined,
         cursor

@@ -100,7 +100,7 @@ export function TrackSection({ status, track }: TrackSectionProps) {
             <Callout tone="warning" description="사진 특징이 서로 달라 다른 개체일 수 있어요" />
           ) : null}
           <Text textStyle="t2Regular" color="fg.neutralSubtle">
-            AI 초안, 수정 가능
+            AI 초안
           </Text>
         </VStack>
       ) : searchOrder.length > 0 ? (
