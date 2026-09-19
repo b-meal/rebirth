@@ -205,6 +205,7 @@ export function useCurrentPosition({
     let cancelled = false;
     // 권한 팝업 응답은 비동기라 effect 본문에서 상태를 바꾸지 않음
     // 팝업이 스플래시를 덮으면 그사이에도 덮개의 시간이 흘러 로고가 지나가 버려 걷힌 뒤에 물음
+    // 덮개는 단추를 눌러야 걷히므로 첫 권한 요청은 늘 사용자 손짓 뒤에 옴. 이미 허용한 브라우저만 바로 잼
     void (async () => {
       if (await willPrompt()) await whenSplashGone();
       if (cancelled) return;

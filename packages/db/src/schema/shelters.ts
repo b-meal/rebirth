@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   geometry,
   index,
@@ -49,5 +50,8 @@ export const shelters = pgTable(
   (t) => [
     uniqueIndex('shelters_source_idx').on(t.kind, t.externalId),
     index('shelters_point_idx').using('gist', t.point),
+    // 반경 질의가 ::geography 로 캐스팅해 위 인덱스는 쓰이지 못함
+    // 389 행에서도 통째 훑기가 146ms, 식 인덱스로는 2.2ms
+    index('shelters_point_geog_idx').using('gist', sql`(${t.point}::geography)`),
   ],
 )

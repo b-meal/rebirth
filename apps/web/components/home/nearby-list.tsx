@@ -27,6 +27,8 @@ const ESTIMATED_ROW = 200;
 
 type NearbyListProps = {
   items: ReportCardItem[];
+  /** 지도가 뜨기 전. 비어 있어도 없다고 말하지 않고 자리만 비워 둠 */
+  pending?: boolean;
   /** 시트가 화면 밖으로 내려가 있는 만큼, 마지막 장까지 밀어 올릴 수 있게 목록 끝에 더함 */
   tailPx: number;
   /** 시트가 스크롤 상자를 알아야 손짓을 넘겨받을 수 있어 바깥 ref 를 함께 받음 */
@@ -34,7 +36,7 @@ type NearbyListProps = {
 };
 
 // 홈 화면이 다시 그려져도 반경 안 제보와 꼬리 길이가 같으면 React Compiler 가 건너뜀, 손으로 memo 하지 않음
-export function NearbyList({ items, tailPx, scrollElementRef }: NearbyListProps) {
+export function NearbyList({ items, pending = false, tailPx, scrollElementRef }: NearbyListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -131,7 +133,7 @@ export function NearbyList({ items, tailPx, scrollElementRef }: NearbyListProps)
       className="rebirth-scroll-contain"
       onScroll={onScroll}
     >
-      {items.length === 0 ? (
+      {pending ? null : items.length === 0 ? (
         /* 핀이 없는 지도가 이 앱을 처음 여는 사람의 첫 화면이 되므로
            여기서 무엇을 하는 곳인지와 바로 할 일 하나를 말함 */
         <VStack py="x2" gap="x3" align="stretch">

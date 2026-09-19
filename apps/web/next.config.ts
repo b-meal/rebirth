@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
   reactCompiler: true,
   experimental: {
     turbopackRustReactCompiler: true,
+    // inlineCss 는 켜지 않음. SEED 전체 CSS 가 HTML 에 들어가 문서가 62KB 에서 300KB 로 불고 FCP 가 늦어짐
   },
 
   // 선검사 모델은 2.6MB 라 한 번 받으면 다시 받지 않게 함

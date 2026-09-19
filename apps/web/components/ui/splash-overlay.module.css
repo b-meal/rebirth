@@ -18,6 +18,8 @@
   pointer-events: auto;
 }
 
+/* 스크립트가 닿기 전에도 첫 장면을 그대로 그림. 로고가 곧 가장 큰 그림이라 하이드레이션을 기다리면 LCP 가 그만큼 밀림
+   아래 정적 상태는 각 애니메이션의 첫 프레임과 같아 준비된 뒤 이어질 때 튀지 않음 */
 .artwork {
   position: absolute;
   top: 50%;
@@ -25,11 +27,9 @@
   width: 100%;
   aspect-ratio: 853 / 1844;
   transform: translateY(-50%);
-  opacity: 0;
 }
 
 .root[data-ready="true"] .artwork {
-  opacity: 1;
   animation: rise var(--rise-duration) var(--join-end) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -41,18 +41,24 @@
   user-select: none;
 }
 
+/* 두 단어가 모이기 전이라 아래 절반은 가리고 단어 조각만 따로 보임 */
+.base {
+  clip-path: inset(0 0 48.2% 0);
+}
+
 .word {
   position: absolute;
   inset: 0;
-  visibility: hidden;
 }
 
 .again {
   clip-path: inset(52% 44.9% 41.7% 32.8%);
+  transform: translateX(calc(var(--seed-dimension-x4) * -1));
 }
 
 .home {
   clip-path: inset(52% 33.3% 41.7% 55.4%);
+  transform: translateX(var(--seed-dimension-x4));
 }
 
 .comma {
@@ -83,7 +89,6 @@
 }
 
 .root[data-ready="true"] .word {
-  visibility: visible;
   animation:
     join-again var(--join-duration) var(--join-delay) cubic-bezier(0.22, 1, 0.36, 1) both,
     expire 1ms var(--join-end) step-end forwards;

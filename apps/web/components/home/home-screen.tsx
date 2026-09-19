@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { memo, useEffect, useEffectEvent, useRef, useState } from "react";
+import { memo, useEffect, useEffectEvent, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { Box, Grid, HStack, Icon, ImageFrame, PrefixIcon, Text, VStack } from "@seed-design/react";
@@ -23,6 +23,7 @@ import { ContextualFloatingButton } from "seed-design/ui/contextual-floating-but
 import { FloatingActionButton } from "seed-design/ui/floating-action-button";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
+import { rememberIntroSeen } from "@/lib/intro-cookie";
 import { reconcilePins } from "@/lib/pin-registry";
 import { describeAnimal } from "@/lib/report-label";
 import { SHORTCUTS } from "@/lib/shortcuts";
@@ -60,18 +61,6 @@ const POSITION_NOTICE: Record<"denied" | "timeout" | "unavailable", string> = {
   timeout: "위치를 확인하는 데 오래 걸려요\n지도를 움직여 동네를 찾아보세요",
   unavailable: "위치를 확인할 수 없어요\n지도를 움직여 동네를 찾아보세요",
 };
-
-// 첫 행동을 마쳤는지 적어 두는 자리, 안내 한 줄과 시트 머리 타일이 같이 접힘
-const SEEN_INTRO_KEY = "rebirth:seen-intro";
-
-function readSeenIntro(): boolean {
-  try {
-    return localStorage.getItem(SEEN_INTRO_KEY) !== null;
-  } catch {
-    // 저장이 막힌 브라우저는 늘 첫 방문으로 보고 안내만 한 번 더 그림
-    return false;
-  }
-}
 
 // 핀을 고르면 당기는 축척, 주변 골목이 보이는 정도
 const PIN_ZOOM = 16;
@@ -305,11 +294,14 @@ export type HomeScreenProps = {
   markers: Promise<MapMarker[]>;
   /** 구독한 동네의 안 읽은 제보 수. 로그인 전이면 0 */
   unread: Promise<number>;
+  /** 첫 행동을 이미 마쳤는지. 서버가 쿠키로 읽어 첫 HTML 부터 안내 줄과 타일의 자리를 정함 */
+  seenIntro: boolean;
 };
 
 export function HomeScreen({
   markers: markersPromise,
   unread: unreadPromise,
+  seenIntro: seenIntroAtStart,
 }: HomeScreenProps) {
   // 이 훅은 서버가 마커를 흘려보낼 때까지 기다리지만, 덮개 아래에서 지도는 이미 떠 있음
   const markers = useStreamed(markersPromise, EMPTY_MARKERS);
@@ -349,7 +341,9 @@ export function HomeScreen({
   } = useSheetSnap({ stops: STOPS, rest: SHEET.collapsed, ceiling: SHEET.full });
 
   // 지도 중심을 보이는 구간 한가운데로 옮겨 내 위치가 시트 쪽으로 밀려 내려가지 않게 함
-  useEffect(() => {
+  // 여백을 넣으면 지도가 moveend 를 내어 반경을 다시 재므로 그리기 전에 끝내야 함
+  // 그린 뒤에 하면 여백 없는 반경으로 채운 목록이 한 프레임 보이고 곧 바뀌어 화면이 밀림
+  useLayoutEffect(() => {
     if (!map) return;
     const apply = () => {
       const height = window.innerHeight;
@@ -575,8 +569,11 @@ export function HomeScreen({
   // 지도를 못 띄우면 거리를 셀 기준이 없어 최근 제보를 그대로 보여줌
   // 반경 안이 비면 가까운 순으로 몇 건 올려 줌, 빈 화면은 둘러볼 거리를 주지 않음
   // 값이 같으면 React Compiler 가 건너뛰어 useMemo 를 손으로 쓰지 않음
+  // 지도가 뜨기 전에는 비워 둠. 최근 제보를 먼저 채우면 지도가 뜨는 순간 목록이 통째로 바뀌며 화면이 밀림
+  const pending = status === "loading";
   const { nearby, widened } = (() => {
-    if (!ready) return { nearby: markers, widened: false };
+    if (status === "error") return { nearby: markers, widened: false };
+    if (!ready) return { nearby: EMPTY_MARKERS, widened: false };
     const inRadius = markers.filter((item) => distanceKm(center, item.point) <= radiusKm);
     if (inRadius.length > 0) return { nearby: inRadius, widened: false };
     const sorted = [...markers]
@@ -587,24 +584,15 @@ export function HomeScreen({
     return { nearby: sorted, widened: sorted.length > 0 };
   })();
 
-  // 서버에는 저장소가 없어 첫 그림에서는 판정을 미루고 안내를 그리지 않음
-  const [seenIntro, setSeenIntro] = useState<boolean | null>(null);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSeenIntro(readSeenIntro());
-  }, []);
+  // 판정은 서버가 쿠키로 끝내 와서 첫 그림부터 안내와 타일의 자리가 맞음. 여기서는 첫 행동 뒤에 접기만 함
+  const [seenIntro, setSeenIntro] = useState(seenIntroAtStart);
 
   const markIntroSeen = () => {
     setSeenIntro(true);
-    try {
-      localStorage.setItem(SEEN_INTRO_KEY, "1");
-    } catch {
-      // 저장이 막혀도 이 세션 동안은 접힌 채로 둠
-    }
+    rememberIntroSeen();
   };
 
-  // 판정 전에는 null 이라 안내와 타일 둘 다 자리를 잡지 않음
-  const firstVisit = seenIntro === false;
+  const firstVisit = !seenIntro;
 
   // 핀을 고르면 지도 위 말풍선으로 요약을 띄움
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -1061,20 +1049,24 @@ export function HomeScreen({
 
           <HStack px="spacingX.globalGutter" justify="space-between" align="center" gap="x2">
             <Text textStyle="t5Bold" color="fg.neutral" maxLines={1}>
-              {!ready
-                ? "최근 제보"
-                : widened
-                  ? "가까운 제보"
-                  : `${geocode.result?.areaName ?? "근처"} 반경 ${Math.max(1, Math.round(radiusKm))}km`}
+              {pending
+                ? "근처 제보"
+                : !ready
+                  ? "최근 제보"
+                  : widened
+                    ? "가까운 제보"
+                    : `${geocode.result?.areaName ?? "근처"} 반경 ${Math.max(1, Math.round(radiusKm))}km`}
             </Text>
+            {/* 수는 지도가 뜬 뒤에 적음. 0건 이 스쳐 지나가면 없는 줄로 읽힘 */}
             <Text textStyle="t3Regular" color="fg.neutralMuted">
-              {nearby.length}건
+              {pending ? "" : `${nearby.length}건`}
             </Text>
           </HStack>
 
           {/* 화면 밖으로 내려가 있는 만큼을 목록 끝에 더해 어느 단계에서도 마지막 장까지 닿음 */}
           <NearbyList
             items={nearby}
+            pending={pending}
             tailPx={Math.round((SHEET.full - sheetStop) * viewportHeight)}
             scrollElementRef={contentRef}
           />

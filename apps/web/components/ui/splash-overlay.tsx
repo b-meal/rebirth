@@ -2,7 +2,7 @@
 
 // design-system-allow:token 선택한 이미지의 고유 크기와 덮개 z축 값
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Box, HStack, Text, VStack } from "@seed-design/react";
@@ -26,9 +26,12 @@ const TIMING = {
 
 export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
   // 공통 프레임의 마운트 상태로 문서 첫 진입과 내부 화면 이동 구분
-  const [visible, setVisible] = useState(true);
-  // effect 보다 먼저 잠가야 같은 커밋의 위치 요청이 덮개를 기다림
-  armSplashGate();
+  // 잠금은 첫 렌더에서 한 번만. effect 보다 먼저 잠가야 같은 커밋의 위치 요청이 덮개를 기다리고,
+  // 걷힌 뒤 다시 그려질 때 또 잠그면 풀어 줄 곳이 없어 위치 요청이 영영 기다림
+  const [visible, setVisible] = useState(() => {
+    armSplashGate();
+    return true;
+  });
 
   const [imageReady, setImageReady] = useState(false);
   const [fontReady, setFontReady] = useState(false);
@@ -62,6 +65,20 @@ export function SplashOverlay({ maxWidth }: { maxWidth: string }) {
   useEffect(() => {
     if (!visible) releaseSplashGate();
   }, [visible]);
+
+  // 덮개가 보이는 채로 내려가도 잠금이 남지 않게 함
+  // 개발 모드의 Strict Mode 는 effect 를 한 번 떼고 다시 붙여, 정리에서 곧장 풀면 덮개가 서 있는데 팝업이 뜸
+  // 한 틱 뒤에도 다시 붙지 않았을 때만 실제로 내려간 것으로 봄
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      queueMicrotask(() => {
+        if (!mounted.current) releaseSplashGate();
+      });
+    };
+  }, []);
 
   if (!visible) return null;
 

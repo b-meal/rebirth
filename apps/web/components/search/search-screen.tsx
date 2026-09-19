@@ -14,6 +14,7 @@ import { ActionButton } from "seed-design/ui/action-button";
 import { Callout } from "seed-design/ui/callout";
 import { Chip } from "seed-design/ui/chip";
 import { ProgressCircle } from "seed-design/ui/progress-circle";
+import { SegmentedControl, SegmentedControlItem } from "seed-design/ui/segmented-control";
 import { TextField, TextFieldInput } from "seed-design/ui/text-field";
 
 import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
@@ -41,9 +42,10 @@ const SHORTCUTS = [
 ] as const;
 
 // 발견 제보와 실종 신고는 찾는 말이 달라 목록과 문구를 가르는 기준
+// 라벨에 찾기 를 붙이면 누르면 검색이 실행되는 버튼으로 읽혀 명사로 둠
 const SEARCH_KINDS = [
-  { key: "sighting", label: "발견 제보 찾기", placeholder: "동물 특징이나 동네로 검색" },
-  { key: "lost", label: "실종 신고 찾기", placeholder: "이름, 특징, 동네로 검색" },
+  { key: "sighting", label: "발견 제보", placeholder: "동물 특징이나 동네로 검색" },
+  { key: "lost", label: "실종 신고", placeholder: "이름, 특징, 동네로 검색" },
 ] as const;
 
 type SearchKind = (typeof SEARCH_KINDS)[number]["key"];
@@ -144,6 +146,10 @@ export function SearchScreen({
   const [chart, setChart] = useState<ChartKey>("interest");
   const [photoOpen, setPhotoOpen] = useState(false);
 
+  // 최근 검색은 검색어를 고를 때 쓰는 것이라 결과를 보는 중에는 접어 둠
+  // 결과 아래에 두면 무한 스크롤을 다 지나야 닿아 사실상 없는 기능이 됨
+  const [recentOpen, setRecentOpen] = useState(false);
+
   const [extra, setExtra] = useState<ReportCardItem[]>([]);
   const [cursor, setCursor] = useState(resultCursor);
   const [loading, setLoading] = useState(false);
@@ -172,6 +178,7 @@ export function SearchScreen({
     setPage(null);
     setActiveKind(kind);
     setSwitching(false);
+    // 최근 검색은 초점만 보고 여닫음. 여기서 닫으면 칸에 초점이 남았는데 사라지는 어긋남이 생김
   }
   // 응답이 돌아왔을 때 서버가 그사이 새로 그렸는지 보는 기준. 렌더 중에는 ref 를 만지지 않음
   const drawnRef = useRef(drawn);
@@ -249,6 +256,9 @@ export function SearchScreen({
   // 조건이 없으면 결과 절 자체를 그리지 않아 이어 읽은 것도 없음
   const rows = results ? [...(page?.items ?? results), ...extra] : null;
 
+  // 결과를 찾은 화면에서 차트는 무한 스크롤 뒤에 깔려 닿지 않음. 한 건도 못 찾았을 때만 다른 길로 둠
+  const showTrending = rows === null || (rows.length === 0 && !switching);
+
   // 서버 렌더에는 저장소가 없어 빈 목록으로 시작함
   const stored = useSyncExternalStore(subscribeRecent, recentSnapshot, () => EMPTY);
   const recent = useMemo<string[]>(() => {
@@ -259,8 +269,43 @@ export function SearchScreen({
     }
   }, [stored]);
 
+  // 규칙은 하나. 입력 칸에 초점이 있는 동안만 보임
+  // 조건 유무로 갈랐더니 초점이 있는데 사라지고 초점이 없는데 남아 언제 뜨는지 알 수 없었음
+  const showRecent = recent.length > 0 && recentOpen;
+
   // 목적이 바뀌어도 조건을 잃지 않게 주소마다 kind 를 끌고 감
   const mode = SEARCH_KINDS.find((item) => item.key === activeKind) ?? SEARCH_KINDS[0];
+  const otherMode = SEARCH_KINDS.find((item) => item.key !== activeKind) ?? SEARCH_KINDS[1];
+
+  // 한 건도 없을 때만 같은 조건으로 반대 종류를 세어 봄. 빈 화면에 갈 곳을 두려는 것이라 평소에는 부르지 않음
+  // 목록은 렌더마다 새 배열이라 길이만 보고, 주소는 문자열이라 값이 같으면 다시 부르지 않음
+  const otherParams = new URLSearchParams(params.toString());
+  otherParams.set("kind", otherMode.key);
+  const emptyQuery = rows?.length === 0 && !switching ? otherParams.toString() : null;
+
+  // 센 결과에 무엇을 세었는지 붙여 둠. 조건이 바뀌면 열쇠가 어긋나 옛 수가 보이지 않음
+  const [counted, setCounted] = useState<{ key: string; count: number; more: boolean } | null>(null);
+  useEffect(() => {
+    if (!emptyQuery) return;
+    let alive = true;
+    void (async () => {
+      try {
+        const response = await fetch(`/api/reports?${emptyQuery}`);
+        if (!response.ok) return;
+        const data = (await response.json()) as ResultResponse;
+        if (alive && data.items.length > 0) {
+          setCounted({ key: emptyQuery, count: data.items.length, more: data.nextCursor !== null });
+        }
+      } catch {
+        // 세지 못하면 안내를 걸지 않음. 없는 길을 가리키는 것보다 조용한 편이 나음
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [emptyQuery]);
+
+  const otherFound = counted && counted.key === emptyQuery ? counted : null;
 
   // 지름길은 주소의 조건과 같으면 켜져 보이고, 켜진 것을 다시 누르면 그 조건만 풀림
   // 다른 조건과 검색어는 그대로 두어 개 를 고양이 로 바꾸는 식으로 이어 쓸 수 있음
@@ -282,11 +327,26 @@ export function SearchScreen({
     router.push(`/search?${next}`);
   };
 
+  // 검색어를 비우면 탭만 남기고 주소의 조건을 털어 처음 진입한 화면으로 돌림
+  // 새 자리로 가는 것이 아니라 방금 건 검색을 무르는 것이라 replace 로 둠
+  const conditionNames = ["q", "animalType", "size", "colors"] as const;
+  const clearConditions = () => {
+    if (!conditionNames.some((name) => params.has(name))) return;
+    router.replace(`/search?kind=${activeKind}`);
+  };
+
   const submit = (next: string) => {
     const text = next.trim();
-    if (!text) return;
+    // 공백만 넣고 검색해도 지운 것으로 봄
+    if (!text) {
+      setKeyword("");
+      clearConditions();
+      return;
+    }
 
     writeRecent([text, ...recent.filter((item) => item !== text)].slice(0, RECENT_MAX));
+    // 초점을 떼는 것이 곧 닫는 것. 상태만 내리면 칸에 초점이 남아 규칙이 어긋남
+    inputRef.current?.blur();
     router.push(`/search?kind=${activeKind}&q=${encodeURIComponent(text)}`);
   };
 
@@ -298,16 +358,43 @@ export function SearchScreen({
     writeRecent([]);
   };
 
+  // 목록을 좁히는 손잡이라 목록과 한 카드에 둠. 누르면 바뀌는 제목과 건수가 바로 위에 붙어 있음
+  // 아래 두 카드는 서로 배타라 이 줄은 화면에 한 번만 그려짐
+  const filterRow = (
+    // 음수 마진은 prop 으로 주면 값이 되지 않아 클래스가 맡음. 첫 칩이 제목과 같은 선에 섬
+    <Box className="rebirth-scroll-row rebirth-bleed">
+      <HStack gap="spacingX.betweenChips">
+        {SHORTCUTS.map((item) => (
+          <Chip.Toggle
+            key={item.label}
+            size="medium"
+            checked={isShortcutOn(item)}
+            onCheckedChange={() => toggleShortcut(item)}
+          >
+            <Chip.Label>{item.label}</Chip.Label>
+          </Chip.Toggle>
+        ))}
+      </HStack>
+    </Box>
+  );
+
   // 위치를 알면 가까운 순으로 좁히고 모르면 최근 제보를 그대로 보여 줌
+  // 고른 종류로 먼저 거름. 조건을 걸지 않은 화면에서 종류를 바꿨을 때 눈에 보이는 변화가 이 목록임
   const here = position.point;
   const around = useMemo(() => {
-    if (!here) return nearby.slice(0, NEARBY_FALLBACK);
-    return nearby
+    const picked = nearby.filter((item) => (item.kind ?? "sighting") === activeKind);
+    const latest = picked.slice(0, NEARBY_FALLBACK);
+    if (!here) return { items: latest, nearMe: false };
+
+    const near = picked
       .map((item) => ({ item, km: distanceKm(here, item.point) }))
       .filter((row) => row.km <= NEARBY_RADIUS_KM)
       .sort((a, b) => a.km - b.km)
       .map((row) => row.item);
-  }, [nearby, here]);
+
+    // 반경 안이 비었다고 빈손으로 두면 위치를 알려준 쪽이 목록을 잃음. 최근 제보로 되돌림
+    return near.length > 0 ? { items: near, nearMe: true } : { items: latest, nearMe: false };
+  }, [nearby, here, activeKind]);
 
   return (
     <Screen bg="bg.layerBasement">
@@ -338,13 +425,22 @@ export function SearchScreen({
             size="large"
             prefixIcon={<IconMagnifyingglassLine />}
             value={keyword}
-            onValueChange={(next) => setKeyword(next.value)}
+            onValueChange={(next) => {
+              setKeyword(next.value);
+              // 마지막 글자를 지우면 따로 검색을 누르지 않아도 처음 화면으로 돌아옴
+              if (!next.value) clearConditions();
+            }}
           >
             <TextFieldInput
               ref={inputRef}
               placeholder={mode.placeholder}
               aria-label="검색어 입력"
               enterKeyHint="search"
+              // 검색어를 고르는 동안만 꺼내 둠. 초점이 들고 나는 것이 그대로 여닫는 기준
+              // 검색한 뒤에도 초점이 칸에 남아 onFocus 가 다시 울리지 않아 누른 것도 함께 봄
+              onFocus={() => setRecentOpen(true)}
+              onClick={() => setRecentOpen(true)}
+              onBlur={() => setRecentOpen(false)}
               onKeyDown={(event) => {
                 if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
                 event.preventDefault();
@@ -365,51 +461,88 @@ export function SearchScreen({
         </ActionButton>
       </HStack>
 
-      <VStack align="stretch" gap="x2" pb="x10">
-        <SectionCard gap="x3">
-          <HStack gap="spacingX.betweenChips">
-            {/* 켜진 쪽이 한눈에 보여야 해 다른 화면과 같은 Toggle 을 씀. Button 의 solid 는 연한 회색이라 구분이 안 됨
-                켜진 것을 다시 눌러도 switchKind 가 같은 값이라 그대로 둠 */}
+      <VStack align="stretch" gap="x2" pb="x10" position="relative">
+        <SectionCard>
+          {/* 검색창에 딸린 층. 무엇을 찾을지 고르는 자리라 목록을 좁히는 칩과 카드를 나눠 둠
+              세그먼트는 라디오라 스크린리더도 택일로 읽고, 켜진 것을 다시 눌러도 같은 값이라 그대로 둠 */}
+          <SegmentedControl
+            value={activeKind}
+            onValueChange={(next) => switchKind(next as SearchKind)}
+            aria-label="찾을 종류"
+          >
             {SEARCH_KINDS.map((item) => (
-              <Chip.Toggle
-                key={item.key}
-                size="medium"
-                checked={item.key === activeKind}
-                onCheckedChange={() => switchKind(item.key)}
-              >
-                <Chip.Label>{item.label}</Chip.Label>
-              </Chip.Toggle>
+              <SegmentedControlItem key={item.key} value={item.key}>
+                {item.label}
+              </SegmentedControlItem>
             ))}
-          </HStack>
-
-          {/* 음수 마진은 prop 으로 주면 값이 되지 않아 클래스가 맡음. 첫 칩이 위 탭과 같은 선에 섬 */}
-          <Box className="rebirth-scroll-row rebirth-bleed">
-            <HStack gap="spacingX.betweenChips">
-              {SHORTCUTS.map((item) => (
-                <Chip.Toggle
-                  key={item.label}
-                  size="medium"
-                  checked={isShortcutOn(item)}
-                  onCheckedChange={() => toggleShortcut(item)}
-                >
-                  <Chip.Label>{item.label}</Chip.Label>
-                </Chip.Toggle>
-              ))}
-            </HStack>
-          </Box>
+          </SegmentedControl>
         </SectionCard>
+
+        {/* 검색창 바로 아래를 덮음. 흐름에 끼워 두면 여닫을 때마다 아래 목록이 밀려 화면이 튐
+            누르는 동안 초점이 칸을 떠나면 목록이 닫혀 항목을 고를 수 없어 기본 동작을 막음 */}
+        {showRecent ? (
+          <Box
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            zIndex={1}
+            bg="bg.layerDefault"
+            boxShadow="s2"
+            onMouseDown={(event) => event.preventDefault()}
+          >
+            <SectionCard gap="x2">
+              <HStack justify="space-between" align="center">
+                <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+                  최근 검색
+                </Text>
+                <ActionButton variant="ghost" size="xsmall" onClick={clearRecent}>
+                  전체 삭제
+                </ActionButton>
+              </HStack>
+
+              <VStack align="stretch">
+                {recent.map((text, index) => (
+                  <VStack key={text} align="stretch">
+                    {index > 0 ? <Divider /> : null}
+                    <HStack gap="x2" align="center" py="x2">
+                      <Icon svg={<IconClockLine />} size="x4" color="fg.neutralSubtle" />
+                      <VStack asChild align="flex-start" grow={1} minWidth="0">
+                        <button type="button" onClick={() => submit(text)}>
+                          <Text textStyle="t4Regular" color="fg.neutral" maxLines={1}>
+                            {text}
+                          </Text>
+                        </button>
+                      </VStack>
+                      <ActionButton
+                        variant="ghost"
+                        size="xsmall"
+                        layout="iconOnly"
+                        aria-label={`${text} 지우기`}
+                        onClick={() => dropRecent(text)}
+                      >
+                        <Icon svg={<IconXmarkLine />} />
+                      </ActionButton>
+                    </HStack>
+                  </VStack>
+                ))}
+              </VStack>
+            </SectionCard>
+          </Box>
+        ) : null}
 
         {rows ? (
           <SectionCard gap="x3">
-            <HStack justify="space-between" align="center">
-              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                검색 결과
-              </Text>
-              {/* 더 남았으면 지금 그린 수가 전부가 아니라는 것을 함께 알림 */}
-              <Text textStyle="t3Regular" color="fg.neutralMuted">
-                {rows.length}건{cursor ? " 이상" : ""}
-              </Text>
-            </HStack>
+            {/* 라벨과 건수를 갈라 놓으면 숫자가 따로 놀아 읽히지 않음. 한 문장에 넣어 말함
+                끝을 있어요, 없어요 로 고정해 조건이 바뀌어도 눈이 같은 자리에 머묾
+                더 남았으면 넘게 로 말해 지금 그린 수가 전부가 아닌 것을 알림 */}
+            <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+              {rows.length === 0
+                ? `${mode.label}가 없어요`
+                : `${mode.label} ${rows.length}건${cursor ? " 넘게" : "이"} 있어요`}
+            </Text>
+
+            {filterRow}
 
             {/* 탭을 바꿔 새 쪽을 받는 동안 옛 목록은 그대로 두고 목록 한가운데에 표시 하나만 올림
                 목록을 비우면 화면이 튀고, 제목 옆에 붙이면 무엇을 기다리는지 눈이 가지 않음 */}
@@ -420,15 +553,25 @@ export function SearchScreen({
                     <ProgressCircle size="24" tone="neutral" />
                   </HStack>
                 ) : (
-                  <VStack align="stretch" gap="x1">
-                    <Text textStyle="t4Regular" color="fg.neutralMuted">
-                      조건과 맞는 제보가 없어요
-                    </Text>
-                    <Text textStyle="t3Regular" color="fg.neutralSubtle">
-                      {activeKind === "lost"
-                        ? "이름이나 특징으로 다시 찾아보세요"
-                        : "털색이나 동네처럼 짧은 말로 다시 찾아 주세요"}
-                    </Text>
+                  /* 없다는 말은 제목이 이미 했음. 여기는 다음에 할 일만 둠
+                     같은 조건으로 반대 종류에 있으면 문구 대신 그리로 건너가는 길을 냄 */
+                  <VStack align="stretch" gap="x3">
+                    {otherFound ? (
+                      <ActionButton
+                        variant="neutralOutline"
+                        size="large"
+                        onClick={() => switchKind(otherMode.key)}
+                      >
+                        {otherMode.label}에서 {otherFound.count}건
+                        {otherFound.more ? " 넘게" : ""} 보기
+                      </ActionButton>
+                    ) : (
+                      <Text textStyle="t4Regular" color="fg.neutralMuted">
+                        {activeKind === "lost"
+                          ? "이름이나 특징으로 다시 찾아보세요"
+                          : "털색이나 동네처럼 짧은 말로 다시 찾아 주세요"}
+                      </Text>
+                    )}
                   </VStack>
                 )
               ) : (
@@ -483,79 +626,48 @@ export function SearchScreen({
           </SectionCard>
         ) : null}
 
-        <SectionCard gap="x3">
-          <HStack gap="x2" align="center">
-            {CHARTS.map((item) => (
-              <Chip.Toggle
-                key={item.key}
-                size="small"
-                checked={chart === item.key}
-                onCheckedChange={() => setChart(item.key)}
-              >
-                <Chip.Label>{item.label}</Chip.Label>
-              </Chip.Toggle>
-            ))}
-          </HStack>
-          <TrendingChart items={trending[chart]} help={chart === "help"} />
-        </SectionCard>
-
-        {results === null && around.length > 0 ? (
+        {/* 조건이 없는 화면에서는 고른 종류의 최근 제보가 여기에 깔림
+            종류를 바꾸면 서버를 다시 부르지 않고 제목과 목록이 그 자리에서 바뀜 */}
+        {results === null ? (
           <SectionCard gap="x3">
-            <HStack justify="space-between" align="center">
-              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                {here ? `내 주변 ${NEARBY_RADIUS_KM}km 제보` : "최근 올라온 제보"}
-              </Text>
-              <Text textStyle="t3Regular" color="fg.neutralMuted">
-                {around.length}건
-              </Text>
-            </HStack>
-            <Grid columns={2} gap="x4">
-              {around.map((item) => (
-                <ReportCard key={item.id} item={item} />
-              ))}
-            </Grid>
+            {/* 제목은 실제로 무엇을 세웠는지 말함. 반경 안이 비어 최근 제보로 되돌렸으면 내 주변이라 하지 않음 */}
+            <Text as="h2" textStyle="t4Bold" color="fg.neutral">
+              {around.items.length === 0
+                ? `아직 올라온 ${mode.label}가 없어요`
+                : `${around.nearMe ? "내 주변" : "최근 올라온"} ${mode.label} ${around.items.length}건이 있어요`}
+            </Text>
+
+            {filterRow}
+
+            {/* 한 건도 없으면 제목이 이미 없다고 말했으므로 같은 말을 되풀이하지 않고 칩만 남김 */}
+            {around.items.length > 0 ? (
+              <Grid columns={2} gap="x4">
+                {around.items.map((item) => (
+                  <ReportCard key={item.id} item={item} />
+                ))}
+              </Grid>
+            ) : null}
           </SectionCard>
         ) : null}
 
-        {recent.length > 0 ? (
-          <SectionCard gap="x2">
-            <HStack justify="space-between" align="center">
-              <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                최근 검색
-              </Text>
-              <ActionButton variant="ghost" size="xsmall" onClick={clearRecent}>
-                전체 삭제
-              </ActionButton>
-            </HStack>
-
-            <VStack align="stretch">
-              {recent.map((text, index) => (
-                <VStack key={text} align="stretch">
-                  {index > 0 ? <Divider /> : null}
-                  <HStack gap="x2" align="center" py="x2">
-                    <Icon svg={<IconClockLine />} size="x4" color="fg.neutralSubtle" />
-                    <VStack asChild align="flex-start" grow={1} minWidth="0">
-                      <button type="button" onClick={() => submit(text)}>
-                        <Text textStyle="t4Regular" color="fg.neutral" maxLines={1}>
-                          {text}
-                        </Text>
-                      </button>
-                    </VStack>
-                    <ActionButton
-                      variant="ghost"
-                      size="xsmall"
-                      layout="iconOnly"
-                      aria-label={`${text} 지우기`}
-                      onClick={() => dropRecent(text)}
-                    >
-                      <Icon svg={<IconXmarkLine />} />
-                    </ActionButton>
-                  </HStack>
-                </VStack>
+        {showTrending ? (
+          <SectionCard gap="x3">
+            <HStack gap="x2" align="center">
+              {CHARTS.map((item) => (
+                <Chip.Toggle
+                  key={item.key}
+                  size="small"
+                  checked={chart === item.key}
+                  onCheckedChange={() => setChart(item.key)}
+                >
+                  <Chip.Label>{item.label}</Chip.Label>
+                </Chip.Toggle>
               ))}
-            </VStack>
+            </HStack>
+            <TrendingChart items={trending[chart]} help={chart === "help"} />
           </SectionCard>
         ) : null}
+
       </VStack>
 
       <PhotoSearchSheet open={photoOpen} onOpenChange={setPhotoOpen} />
