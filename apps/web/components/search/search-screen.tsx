@@ -325,6 +325,26 @@ export function SearchScreen({
     writeRecent([]);
   };
 
+  // 목록을 좁히는 손잡이라 목록과 한 카드에 둠. 누르면 바뀌는 제목과 건수가 바로 위에 붙어 있음
+  // 아래 두 카드는 서로 배타라 이 줄은 화면에 한 번만 그려짐
+  const filterRow = (
+    // 음수 마진은 prop 으로 주면 값이 되지 않아 클래스가 맡음. 첫 칩이 제목과 같은 선에 섬
+    <Box className="rebirth-scroll-row rebirth-bleed">
+      <HStack gap="spacingX.betweenChips">
+        {SHORTCUTS.map((item) => (
+          <Chip.Toggle
+            key={item.label}
+            size="medium"
+            checked={isShortcutOn(item)}
+            onCheckedChange={() => toggleShortcut(item)}
+          >
+            <Chip.Label>{item.label}</Chip.Label>
+          </Chip.Toggle>
+        ))}
+      </HStack>
+    </Box>
+  );
+
   // 위치를 알면 가까운 순으로 좁히고 모르면 최근 제보를 그대로 보여 줌
   // 고른 종류로 먼저 거름. 조건을 걸지 않은 화면에서 종류를 바꿨을 때 눈에 보이는 변화가 이 목록임
   const here = position.point;
@@ -408,8 +428,8 @@ export function SearchScreen({
       </HStack>
 
       <VStack align="stretch" gap="x2" pb="x10">
-        <SectionCard gap="x3">
-          {/* 아래 필터와 형태를 갈라 둠. 둘 다 칩이면 한쪽은 택일, 한쪽은 여러 개 고르기인 것이 보이지 않음
+        <SectionCard>
+          {/* 검색창에 딸린 층. 무엇을 찾을지 고르는 자리라 목록을 좁히는 칩과 카드를 나눠 둠
               세그먼트는 라디오라 스크린리더도 택일로 읽고, 켜진 것을 다시 눌러도 같은 값이라 그대로 둠 */}
           <SegmentedControl
             value={activeKind}
@@ -422,22 +442,6 @@ export function SearchScreen({
               </SegmentedControlItem>
             ))}
           </SegmentedControl>
-
-          {/* 음수 마진은 prop 으로 주면 값이 되지 않아 클래스가 맡음. 첫 칩이 위 탭과 같은 선에 섬 */}
-          <Box className="rebirth-scroll-row rebirth-bleed">
-            <HStack gap="spacingX.betweenChips">
-              {SHORTCUTS.map((item) => (
-                <Chip.Toggle
-                  key={item.label}
-                  size="medium"
-                  checked={isShortcutOn(item)}
-                  onCheckedChange={() => toggleShortcut(item)}
-                >
-                  <Chip.Label>{item.label}</Chip.Label>
-                </Chip.Toggle>
-              ))}
-            </HStack>
-          </Box>
         </SectionCard>
 
         {/* 결과보다 위에 둠. 아래에 두면 무한 스크롤이 늘어나는 만큼 멀어져 닿을 수 없음 */}
@@ -484,15 +488,17 @@ export function SearchScreen({
         {rows ? (
           <SectionCard gap="x3">
             <HStack justify="space-between" align="center">
-              {/* 무엇을 찾은 목록인지 제목이 말함. 종류를 바꾸면 이 제목도 같이 바뀜 */}
+              {/* 끝 낱말을 종류로 고정하고 수식어만 바꿈. 결과 로 끝나면 보던 목록이 사라진 것처럼 읽힘 */}
               <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                {mode.label} 결과
+                조건에 맞는 {mode.label}
               </Text>
               {/* 더 남았으면 지금 그린 수가 전부가 아니라는 것을 함께 알림 */}
               <Text textStyle="t3Regular" color="fg.neutralMuted">
                 {rows.length}건{cursor ? " 이상" : ""}
               </Text>
             </HStack>
+
+            {filterRow}
 
             {/* 탭을 바꿔 새 쪽을 받는 동안 옛 목록은 그대로 두고 목록 한가운데에 표시 하나만 올림
                 목록을 비우면 화면이 튀고, 제목 옆에 붙이면 무엇을 기다리는지 눈이 가지 않음 */}
@@ -581,6 +587,9 @@ export function SearchScreen({
                 {around.items.length}건
               </Text>
             </HStack>
+
+            {filterRow}
+
             {around.items.length > 0 ? (
               <Grid columns={2} gap="x4">
                 {around.items.map((item) => (
