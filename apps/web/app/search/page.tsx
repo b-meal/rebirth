@@ -176,6 +176,9 @@ async function loadNearby(): Promise<NearbyItem[]> {
       sinceLabel: sinceLabel(row.occurredAt),
       occurredAt: row.occurredAt.toISOString(),
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
+      // 고른 종류만 남기는 기준. 브라우저가 걸러 모드를 바꿔도 서버를 다시 부르지 않음
+      kind: row.kind === "lost" ? ("lost" as const) : ("sighting" as const),
+      petName: row.petName,
       point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
     }));
   } catch (error) {
