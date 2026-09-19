@@ -330,12 +330,17 @@ export function SearchScreen({
   const here = position.point;
   const around = useMemo(() => {
     const picked = nearby.filter((item) => (item.kind ?? "sighting") === activeKind);
-    if (!here) return picked.slice(0, NEARBY_FALLBACK);
-    return picked
+    const latest = picked.slice(0, NEARBY_FALLBACK);
+    if (!here) return { items: latest, nearMe: false };
+
+    const near = picked
       .map((item) => ({ item, km: distanceKm(here, item.point) }))
       .filter((row) => row.km <= NEARBY_RADIUS_KM)
       .sort((a, b) => a.km - b.km)
       .map((row) => row.item);
+
+    // 반경 안이 비었다고 빈손으로 두면 위치를 알려준 쪽이 목록을 잃음. 최근 제보로 되돌림
+    return near.length > 0 ? { items: near, nearMe: true } : { items: latest, nearMe: false };
   }, [nearby, here, activeKind]);
 
   return (
@@ -566,25 +571,26 @@ export function SearchScreen({
         {results === null ? (
           <SectionCard gap="x3">
             <HStack justify="space-between" align="center">
+              {/* 제목은 실제로 무엇을 세웠는지 말함. 반경 안이 비어 최근 제보로 되돌렸으면 내 주변이라 하지 않음 */}
               <Text as="h2" textStyle="t4Bold" color="fg.neutral">
-                {here ? `내 주변 ${NEARBY_RADIUS_KM}km ${mode.label}` : `최근 올라온 ${mode.label}`}
+                {around.nearMe
+                  ? `내 주변 ${NEARBY_RADIUS_KM}km ${mode.label}`
+                  : `최근 올라온 ${mode.label}`}
               </Text>
               <Text textStyle="t3Regular" color="fg.neutralMuted">
-                {around.length}건
+                {around.items.length}건
               </Text>
             </HStack>
-            {around.length > 0 ? (
+            {around.items.length > 0 ? (
               <Grid columns={2} gap="x4">
-                {around.map((item) => (
+                {around.items.map((item) => (
                   <ReportCard key={item.id} item={item} />
                 ))}
               </Grid>
             ) : (
               /* 걸러서 한 건도 없을 때 절을 지우면 종류를 바꿔도 아무 일이 없던 것처럼 보임 */
               <Text textStyle="t4Regular" color="fg.neutralMuted">
-                {here
-                  ? `내 주변 ${NEARBY_RADIUS_KM}km 안에 올라온 ${mode.label}가 없어요`
-                  : `최근 올라온 ${mode.label}가 없어요`}
+                아직 올라온 {mode.label}가 없어요
               </Text>
             )}
           </SectionCard>
