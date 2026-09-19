@@ -87,6 +87,7 @@ const MOCK_LATENCY_MS = 800;
 
 // 크레딧 없이 화면을 돌려보기 위한 고정 초안. ANALYZE_MOCK=1 일 때만 씀
 const MOCK_RESULT: AnalyzeResult = {
+  animalPresent: true,
   animalType: "dog",
   // 품종은 breedGuess 로 따로 들고 appearance 에 확정 표현을 섞지 않음
   breedGuess: "말티즈",
@@ -106,6 +107,7 @@ const MOCK_RESULT: AnalyzeResult = {
 const MOCK_VARIANTS: Record<string, Partial<AnalyzeResult>> = {
   "1": {},
   "not-animal": {
+    animalPresent: false,
     animalType: "unknown",
     breedGuess: null,
     appearance: "사진에서 동물을 찾지 못함",
