@@ -22,6 +22,17 @@ import { ShelterSyncError, syncAllShelters } from "./sync";
 // 이어 읽을 자리. 기관 목록은 거의 바뀌지 않아 건너뛴 수로 셈
 const offset = z.coerce.number().int().min(0).max(10_000).default(0);
 
+/**
+ * 표준 품종 코드와 시도 목록에 붙이는 캐시 규칙
+ *
+ * 공공데이터를 받아 둔 사본이라 동기화를 돌릴 때만 바뀌고 사용자마다 다르지 않음
+ * 기본값인 no-store 로 두면 245행과 253행을 읽으려고 요청마다 함수와 DB 를 깨움
+ * s-maxage 는 Vercel 앞단이 들고 있는 시간, max-age 는 브라우저 몫이라 짧게 둠
+ * 동기화 직후 한 시간까지는 옛 목록이 나갈 수 있는데 코드 표라 그 사이 화면이 틀리지 않음
+ */
+const REFERENCE_CACHE =
+  "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400";
+
 const nearbyQuery = z.object({
   lat: z.coerce.number(),
   lng: z.coerce.number(),
@@ -119,7 +130,10 @@ export async function animalKindsHandler(request: Request): Promise<Response> {
     const items = needle
       ? rows.filter((row) => row.kindNm.replace(/\s/g, "").toLowerCase().includes(needle))
       : rows;
-    return ok({ items: items.slice(0, 20) });
+    return ok(
+      { items: items.slice(0, 20) },
+      { headers: { "cache-control": REFERENCE_CACHE } },
+    );
   } catch (error) {
     return serverError("kinds", error);
   }
@@ -128,7 +142,10 @@ export async function animalKindsHandler(request: Request): Promise<Response> {
 /** 시도 목록. 지역 고르개의 값이 표준 코드에서 오게 함 */
 export async function sidoRegionsHandler(): Promise<Response> {
   try {
-    return ok({ items: await listSidoRegions() });
+    return ok(
+      { items: await listSidoRegions() },
+      { headers: { "cache-control": REFERENCE_CACHE } },
+    );
   } catch (error) {
     return serverError("regions", error);
   }
