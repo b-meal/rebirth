@@ -134,6 +134,13 @@ export const reports = pgTable(
   (t) => [
     index('reports_exact_point_idx').using('gist', t.exactPoint),
     index('reports_coarse_point_idx').using('gist', t.coarsePoint),
+    // 반경 질의는 미터로 재려고 ::geography 로 캐스팅함
+    // 위 인덱스는 geometry 에 걸려 있어 캐스팅한 식에는 쓰이지 못하고 표를 통째로 훑음
+    // 식 그대로를 담은 인덱스라야 걸림
+    index('reports_coarse_point_geog_idx').using(
+      'gist',
+      sql`(${t.coarsePoint}::geography)`,
+    ),
     // 공개 목록의 기본 질의. 최신순 커서 페이징이 이 인덱스를 탐
     index('reports_feed_idx').on(
       t.kind,
