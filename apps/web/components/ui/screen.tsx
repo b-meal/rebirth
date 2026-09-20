@@ -53,15 +53,19 @@ export function SectionTitle({ children }: { children: ReactNode }) {
   );
 }
 
-/** 라벨과 값을 한 줄에 둔 특징 행, 글 안에 섞지 않고 대조하기 쉽게 나눔 */
+/**
+ * 라벨과 값을 한 줄에 둔 특징 행, 글 안에 섞지 않고 대조하기 쉽게 나눔
+ * 상태처럼 값이 여러 개인 행은 값이 두 줄을 넘으므로
+ * 라벨은 nowrap 으로 쪼개지지 않게 두고 값은 줄이 늘어도 오른쪽에 붙임
+ */
 export function FeatureRow({ label, value }: { label: string; value: string }) {
   return (
     <HStack justify="space-between" align="flex-start" gap="x4">
-      <Text textStyle="t4Regular" color="fg.neutralMuted">
+      <Text textStyle="t4Regular" color="fg.neutralMuted" whiteSpace="nowrap">
         {label}
       </Text>
       <VStack align="flex-end" minWidth="0">
-        <Text textStyle="t4Regular" color="fg.neutral">
+        <Text textStyle="t4Regular" color="fg.neutral" align="right">
           {value}
         </Text>
       </VStack>

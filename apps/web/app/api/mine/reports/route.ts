@@ -26,7 +26,7 @@ export async function GET(request: Request): Promise<Response> {
   // 남의 기록을 넘겨받지 않도록 계정은 세션에서만 읽음
   const user = await getCurrentUser();
   if (!user) {
-    return Response.json({ message: "로그인이 필요합니다" }, { status: 401 });
+    return Response.json({ message: "로그인이 필요해요" }, { status: 401 });
   }
 
   const params = new URL(request.url).searchParams;
@@ -37,8 +37,8 @@ export async function GET(request: Request): Promise<Response> {
   if (raw && !cursor) {
     return Response.json(
       {
-        message: "목록을 처음부터 다시 불러와 주십시오",
-        fields: { cursor: "커서가 올바르지 않습니다" },
+        message: "목록을 처음부터 다시 불러와 주세요",
+        fields: { cursor: "커서가 올바르지 않아요" },
       },
       { status: 400 },
     );

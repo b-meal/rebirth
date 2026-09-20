@@ -28,8 +28,15 @@ const RE_WRITERS = [
   new RegExp('\\bsed\\s+(?:-\\S+\\s+|\'[^\']*\'\\s+|"[^"]*"\\s+)*-i\\S*\\s+(?:\\S+\\s+)*?["\']?(' + PATHCHAR + '+' + MD + ')["\']?' + TAIL, 'g'),
 ];
 
+// 윈도우는 경로를 역슬래시로 넘겨 ALLOWED 의 / 패턴이 하나도 맞지 않음
+// 정규화하지 않으면 .claude/** 같은 허용 경로까지 막힘
+function normalize(p) {
+  return String(p).replace(/\\/g, '/');
+}
+
 function isAllowed(p) {
-  return ALLOWED.some((re) => re.test(p));
+  const normalized = normalize(p);
+  return ALLOWED.some((re) => re.test(normalized));
 }
 
 function isMarkdown(p) {

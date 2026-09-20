@@ -57,6 +57,7 @@ export async function readMineReportPage({
     injury: row.injury,
     areaName: row.areaName,
     sinceLabel: sinceLabel(row.occurredAt),
+    occurredAt: row.occurredAt.toISOString(),
     photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
     visibility: row.visibility,
     lifecycle: row.lifecycle,

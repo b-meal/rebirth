@@ -6,7 +6,8 @@ import { AspectRatio, Box, Icon, ImageFrame, Skeleton, Text, VStack } from "@see
 import { IconXmarkLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
 
-import { CARE_LABEL, describeAnimal } from "@/lib/report-label";
+import { STATUS_LABEL, describeAnimal } from "@/lib/report-label";
+import { useThumbUrl } from "@/hooks/use-thumb-url";
 import { ReportBadges } from "@/components/report/report-badges";
 import type { MapMarker } from "@/components/home/home-screen";
 
@@ -35,6 +36,7 @@ export type MapPreviewCardProps = {
 
 export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
   const [detail, setDetail] = useState<Detail | null>(null);
+  const photoUrl = useThumbUrl(item);
 
   // 핀이 바뀌면 부르는 쪽이 key 로 다시 마운트해 상태를 비움
   useEffect(() => {
@@ -71,8 +73,8 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
       style={GLASS}
     >
       <Box position="relative">
-        {item.photoUrl ? (
-          <ImageFrame ratio={16 / 9} width="full" src={item.photoUrl} alt={describeAnimal(item)} />
+        {photoUrl ? (
+          <ImageFrame ratio={16 / 9} width="full" src={photoUrl} alt={describeAnimal(item)} />
         ) : (
           <AspectRatio ratio={16 / 9} bg="bg.neutralWeak">
             <Box />
@@ -105,12 +107,12 @@ export function MapPreviewCard({ item, onClose }: MapPreviewCardProps) {
         </Text>
         <Text textStyle="t2Regular" color="fg.neutralMuted" maxLines={1}>
           {item.areaName ?? "지역 미확인"}, {item.sinceLabel} , {" "}
-          {CARE_LABEL[item.careSituation] ?? ""}
+          {STATUS_LABEL[item.careSituation] ?? ""}
         </Text>
 
         {detail ? (
           <Text textStyle="t3Regular" color="fg.neutral" maxLines={2}>
-            {detail.appearance ?? "외형 설명이 없습니다"}
+            {detail.appearance ?? "외형 설명이 없어요"}
           </Text>
         ) : (
           <Skeleton width="full" height="x8" radius="8" />

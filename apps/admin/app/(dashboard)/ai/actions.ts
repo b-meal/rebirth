@@ -1,5 +1,6 @@
 "use server";
 
+import { logFailure } from "@rebirth/core/http";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
@@ -32,10 +33,10 @@ export async function reviewPair(
     return { ok: true, message: `${outcome.model}, ${outcome.latencyMs}ms` };
   } catch (error) {
     if (error instanceof ReviewError) {
-      console.error(`[ai] 재평가 중단 (${error.kind})`, error.message);
+      logFailure("ai.review", error.message, { kind: error.kind });
       return { ok: false, message: error.message };
     }
-    console.error("[ai] 재평가 실패", error);
+    logFailure("ai.review", error);
     return { ok: false, message: "처리 중 문제가 생겼습니다" };
   }
 }

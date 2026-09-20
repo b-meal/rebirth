@@ -1,3 +1,4 @@
+import { logFailure } from "@rebirth/core/http";
 import type { Metadata } from "next";
 
 import {
@@ -43,7 +44,7 @@ async function safe<T>(run: () => Promise<T>, fallback: T): Promise<T> {
   try {
     return await run();
   } catch (error) {
-    console.error("[ai] 지표 조회 실패", error);
+    logFailure("ai.metrics", error);
     return fallback;
   }
 }

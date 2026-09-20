@@ -362,7 +362,7 @@ try {
       await sql`
         insert into report_photos (report_id, storage_path, sort_order)
         values (${id}, ${objectPath}, 0)
-        on conflict do nothing
+        on conflict (report_id, storage_path) do nothing
       `;
       done += 1;
       if (done % 25 === 0) process.stdout.write(`  ${done}건\n`);

@@ -2,6 +2,7 @@ import 'server-only'
 
 import {
   and,
+  arrayOverlaps,
   count,
   desc,
   eq,
@@ -99,6 +100,59 @@ const _noLeak: Extract<keyof typeof publicReportColumns, SensitiveKey> extends n
   : never = true
 void _noLeak
 
+// 공개 상세에 나갈 컬럼. 제외 목록이면 새 컬럼이 그대로 새므로 포함 목록으로 둠
+// 목록 컬럼에 화면이 쓰는 세 개만 더함. updatedAt 은 카드 캐시 지문, version 과 matchAlert 는 실종 관리 줄
+const publicReportDetailColumns = {
+  id: true,
+  kind: true,
+  visibility: true,
+  lifecycle: true,
+  careSituation: true,
+  animalType: true,
+  breedGuess: true,
+  appearance: true,
+  colors: true,
+  size: true,
+  sex: true,
+  neutered: true,
+  conditionTags: true,
+  collar: true,
+  injury: true,
+  earTip: true,
+  areaName: true,
+  landmarkNote: true,
+  occurredAt: true,
+  shareCount: true,
+  createdAt: true,
+  updatedAt: true,
+  version: true,
+  matchAlert: true,
+} as const satisfies Record<keyof typeof publicReportColumns, true> &
+  Partial<Record<keyof typeof reports.$inferSelect, true>>
+
+// 상세에 관리 전용 컬럼이 섞이면 typecheck 가 깨짐
+// closeNote 는 작성자가 종료 때 적는 자유 텍스트라 공개 금지. 위치 코드·격자·출처는 운영 컬럼
+// pets 행 id 는 내주지 않음. 여러 신고를 한 마리로 이어 볼 수 있게 됨. 이름과 품종은 pet 관계로만 내보냄
+const _noDetailLeak: Extract<
+  keyof typeof publicReportDetailColumns,
+  | SensitiveKey
+  | 'closeNote'
+  | 'closeReason'
+  | 'closedAt'
+  | 'petId'
+  | 'areaCode'
+  | 'areaCodeSystem'
+  | 'areaCodeVersion'
+  | 'coarseGridM'
+  | 'locationSource'
+  | 'matchAlertReadAt'
+  | 'aiModel'
+  | 'aiAnalyzedAt'
+> extends never
+  ? true
+  : never = true
+void _noDetailLeak
+
 /**
  * 공개 상세. visibility 가 public 이 아니거나 행이 없으면 똑같이 undefined
  * 숨김·삭제·없는 ID 를 구분해 알려주면 신고 남용의 정찰 수단이 됨. WEB-07-E01
@@ -106,20 +160,7 @@ void _noLeak
 export function findPublicReport(id: string) {
   return db.query.reports.findFirst({
     where: and(eq(reports.id, id), eq(reports.visibility, 'public')),
-    columns: {
-      exactPoint: false,
-      coarsePoint: false,
-      reporterId: false,
-      manageTokenHash: false,
-      manageTokenIssuedAt: false,
-      manageTokenRotatedAt: false,
-      aiRaw: false,
-      aiEditedFields: false,
-      locationAccuracyM: false,
-      // pets 행 id 는 내주지 않음. 여러 신고를 한 마리로 이어 볼 수 있게 됨
-      // 이름과 품종은 아래 pet 관계로만 내보냄. 0016 이 pets 직접 접근을 막아 둔 취지
-      petId: false,
-    },
+    columns: publicReportDetailColumns,
     with: {
       photos: publicPhotoSelection,
       // 실종 신고에만 붙음. 이름과 품종은 찾는 데 쓰라고 공개하는 값임
@@ -190,6 +231,10 @@ export function listPublicReports({
               or exists (
                 select 1 from unnest(${reports.colors}) as color
                 where color ilike ${'%' + q + '%'}
+              )
+              or exists (
+                select 1 from ${pets} p
+                where p.id = ${reports}.pet_id and p.name ilike ${'%' + q + '%'}
               ))`
           : undefined,
         includeClosed
@@ -200,7 +245,8 @@ export function listPublicReports({
         animalType ? eq(reports.animalType, animalType) : undefined,
         size ? eq(reports.size, size) : undefined,
         // 고른 털색 중 하나라도 겹치면 후보. 교집합이 아니라 합집합 조건
-        colors?.length ? raw`${reports.colors} && ${colors}` : undefined,
+        // 템플릿에 배열을 그대로 넣으면 원소가 스칼라로 바인딩돼 배열 리터럴 오류가 남
+        colors?.length ? arrayOverlaps(reports.colors, colors) : undefined,
         fromOccurredAt ? gte(reports.occurredAt, fromOccurredAt) : undefined,
         toOccurredAt ? lte(reports.occurredAt, toOccurredAt) : undefined,
         cursor
@@ -212,8 +258,8 @@ export function listPublicReports({
     .limit(limit)
 }
 
-/** 홈 지도 마커 상한. 한 화면에 그릴 수 있는 수를 넘기지 않음 */
-const MAP_LIMIT = 500
+/** 홈 지도 마커 상한. 화면에 그리는 수는 묶음이 줄이므로 조회는 넉넉히 가져옴 */
+const MAP_LIMIT = 2000
 
 export type MapListOptions = {
   fromOccurredAt?: Date
@@ -223,6 +269,7 @@ export type MapListOptions = {
 /**
  * 홈 지도 마커. 격자 스냅 좌표만 고르고 exactPoint 는 선택하지 않음
  * 공개 응답은 POL-09 대로 좌표를 내주지 않으므로 서버 컴포넌트에서만 부름
+ * 발견과 실종을 함께 올림. 실종 동물은 길에서 알아보려면 평소에 눈에 익어야 함
  */
 export function listMapReports({
   fromOccurredAt,
@@ -240,6 +287,11 @@ export function listMapReports({
       occurredAt: reports.occurredAt,
       coarsePoint: reports.coarsePoint,
       coarseGridM: reports.coarseGridM,
+      kind: reports.kind,
+      // 보호자가 적어 둔 이름. 실종 신고에만 값이 있고 카드가 이름으로 부르는 데 씀
+      petName: raw<string | null>`(
+        select p.name from ${pets} p where p.id = ${reports}.pet_id
+      )`,
       // 카드에 쓸 첫 사진 경로. 서명 URL 은 호출자가 한 번에 만듦
       photoPath: raw<string | null>`(
         select p.storage_path from ${reportPhotos} p
@@ -250,9 +302,11 @@ export function listMapReports({
     .from(reports)
     .where(
       and(
-        eq(reports.kind, 'sighting'),
         eq(reports.visibility, 'public'),
-        eq(reports.lifecycle, 'active'),
+        // 보호소 입소는 찾아갈 곳이 정해져 지도에 찍지 않음
+        inArray(reports.kind, ['sighting', 'lost']),
+        // 발견은 active, 실종은 searching 이 살아 있는 상태
+        raw`${reports.lifecycle} in ('active', 'searching')`,
         // 지역만 고른 제보는 격자 좌표가 없어 마커로 찍지 않음
         isNotNull(reports.coarsePoint),
         fromOccurredAt ? gte(reports.occurredAt, fromOccurredAt) : undefined,
@@ -653,13 +707,33 @@ export type ReportCommentRow = {
   [K in keyof typeof commentColumns]: (typeof reportComments.$inferSelect)[K]
 }
 
+/** 이어 읽을 자리. 같은 시각에 달린 댓글이 있어 id 까지 함께 봄 */
+export type ReportCommentCursor = { createdAt: Date; id: string }
+
+export type ReportCommentPageOptions = {
+  /** 이 댓글 다음부터. 대화가 아래로 이어지므로 뒤쪽을 읽음 */
+  after?: ReportCommentCursor
+  limit?: number
+}
+
 /** 상세 화면의 댓글. 대화 순서대로 읽히게 오래된 것부터 */
-export function listReportComments(reportId: string, limit = COMMENT_PAGE_SIZE) {
+export function listReportComments(
+  reportId: string,
+  { after, limit = COMMENT_PAGE_SIZE }: ReportCommentPageOptions = {},
+) {
   return db
     .select(commentColumns)
     .from(reportComments)
-    .where(eq(reportComments.reportId, reportId))
-    .orderBy(reportComments.createdAt)
+    .where(
+      and(
+        eq(reportComments.reportId, reportId),
+        after
+          ? raw`(${reportComments.createdAt}, ${reportComments.id}) > (${after.createdAt.toISOString()}::timestamptz, ${after.id})`
+          : undefined,
+      ),
+    )
+    // 같은 시각에 달린 댓글이 쪽을 넘나들지 않도록 id 까지 순서를 못 박음
+    .orderBy(reportComments.createdAt, reportComments.id)
     .limit(limit)
 }
 

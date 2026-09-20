@@ -18,11 +18,14 @@ import {
   insertReportWithPhotos,
   listPublicReports,
   listReportCards,
+  listReportComments,
   releaseIdempotencyKey,
   toggleReportInterest,
   type PublicListCursor,
+  type ReportCommentCursor,
 } from "@rebirth/db";
 import {
+  COMMENT_PAGE_SIZE,
   INITIAL_LIFECYCLE,
   LIST_PAGE_SIZE,
   createComment,
@@ -45,6 +48,7 @@ import {
   hashToken,
   isUuid,
   issueToken,
+  logFailure,
   notFound,
   ok,
   okPrivate,
@@ -88,8 +92,9 @@ export async function attachPhotoUrls<T extends { id: string }>(
         return url ? [[card.id, url] as const] : [];
       }),
     );
-  } catch {
-    // 사진을 못 읽어도 목록은 보여야 함
+  } catch (error) {
+    // 사진을 못 읽어도 목록은 보여야 함. 대신 사진 없는 목록이 왜 나왔는지는 남김
+    logFailure("reports.listPhotos", error);
   }
 
   return rows.map((row) => ({ ...row, photoUrl: byId.get(row.id) ?? null }));
@@ -161,7 +166,7 @@ export async function createReportHandler(
     // 이 경로는 발견 계열만 받으므로 종류를 다시 가리지 않음
     // 저장은 이미 끝났으므로 실패해도 응답을 막지 않음. 후보 화면을 열면 다시 계산됨
     await scoreSightingAgainstLost(saved.id).catch((error) => {
-      console.error("[reports.create] 닮은 신고 점수 계산 실패", error);
+      logFailure("reports.create.score", error);
     });
 
     // 벡터도 저장 뒤에 남김, 게이트웨이가 막혀도 제보는 이미 저장됐음
@@ -173,7 +178,7 @@ export async function createReportHandler(
       conditionTags: input.conditionTags,
       appearance: input.appearance,
     }).catch((error) => {
-      console.error("[reports.create] 벡터 생성 실패", error);
+      logFailure("reports.create.embed", error);
     });
 
     return okPrivate(
@@ -571,6 +576,54 @@ export async function createCommentHandler(
     });
   } catch (error) {
     return serverError("reports.comment", error);
+  }
+}
+
+/* GET /api/reports/[id]/comments  댓글 이어 읽기. 첫 쪽은 상세 화면이 서버에서 그림 */
+
+// 커서는 단 시각과 id 를 한 문자열로 묶음. 내부 형식이라 서명하지 않음
+function decodeCommentCursor(value: string): ReportCommentCursor | undefined {
+  const separator = value.indexOf("_");
+  if (separator < 0) return undefined;
+  const createdAt = new Date(value.slice(0, separator));
+  const id = value.slice(separator + 1);
+  if (Number.isNaN(createdAt.getTime()) || !isUuid(id)) return undefined;
+  return { createdAt, id };
+}
+
+export async function listCommentsHandler(
+  request: Request,
+  context: RouteContext,
+): Promise<Response> {
+  const { id } = await context.params;
+  if (!isUuid(id)) return notFound(REPORT_NOT_FOUND);
+
+  const raw = new URL(request.url).searchParams.get("cursor");
+  const after = raw ? decodeCommentCursor(raw) : undefined;
+  if (raw && !after) {
+    return badRequest("댓글을 처음부터 다시 불러와 주십시오", {
+      cursor: "커서가 올바르지 않습니다",
+    });
+  }
+
+  try {
+    // 한 건 더 읽어 다음 쪽 존재를 판단함. 총 건수 질의를 피함
+    const rows = await listReportComments(id, {
+      ...(after && { after }),
+      limit: COMMENT_PAGE_SIZE + 1,
+    });
+
+    const items = rows.slice(0, COMMENT_PAGE_SIZE);
+    const last = items.at(-1);
+    return ok({
+      items,
+      nextCursor:
+        rows.length > COMMENT_PAGE_SIZE && last
+          ? `${last.createdAt.toISOString()}_${last.id}`
+          : null,
+    });
+  } catch (error) {
+    return serverError("reports.comments", error);
   }
 }
 

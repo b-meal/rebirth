@@ -19,16 +19,38 @@ const nextConfig: NextConfig = {
   // 워크스페이스 패키지를 TS 소스 그대로 소비
   transpilePackages: ["@rebirth/core", "@rebirth/db", "@rebirth/types"],
 
+  // React Compiler. 컴포넌트와 훅을 자동으로 memo 해 손으로 쓴 memo 와 useCallback 없이도 같은 값이면 건너뜀
+  // React 19 자체는 이 일을 하지 않아 따로 켬. Rust 판은 Turbopack 안에서 돌아 Babel 플러그인이 필요 없음
+  reactCompiler: true,
+  experimental: {
+    turbopackRustReactCompiler: true,
+    // inlineCss 는 켜지 않음. SEED 전체 CSS 가 HTML 에 들어가 문서가 62KB 에서 300KB 로 불고 FCP 가 늦어짐
+  },
+
+  // 선검사 모델은 2.6MB 라 한 번 받으면 다시 받지 않게 함
+  // 바뀌면 파일 이름을 바꿔 새로 받게 함. public 은 해시가 붙지 않음
+  async headers() {
+    return [
+      {
+        source: "/models/:path*",
+        headers: [{ key: "cache-control", value: "public, max-age=31536000, immutable" }],
+      },
+    ];
+  },
+
   // 폰에서 같은 공유기의 이 컴퓨터로 붙어 볼 때 쓰는 주소
   // 없으면 dev 서버가 다른 오리진으로 보고 내부 요청을 막아 지도와 목록이 비어 옴
   // 배포는 한 오리진이라 이 목록과 무관함
   // 와일드카드는 점 하나짜리 자리만 맞아 ts.net 같은 여러 단계 호스트는 전체를 적어야 함
+  // trycloudflare 는 pnpm tunnel 이 띄우는 https 주소, 실행할 때마다 앞단이 바뀌어 와일드카드로 둠
   allowedDevOrigins: [
     "192.168.75.130",
     "192.168.75.168",
     "192.168.25.51",
     "192.168.25.2",
+    "192.168.45.139",
     "macbookpro.tail4b2f55.ts.net",
+    "*.trycloudflare.com",
   ],
 };
 

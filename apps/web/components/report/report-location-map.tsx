@@ -149,7 +149,7 @@ export function ReportLocationMap({
       </Box>
 
       <Text textStyle="t2Regular" color="fg.neutralSubtle">
-        제보자와 동물 보호를 위해 {gridMeters}m 격자로 넓힌 위치입니다
+        제보자와 동물 보호를 위해 {gridMeters}m 격자로 넓힌 위치예요
       </Text>
 
       <BottomSheetRoot open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -157,8 +157,8 @@ export function ReportLocationMap({
           <BottomSheetBody>
             <VStack align="stretch" gap="x4">
               <Text textStyle="t3Regular" color="fg.neutralMuted">
-                지금 있는 곳에서 이 지점까지 안내합니다. 격자로 넓힌 위치라 정확한 지점은
-                아닙니다
+                지금 있는 곳에서 이 지점까지 안내해요. 격자로 넓힌 위치라 정확한 지점은
+                아니에요
               </Text>
               <VStack align="stretch" gap="x2">
                 {MAP_PROVIDERS.map((provider) => (

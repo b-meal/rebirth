@@ -14,7 +14,14 @@ import {
 import { ActionButton } from "seed-design/ui/action-button";
 import { Avatar } from "seed-design/ui/avatar";
 
-import { describeAnimal, formatAbsolute, withObject, withSubject } from "@/lib/report-label";
+import {
+  STATUS_LABEL,
+  describeAnimal,
+  formatAbsolute,
+  searchingLabel,
+  withObject,
+  withSubject,
+} from "@/lib/report-label";
 import { Screen, SectionCard, SectionTitle } from "@/components/ui/screen";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 import { AreaSubscribeButton } from "@/components/report/area-subscribe-button";
@@ -32,12 +39,15 @@ import {
 } from "@/components/report/report-comments";
 import { ReportFeatures } from "@/components/report/report-features";
 import { ReportInterestButton } from "@/components/report/report-interest-button";
-import { ReportLocationMap } from "@/components/report/report-location-map";
 import { ReportShelters, type ShelterItem } from "@/components/report/report-shelters";
 import { ReportFlagSheet } from "@/components/report/report-flag-sheet";
 import { ReportShareSheet, useReportShare } from "@/components/share/report-share";
 import { rememberView } from "@/components/mine/recent-views";
 import { LostOwnerPanel } from "./lost-owner-panel";
+import { TrackMap } from "./track-map";
+import { TrackSection } from "./track-section";
+import { TrackTimeline } from "./track-timeline";
+import { useTrack } from "./use-track";
 
 // 실종 신고 상세. 발견 제보와 같은 표에 담기지만 읽는 사람도 다음 행동도 달라 화면을 따로 둠
 // 보호자가 적은 기록이라 AI 초안 표시가 없고, 보는 사람이 할 일은 목격 제보임
@@ -68,21 +78,16 @@ type PublicLostReport = {
 /**
  * 신고 상태를 한 줄로 알림
  * 며칠째 찾고 있는지가 이 화면에서 가장 먼저 읽혀야 할 값이라 배지로 올림
- * 이름을 아는 신고는 이름으로 부름. 가족을 찾았어요 는 발견자 쪽 말이라 쓰지 않음
+ * 어휘는 실종과 찾음 둘로만 두고, 찾음 아닌 종료는 다섯 어휘 밖이라 배지를 빼고 null 을 냄
  */
 function statusBadge(
   lifecycle: string,
   searchingDays: number,
-  name: string | null,
-): { label: string; tone: BadgeTone } {
-  if (lifecycle === "resolved") {
-    return { label: name ? `${name}, 집에 왔어요` : "집으로 돌아왔어요", tone: "informative" };
-  }
-  if (lifecycle === "closed") return { label: "종료된 신고", tone: "neutral" };
-  return {
-    label: searchingDays < 1 ? "오늘 잃어버렸어요" : `찾는 중 ${searchingDays}일째`,
-    tone: "brand",
-  };
+): { label: string; tone: BadgeTone } | null {
+  if (lifecycle === "resolved") return { label: STATUS_LABEL.resolved, tone: "informative" };
+  if (lifecycle === "closed") return null;
+  // searchingDays 는 하한이 1 이라 1 미만 분기는 죽음. 당일 판정은 공용 헬퍼가 함
+  return { label: searchingLabel(searchingDays), tone: "brand" };
 }
 
 export type LostDetailProps = {
@@ -90,11 +95,13 @@ export type LostDetailProps = {
   shareUrl: string;
   /** 마지막 목격을 방금, n일 전으로 줄인 표기, 서버에서 계산해 넘김 */
   sinceLabel: string;
-  /** 마지막 목격부터 오늘까지 지난 날수, 서버에서 계산해 넘겨 렌더마다 흔들리지 않게 함 */
+  /** 며칠째 찾고 있는지, 잃어버린 날이 1일째. 서버에서 계산해 넘겨 렌더마다 흔들리지 않게 함 */
   searchingDays: number;
   /** 격자 스냅 좌표, 좌표가 없는 지역 선택 신고는 null */
   location: { point: LatLng; gridMeters: number } | null;
   comments: ReportComment[];
+  /** 댓글의 다음 쪽. 없으면 첫 쪽이 전부임 */
+  commentCursor: string | null;
   /** 마지막 목격 지점에서 가까운 발견 제보. 이 화면에서 가장 쓸모 있는 이어보기 */
   nearby: ReportCardItem[];
   shelters: ShelterItem[];
@@ -114,6 +121,7 @@ export function LostDetail({
   searchingDays,
   location,
   comments,
+  commentCursor,
   nearby,
   shelters,
   interest,
@@ -121,6 +129,8 @@ export function LostDetail({
   ownership,
 }: LostDetailProps) {
   const [flagOpen, setFlagOpen] = useState(false);
+  // 지도와 설명이 같은 응답을 쓰게 조회를 화면에서 한 번만 함
+  const { status: trackStatus, track } = useTrack(report.id);
   const [shareOpen, setShareOpen] = useState(false);
 
   // 마이페이지의 최근 본 목록에 남김
@@ -128,15 +138,23 @@ export function LostDetail({
     rememberView(report.id);
   }, [report.id]);
 
-  const { options: shareOptions, cardReady } = useReportShare({
+  const { options: shareOptions, cardReady, armCard } = useReportShare({
     reportId: report.id,
     shareUrl,
     areaName: report.areaName,
+    kind: "lost",
+    petName: report.pet?.name ?? null,
+    prefetch: false,
   });
 
+  // 시트를 여는 모든 길이 지나는 자리, 카드는 여기서 한 번만 받음
+  const openShare = (next: boolean) => {
+    if (next) armCard();
+    setShareOpen(next);
+  };
 
   const name = report.pet?.name ?? null;
-  const status = statusBadge(report.lifecycle, searchingDays, name);
+  const status = statusBadge(report.lifecycle, searchingDays);
   const searching = report.lifecycle === "searching";
   const mine = ownership.mine;
   // 보호자가 적어 둔 품종은 아는 값이라 그대로 씀. AI 가 붙인 값만 계열 추정으로 부름
@@ -147,14 +165,16 @@ export function LostDetail({
       <DetailPhotoHero
         reportId={report.id}
         alt={name ? `잃어버린 ${name} 사진` : "잃어버린 동물 사진"}
-        onShare={() => setShareOpen(true)}
+        onShare={() => openShare(true)}
       />
 
       <VStack align="stretch" gap="x2" pb="x4">
         <SectionCard gap="x3">
-          <HStack gap="x1_5" wrap>
-            <Badge label={status.label} tone={status.tone} />
-          </HStack>
+          {status ? (
+            <HStack gap="x1_5" wrap>
+              <Badge label={status.label} tone={status.tone} />
+            </HStack>
+          ) : null}
 
           <ReportBadges
             animalType={report.animalType}
@@ -231,10 +251,23 @@ export function LostDetail({
             </Text>
           ) : null}
           {location ? (
-            <ReportLocationMap
-              point={location.point}
+            <TrackMap
+              origin={location.point}
               gridMeters={location.gridMeters}
               destinationName={report.areaName ?? "마지막 목격 위치"}
+              nodes={searching ? (track?.nodes ?? []) : []}
+              prediction={searching ? (track?.prediction ?? null) : null}
+            />
+          ) : null}
+          {/* 지도의 점과 번호가 어느 지역 어느 시각인지는 글로 한 번 더 읽어야 남음 */}
+          {location && searching && track ? (
+            <TrackTimeline
+              origin={{
+                areaName: report.areaName,
+                occurredAt: report.occurredAt,
+                point: location.point,
+              }}
+              nodes={track.nodes}
             />
           ) : null}
           {report.areaName ? (
@@ -245,6 +278,12 @@ export function LostDetail({
             />
           ) : null}
         </SectionCard>
+
+        {/* 마지막으로 본 곳 바로 다음이 다음에 갈 곳이라 경로를 이어 붙임 */}
+        {/* 내 신고인지와 무관하게 보여 이웃도 어디를 찾을지 알게 함 */}
+        {location && searching ? (
+          <TrackSection status={trackStatus} track={track} />
+        ) : null}
 
         {/* 실종 신고에서 보호소는 맡길 곳이 아니라 찾아볼 곳임 */}
         <ReportShelters
@@ -261,7 +300,7 @@ export function LostDetail({
                 <Icon svg={<IconChevronRightLine />} size="x4" color="fg.neutralSubtle" />
               </Link>
             </HStack>
-            <Box className="rebirth-scroll-row" mx="-x4" px="x4">
+            <Box className="rebirth-scroll-row rebirth-bleed">
               <HStack gap="x3" align="flex-start">
                 {nearby.map((item) => (
                   <Box key={item.id} width={NEARBY_CARD_WIDTH} flexShrink={0}>
@@ -274,14 +313,22 @@ export function LostDetail({
         ) : null}
 
         <SectionCard gap="x4">
-          <SectionTitle>댓글 {comments.length}</SectionTitle>
+          {/* 첫 쪽이 다 찼으면 지금 센 수가 전부가 아니라 + 를 붙임 */}
+          <SectionTitle>
+            댓글 {comments.length}
+            {commentCursor ? "+" : ""}
+          </SectionTitle>
           {/* 목격담이 모이는 자리라 무엇을 적어야 하는지 먼저 알림 */}
           <Text textStyle="t3Regular" color="fg.neutralMuted">
             {mine
               ? "이웃이 본 곳을 여기에 적어 줘요"
               : `${name ? `${withObject(name)}` : "비슷한 동물을"} 봤다면 언제 어디서 봤는지 적어 주세요`}
           </Text>
-          <ReportComments comments={comments} />
+          <ReportComments
+            reportId={report.id}
+            comments={comments}
+            nextCursor={commentCursor}
+          />
           <CommentComposer reportId={report.id} />
         </SectionCard>
 
@@ -320,7 +367,7 @@ export function LostDetail({
         {/* 내 신고에 내가 목격 제보를 하지는 않음. 관리 줄이 위에서 할 일을 맡음 */}
         {/* 이미 찾은 신고에 목격 제보를 권하면 헛걸음이 됨 */}
         {mine ? (
-          <ActionButton variant="neutralWeak" size="medium" onClick={() => setShareOpen(true)}>
+          <ActionButton variant="neutralWeak" size="medium" onClick={() => openShare(true)}>
             <Icon svg={<IconAndroidshareLine />} />
             이웃에게 알리기
           </ActionButton>
@@ -340,7 +387,7 @@ export function LostDetail({
 
       <ReportShareSheet
         open={shareOpen}
-        onOpenChange={setShareOpen}
+        onOpenChange={openShare}
         options={shareOptions}
         cardReady={cardReady}
       />

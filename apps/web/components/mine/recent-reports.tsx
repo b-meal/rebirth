@@ -37,10 +37,10 @@ export function RecentReports() {
     return (
       <VStack align="stretch" gap="x1">
         <Text textStyle="t4Regular" color="fg.neutralMuted">
-          최근에 본 제보가 없습니다
+          최근에 본 제보가 없어요
         </Text>
         <Text textStyle="t3Regular" color="fg.neutralSubtle">
-          지도에서 제보를 열어 보면 여기에 쌓입니다
+          지도에서 제보를 열어 보면 여기에 쌓여요
         </Text>
       </VStack>
     );

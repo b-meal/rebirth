@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon, Text, VStack } from "@seed-design/react";
 import { IconAndroidshareLine, IconPaperclipLine, IconPictureLine } from "@karrotmarket/react-monochrome-icon";
 import { ActionButton } from "seed-design/ui/action-button";
@@ -11,8 +11,9 @@ import {
 } from "seed-design/ui/bottom-sheet";
 import { Snackbar, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
-// 제보를 공유하는 방법을 한곳에 모음. 화면마다 배치는 다르지만 동작과 문구는 같아야 함
-// 인스타그램에 요청을 보내지 않음. OS 공유 시트에 파일을 넘기면 그다음은 그 앱이 함
+import { withObject } from "@/lib/report-label";
+
+// 배치는 달라도 동작과 문구가 같아야 하는 공유 경로, OS 공유 시트에 파일만 넘김
 
 export type ShareOption = {
   key: string;
@@ -26,30 +27,63 @@ export type UseReportShareInput = {
   reportId: string;
   shareUrl: string;
   areaName: string | null;
+  /** 실종과 발견은 공유 문구가 다름, 생략하면 발견 쪽 문구 */
+  kind?: "lost" | "sighting";
+  /** 보호자가 적어 둔 이름, 있으면 이름으로 부름 */
+  petName?: string | null;
+  /** 공유가 주 동작인 화면만 참, 상세는 시트를 열 때 armCard 로 부름 */
+  prefetch?: boolean;
 };
 
-export function useReportShare({ reportId, shareUrl, areaName }: UseReportShareInput) {
+/** 내려받기 갈래, 파일 공유 시트가 없는 데스크톱에서만 씀 */
+function downloadCard(file: File): boolean {
+  try {
+    const url = URL.createObjectURL(file);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = file.name;
+    anchor.click();
+    // 즉시 해제하면 사파리가 내려받기를 시작하기 전에 주소가 사라짐
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function useReportShare({
+  reportId,
+  shareUrl,
+  areaName,
+  kind = "sighting",
+  petName = null,
+  prefetch = true,
+}: UseReportShareInput) {
   const snackbar = useSnackbarAdapter();
   // 클릭 안에서 fetch 를 기다리면 사파리가 공유 시트를 막으므로 미리 받아 둠
   const [card, setCard] = useState<File | null>(null);
+  const armed = useRef(false);
 
-  useEffect(() => {
-    let alive = true;
+  // 상세를 열기만 한 사람에게 카드 렌더를 돌리지 않는 비용 절감
+  const armCard = useCallback(() => {
+    if (armed.current) return;
+    armed.current = true;
     void (async () => {
       try {
         const response = await fetch(`/r/${reportId}/card?ratio=story`);
         if (!response.ok) return;
         const blob = await response.blob();
-        if (!alive) return;
         setCard(new File([blob], "dasijip.png", { type: blob.type || "image/png" }));
       } catch {
         // 카드를 못 받아도 링크 공유는 되므로 화면을 막지 않음
       }
     })();
-    return () => {
-      alive = false;
-    };
   }, [reportId]);
+
+  useEffect(() => {
+    // 공유가 주 동작인 화면만 첫 그림에서 바로 받아 둠
+    if (prefetch) armCard();
+  }, [prefetch, armCard]);
 
   const notify = useCallback(
     (variant: "positive" | "critical", message: string) => {
@@ -66,6 +100,16 @@ export function useReportShare({ reportId, shareUrl, areaName }: UseReportShareI
     void fetch(`/api/reports/${reportId}/share`, { method: "POST" });
   }, [reportId]);
 
+  // 실종은 보호자가 주인공이라 이름을 아는 신고를 이름으로 부름
+  const shareTitle = kind === "lost" ? "다시집 실종 신고" : "다시집 제보";
+  const where = areaName ?? "위치 미확인";
+  const shareText =
+    kind === "lost"
+      ? petName
+        ? `${where}에서 ${withObject(petName)} 찾고 있어요`
+        : `${where}에서 반려동물을 찾고 있어요`
+      : `${where}에서 목격된 발견동물 제보예요`;
+
   const copyLink = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(shareUrl);
@@ -76,33 +120,39 @@ export function useReportShare({ reportId, shareUrl, areaName }: UseReportShareI
   }, [shareUrl, notify]);
 
   const shareCard = useCallback(async () => {
-    if (!card || !navigator.canShare?.({ files: [card] })) {
-      notify("critical", "이 브라우저는 이미지 공유를 지원하지 않아요. 링크로 공유해 주세요");
+    if (card && navigator.canShare?.({ files: [card] })) {
+      countShare();
+      // 링크 스티커에 붙여넣게 먼저 복사, 기다리면 공유 시트가 막힘
+      void navigator.clipboard.writeText(shareUrl).catch(() => undefined);
+      try {
+        await navigator.share({ files: [card], title: shareTitle });
+      } catch {
+        // 사용자가 취소하면 아무것도 하지 않음
+      }
       return;
     }
-    countShare();
-    // 링크 스티커에 붙여넣을 수 있게 먼저 복사해 둠. 기다리지 않아야 공유 시트가 열림
-    void navigator.clipboard.writeText(shareUrl).catch(() => undefined);
-    try {
-      await navigator.share({ files: [card], title: "다시집 제보" });
-    } catch {
-      // 사용자가 취소하면 아무것도 하지 않음
+    // 데스크톱은 파일 공유 시트가 없어 카드를 내려 주고 올리는 일은 사람에게 맡김
+    if (card && downloadCard(card)) {
+      countShare();
+      void navigator.clipboard.writeText(shareUrl).catch(() => undefined);
+      notify("positive", "내려받은 카드를 인스타그램에 올려 주세요, 링크는 복사해 뒀어요");
+      return;
     }
-  }, [card, shareUrl, countShare, notify]);
+    notify("critical", "이 브라우저는 이미지 공유를 지원하지 않아요. 링크로 공유해 주세요");
+  }, [card, shareUrl, shareTitle, countShare, notify]);
 
   const shareLink = useCallback(async () => {
     countShare();
-    const text = `${areaName ?? "위치 미확인"}에서 목격된 발견동물 제보예요`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: "다시집 제보", text, url: shareUrl });
+        await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
       } catch {
         // 사용자가 취소하면 아무것도 하지 않음
       }
       return;
     }
     await copyLink();
-  }, [areaName, shareUrl, countShare, copyLink]);
+  }, [shareTitle, shareText, shareUrl, countShare, copyLink]);
 
   const options: ShareOption[] = [
     {
@@ -128,7 +178,7 @@ export function useReportShare({ reportId, shareUrl, areaName }: UseReportShareI
     },
   ];
 
-  return { options, cardReady: card !== null };
+  return { options, cardReady: card !== null, armCard };
 }
 
 export type ReportShareSheetProps = {

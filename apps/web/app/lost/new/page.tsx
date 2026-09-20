@@ -1,3 +1,4 @@
+import { logFailure } from "@rebirth/core/http";
 import { createSignedUrls } from "@rebirth/core/storage";
 import { listPetPhotosFor, listPets } from "@rebirth/db";
 
@@ -30,8 +31,9 @@ async function photoUrlsByPet(petIds: string[]): Promise<Map<string, string[]>> 
       if (!url) continue;
       byPet.set(row.petId, [...(byPet.get(row.petId) ?? []), url]);
     }
-  } catch {
+  } catch (error) {
     // 사진을 못 읽어도 고르는 줄은 그대로 씀
+    logFailure("lost.petPhotos", error);
   }
   return byPet;
 }
@@ -55,8 +57,9 @@ async function loadPets(): Promise<LostFormPet[]> {
       note: row.note,
       photoUrls: photos.get(row.id) ?? [],
     }));
-  } catch {
+  } catch (error) {
     // 목록을 못 읽어도 신고는 손으로 적어 마칠 수 있어야 함
+    logFailure("lost.pets", error);
     return [];
   }
 }

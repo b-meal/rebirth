@@ -33,8 +33,9 @@ export const careSituation = z.enum(['roaming', 'in_care', 'unknown'], {
   error: '보호 상황을 선택해 주십시오',
 })
 
-// SNS 로그인 제공자. Supabase Auth 의 provider 문자열과 같은 값
-export const authProvider = z.enum(['google', 'kakao'], {
+// 로그인 제공자. Supabase Auth 의 provider 문자열과 같은 값
+// anonymous 는 진입 시 자동으로 만드는 익명 계정. 심사와 시연에서 SNS 로그인을 대신함
+export const authProvider = z.enum(['google', 'kakao', 'anonymous'], {
   error: '지원하지 않는 로그인 방식입니다',
 })
 // 문의·권리 요청 분류. WEB-24
@@ -72,6 +73,21 @@ export const consentKind = z.enum(
 // 업로드 파일 검증 상태. 저품질·다중동물은 AI 경고라 여기 넣지 않음
 export const uploadStatus = z.enum(['processing', 'ready', 'failed'], {
   error: '업로드 상태가 올바르지 않습니다',
+})
+
+// 1단계 선검사 판정. unknown 은 판정을 못 받은 것이고 화면은 아무 말도 하지 않음
+export const precheckVerdict = z.enum(['animal', 'not-animal', 'unknown'], {
+  error: '선검사 판정이 올바르지 않습니다',
+})
+
+// 그 판정을 낸 곳. 기기 모델과 서버 중 하나
+export const precheckSource = z.enum(['device', 'server'], {
+  error: '선검사 판정 출처가 올바르지 않습니다',
+})
+
+// 서버 기록의 심각도
+export const errorLevel = z.enum(['failure', 'notice'], {
+  error: '기록 심각도가 올바르지 않습니다',
 })
 
 // 위치 출처. POL-08. manual_area 는 정확 좌표가 없어 거리 점수를 받지 않음
@@ -143,6 +159,9 @@ export type SupportStatus = z.infer<typeof supportStatus>
 export type LegalDocType = z.infer<typeof legalDocType>
 export type ConsentKind = z.infer<typeof consentKind>
 export type UploadStatus = z.infer<typeof uploadStatus>
+export type PrecheckVerdict = z.infer<typeof precheckVerdict>
+export type PrecheckSource = z.infer<typeof precheckSource>
+export type ErrorLevel = z.infer<typeof errorLevel>
 
 // kind 별로 허용되는 lifecycle. DB CHECK 제약과 같은 규칙
 export const LIFECYCLE_BY_KIND = {

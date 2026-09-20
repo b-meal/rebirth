@@ -13,7 +13,7 @@ import { encodeFeedCursor, readFeedPage } from "./feed-page";
 
 export const metadata: Metadata = {
   title: "커뮤니티",
-  description: "이웃과 발견동물 이야기를 나누는 자리입니다",
+  description: "이웃과 발견동물 이야기를 나누는 자리예요",
 };
 
 // 새 글과 댓글이 즉시 반영돼야 해 캐시하지 않음

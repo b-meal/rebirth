@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import { findUserProfile, type UserProfile } from "@rebirth/db";
+import { logFailure } from "@rebirth/core/http";
 import { syncSignedInUser } from "@rebirth/core/auth/sync";
 
 import { isAuthConfigured } from "@/lib/supabase/config";
@@ -44,5 +45,12 @@ async function recoverProfile(): Promise<UserProfile | undefined> {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return undefined;
-  return syncSignedInUser(data.user);
+  try {
+    return await syncSignedInUser(data.user);
+  } catch (error) {
+    // 프로필을 못 남겨도 화면은 비로그인으로 그림. 여기서 던지면 모든 화면이 함께 죽음
+    // 로그인했는데 계속 비로그인으로 보이는 문제가 여기서 조용히 시작됨
+    logFailure("auth.recoverProfile", error);
+    return undefined;
+  }
 }

@@ -1,3 +1,4 @@
+import { logFailure } from "../http/log";
 import "server-only";
 
 import { listUnreviewedPairs } from "@rebirth/db";
@@ -52,7 +53,7 @@ export async function reviewMatchHandler(request: Request): Promise<Response> {
     return okPrivate(outcome);
   } catch (error) {
     if (error instanceof ReviewError) {
-      console.error(`[ai] 재평가 중단 (${error.kind})`, error.message);
+      logFailure("ai.review", error.message, { kind: error.kind });
       return serviceUnavailable(error.message);
     }
     return serverError("ai-review", error);

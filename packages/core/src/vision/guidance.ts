@@ -16,16 +16,18 @@ export type AnalyzeAdvice =
   | { state: "draft"; message: null }
   // 동물이 안 보임. 1단계로 돌려보냄
   | { state: "not-animal"; message: string }
-  // 사진이 어두워 초안이 부실함. 진행과 재촬영 둘 다 열어 둠
+  // 동물은 보이지만 초안이 부실함. 종류를 못 정했거나 어두운 사진. 진행과 재촬영 둘 다 열어 둠
   | { state: "low-quality"; message: string };
 
 const NOT_ANIMAL =
   "동물이 보이지 않아요. 동물이 담긴 사진으로 다시 찍어 주세요";
 const LOW_QUALITY =
-  "사진이 어두워 자동 정리가 어려워요. 그대로 진행하거나 다시 찍을 수 있어요";
+  "사진이 어둡거나 멀어 자동 정리가 어려워요. 그대로 진행하거나 다시 찍을 수 있어요";
 
 export function adviseFromResult(result: AnalyzeResult): AnalyzeAdvice {
-  if (result.animalType === "unknown") {
+  // 되돌리는 것은 동물이 없다고 한 때뿐. 종류를 못 정한 unknown 은 1단계 선검사처럼 통과 쪽으로 기울임
+  // false 와 엄격히 비교해 이 필드가 없던 옛 작업 행을 재조회해도 되돌리지 않음
+  if (result.animalPresent === false) {
     return { state: "not-animal", message: NOT_ANIMAL };
   }
   if (needsRetake(result)) {

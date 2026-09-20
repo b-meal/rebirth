@@ -1,6 +1,6 @@
 "use client";
 
-import type { LatLng } from "@rebirth/core/location/geo";
+import { distanceKm, type LatLng } from "@rebirth/core/location/geo";
 import { Map as MapLibreMap, setWorkerUrl } from "maplibre-gl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -15,6 +15,9 @@ const DEFAULT_CENTER: LatLng = { lat: 37.5665, lng: 126.978 };
 
 // 390px 폭에서 반경 3km 가 화면에 들어오는 축척
 const DEFAULT_ZOOM = 13;
+
+// 지도가 뜨기 전에 쓸 반경, DEFAULT_ZOOM 에서 화면에 들어오는 거리
+const DEFAULT_RADIUS_KM = 3;
 
 export type MapStatus = "loading" | "ready" | "error";
 
@@ -34,6 +37,8 @@ export type MapState = {
   error: string | null;
   // 지도 중심, 근처 목록과 지역명 조회 기준
   center: LatLng;
+  // 중심에서 화면 위쪽 끝까지의 거리, 근처 목록의 범위
+  radiusKm: number;
   moveTo: (
     point: LatLng,
     options?: { animate?: boolean; zoom?: number; offset?: [number, number] },
@@ -48,6 +53,8 @@ export function useMap(options: MapOptions = {}): MapState {
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [center, setCenter] = useState<LatLng>(config.center ?? DEFAULT_CENTER);
+  // 화면 위쪽 끝까지의 거리, 축척을 바꾸면 근처의 뜻도 함께 바뀜
+  const [radiusKm, setRadiusKm] = useState<number>(DEFAULT_RADIUS_KM);
 
   // 스타일 로드가 끝나기 전 moveTo 가 오면 상태만 바뀌므로 생성 시점에 최신 값을 읽음
   const latest = useRef(center);
@@ -69,16 +76,25 @@ export function useMap(options: MapOptions = {}): MapState {
       attributionControl: config.attribution === false ? false : { compact: true },
     });
 
-    const handleMove = () => {
+    const readView = () => {
       const next = instance.getCenter();
-      setCenter({ lat: next.lat, lng: next.lng });
+      const point = { lat: next.lat, lng: next.lng };
+      setCenter(point);
+      // getBounds 는 덮개에 가린 데까지 세는 컨테이너 전체라 중심과 기준이 달라짐
+      // 검색창과 시트를 뺀 구간의 모서리까지 재야 지도에 보이는 핀이 목록에서 빠지지 않음
+      const pad = instance.getPadding();
+      const { width } = instance.getContainer().getBoundingClientRect();
+      const corner = instance.unproject([width, pad.top ?? 0]);
+      setRadiusKm(distanceKm(point, { lat: corner.lat, lng: corner.lng }));
     };
+    const handleMove = readView;
     let loaded = false;
     const handleReady = () => {
       loaded = true;
       instance.resize();
       // 로드 전에 moveTo 가 왔으면 상태에만 남아 있어 여기서 한 번 맞춤
       instance.jumpTo({ center: [latest.current.lng, latest.current.lat] });
+      readView();
       // 손조작이 없는 지도는 출처 표기가 스스로 접히지 않아 한 번 접어 둠
       if (config.interactive === false) {
         container
@@ -90,7 +106,7 @@ export function useMap(options: MapOptions = {}): MapState {
     // 로드 뒤의 타일 실패는 지도를 접을 이유가 아니라 첫 로드 실패만 오류로 봄
     const handleError = () => {
       if (loaded) return;
-      setError("지도를 불러오지 못했습니다. 장소를 검색해 위치를 골라 주십시오");
+      setError("지도를 불러오지 못했어요. 장소를 검색해 위치를 골라 주세요");
     };
 
     instance.on("load", handleReady);
@@ -131,6 +147,7 @@ export function useMap(options: MapOptions = {}): MapState {
     status: error ? "error" : map ? "ready" : "loading",
     error,
     center,
+    radiusKm,
     moveTo,
     map,
   };

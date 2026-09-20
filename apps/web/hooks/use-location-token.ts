@@ -14,7 +14,7 @@ export type LocationTokenState = {
   clear: () => void;
 };
 
-const FAILED = "위치를 확인하지 못했습니다. 지역을 다시 골라 주십시오";
+const FAILED = "위치를 확인하지 못했어요. 지역을 다시 골라 주세요";
 
 export function useLocationToken(): LocationTokenState {
   const [status, setStatus] = useState<LocationTokenState["status"]>("idle");

@@ -1,3 +1,4 @@
+import { logNotice } from "../http/log";
 import "server-only";
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -86,6 +87,7 @@ const MOCK_LATENCY_MS = 800;
 
 // 크레딧 없이 화면을 돌려보기 위한 고정 초안. ANALYZE_MOCK=1 일 때만 씀
 const MOCK_RESULT: AnalyzeResult = {
+  animalPresent: true,
   animalType: "dog",
   // 품종은 breedGuess 로 따로 들고 appearance 에 확정 표현을 섞지 않음
   breedGuess: "말티즈",
@@ -105,6 +107,7 @@ const MOCK_RESULT: AnalyzeResult = {
 const MOCK_VARIANTS: Record<string, Partial<AnalyzeResult>> = {
   "1": {},
   "not-animal": {
+    animalPresent: false,
     animalType: "unknown",
     breedGuess: null,
     appearance: "사진에서 동물을 찾지 못함",
@@ -148,7 +151,7 @@ export async function analyzePhoto({
 
   if (analyzeMockEnabled()) {
     // ponytail: 고정 응답. 실제 모델 연결은 크레딧 충전 뒤에 확인해야 함
-    console.warn("[analyze] ANALYZE_MOCK 이 켜져 있어 더미 초안을 돌려줍니다");
+    logNotice("analyze.mock", "ANALYZE_MOCK 이 켜져 있어 더미 초안을 돌려줍니다");
     await new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS));
     if (process.env.ANALYZE_MOCK === MOCK_FAIL) {
       throw new VisionError("api", "ANALYZE_MOCK=fail 로 일부러 낸 오류입니다");

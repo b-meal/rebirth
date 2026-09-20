@@ -4,12 +4,15 @@ import { authProvider, type AuthProvider } from "@rebirth/types";
 // 로그인 화면과 콜백이 함께 따라옴. 화면이 제공자를 하드코딩하지 않게 하는 자리
 // server-only 를 import 하지 않음. 순수 데이터라 화면에서도 그대로 씀
 
+/** 버튼으로 시작하는 SNS 제공자. anonymous 는 자동 로그인 전용이라 화면에 버튼을 두지 않음 */
+export type SnsProvider = Exclude<AuthProvider, "anonymous">;
+
 export type ProviderDescriptor = {
-  id: AuthProvider;
+  id: SnsProvider;
   /** 버튼에 들어가는 문구. "카카오로 계속하기" 처럼 계속 진행을 뜻하는 말로 둠 */
   label: string;
   /** Supabase Auth 에 넘기는 제공자 이름 */
-  supabaseProvider: AuthProvider;
+  supabaseProvider: SnsProvider;
   /**
    * 추가로 요청할 권한. 카카오는 동의 항목을 앱에서 켜야 프로필이 넘어옴
    * 이메일을 필수 동의로 두지 않아 거절해도 로그인은 성립함
@@ -40,5 +43,6 @@ export function findProvider(
 ): ProviderDescriptor | undefined {
   if (!value) return undefined;
   const parsed = authProvider.safeParse(value);
-  return parsed.success ? BY_ID.get(parsed.data) : undefined;
+  if (!parsed.success || parsed.data === "anonymous") return undefined;
+  return BY_ID.get(parsed.data);
 }

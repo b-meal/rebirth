@@ -1,3 +1,4 @@
+import { logFailure } from "../http/log";
 import "server-only";
 
 import {
@@ -33,7 +34,7 @@ const ADMIN_HEADER = "x-admin-token";
 export function requireAdmin(request: Request): Response | null {
   const expected = process.env.ADMIN_API_TOKEN;
   if (!expected) {
-    console.error("[admin] ADMIN_API_TOKEN 이 설정되지 않아 요청을 거절함");
+    logFailure("admin.auth", "ADMIN_API_TOKEN 이 설정되지 않아 요청을 거절함");
     return unauthorized("운영 API 가 설정되지 않았습니다");
   }
 

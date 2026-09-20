@@ -1,7 +1,7 @@
 "use client";
 
 import type { AnalyzeResult, CareSituation } from "@rebirth/types";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { PhotoItem } from "@/lib/image";
 
@@ -104,6 +104,8 @@ export type UseReportDraft = {
   applyAiDraft: (result: AnalyzeResult, model: string, analyzedAt: string) => void;
   // 사용자 수정. 초안과 다른 값이면 editedFields 에 기록
   edit: <K extends keyof ReportDraft>(key: K, value: ReportDraft[K]) => void;
+  // 사진이 바뀌면 이전 초안 원본과 수정 기록을 버림. 남기면 새 초안이 옛 수정에 막힘
+  clearAi: () => void;
   reset: () => void;
 };
 
@@ -113,9 +115,13 @@ export function useReportDraft(): UseReportDraft {
   const [draft, setDraft] = useState<ReportDraft>(emptyDraft);
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
 
+  // 복원보다 저장이 먼저 돌면 빈 초안이 저장값을 덮어써 복원이 늘 무효가 됨. 복원 뒤부터 저장
+  const hydrated = useRef(false);
+
   const restore = useCallback(() => {
     const stored = readStored();
     if (stored) setDraft(stored);
+    hydrated.current = true;
   }, []);
 
   useEffect(() => {
@@ -125,6 +131,7 @@ export function useReportDraft(): UseReportDraft {
   }, [restore]);
 
   useEffect(() => {
+    if (!hydrated.current) return;
     try {
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
     } catch {
@@ -178,6 +185,17 @@ export function useReportDraft(): UseReportDraft {
     [],
   );
 
+  // 필드 값은 두어 카드가 비지 않게 하고, 새 초안이 오면 applyAiDraft 가 전부 덮어씀
+  const clearAi = useCallback(() => {
+    setDraft((prev) => ({
+      ...prev,
+      aiRaw: null,
+      aiModel: null,
+      aiAnalyzedAt: null,
+      editedFields: [],
+    }));
+  }, []);
+
   const reset = useCallback(() => {
     setDraft(emptyDraft());
     setPhotos([]);
@@ -188,5 +206,5 @@ export function useReportDraft(): UseReportDraft {
     }
   }, []);
 
-  return { draft, photos, setPhotos, applyAiDraft, edit, reset };
+  return { draft, photos, setPhotos, applyAiDraft, edit, clearAi, reset };
 }

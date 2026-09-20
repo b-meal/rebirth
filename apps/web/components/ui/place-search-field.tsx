@@ -42,7 +42,7 @@ export function PlaceSearchField({
   onPick,
   placeholder = "지하철역, 건물, 주소로 검색",
   maxListHeight = MAX_LIST_HEIGHT,
-  emptyMessage = "검색 결과가 없습니다",
+  emptyMessage = "검색 결과가 없어요",
 }: PlaceSearchFieldProps) {
   // 결과가 없거나 찾는 중에도 열어 둠, 아무것도 안 뜨면 고장난 것으로 보임
   const open = search.loading || search.empty || search.items.length > 0 || Boolean(search.error);

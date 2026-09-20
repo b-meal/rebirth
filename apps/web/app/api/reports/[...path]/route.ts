@@ -4,6 +4,7 @@ import {
   createFlagHandler,
   getReportHandler,
   getReportPhotoHandler,
+  listCommentsHandler,
   shareReportHandler,
   toggleInterestHandler,
 } from "@rebirth/core/reports";
@@ -21,6 +22,7 @@ async function interest(request: Request, context: RouteContext): Promise<Respon
 export const { GET, POST } = createCatchAll({
   GET: {
     ":id": getReportHandler,
+    ":id/comments": listCommentsHandler,
     ":id/photo": getReportPhotoHandler,
   },
   POST: {

@@ -1,9 +1,9 @@
 import 'server-only'
 
-import { and, desc, eq, gte, lte, ne, sql as raw } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, lte, ne, or, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
-import { matchScores, reportPhotos, reports } from '../schema'
+import { matchScores, pets, reportPhotos, reports } from '../schema'
 
 /* 실종 신고와 후보 조회. 연락처를 받지 않고 토큰으로만 접근 */
 
@@ -90,8 +90,111 @@ export async function findLostForSighting(input: {
 }
 
 /**
- * 점수 계산에 쓸 실종 신고 값. 격자 좌표를 포함해 서버 안에서만 씀
+ * 이 발견 제보와 견줄 공개 실종 신고. 로그인하지 않은 사람이 둘러볼 때 씀
+ * matchAlert 로 거르지 않음. 그 값은 알림함 스위치라 공개 노출의 뜻이 아니고
+ * 알림을 꺼 둔 보호자가 목록에서 사라지면 찾을 기회만 줄어듦
+ * 내주는 값은 제보 상세가 이미 공개하는 항목뿐. 정확 좌표는 읽지 않음
+ */
+export function findPublicLostForSighting(input: {
+  sightingId: string
+  animalType: (typeof reports.animalType.enumValues)[number]
+  point: { lat: number; lng: number } | null
+  occurredAt: Date
+  limit?: number
+}) {
+  const since = new Date(
+    input.occurredAt.getTime() - CANDIDATE_WINDOW_DAYS * 24 * 3_600_000,
+  )
+  const until = new Date(input.occurredAt.getTime() + 24 * 3_600_000)
+
+  const withinRadius = input.point
+    ? raw`ST_DWithin(${reports.coarsePoint}::geography, ST_SetSRID(ST_MakePoint(${input.point.lng}, ${input.point.lat}), 4326)::geography, ${CANDIDATE_RADIUS_M})`
+    : undefined
+
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      colors: reports.colors,
+      size: reports.size,
+      collar: reports.collar,
+      injury: reports.injury,
+      earTip: reports.earTip,
+      coarsePoint: reports.coarsePoint,
+      locationSource: reports.locationSource,
+      areaName: reports.areaName,
+      occurredAt: reports.occurredAt,
+      // 이름은 찾는 데 쓰라고 공개하는 값. 제보 상세도 같은 값을 보여 줌
+      petName: raw<string | null>`(
+        select p.name from ${pets} p where p.id = ${reports}.pet_id
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.kind, 'lost'),
+        eq(reports.visibility, 'public'),
+        eq(reports.lifecycle, 'searching'),
+        ne(reports.id, input.sightingId),
+        input.animalType === 'unknown'
+          ? undefined
+          : raw`(${reports.animalType} = ${input.animalType} or ${reports.animalType} = 'unknown')`,
+        gte(reports.occurredAt, since),
+        lte(reports.occurredAt, until),
+        withinRadius,
+      ),
+    )
+    .orderBy(desc(reports.occurredAt))
+    .limit(input.limit ?? 50)
+}
+
+/**
+ * 이 계정이 낸 실종 신고. 발견 제보 하나와 견주려고 읽음
+ * 후보 모집과 달리 반경과 기간으로 좁히지 않음
+ * 내 신고는 몇 건뿐이라 미리 걸러 내면 왜 빠졌는지 알 수 없는 빈 화면이 됨
+ * 끝난 신고는 뺌. 이미 만난 아이를 다시 견줄 대상으로 올리지 않음
+ */
+export function findMyLostForSighting(input: { userId: string; limit?: number }) {
+  return db
+    .select({
+      id: reports.id,
+      animalType: reports.animalType,
+      colors: reports.colors,
+      size: reports.size,
+      collar: reports.collar,
+      injury: reports.injury,
+      earTip: reports.earTip,
+      coarsePoint: reports.coarsePoint,
+      locationSource: reports.locationSource,
+      areaName: reports.areaName,
+      occurredAt: reports.occurredAt,
+      // 적어 둔 이름. 보호자 화면이라 흰색 소형견 대신 이름으로 부름
+      petName: raw<string | null>`(
+        select p.name from ${pets} p where p.id = ${reports}.pet_id
+      )`,
+    })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.reporterId, input.userId),
+        eq(reports.kind, 'lost'),
+        eq(reports.lifecycle, 'searching'),
+        ne(reports.visibility, 'deleted'),
+      ),
+    )
+    .orderBy(desc(reports.occurredAt))
+    .limit(input.limit ?? 20)
+}
+
+export type MyLostForSighting = Awaited<
+  ReturnType<typeof findMyLostForSighting>
+>[number]
+
+/**
+ * 점수 계산에 쓸 제보 값. 격자 좌표를 포함해 서버 안에서만 씀
  * 응답에 그대로 넣지 않음. 호출부가 점수만 뽑아 쓰는 것을 전제로 함
+ * 공개 제보만 돌려줌. 숨김·삭제 제보가 match 화면에서 200 이면 상세 404 와 대조해 존재를 알 수 있고
+ * 삭제된 위치로 후보 계산이 계속 돌게 됨
  */
 export function findReportForScoring(id: string) {
   return db
@@ -109,7 +212,7 @@ export function findReportForScoring(id: string) {
       occurredAt: reports.occurredAt,
     })
     .from(reports)
-    .where(eq(reports.id, id))
+    .where(and(eq(reports.id, id), eq(reports.visibility, 'public')))
     .limit(1)
 }
 
@@ -250,6 +353,90 @@ export async function findMatchesForLost(lostId: string, limit = 30) {
       desc(reports.id),
     )
     .limit(limit)
+}
+
+/**
+ * 경로에 이을 목격 제보. 점수 하한을 넘고 좌표 근거가 있는 것만 시간순으로 냄
+ * 수동 지역 제보는 격자 좌표가 제보자가 고른 지역 중심이라 이동 근거로 쓰지 못함
+ * 정확 좌표는 고르지 않음. 경로·예측은 전부 격자 좌표로만 계산함
+ */
+export async function findTrackSightings(
+  lostId: string,
+  minScore: number,
+  minSimilarity: number,
+) {
+  // 임베딩이 한쪽이라도 없으면 행이 없어 null 로 내려가고 점수 경로만 남음
+  const similarity = raw<number | null>`(
+    select (1 - (le.embedding <=> se.embedding))::float8
+    from report_embeddings le, report_embeddings se
+    where le.report_id = ${lostId}::uuid and se.report_id = ${reports.id}
+  )`
+
+  return db
+    .select({
+      id: reports.id,
+      score: matchScores.score,
+      similarity,
+      coarsePoint: reports.coarsePoint,
+      occurredAt: reports.occurredAt,
+      areaName: reports.areaName,
+      locationSource: reports.locationSource,
+    })
+    .from(matchScores)
+    .innerJoin(reports, eq(matchScores.sightingId, reports.id))
+    .where(
+      and(
+        eq(matchScores.lostId, lostId),
+        eq(reports.visibility, 'public'),
+        // 배점이 하한에 못 미쳐도 외형 벡터가 가까우면 확인할 후보로 남김
+        or(
+          gte(matchScores.score, minScore),
+          raw`${similarity} >= ${minSimilarity}`,
+        ),
+        ne(reports.locationSource, 'manual_area'),
+      ),
+    )
+    .orderBy(asc(reports.occurredAt))
+}
+
+/**
+ * 신고 하나의 격자 좌표. 탐색 조언의 중심점으로만 쓰고 응답에는 내보내지 않음
+ * findManagedReport 가 좌표를 빼고 돌려주므로 따로 읽음
+ * 접근 확인이 끝난 뒤 부르므로 숨긴 신고도 작성자 화면을 위해 읽음
+ */
+export async function findLostCoarsePoint(reportId: string) {
+  const [row] = await db
+    .select({ coarsePoint: reports.coarsePoint })
+    .from(reports)
+    .where(eq(reports.id, reportId))
+    .limit(1)
+  return row?.coarsePoint ?? null
+}
+
+/**
+ * 한 점 주변 반경 안 공개 발견 제보 수. 탐색 조언의 분모와 커버리지에 씀
+ * 수동 지역 제보는 격자 좌표가 지역 중심이라 거리 근거가 없어 세지 않음
+ */
+export async function countSightingsAround(input: {
+  center: { lat: number; lng: number }
+  radiusM: number
+  since: Date
+  excludeId?: string
+}) {
+  const [row] = await db
+    .select({ count: raw<number>`count(*)::int` })
+    .from(reports)
+    .where(
+      and(
+        eq(reports.kind, 'sighting'),
+        eq(reports.visibility, 'public'),
+        ne(reports.locationSource, 'manual_area'),
+        gte(reports.occurredAt, input.since),
+        input.excludeId ? ne(reports.id, input.excludeId) : undefined,
+        raw`ST_DWithin(${reports.coarsePoint}::geography, ST_SetSRID(ST_MakePoint(${input.center.lng}, ${input.center.lat}), 4326)::geography, ${input.radiusM})`,
+      ),
+    )
+  return row?.count ?? 0
 }
 
 export { CANDIDATE_RADIUS_M, CANDIDATE_WINDOW_DAYS }

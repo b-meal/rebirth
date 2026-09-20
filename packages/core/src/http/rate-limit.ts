@@ -35,6 +35,14 @@ export const RATE_LIMITS = {
   createReport: { limit: RELAXED ? 200 : 9, windowSeconds: 180 },
   createFlag: { limit: RELAXED ? 200 : 5, windowSeconds: 600 },
   analyze: { limit: RELAXED ? 200 : 15, windowSeconds: 180 },
+  // 1단계 선검사. 사진마다 한 번이고 다시 고르기를 반복해도 막히지 않을 만큼 둠
+  // 넘으면 차단하지 않고 판정만 건너뜀
+  precheck: { limit: RELAXED ? 400 : 40, windowSeconds: 180 },
+  // 판정 결과만 받아 적는 자리. 넘으면 기록만 버리고 화면은 그대로 감
+  precheckLog: { limit: RELAXED ? 400 : 40, windowSeconds: 180 },
+  // 화면에서 난 오류. 한 사람이 같은 고장을 여러 번 만나도 막히지 않을 만큼 두되
+  // 무한 루프에 빠진 화면이 표를 채우지 못하게 창을 좁게 둠
+  clientError: { limit: RELAXED ? 400 : 20, windowSeconds: 60 },
   signPhoto: { limit: RELAXED ? 600 : 60, windowSeconds: 60 },
   upload: { limit: RELAXED ? 400 : 20, windowSeconds: 180 },
   // 관리 토큰 교환. 토큰 추측 시도를 억제함

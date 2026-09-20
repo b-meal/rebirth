@@ -1,4 +1,4 @@
-import { DRAFT_COOKIE, hashToken, peekManageAccess } from "@rebirth/core/http";
+import { DRAFT_COOKIE, hashToken, logFailure, peekManageAccess } from "@rebirth/core/http";
 import { distanceKm } from "@rebirth/core/location/geo";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
@@ -12,13 +12,19 @@ import {
   listMapReports,
   listReportComments,
 } from "@rebirth/db";
-import { LIST_PERIOD_DAYS } from "@rebirth/types";
+import { COMMENT_PAGE_SIZE, LIST_PERIOD_DAYS } from "@rebirth/types";
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
-import { CARE_LABEL, describeAnimal, searchingDays, sinceLabel } from "@/lib/report-label";
+import {
+  STATUS_LABEL,
+  describeAnimal,
+  searchingDays,
+  sinceLabel,
+  withSubject,
+} from "@/lib/report-label";
 import { LostDetail } from "@/components/lost/lost-detail";
 import { ReportDetail } from "@/components/report/report-detail";
 import type { ReportCardItem } from "@/components/report/report-card";
@@ -52,7 +58,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
 
   if (!report) {
-    return { title: "찾는 제보가 없습니다", robots: { index: false } };
+    return { title: "찾는 제보가 없어요", robots: { index: false } };
   }
 
   const isLost = report.kind === "lost";
@@ -65,18 +71,28 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     ? (petName ?? "끝난 신고")
     : (petName ?? report.appearance?.split("\n")[0] ?? (isLost ? "반려동물을 찾고 있어요" : "발견동물 제보"));
   // 링크 미리보기에서 한눈에 판단할 값만 앞에 둠. 카카오톡은 두 줄 남짓만 보임
-  // 실종 신고는 보호 상황을 쓰지 않아 그 자리를 비움
-  const facts = [
-    where,
-    isLost ? null : CARE_LABEL[report.careSituation],
-    describeAnimal(report),
-  ].filter(Boolean);
-  const description = isDone
-    ? `${facts.join(", ")} — ${report.lifecycle === "resolved" ? "가족을 만났어요" : "끝난 신고예요"}`
+  // 실종은 lifecycle, 발견은 careSituation 으로 고르는 다섯 어휘 한 값
+  const status = isLost
+    ? report.lifecycle === "resolved"
+      ? STATUS_LABEL.resolved
+      : STATUS_LABEL.lost
+    : STATUS_LABEL[report.careSituation];
+  const facts = [where, status, describeAnimal(report)].filter(Boolean);
+  // 끝난 실종 신고를 닫는 말은 발견자 쪽이 아닌 보호자 쪽 어휘 기준
+  const tail = isDone
+    ? report.lifecycle === "resolved"
+      ? petName
+        ? `${withSubject(petName)} 집으로 돌아왔어요`
+        : "집으로 돌아왔어요"
+      : "끝난 신고예요"
     : isLost
-      ? `${facts.join(", ")} — 이 아이를 본 적 있나요?`
-      : `${facts.join(", ")} — 이 동물을 본 적 있나요?`;
+      ? "이 아이를 본 적 있나요?"
+      : "이 동물을 본 적 있나요?";
+  const description = `${facts.join(", ")} — ${tail}`;
   const image = `${SITE}/r/${id}/card`;
+  // 신고를 고친 뒤 옛 카드가 미리보기에 남는 것을 막는 지문
+  const versioned = `${image}?v=${report.updatedAt.getTime()}`;
+  const imageAlt = `${where}에서 ${isLost ? "잃어버린" : "발견된"} 동물`;
 
   return {
     title,
@@ -88,16 +104,14 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       siteName: "다시집",
       locale: "ko_KR",
       url: `${SITE}/r/${id}`,
-      images: [
-        {
-          url: image,
-          width: 1080,
-          height: 1350,
-          alt: `${where}에서 ${isLost ? "잃어버린" : "발견된"} 동물`,
-        },
-      ],
+      images: [{ url: versioned, width: 1200, height: 630, alt: imageAlt }],
     },
-    twitter: { card: "summary_large_image", title, description, images: [image] },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [{ url: versioned, alt: imageAlt }],
+    },
   };
 }
 
@@ -136,9 +150,11 @@ async function loadNearby(currentId: string, origin: NearbyOrigin): Promise<Repo
       injury: row.injury,
       areaName: row.areaName,
       sinceLabel: sinceLabel(row.occurredAt),
+      occurredAt: row.occurredAt.toISOString(),
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
     }));
-  } catch {
+  } catch (error) {
+    logFailure("report.nearby", error);
     return [];
   }
 }
@@ -148,22 +164,38 @@ async function loadShelters(origin: NearbyOrigin): Promise<ShelterItem[]> {
   if (!origin) return [];
   try {
     return await findNearbyShelters({ point: origin, limit: SHELTER_COUNT });
-  } catch {
+  } catch (error) {
+    logFailure("report.shelters", error);
     return [];
   }
 }
 
-async function loadComments(reportId: string): Promise<ReportComment[]> {
+/** 첫 쪽과 이어 읽을 자리. 커서 모양은 댓글 API 와 같게 둠 */
+type CommentPage = { items: ReportComment[]; nextCursor: string | null };
+
+async function loadComments(reportId: string): Promise<CommentPage> {
   try {
-    const rows = await listReportComments(reportId);
-    return rows.map((row) => ({
-      id: row.id,
-      authorSeq: row.authorSeq,
-      body: row.body,
-      sinceLabel: sinceLabel(row.createdAt),
-    }));
-  } catch {
-    return [];
+    // 한 건 더 받아 다음 쪽이 있는지 봄. 개수를 따로 세면 목록과 어긋날 수 있음
+    const rows = await listReportComments(reportId, { limit: COMMENT_PAGE_SIZE + 1 });
+    const page = rows.slice(0, COMMENT_PAGE_SIZE);
+    const last = page.at(-1);
+
+    return {
+      items: page.map((row) => ({
+        id: row.id,
+        authorSeq: row.authorSeq,
+        body: row.body,
+        sinceLabel: sinceLabel(row.createdAt),
+      })),
+      nextCursor:
+        rows.length > COMMENT_PAGE_SIZE && last
+          ? `${last.createdAt.toISOString()}_${last.id}`
+          : null,
+    };
+  } catch (error) {
+    // 댓글이 없는 것과 못 읽은 것이 화면에서 같아 보임
+    logFailure("report.comments", error);
+    return { items: [], nextCursor: null };
   }
 }
 
@@ -176,7 +208,8 @@ async function loadInterest(reportId: string): Promise<{ count: number; mine: bo
       token ? hasReportInterest({ reportId, tokenHash: hashToken(token) }) : false,
     ]);
     return { count, mine };
-  } catch {
+  } catch (error) {
+    logFailure("report.interest", error);
     return { count: 0, mine: false };
   }
 }
@@ -201,7 +234,9 @@ async function loadOwnership(
       reportId,
     );
     return { mine, canManage };
-  } catch {
+  } catch (error) {
+    // 이 값이 조용히 false 가 되면 글쓴이에게 관리 단추가 사라짐
+    logFailure("report.manageAccess", error);
     return { mine: false, canManage: false };
   }
 }
@@ -212,7 +247,8 @@ async function loadAreaSubscribed(reportId: string): Promise<boolean> {
     const user = await getCurrentUser();
     if (!user) return false;
     return await isReportAreaSubscribed(user.id, reportId);
-  } catch {
+  } catch (error) {
+    logFailure("report.areaSubscribed", error);
     return false;
   }
 }
@@ -247,7 +283,8 @@ export default async function ReportDetailPage({ params }: Params) {
         sinceLabel={sinceLabel(report.occurredAt)}
         searchingDays={searchingDays(report.occurredAt)}
         location={point ? { point, gridMeters: spot?.coarseGridM ?? 300 } : null}
-        comments={comments}
+        comments={comments.items}
+        commentCursor={comments.nextCursor}
         nearby={nearby}
         shelters={shelters}
         interest={interest}
@@ -262,7 +299,8 @@ export default async function ReportDetailPage({ params }: Params) {
       shareUrl={`${SITE}/r/${id}`}
       sinceLabel={sinceLabel(report.occurredAt)}
       location={point ? { point, gridMeters: spot?.coarseGridM ?? 300 } : null}
-      comments={comments}
+      comments={comments.items}
+      commentCursor={comments.nextCursor}
       nearby={nearby}
       shelters={shelters}
       interest={interest}

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { logFailure } from "../http/log";
+
 import {
   insertDraftUpload,
   markDraftUploadFailed,
@@ -93,7 +95,7 @@ export async function createUploadHandler(request: Request): Promise<Response> {
         sessionId: session.sessionId,
         failureCode: FAILURE.storage,
       }).catch(() => undefined);
-      console.error("[draft.upload] 스토리지 업로드 실패", error);
+      logFailure("draft.upload", error);
       return serverError("draft.upload.storage", error);
     }
 

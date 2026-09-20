@@ -1,14 +1,25 @@
-/* 선택한 원본의 비율과 글자 경계를 유지하는 이미지 좌표 */
+/* 두 단어가 붙는 시각은 로고와 단추가 함께 봐야 해 덮개에 둠 */
 .root {
+  --join-delay: 520ms;
+  --join-duration: 680ms;
+  --join-end: calc(var(--join-delay) + var(--join-duration));
+  /* 로고가 올라가 비우는 아래 여백, 단추 세 줄이 들어가는 높이
+     큰 단추 한 줄과 보조 두 칸 한 줄, 둘러보기 한 줄 */
+  --rise: 23dvh;
+  --rise-duration: 560ms;
   transform: translateX(-50%);
   pointer-events: none;
   animation: expire 1ms var(--splash-load-timeout) step-end forwards;
 }
 
+/* 로고가 자리를 잡으면 단추를 받아야 해 덮개가 탭을 먹음 */
 .root[data-ready="true"] {
-  animation: leave var(--splash-fade) var(--splash-visible) ease-out forwards;
+  animation: none;
+  pointer-events: auto;
 }
 
+/* 스크립트가 닿기 전에도 첫 장면을 그대로 그림. 로고가 곧 가장 큰 그림이라 하이드레이션을 기다리면 LCP 가 그만큼 밀림
+   아래 정적 상태는 각 애니메이션의 첫 프레임과 같아 준비된 뒤 이어질 때 튀지 않음 */
 .artwork {
   position: absolute;
   top: 50%;
@@ -16,14 +27,10 @@
   width: 100%;
   aspect-ratio: 853 / 1844;
   transform: translateY(-50%);
-  opacity: 0;
-  --join-delay: 520ms;
-  --join-duration: 680ms;
-  --join-end: calc(var(--join-delay) + var(--join-duration));
 }
 
 .root[data-ready="true"] .artwork {
-  opacity: 1;
+  animation: rise var(--rise-duration) var(--join-end) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .base,
@@ -34,18 +41,24 @@
   user-select: none;
 }
 
+/* 두 단어가 모이기 전이라 아래 절반은 가리고 단어 조각만 따로 보임 */
+.base {
+  clip-path: inset(0 0 48.2% 0);
+}
+
 .word {
   position: absolute;
   inset: 0;
-  visibility: hidden;
 }
 
 .again {
   clip-path: inset(52% 44.9% 41.7% 32.8%);
+  transform: translateX(calc(var(--seed-dimension-x4) * -1));
 }
 
 .home {
   clip-path: inset(52% 33.3% 41.7% 55.4%);
+  transform: translateX(var(--seed-dimension-x4));
 }
 
 .comma {
@@ -56,12 +69,26 @@
   visibility: hidden;
 }
 
+/* 로고가 다 올라간 뒤에 나타나 눈이 한 번에 한 곳만 보게 함 */
+.actions {
+  position: absolute;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--seed-dimension-x10));
+  left: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.root[data-ready="true"] .actions {
+  animation: enter var(--splash-fade) calc(var(--join-end) + 360ms) ease-out both;
+}
+
 .root[data-ready="true"] .base {
   animation: reveal var(--join-end) step-end both;
 }
 
 .root[data-ready="true"] .word {
-  visibility: visible;
   animation:
     join-again var(--join-duration) var(--join-delay) cubic-bezier(0.22, 1, 0.36, 1) both,
     expire 1ms var(--join-end) step-end forwards;
@@ -71,9 +98,10 @@
   animation-name: join-home, expire;
 }
 
+/* 왼쪽 글자가 닿기 직전에 자리를 비우도록 두 단어가 모이기 시작하는 520ms 보다 조금 앞에 둠 */
 .root[data-ready="true"] .comma {
   visibility: visible;
-  animation: remove-comma 180ms 400ms ease-out both;
+  animation: remove-comma 70ms 500ms ease-out both;
 }
 
 @keyframes reveal {
@@ -103,11 +131,34 @@
   }
 }
 
+@keyframes rise {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(calc(-50% - var(--rise)));
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    visibility: visible;
+    transform: translateY(var(--seed-dimension-x2));
+  }
+  to {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}
+
+/* visibility 를 섞으면 합성 단계로 넘어가지 못해 지도가 메인 스레드를 잡는 동안 쉼표만 늦게 빠짐 */
 @keyframes remove-comma {
   to {
     opacity: 0;
-    transform: translate(-50%, calc(var(--seed-dimension-x1) * -1));
-    visibility: hidden;
+    transform: translate(-50%, -4px);
   }
 }
 
@@ -117,17 +168,11 @@
   }
 }
 
-@keyframes leave {
-  to {
-    opacity: 0;
-    visibility: hidden;
-  }
-}
-
-/* 동작 줄이기에서는 완성 로고만 잠깐 표시한 뒤 즉시 해제 */
+/* 동작 줄이기에서는 합쳐진 로고와 단추를 옮김 없이 곧바로 보여 줌 */
 @media (prefers-reduced-motion: reduce) {
-  .root[data-ready="true"] {
-    animation: expire 1ms 700ms step-end forwards;
+  .root[data-ready="true"] .artwork {
+    animation: none;
+    transform: translateY(calc(-50% - var(--rise)));
   }
 
   .root[data-ready="true"] .base {
@@ -137,5 +182,12 @@
   .root[data-ready="true"] .word,
   .root[data-ready="true"] .comma {
     display: none;
+  }
+
+  .root[data-ready="true"] .actions {
+    animation: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 }

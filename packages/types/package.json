@@ -7,12 +7,14 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test src/**/*.test.ts"
   },
   "dependencies": {
     "zod": "^4.5.4"
   },
   "devDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "@types/node": "^22"
   }
 }

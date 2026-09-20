@@ -1,0 +1,31 @@
+/* 값이 오는 동안 같은 자리를 채워 두는 뼈대
+   글자가 사라졌다 나타나며 줄 높이가 들썩이지 않게 폭과 높이를 밖에서 받음 */
+.bar {
+  display: block;
+  width: var(--skeleton-width, 100%);
+  /* 기본값은 t3 한 줄 높이. 글자가 들어설 자리와 같아야 값이 와도 줄이 밀리지 않음 */
+  height: var(--skeleton-height, var(--seed-line-height-t3));
+  border-radius: var(--seed-radius-r1);
+  background-color: var(--seed-color-bg-neutral-weak-pressed);
+  /* 자리만 지키는 것이라 옆 글자에 밀리지 않음 */
+  flex: none;
+  animation: breathe 1400ms ease-in-out infinite;
+}
+
+/* 면을 흐렸다 되돌림. 색을 바꾸지 않아 밝은 화면과 어두운 화면 모두에서 같게 보임 */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* 움직임을 줄인 환경에서는 숨 쉬지 않고 면만 남김 */
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    animation: none;
+  }
+}

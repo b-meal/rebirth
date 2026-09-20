@@ -1,3 +1,4 @@
+import { logFailure } from "../http/log";
 import "server-only";
 
 import {
@@ -18,11 +19,26 @@ import { ShelterSyncError, syncAllShelters } from "./sync";
 // 보호·구조 기관 안내. 공공데이터 사본이라 인증 없이 읽게 둠
 // 쓰기는 공공데이터 한도를 태우므로 운영 토큰을 요구함
 
+// 이어 읽을 자리. 기관 목록은 거의 바뀌지 않아 건너뛴 수로 셈
+const offset = z.coerce.number().int().min(0).max(10_000).default(0);
+
+/**
+ * 표준 품종 코드와 시도 목록에 붙이는 캐시 규칙
+ *
+ * 공공데이터를 받아 둔 사본이라 동기화를 돌릴 때만 바뀌고 사용자마다 다르지 않음
+ * 기본값인 no-store 로 두면 245행과 253행을 읽으려고 요청마다 함수와 DB 를 깨움
+ * s-maxage 는 Vercel 앞단이 들고 있는 시간, max-age 는 브라우저 몫이라 짧게 둠
+ * 동기화 직후 한 시간까지는 옛 목록이 나갈 수 있는데 코드 표라 그 사이 화면이 틀리지 않음
+ */
+const REFERENCE_CACHE =
+  "public, max-age=60, s-maxage=3600, stale-while-revalidate=86400";
+
 const nearbyQuery = z.object({
   lat: z.coerce.number(),
   lng: z.coerce.number(),
   kind: shelterKind.optional(),
   limit: z.coerce.number().int().min(1).max(50).default(3),
+  offset,
 });
 
 // 좌표가 없으면 지역 이름으로 찾음. 시도 이름은 표준 코드에서 온 값만 받음
@@ -30,6 +46,7 @@ const regionQuery = z.object({
   region: z.string().min(2).max(20).optional(),
   kind: shelterKind.optional(),
   limit: z.coerce.number().int().min(1).max(50).default(30),
+  offset,
 });
 
 export async function nearbySheltersHandler(request: Request): Promise<Response> {
@@ -42,8 +59,10 @@ export async function nearbySheltersHandler(request: Request): Promise<Response>
       return badRequest("조회 조건이 올바르지 않습니다", fieldErrors(byRegion.error));
     }
     try {
-      const items = await listSheltersByRegion(byRegion.data);
-      return ok({ items });
+      // 한 건 더 받아 다음 쪽이 있는지 봄. 총 건수 질의를 피함
+      const { limit } = byRegion.data;
+      const rows = await listSheltersByRegion({ ...byRegion.data, limit: limit + 1 });
+      return ok({ items: rows.slice(0, limit), hasMore: rows.length > limit });
     } catch (error) {
       return serverError("shelters", error);
     }
@@ -54,7 +73,7 @@ export async function nearbySheltersHandler(request: Request): Promise<Response>
     return badRequest("좌표가 올바르지 않습니다", fieldErrors(parsed.error));
   }
 
-  const { lat, lng, kind, limit } = parsed.data;
+  const { lat, lng, kind, limit, offset: skip } = parsed.data;
   if (!isInKorea({ lat, lng })) {
     return badRequest("국내 좌표만 조회할 수 있습니다", {
       lat: "국내 범위를 벗어났습니다",
@@ -62,8 +81,14 @@ export async function nearbySheltersHandler(request: Request): Promise<Response>
   }
 
   try {
-    const items = await findNearbyShelters({ point: { lat, lng }, kind, limit });
-    return ok({ items });
+    // 한 건 더 받아 다음 쪽이 있는지 봄. 총 건수 질의를 피함
+    const rows = await findNearbyShelters({
+      point: { lat, lng },
+      kind,
+      limit: limit + 1,
+      offset: skip,
+    });
+    return ok({ items: rows.slice(0, limit), hasMore: rows.length > limit });
   } catch (error) {
     return serverError("shelters", error);
   }
@@ -78,7 +103,7 @@ export async function syncSheltersHandler(request: Request): Promise<Response> {
     return ok({ results, counts: await countShelters() });
   } catch (error) {
     if (error instanceof ShelterSyncError) {
-      console.error(`[shelters] 동기화 중단 (${error.reason})`, error.message);
+      logFailure("shelters.sync", error.message, { reason: error.reason });
       return serviceUnavailable(error.message);
     }
     return serverError("shelters-sync", error);
@@ -105,7 +130,10 @@ export async function animalKindsHandler(request: Request): Promise<Response> {
     const items = needle
       ? rows.filter((row) => row.kindNm.replace(/\s/g, "").toLowerCase().includes(needle))
       : rows;
-    return ok({ items: items.slice(0, 20) });
+    return ok(
+      { items: items.slice(0, 20) },
+      { headers: { "cache-control": REFERENCE_CACHE } },
+    );
   } catch (error) {
     return serverError("kinds", error);
   }
@@ -114,7 +142,10 @@ export async function animalKindsHandler(request: Request): Promise<Response> {
 /** 시도 목록. 지역 고르개의 값이 표준 코드에서 오게 함 */
 export async function sidoRegionsHandler(): Promise<Response> {
   try {
-    return ok({ items: await listSidoRegions() });
+    return ok(
+      { items: await listSidoRegions() },
+      { headers: { "cache-control": REFERENCE_CACHE } },
+    );
   } catch (error) {
     return serverError("regions", error);
   }

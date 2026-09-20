@@ -1,3 +1,4 @@
+import { logFailure } from "@rebirth/core/http";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
   findFirstPhotoPaths,
@@ -6,6 +7,7 @@ import {
   listTrendingReports,
 } from "@rebirth/db";
 import { LIST_PERIOD_DAYS, listQuery } from "@rebirth/types";
+import type { Metadata } from "next";
 
 import { sinceLabel } from "@/lib/report-label";
 import { SearchScreen } from "@/components/search/search-screen";
@@ -14,6 +16,20 @@ import type { NearbyItem } from "@/components/search/search-screen";
 import type { TrendingItem } from "@/components/search/trending-chart";
 
 // 검색 화면, 글자와 사진 두 갈래로 제보를 찾고 좌표는 다루지 않음
+
+// 검색 유입 경로라 robots 로 막지 않음
+export const metadata: Metadata = {
+  title: "제보 검색",
+  description: "털색과 크기, 지역으로 발견 제보와 실종 신고를 함께 찾습니다.",
+  openGraph: {
+    title: "제보 검색",
+    description: "털색과 크기, 지역으로 발견 제보와 실종 신고를 함께 찾습니다.",
+    type: "website",
+    siteName: "다시집",
+    locale: "ko_KR",
+    url: "/search",
+  },
+};
 
 export const dynamic = "force-dynamic";
 
@@ -39,10 +55,19 @@ async function signThumbs(paths: (string | null)[]) {
   return createSignedThumbUrls(wanted).catch(() => new Map<string, string>());
 }
 
+/** 조건이 없으면 null. 조건이 있으면 첫 쪽과 이어 읽을 자리를 함께 넘김 */
+type ResultPage = { items: ReportCardItem[]; nextCursor: string | null };
+
+/** 이어 읽기는 /api/reports 가 맡으므로 커서 모양을 그쪽과 같게 둠 */
+function encodeCursor(row: { occurredAt: Date; id: string }): string {
+  return `${row.occurredAt.toISOString()}_${row.id}`;
+}
+
 async function loadResults(
   params: Record<string, string | string[] | undefined>,
-): Promise<ReportCardItem[] | null> {
+): Promise<ResultPage | null> {
   const parsed = listQuery.safeParse({
+    ...(first(params.kind) && { kind: first(params.kind) }),
     ...(first(params.q) && { q: first(params.q) }),
     ...(first(params.animalType) && { animalType: first(params.animalType) }),
     ...(first(params.size) && { size: first(params.size) }),
@@ -56,20 +81,24 @@ async function loadResults(
   if (!q && !animalType && !size && !colors?.length) return null;
 
   try {
-    const rows = await listPublicReports({
-      kind: "sighting",
+    // 한 건 더 받아 다음 쪽이 있는지 봄. 개수를 따로 세면 목록과 어긋날 수 있음
+    const all = await listPublicReports({
+      kind: parsed.data.kind ?? "sighting",
       q,
       animalType,
       size,
       colors,
       fromOccurredAt: new Date(Date.now() - parsed.data.days * 86_400_000),
-      limit: RESULT_LIMIT,
+      limit: RESULT_LIMIT + 1,
     });
+
+    const hasMore = all.length > RESULT_LIMIT;
+    const rows = hasMore ? all.slice(0, RESULT_LIMIT) : all;
 
     const photoPaths = await findFirstPhotoPaths(rows.map((row) => row.id));
     const signed = await signThumbs([...photoPaths.values()]);
 
-    return rows.map((row) => {
+    const items = rows.map((row) => {
       const path = photoPaths.get(row.id) ?? null;
       return {
         id: row.id,
@@ -80,11 +109,20 @@ async function loadResults(
         injury: row.injury,
         areaName: row.areaName,
         sinceLabel: sinceLabel(row.occurredAt),
+        occurredAt: row.occurredAt.toISOString(),
         photoUrl: path ? (signed.get(path) ?? null) : null,
+        // 카드는 발견과 실종 두 갈래만 그려 sheltered 는 대상 밖
+        kind: row.kind === "lost" ? ("lost" as const) : ("sighting" as const),
+        petName: row.petName,
       };
     });
-  } catch {
-    return [];
+
+    const last = rows.at(-1);
+    return { items, nextCursor: hasMore && last ? encodeCursor(last) : null };
+  } catch (error) {
+    // 검색 결과 0 건과 질의 실패가 화면에서 똑같이 보여 여기서 갈라 둠
+    logFailure("search.list", error);
+    return { items: [], nextCursor: null };
   }
 }
 
@@ -106,7 +144,8 @@ async function loadTrending(sort: "interest" | "help"): Promise<TrendingItem[]> 
       commentCount: row.commentCount,
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
     }));
-  } catch {
+  } catch (error) {
+    logFailure("search.popular", error);
     return [];
   }
 }
@@ -135,10 +174,15 @@ async function loadNearby(): Promise<NearbyItem[]> {
       injury: row.injury,
       areaName: row.areaName,
       sinceLabel: sinceLabel(row.occurredAt),
+      occurredAt: row.occurredAt.toISOString(),
       photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
+      // 고른 종류만 남기는 기준. 브라우저가 걸러 모드를 바꿔도 서버를 다시 부르지 않음
+      kind: row.kind === "lost" ? ("lost" as const) : ("sighting" as const),
+      petName: row.petName,
       point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
     }));
-  } catch {
+  } catch (error) {
+    logFailure("search.markers", error);
     return [];
   }
 }
@@ -156,7 +200,9 @@ export default async function SearchPage({ searchParams }: SearchParams) {
   return (
     <SearchScreen
       query={first(params.q) ?? ""}
-      results={results}
+      kind={first(params.kind) === "lost" ? "lost" : "sighting"}
+      results={results?.items ?? null}
+      resultCursor={results?.nextCursor ?? null}
       trending={{ interest, help }}
       nearby={nearby}
     />

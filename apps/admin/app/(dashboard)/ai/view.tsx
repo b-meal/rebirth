@@ -31,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { whenShort } from "@/lib/labels";
 import { reviewPair, type ReviewActionResult } from "./actions";
 
 // AI 운영 화면. 세 축이 각각 무엇을 메우는지와 그 증거를 위에 두고 원장은 맨 아래에 둠
@@ -138,13 +139,6 @@ const ms = (value: number | null) =>
 // 시드 픽스처는 UUID 앞자리가 모두 0 이라 뒷자리로 구분함
 const shortId = (value: string) => value.slice(-8);
 
-const when = (value: string | null) => {
-  if (!value) return "-";
-  const date = new Date(value);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-};
-
 function RunButton() {
   const { pending } = useFormStatus();
   return (
@@ -193,7 +187,7 @@ function ReviewCard({ review }: { review: AiDashboard["reviews"][number] }) {
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="secondary">{review.label}</Badge>
         <span className="text-[11px] text-muted-foreground">
-          {review.model}, {ms(review.latencyMs)}, {when(review.createdAt)}
+          {review.model}, {ms(review.latencyMs)}, {whenShort(review.createdAt)}
         </span>
       </div>
       {review.agreements.length > 0 ? (
@@ -338,7 +332,7 @@ export function AiView({ data }: { data: AiDashboard }) {
                 <div className="flex flex-wrap gap-6">
                   <Metric label="평균" value={ms(real.avgLatencyMs)} />
                   <Metric label="p95" value={ms(real.p95LatencyMs)} />
-                  <Metric label="마지막" value={when(real.lastRunAt)} />
+                  <Metric label="마지막" value={whenShort(real.lastRunAt)} />
                 </div>
                 {data.orphanFailures > 0 ? (
                   <Metric
@@ -374,7 +368,7 @@ export function AiView({ data }: { data: AiDashboard }) {
                     value={String(missed)}
                     unit="건"
                   />
-                  <Metric label="마지막 생성" value={when(coverage.lastAt)} />
+                  <Metric label="마지막 생성" value={whenShort(coverage.lastAt)} />
                 </div>
               </>
             ) : (
@@ -769,7 +763,7 @@ export function AiView({ data }: { data: AiDashboard }) {
               <TableBody>
                 {data.jobs.map((job) => (
                   <TableRow key={job.id}>
-                    <TableCell className="tabular-nums">{when(job.createdAt)}</TableCell>
+                    <TableCell className="tabular-nums">{whenShort(job.createdAt)}</TableCell>
                     <TableCell>
                       <Badge variant={job.status === "failed" ? "destructive" : "outline"}>
                         {job.status === "succeeded"

@@ -1,3 +1,4 @@
+import { logFailure } from "../http/log";
 import "server-only";
 
 import type { LocationCandidate } from "./candidate";
@@ -42,15 +43,16 @@ export function kakaoErrorResponse(error: unknown): Response {
       message: FALLBACK_MESSAGE,
     };
     // 좌표는 남기지 않음
-    console.error(
-      `[kakao-local] ${error.kind} ${error.status ?? ""} ${error.message}`,
-    );
+    logFailure("location.kakao", error.message, {
+      kind: error.kind,
+      status: error.status ?? "",
+    });
     return Response.json(
       { message: mapped.message, reason: error.kind },
       { status: mapped.status },
     );
   }
-  console.error("[kakao-local] unexpected", error);
+  logFailure("location.kakao.unexpected", error);
   return Response.json(
     { message: FALLBACK_MESSAGE, reason: "unknown" },
     { status: 500 },

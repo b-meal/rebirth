@@ -1,3 +1,4 @@
+import { logFailure } from "@rebirth/core/http";
 import { listSidoRegions } from "@rebirth/db";
 
 import { SheltersScreen } from "@/components/shelters/shelters-screen";
@@ -22,7 +23,7 @@ async function loadRegions(): Promise<string[]> {
     const rows = await listSidoRegions();
     return rows.map((row) => row.orgNm);
   } catch (error) {
-    console.error("[shelters] 지역 목록 조회 실패", error);
+    logFailure("shelters.regions", error);
     return [];
   }
 }

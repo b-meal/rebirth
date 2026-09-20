@@ -7,6 +7,8 @@ import { animalSize, animalType } from './enums.ts'
  * 필드를 바꾸면 도구 정의와 reports.ai_raw 도 같이 바꿔야 함
  */
 export const analyzeResult = z.object({
+  // 살아 있는 동물이 조금이라도 보이는지. 종류를 못 정한 것과 동물이 없는 것을 가르는 값
+  animalPresent: z.boolean(),
   animalType,
   // 품종 추정 라벨. 화면이 계열 추정으로 붙여 쓰므로 품종명만 담음
   breedGuess: z.string().max(30).nullable(),
@@ -33,7 +35,7 @@ export const analyzeRequest = z.object({
 
 export type AnalyzeRequest = z.infer<typeof analyzeRequest>
 
-/** 비동물이거나 신뢰도가 낮으면 사용자에게 재촬영을 권함 */
+/** 종류를 못 정했거나 신뢰도가 낮으면 재촬영을 권함. 동물이 없는 것은 guidance 가 먼저 가름 */
 export const RETAKE_CONFIDENCE = 0.4
 
 export function needsRetake(result: AnalyzeResult) {

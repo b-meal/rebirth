@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { adviseFromResult } from "./guidance.ts";
 
 const base = {
+  animalPresent: true,
   animalType: "dog" as const,
   breedGuess: null,
   appearance: "흰색 소형견, 말티즈 계열 추정",
@@ -24,8 +25,8 @@ test("신뢰도가 충분하면 초안을 그대로 채움", () => {
   assert.equal(advice.message, null);
 });
 
-test("동물을 못 찾으면 재촬영으로 보냄", () => {
-  const advice = adviseFromResult({ ...base, animalType: "unknown" });
+test("동물이 없으면 재촬영으로 보냄", () => {
+  const advice = adviseFromResult({ ...base, animalPresent: false, animalType: "unknown" });
   assert.equal(advice.state, "not-animal");
   assert.match(advice.message ?? "", /동물이 담긴 사진/);
 });
@@ -36,9 +37,28 @@ test("신뢰도가 낮으면 진행과 재촬영을 모두 열어 둠", () => {
   assert.match(advice.message ?? "", /그대로 진행하거나/);
 });
 
-test("동물을 못 찾은 판정이 신뢰도보다 앞섬", () => {
-  const advice = adviseFromResult({ ...base, animalType: "unknown", confidence: 0.9 });
+test("동물이 없다는 판정이 신뢰도보다 앞섬", () => {
+  const advice = adviseFromResult({
+    ...base,
+    animalPresent: false,
+    animalType: "unknown",
+    confidence: 0.9,
+  });
   assert.equal(advice.state, "not-animal");
+});
+
+test("동물은 보이지만 종류를 못 정하면 되돌리지 않고 진행과 재촬영을 열어 둠", () => {
+  // 멀거나 가려진 동물. 1단계 선검사가 통과시킨 사진을 2단계가 뒤집지 않음
+  for (const confidence of [0.15, 0.9]) {
+    const advice = adviseFromResult({ ...base, animalType: "unknown", confidence });
+    assert.equal(advice.state, "low-quality");
+    assert.match(advice.message ?? "", /그대로 진행하거나/);
+  }
+});
+
+test("animalPresent 가 없던 옛 결과를 재조회해도 되돌리지 않음", () => {
+  const legacy = { ...base, animalType: "unknown" as const, animalPresent: undefined as never };
+  assert.equal(adviseFromResult(legacy).state, "low-quality");
 });
 
 test("경계값 0.4 는 초안으로 통과", () => {

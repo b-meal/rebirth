@@ -1,8 +1,16 @@
 import { expect, test } from "@playwright/test";
 
 import { makePng } from "./fixtures/make-photo.mjs";
+import { dismissSplash } from "./fixtures/splash";
 
 // 제보 2단계와 상세, 공유 카드를 실제 브라우저로 확인하는 자리
+//
+// AI 초안 을 기다리는 3건은 2026-09-18 현재 실패함. 덮개나 시간 초과가 아니라 픽스처 때문
+// makePng 은 회색 노이즈라 분석이 비동물로 맞게 판정하고, 그러면 흐름이 1단계로 되돌아가
+// 초안 카드가 영영 안 뜸. 픽스처는 되돌림 기능이 생기기 전에 쓰여 그때는 통과했음
+// 고치는 길은 분석을 가로채거나 진짜 동물 사진을 픽스처로 두는 것이고 둘 다 제품 판단이라 남겨 둠
+// 가로채면 빠르지만 실제 AI 경로를 안 밟고, 사진을 두면 외부 이미지를 저장소에 두지 않는 방침과 부딪힘
+// 화면 제어만 보는 회귀 테스트는 분석을 가로채는 쪽으로 report-recovery.spec.ts 에 따로 있음
 
 const PHOTO = { name: "sighting.png", mimeType: "image/png", buffer: makePng() };
 
@@ -14,6 +22,7 @@ test.use({
 /** 1단계에서 앨범 입력으로 사진을 올리고 2단계까지 보냄 */
 async function goToDetailStep(page: import("@playwright/test").Page) {
   await page.goto("/report");
+  await dismissSplash(page);
   await page.locator("input[type=file]:not([capture])").setInputFiles(PHOTO);
   await expect(page.getByText("이 사진으로 할까요")).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "다음" }).click();
@@ -25,11 +34,12 @@ async function pickCare(page: import("@playwright/test").Page, label: string) {
   await page.locator("span.seed-chip__label", { hasText: label }).first().click();
 }
 
-test("1단계에 촬영과 앨범이 모두 있다", async ({ page }) => {
-  // 길에서 찍지 않는 사람도 저장된 사진으로 제보할 수 있어야 함
+test("1단계는 사진 가져오기를 버튼 하나로만 묻는다", async ({ page }) => {
+  // 기기가 파일 입력 하나로 보관함과 촬영을 함께 물어 우리가 먼저 묻지 않음
+  // 길에서 찍지 않는 사람은 그 기기 물음에서 보관함을 고름
   await page.goto("/report");
-  await expect(page.getByRole("button", { name: "사진 촬영" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "앨범에서 선택" })).toBeVisible();
+  await dismissSplash(page);
+  await expect(page.getByRole("button", { name: /사진 촬영|앨범에서 선택/ })).toHaveCount(1);
   await expect(page.locator("input[type=file][capture]")).toHaveCount(1);
   await expect(page.locator("input[type=file]:not([capture])")).toHaveCount(1);
 });
@@ -63,7 +73,8 @@ test("사진에서 제보 완료까지 끝낸다", async ({ page }) => {
 
   const id = page.url().split("/r/")[1]!.split("/")[0]!;
   await page.goto(`/r/${id}`);
-  await expect(page.getByText("AI 초안, 수정 가능")).toBeVisible();
+  await dismissSplash(page);
+  await expect(page.getByText("AI 초안")).toBeVisible();
   await expect(page.getByRole("button", { name: "공유하기" })).toBeVisible();
   await expect(page.getByText("계열 추정 계열 추정")).toHaveCount(0);
   // 정확 좌표를 공개 화면에 넣지 않음
@@ -92,6 +103,7 @@ test("공유 카드는 1080x1350 PNG 로 나온다", async ({ page, request }) =
 test("없는 주소는 로그인 대신 404 를 보여 준다", async ({ page }) => {
   // 로그인 벽이 404 를 가리면 오타를 친 사람이 로그인 화면을 봄
   const response = await page.goto("/not-a-real-page");
+  await dismissSplash(page);
   expect(response?.status()).toBe(404);
   await expect(page.getByText("찾을 수 없는 주소입니다")).toBeVisible();
   await expect(page).not.toHaveURL(/sign-in/);

@@ -7,6 +7,7 @@ import { ResultSection } from "seed-design/ui/result-section";
 import { Snackbar, SnackbarAvoidOverlap, useSnackbarAdapter } from "seed-design/ui/snackbar";
 
 import { ScreenBody } from "@/components/ui/screen";
+import { STATUS_LABEL, formatDayTime } from "@/lib/report-label";
 import { CandidatePhoto } from "./candidate-photo";
 
 // 확인할 후보를 카드로 훑음, 좌우 스와이프 대신 버튼과 키보드로 동작
@@ -33,18 +34,6 @@ export type Candidate = {
   areaName: string | null;
   occurredAt: string;
 };
-
-const CARE_LABEL: Record<Candidate["careSituation"], string> = {
-  roaming: "배회 중",
-  in_care: "제보자 보호 중",
-  unknown: "확인 중",
-};
-
-function formatAbsolute(value: string): string {
-  const date = new Date(value);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getMonth() + 1}월 ${date.getDate()}일 ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 export type CandidateDeckProps = {
   candidates: Candidate[];
@@ -180,9 +169,9 @@ export function CandidateDeck({ candidates, lostLabel }: CandidateDeckProps) {
             {current.areaName ?? "위치 미확인"}
           </Text>
           <Text textStyle="t4Regular" color="fg.neutralMuted">
-            {[formatAbsolute(current.occurredAt), CARE_LABEL[current.careSituation], ...conditions].join(
-              ", ",
-            )}
+            {[formatDayTime(current.occurredAt), STATUS_LABEL[current.careSituation], ...conditions]
+              .filter(Boolean)
+              .join(", ")}
           </Text>
         </VStack>
 

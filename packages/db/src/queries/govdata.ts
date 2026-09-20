@@ -117,46 +117,66 @@ export function rescueSidoTotals(limit = 12) {
  * 표기 흔들림을 눌러 맞춘 대조 조건
  * 계열 추정 같은 꼬리말을 떼고 공백을 지운 뒤 어느 쪽이 어느 쪽을 품어도 맞다고 봄
  * 웰시 코기 는 웰시 코기 카디건 에, 슈나우저 는 미니어쳐 슈나우저 에 걸림
+ *
+ * 다듬는 식을 제보 행마다 걸면 제보 수 × 품종 수 만큼 돌아 제보가 늘수록 그대로 느려짐
+ * 표기 종류로 먼저 묶어 종류마다 한 번만 다듬음. 같은 표기가 백 번 올라와도 한 번만 봄
+ * 실측: 854건 700ms → 90ms, 17,080건 13.3초 → 99ms. 결과는 같음
  */
-const breedMatches = raw`exists (
-  select 1 from ${animalKinds} k
-  where replace(lower(k.kind_nm), ' ', '') like
-        '%' || replace(lower(regexp_replace(${reports.breedGuess}, '\\s*(계열|믹스|추정)\\s*$', '')), ' ', '') || '%'
-     or replace(lower(regexp_replace(${reports.breedGuess}, '\\s*(계열|믹스|추정)\\s*$', '')), ' ', '') like
-        '%' || replace(lower(k.kind_nm), ' ', '') || '%'
-)`
+const BREED_MATCH_CTE = raw`
+  guesses as (
+    select breed_guess,
+           replace(lower(regexp_replace(breed_guess, '\\s*(계열|믹스|추정)\\s*$', '')), ' ', '') as guess,
+           count(*)::int as total
+    from ${reports}
+    where breed_guess is not null and breed_guess <> ''
+    group by breed_guess
+  ),
+  kinds as (
+    select distinct replace(lower(kind_nm), ' ', '') as kind from ${animalKinds}
+  ),
+  scored as (
+    select guesses.*,
+           exists (
+             select 1 from kinds
+             where kinds.kind like '%' || guesses.guess || '%'
+                or guesses.guess like '%' || kinds.kind || '%'
+           ) as matched
+    from guesses
+  )`
+
+export type BreedCodeCoverage = {
+  withGuess: number
+  matched: number
+  distinct: number
+}
 
 /**
  * 우리 breedGuess 가 표준 품종 코드에 몇 건이나 걸리는지
  * 품종을 단정하지 않으므로 맞추는 것이 목적이 아니라 표기 흔들림을 재는 것이 목적임
  */
-export async function breedCodeCoverage() {
-  const [row] = await db
-    .select({
-      withGuess: raw<number>`count(*)::int`.mapWith(Number),
-      matched: raw<number>`count(*) filter (where ${breedMatches})::int`.mapWith(Number),
-      distinct: raw<number>`count(distinct ${reports.breedGuess})::int`.mapWith(Number),
-    })
-    .from(reports)
-    .where(raw`${reports.breedGuess} is not null and ${reports.breedGuess} <> ''`)
-  return row
+export async function breedCodeCoverage(): Promise<BreedCodeCoverage> {
+  const rows = await db.execute<BreedCodeCoverage>(raw`
+    with ${BREED_MATCH_CTE}
+    select coalesce(sum(total), 0)::int                       as "withGuess",
+           coalesce(sum(total) filter (where matched), 0)::int as "matched",
+           count(*)::int                                       as "distinct"
+    from scored`)
+  // 묶음 없는 집계라 늘 한 줄이지만 타입에는 그 사실이 없음
+  return rows[0] ?? { withGuess: 0, matched: 0, distinct: 0 }
 }
 
+export type UnmatchedBreedGuess = { breedGuess: string; total: number }
+
 /** 표준 코드에 걸리지 않는 표기. 프롬프트를 고칠 대상이 여기서 나옴 */
-export function unmatchedBreedGuesses(limit = 12) {
-  return db
-    .select({
-      breedGuess: raw<string>`${reports.breedGuess}`,
-      total: raw<number>`count(*)::int`.mapWith(Number),
-    })
-    .from(reports)
-    .where(
-      raw`${reports.breedGuess} is not null and ${reports.breedGuess} <> ''
-        and not ${breedMatches}`,
-    )
-    .groupBy(reports.breedGuess)
-    .orderBy(raw`2 desc`)
-    .limit(limit)
+export async function unmatchedBreedGuesses(limit = 12): Promise<UnmatchedBreedGuess[]> {
+  return db.execute<UnmatchedBreedGuess>(raw`
+    with ${BREED_MATCH_CTE}
+    select breed_guess as "breedGuess", total
+    from scored
+    where not matched
+    -- 건수가 같은 표기가 많아 잘라 내는 자리에서 순서가 흔들림. 표기까지 못 박음
+    order by total desc, breed_guess
+    limit ${limit}`)
 }
 
 export function listAnimalKinds(upKindCd?: string) {

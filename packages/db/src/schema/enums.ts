@@ -39,7 +39,7 @@ export const careSituation = pgEnum('care_situation', [
 ])
 
 // SNS 로그인 제공자. 값은 @rebirth/types 의 authProvider 와 같아야 함
-export const authProvider = pgEnum('auth_provider', ['google', 'kakao'])
+export const authProvider = pgEnum('auth_provider', ['google', 'kakao', 'anonymous'])
 
 // 커뮤니티 글 분류. 값은 @rebirth/types 의 communityCategory 와 같아야 함
 // sighting_talk 은 제보로 올리기엔 확실하지 않은 목격담
@@ -105,6 +105,17 @@ export const uploadStatus = pgEnum('upload_status', [
   'ready',
   'failed',
 ])
+
+// 1단계 선검사 판정과 그 판정을 낸 곳
+export const precheckVerdict = pgEnum('precheck_verdict', [
+  'animal',
+  'not-animal',
+  'unknown',
+])
+export const precheckSource = pgEnum('precheck_source', ['device', 'server'])
+
+// 서버 기록의 심각도. failure 는 고쳐야 할 것, notice 는 알고만 있으면 되는 것
+export const errorLevel = pgEnum('error_level', ['failure', 'notice'])
 
 // 위치 출처. POL-08. manual_area 는 정확 좌표가 없어 거리 점수를 받지 않음
 export const locationSource = pgEnum('location_source', [

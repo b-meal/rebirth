@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { and, desc, eq, inArray, isNull, lt, sql as raw } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, lt, or, sql as raw } from 'drizzle-orm'
 
 import { db } from '../client'
 import {
@@ -222,6 +222,38 @@ export function findAnalysisJobByUpload(input: {
       eq(analysisJobs.revision, input.revision),
     ),
   })
+}
+
+/**
+ * 실패했거나 staleBefore 이전부터 멈춘 작업을 같은 행에서 다시 돌림
+ * upload+revision 유일 제약이 새 행을 막아 행을 재사용함
+ * 조건이 WHERE 에 있어 동시 재시도는 한쪽만 바꾸고 다른 쪽은 undefined 를 받음
+ */
+export async function restartAnalysisJob(input: { id: string; staleBefore: Date }) {
+  const [row] = await db
+    .update(analysisJobs)
+    .set({
+      status: 'running',
+      result: null,
+      failureCode: null,
+      model: null,
+      promptVersion: null,
+      latencyMs: null,
+      finishedAt: null,
+      // 되살린 시각부터 다시 정체를 재기 위해 갱신
+      createdAt: new Date(),
+    })
+    .where(
+      and(
+        eq(analysisJobs.id, input.id),
+        or(
+          eq(analysisJobs.status, 'failed'),
+          and(eq(analysisJobs.status, 'running'), lt(analysisJobs.createdAt, input.staleBefore)),
+        ),
+      ),
+    )
+    .returning({ id: analysisJobs.id })
+  return row
 }
 
 /**

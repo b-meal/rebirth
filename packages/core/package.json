@@ -15,6 +15,7 @@
     "./location/*": "./src/location/*.ts",
     "./manage": "./src/manage/index.ts",
     "./matching": "./src/matching/index.ts",
+    "./matching/*": "./src/matching/*.ts",
     "./matching/embed-text": "./src/matching/embed-text.ts",
     "./reports": "./src/reports/index.ts",
     "./reports/*": "./src/reports/*.ts",
@@ -24,11 +25,13 @@
     "./storage": "./src/storage/index.ts",
     "./support": "./src/support/index.ts",
     "./support/rescue": "./src/support/rescue.ts",
-    "./vision": "./src/vision/index.ts"
+    "./vision": "./src/vision/index.ts",
+    "./vision/*": "./src/vision/*.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --test src/**/*.test.ts"
+    "test": "node --experimental-strip-types --test src/**/*.test.ts",
+    "eval:precheck": "node scripts/precheck-eval.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
@@ -40,6 +43,7 @@
   },
   "devDependencies": {
     "@types/node": "^22",
-    "typescript": "^5"
+    "typescript": "^5",
+    "sharp": "^0.34.5"
   }
 }

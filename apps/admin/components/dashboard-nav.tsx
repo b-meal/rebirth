@@ -12,6 +12,7 @@ const NAV = [
   { href: "/lost", label: "실종 신고" },
   { href: "/moderation", label: "검수" },
   { href: "/metrics", label: "지표" },
+  { href: "/errors", label: "오류" },
 ] as const;
 
 export function DashboardNav() {

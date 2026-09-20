@@ -17,11 +17,21 @@ export const ANIMAL_LABEL: Record<string, string> = {
   unknown: "확인 어려움",
 };
 
-export const CARE_LABEL: Record<string, string> = {
-  roaming: "배회 중",
-  in_care: "제보자가 보호 중",
-  unknown: "확인되지 않음",
+// 주어 없는 어휘로 고정, 배회 중과 찾는 중 금지
+// 찾음 은 누가 찾았는지가 빠져 보호자가 찾은 것인지 남이 찾아 준 것인지 읽히지 않음
+// packages/types 의 labels.test.ts 가 같은 이유로 찾음 을 막고 있어 문구를 맞춤
+export const STATUS_LABEL: Record<string, string> = {
+  lost: "실종",
+  roaming: "발견",
+  in_care: "보호 중",
+  resolved: "집으로 돌아옴",
+  unknown: "",
 };
+
+/** 실종 신고가 며칠째인지. 잃어버린 날이 1일째라 당일은 숫자 대신 문장으로 말함 */
+export function searchingLabel(days: number): string {
+  return days <= 1 ? "오늘 잃어버렸어요" : `실종 ${days}일째`;
+}
 
 export type AnimalLabelInput = {
   animalType: AnimalType;
@@ -70,11 +80,36 @@ export function withSubject(name: string): string {
 }
 
 /**
- * 마지막 목격부터 지난 날수, 실종 신고가 며칠째인지 세는 값
+ * 한국 시간으로 읽은 날짜의 일련번호
+ * 어제와 그저께, 며칠째는 자정 경계로 세는 값이라 경과 시간을 24로 나누면 안 됨
+ * 35시간 전이 어제가 되고 38시간 전이 그저께가 되는 뒤집힘이 여기서 생김
+ */
+const KST_DATE = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/**
+ * 한국 시간 달력으로 며칠째인지를 세는 값
+ * 알림함의 날짜 묶음이 줄에 적힌 어제 와 같은 경계를 써야 소제목과 줄이 어긋나지 않음
+ */
+export function kstDayIndex(date: Date): number {
+  // 자리 순서는 ICU 판마다 달라 종류로 집어 옮김
+  const part = new Map(KST_DATE.formatToParts(date).map((p) => [p.type, p.value]));
+  const day = `${part.get("year")}-${part.get("month")}-${part.get("day")}`;
+  return Date.parse(`${day}T00:00:00Z`) / 86_400_000;
+}
+
+/**
+ * 며칠째 찾고 있는지, 잃어버린 날이 1일째이고 자정마다 하루 오름
+ * 뺄셈으로 세면 어제 저녁 신고가 20시간밖에 안 지나 오늘 잃어버린 것으로 읽힘
  * 서버에서 한 번 계산해 넘김. 화면에서 세면 다시 그릴 때마다 값이 흔들림
  */
 export function searchingDays(date: Date, now: Date = new Date()): number {
-  return Math.max(Math.floor((now.getTime() - date.getTime()) / 86_400_000), 0);
+  // 시계 오차로 미래 시각이 들어와도 1일째 아래로 내려가지 않음
+  return Math.max(kstDayIndex(now) - kstDayIndex(date), 0) + 1;
 }
 
 /**
@@ -96,15 +131,119 @@ export function formatAbsolute(value: Date | string): string {
   return ABSOLUTE.format(new Date(value));
 }
 
+/**
+ * 월과 날짜만 적음
+ * 공유 카드처럼 남의 캐시에 들어가는 표면에는 며칠째 같은 상대값을 넣지 않음
+ * 카카오와 슬랙이 긁어 간 이미지는 우리가 지울 수 없어 3일째로 구워진 그림이 30일째에도 뿌려짐
+ */
+const MONTH_DAY = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "long",
+  day: "numeric",
+});
+
+export function formatMonthDay(value: Date | string): string {
+  return MONTH_DAY.format(new Date(value));
+}
+
+/**
+ * 날짜와 시각, 연도는 빼고 적음
+ * 후보 확인처럼 며칠 안의 목격끼리 견주는 자리에 씀. 연도가 붙으면 견줄 값보다 길어짐
+ */
+const DAY_TIME = new Intl.DateTimeFormat("ko-KR", {
+  timeZone: "Asia/Seoul",
+  month: "long",
+  day: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+export function formatDayTime(value: Date | string): string {
+  return DAY_TIME.format(new Date(value));
+}
+
 const RELATIVE = new Intl.RelativeTimeFormat("ko", { numeric: "auto" });
 
-/** 목격 시각을 방금, n분 전, n시간 전, n일 전으로 표기 */
+/**
+ * 한국 시간으로 읽은 시각대
+ * 어제 만으로는 낮에 봤는지 새벽에 봤는지 알 수 없고 그 둘은 찾아갈 시간과 방법이 다름
+ * h23 을 못박음. 판에 따라 자정을 24 로 내주는 구현이 있음
+ */
+const KST_HOUR = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Asia/Seoul",
+  hour: "2-digit",
+  hourCycle: "h23",
+});
+
+function dayPart(date: Date): string {
+  const hour = Number(KST_HOUR.formatToParts(date).find((p) => p.type === "hour")?.value);
+  if (hour < 6) return "새벽";
+  if (hour < 12) return "아침";
+  if (hour < 18) return "오후";
+  return "밤";
+}
+
+/** 목격 시각을 방금, n분 전, n시간 전, 어제 오후, 그저께 새벽, n일 전 밤으로 표기 */
 export function sinceLabel(date: Date, now: Date = new Date()): string {
   const minutes = Math.round((date.getTime() - now.getTime()) / 60_000);
   // 시계 오차로 미래가 되면 방금으로 눌러 표시함
   if (minutes >= -1) return "방금";
   if (minutes > -60) return RELATIVE.format(minutes, "minute");
   const hours = Math.round(minutes / 60);
+  // 하루가 지나지 않았으면 자정을 넘었어도 경과 시간이 달력 낱말보다 정확함
   if (hours > -24) return RELATIVE.format(hours, "hour");
-  return RELATIVE.format(Math.round(hours / 24), "day");
+  const days = kstDayIndex(date) - kstDayIndex(now);
+  // 반올림으로 24시간이 됐어도 달력으로 같은 날이면 어제가 아님
+  if (days === 0) return RELATIVE.format(-23, "hour");
+  // 하루가 넘으면 몇 시간 전이 사라져 목록에서 낮 목격과 새벽 목격이 같아짐
+  return `${RELATIVE.format(days, "day")} ${dayPart(date)}`;
+}
+
+export type UrgencyLevel = "fresh" | "recent" | "stale" | "cold";
+
+/** 마지막 목격부터 지난 시간을 6, 24, 72 시간 경계로 네 등급에 넣음 */
+export function urgencyLevel(date: Date, now: Date = new Date()): UrgencyLevel {
+  const hours = (now.getTime() - date.getTime()) / 3_600_000;
+  // 시계 오차로 미래 시각이 들어와도 등급 역전 방지
+  if (hours < 6) return "fresh";
+  if (hours < 24) return "recent";
+  if (hours < 72) return "stale";
+  return "cold";
+}
+
+// 숫자를 빼고 지금 할 행동만 남긴 등급 문구
+export const URGENCY_HINT: Record<UrgencyLevel, string> = {
+  fresh: "지금 주변을 확인해 보세요",
+  recent: "주변 추가 제보를 확인해 보세요",
+  stale: "마지막 목격지 주변 이동 경로를 확인해 보세요",
+  cold: "이동 가능 지역을 넓혀 찾아보세요",
+};
+
+/** 목격 시각을 지금 할 행동 한 줄로 옮김 */
+export function urgencyHint(date: Date, now: Date = new Date()): string {
+  return URGENCY_HINT[urgencyLevel(date, now)];
+}
+
+/** 예측 반경 안 제보 수를 한 줄로 옮김, 0건도 빈칸 대신 문장으로 말함 */
+export function densityLine({ count, radiusKm }: { count: number; radiusKm: number }): string {
+  const r = radiusKm.toFixed(1);
+  if (count === 0) return `반경 ${r}km 안에 새 제보가 없어요`;
+  return `반경 ${r}km 안에 제보 ${count}건`;
+}
+
+export type SituationInput = {
+  lastSeen: Date;
+  /** 예측 반경 안 제보 수, 경로가 없으면 null 이라 밀도 절이 빠짐 */
+  count: number | null;
+  radiusKm: number | null;
+  now?: Date;
+};
+
+/** 경과·밀도·등급 세 줄을 한 줄로 합침, 절대 날짜는 다른 줄이 맡음 */
+export function situationLine({ lastSeen, count, radiusKm, now = new Date() }: SituationInput): string {
+  const density = count !== null && radiusKm !== null ? densityLine({ count, radiusKm }) : null;
+  return [sinceLabel(lastSeen, now), density, urgencyHint(lastSeen, now)]
+    .filter(Boolean)
+    .join(", ");
 }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { isAutoSignInEnabled } from "@rebirth/core/auth";
 import { createSignedThumbUrls } from "@rebirth/core/storage";
 import {
   countReporterReportsByKind,
@@ -81,7 +82,9 @@ export default async function MinePage() {
       counts={counts}
       unread={unread}
       authReady={isAuthConfigured()}
-      signOut={<SignOutButton />}
+      signOut={
+        <SignOutButton restartsGuest={user?.provider === "anonymous" && isAutoSignInEnabled()} />
+      }
       removePet={removePet}
     />
   );

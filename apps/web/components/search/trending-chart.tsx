@@ -61,7 +61,7 @@ export function TrendingChart({ items, help = false }: TrendingChartProps) {
   if (items.length === 0) {
     return (
       <Text textStyle="t3Regular" color="fg.neutralSubtle">
-        최근 7일 제보가 아직 없습니다
+        최근 7일 제보가 아직 없어요
       </Text>
     );
   }

@@ -1,4 +1,4 @@
-import { createSignedThumbUrls } from "@rebirth/core/storage";
+import { logFailure } from "@rebirth/core/http";
 import {
   countUnreadAreaReports,
   countUnreadMatchAlerts,
@@ -6,7 +6,10 @@ import {
 } from "@rebirth/db";
 import { LIST_PERIOD_DAYS } from "@rebirth/types";
 
+import { cookies } from "next/headers";
+
 import { getCurrentUser } from "@/lib/auth/session";
+import { SEEN_INTRO_COOKIE } from "@/lib/intro-cookie";
 import { sinceLabel } from "@/lib/report-label";
 import { HomeScreen, type MapMarker } from "@/components/home/home-screen";
 
@@ -25,10 +28,8 @@ async function loadMarkers(): Promise<MapMarker[]> {
       (row) => row.coarsePoint !== null,
     );
 
-    // 비공개 버킷이라 서명이 필요하고 여러 제보가 같은 사진을 가리켜 경로를 접음
-    const paths = [...new Set(rows.flatMap((row) => (row.photoPath ? [row.photoPath] : [])))];
-    const signed = await createSignedThumbUrls(paths).catch(() => new Map<string, string>());
-
+    // 사진 주소는 여기서 만들지 않음. 서명 URL 하나가 550자라 천 건이면 페이로드의 절반이 주소가 되고
+    // 서버도 첫 요청마다 천 번을 서명함. 핀과 카드가 화면에 들 때 /api/thumbs 로 묶어 받음
     return rows.map((row) => ({
       id: row.id,
       animalType: row.animalType,
@@ -37,11 +38,18 @@ async function loadMarkers(): Promise<MapMarker[]> {
       careSituation: row.careSituation,
       injury: row.injury,
       areaName: row.areaName,
+      // 질의가 두 종류만 고르므로 보호소 입소는 여기 오지 않음
+      kind: row.kind as "sighting" | "lost",
+      petName: row.petName,
       sinceLabel: sinceLabel(row.occurredAt),
-      photoUrl: row.photoPath ? (signed.get(row.photoPath) ?? null) : null,
+      occurredAt: row.occurredAt.toISOString(),
+      photoUrl: null,
+      photoLazy: row.photoPath !== null,
       point: { lat: row.coarsePoint!.y, lng: row.coarsePoint!.x },
     }));
-  } catch {
+  } catch (error) {
+    // 핀이 하나도 없는 첫 화면과 질의가 깨진 첫 화면은 눈으로 구별되지 않음
+    logFailure("home.markers", error);
     return [];
   }
 }
@@ -56,15 +64,25 @@ async function loadUnread(userId: string | undefined): Promise<number> {
       countUnreadMatchAlerts(userId),
     ]);
     return areas + matches;
-  } catch {
+  } catch (error) {
+    logFailure("home.unread", error);
     return 0;
   }
 }
 
 export default async function HomePage() {
-  // 쿠키 읽기는 렌더 중에 끝내야 함. 약속에 넣어 흘려보내면 요청 범위를 벗어나 실패함
-  const user = await getCurrentUser().catch(() => undefined);
+  // 쿠키 읽기는 렌더 중에 시작해야 함. 호출은 여기서 하고 결과만 약속으로 흘려보냄
+  // 사용자 조회를 기다리면 HTML 이 DB 왕복만큼 늦게 나가 덮개와 지도가 그만큼 늦게 뜸
+  const user = getCurrentUser().catch(() => undefined);
+  // 첫 행동을 마쳤는지는 HTML 에서 정해야 안내 줄과 타일이 나중에 끼어들며 화면을 밀지 않음
+  const seenIntro = (await cookies()).has(SEEN_INTRO_COOKIE);
 
   // 질의만 약속으로 넘김, 마커를 기다리느라 화면이 늦게 뜨면 덮개보다 로딩 표시가 먼저 보임
-  return <HomeScreen markers={loadMarkers()} unread={loadUnread(user?.id)} />;
+  return (
+    <HomeScreen
+      markers={loadMarkers()}
+      unread={user.then((found) => loadUnread(found?.id))}
+      seenIntro={seenIntro}
+    />
+  );
 }

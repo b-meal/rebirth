@@ -1,5 +1,6 @@
 "use server";
 
+import { logFailure } from "@rebirth/core/http";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 
@@ -44,10 +45,10 @@ export async function syncGovData(
     };
   } catch (error) {
     if (error instanceof RescueDataError) {
-      console.error(`[rescue] 수집 중단 (${error.reason})`, error.message);
+      logFailure("rescue.collect", error.message, { reason: error.reason });
       return { ok: false, message: error.message };
     }
-    console.error("[rescue] 수집 실패", error);
+    logFailure("rescue.collect", error);
     return { ok: false, message: "처리 중 문제가 생겼습니다" };
   }
 }
